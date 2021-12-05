@@ -23,7 +23,7 @@ const ServiceListContainer = () => {
                     <div className="col-md-6 col-xl-4 mb-7">
                         <div className="service-media-wrapper media-spacing-left">
                             {ServiceData &&
-                                ServiceData.slice(0, 3).map((single, key) => {
+                                ServiceData.slice(0, 4).map((single, key) => {
                                     return (
                                         <ServiceBox data={single} key={key} />
                                     );
@@ -42,7 +42,7 @@ const ServiceListContainer = () => {
                     <div className="col-md-6 col-xl-4 mb-7">
                         <div className="service-media-wrapper media-spacing-right">
                             {ServiceData &&
-                                ServiceData.slice(3, 6).map((single, key) => {
+                                ServiceData.slice(4, 8).map((single, key) => {
                                     return (
                                         <ServiceBox data={single} key={key} />
                                     );

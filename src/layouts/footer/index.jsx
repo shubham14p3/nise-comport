@@ -269,14 +269,16 @@ const Footer = () => {
                         <div className="col-12">
                             <div className="copyright-info text-center">
                                 <p>
-                                    Copyright &copy; 2021 Made with{" "}
-                                    <i className="icofont-heart-alt"></i> By{" "}
+                                    Copyright &copy;{Date().getFullYear} Made
+                                    with
+                                    <i className="icofont-heart-alt"></i> By
                                     <a
-                                        href="https://themeforest.net/user/codecarnival/portfolio"
+                                        href="https://www.shubhamraj.dev"
                                         target="_blank"
                                         rel="noreferrer"
                                     >
-                                        codecarnival
+                                        {" "}
+                                        Nise-Comport
                                     </a>
                                     , All Rights Reserved
                                 </p>

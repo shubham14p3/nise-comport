@@ -24,21 +24,17 @@ const HomeAboutContainer = () => {
                             <SectionTitle
                                 classOption="title-section"
                                 subTitle="ABOUT US"
-                                title="Best 
+                                title="Online 
                                 <span class='text-primary'>
-                                    Digital Agency
+                                    Digital Service
                                 </span>
                                 <br className='d-none d-xl-block' />
                                 in the Town"
                             />
                             <span className="date-meta">
-                                Scince 2001 <span className="hr"></span>
+                                Scince 2000 <span className="hr"></span>
                             </span>
-                            <p className="mb-5">
-                                Pleasure rationally encounter consequences that
-                                are extremely painful. Nor again is there anyone
-                                who loves or pursues or desires to obtain
-                            </p>
+                            <p className="mb-5">We obtain our value since</p>
                             <p className="high-light mb-8">
                                 Pleasure rationally encounter consequences that
                                 are extremely painful. Nor again is there

@@ -4,6 +4,7 @@ import Button from "../../../components/button";
 import IconBox from "../../../components/icon-box";
 import SectionTitle from "../../../components/section-title";
 import HomeData from "../../../data/home.json";
+import "../../../assets/css/custom.css";
 
 const IconBoxContainer = ({ classOption }) => {
     return (
@@ -15,15 +16,15 @@ const IconBoxContainer = ({ classOption }) => {
             />
             <div className="container custom-container">
                 <div className="row g-0 align-items-center">
-                    <div className="col-xl-6 col-lg-8 mx-auto mb-3 text-center">
+                    <div className="col-xl-6 col-lg-8 mx-auto mb-3 text-center sub-title-1">
                         <SectionTitle
                             classOption="title-section"
                             subTitle="FEATURES"
                             title="We are <span class='text-primary'>different</span> because..."
                             excerptClassOption="mb-10"
-                            excerpt="Pleasure rationally encounter consequences that are extremely
-                            painful. Nor again is there anyone who loves or pursues or
-                            desires to obtain"
+                            excerpt="To give real service we add something which 
+                            cannot be bought or measured with money, and that is sincerity and integrity.
+                            So listen & solve your problem."
                         />
                         <Button
                             classOption="btn btn-lg btn-dark btn-hover-dark"
