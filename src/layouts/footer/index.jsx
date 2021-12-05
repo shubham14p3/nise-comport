@@ -204,23 +204,41 @@ const Footer = () => {
                             <div className="footer-widget">
                                 <h4 className="title">Contact info</h4>
                                 <p>
-                                    245 Southern Street, Apt. 147 New York, USA
+                                    Shop No 3, Ground Floor, Singh Building,
+                                    Hanuman Mandir Road, Kharangajhar, Telco,
+                                    Jamshedpur, Jharkhand, India
                                 </p>
                                 <ul className="address">
                                     <li>
                                         <a
                                             className="address-link"
-                                            href="tel:+12354569874"
+                                            href="tel:+919771219893"
                                         >
-                                            +12354 569 874
+                                            +91 97712 19893
                                         </a>
                                     </li>
                                     <li>
                                         <a
                                             className="address-link"
-                                            href="tel:+98745612398"
+                                            href="tel:+919835552756"
                                         >
-                                            +98745 612 398
+                                            +91 98355 52756
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a
+                                            className="address-link"
+                                            href="tel:+916572280722"
+                                        >
+                                            0657 2280722
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a
+                                            className="address-link"
+                                            href="tel:+916572279322"
+                                        >
+                                            0657 2280722
                                         </a>
                                     </li>
                                     <li>
@@ -228,7 +246,7 @@ const Footer = () => {
                                             className="address-link"
                                             href="mailto:info@example.com"
                                         >
-                                            info@example.com
+                                            coming soon
                                         </a>
                                     </li>
                                     <li>
@@ -236,7 +254,7 @@ const Footer = () => {
                                             className="address-link"
                                             href="mailto:info@example.com"
                                         >
-                                            www.example.com
+                                            www.nisecomport.com(Soon.)
                                         </a>
                                     </li>
                                 </ul>

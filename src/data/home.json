@@ -4,7 +4,7 @@
             {
                 "id": 1,
                 "image": "./images/slider/slide2.png",
-                "title": "Full Solution <br />for your <span class='text-decoration-underline'>Business</span><br />Development"
+                "title": "One Stop Solution <br />for any <span class='text-decoration-underline'>Online</span><br />Service"
             }
         ]
     },
@@ -24,6 +24,22 @@
             },
             {
                 "id": 4,
+                "image": "./images/brand-logo/4.png"
+            },
+            {
+                "id": 5,
+                "image": "./images/brand-logo/3.png"
+            },
+            {
+                "id": 6,
+                "image": "./images/brand-logo/4.png"
+            },
+            {
+                "id": 7,
+                "image": "./images/brand-logo/3.png"
+            },
+            {
+                "id": 8,
                 "image": "./images/brand-logo/4.png"
             }
         ]
@@ -82,23 +98,23 @@
         "funfact": [
             {
                 "id": 1,
-                "number": 1200,
-                "title": "Projects done"
+                "number": 25000,
+                "title": "Loyal Customers"
             },
             {
                 "id": 2,
-                "number": 2354,
-                "title": "Happy Clients"
+                "number": 4,
+                "title": "Google Rating"
             },
             {
                 "id": 3,
-                "number": 3299,
-                "title": "Cup Coffee"
+                "number": 5600,
+                "title": "Aadhaar Updated"
             },
             {
                 "id": 4,
-                "number": 101,
-                "title": "Award Wins"
+                "number": 2500,
+                "title": "Pan Applied"
             }
         ]
     },
@@ -106,21 +122,21 @@
         "team": [
             {
                 "id": 1,
-                "thumb": "./images/team/rounded-img1.png",
-                "name": "Cristopher Williams",
-                "designation": "Head of Idea"
+                "thumb": "./images/team/1.png",
+                "name": "Sanjay Kumar",
+                "designation": "Head of Firm"
             },
             {
                 "id": 2,
-                "thumb": "./images/team/rounded-img2.png",
-                "name": "Rebeca Smith",
-                "designation": "Head of HR"
+                "thumb": "./images/team/2.png",
+                "name": "Chandrakala Devi",
+                "designation": "Head of Finance"
             },
             {
                 "id": 3,
-                "thumb": "./images/team/rounded-img3.png",
-                "name": "Ricardo Powel",
-                "designation": "Head of Development"
+                "thumb": "./images/team/3.png",
+                "name": "Shubham Raj",
+                "designation": "Head of Idea"
             }
         ]
     }
