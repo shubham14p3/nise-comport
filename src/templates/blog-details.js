@@ -20,7 +20,7 @@ const BlogDetailsPage = ({
     return (
         <React.Fragment>
             <Layout>
-                <SEO title="Buznex – Blog Details" />
+                <SEO title="Nise-Comport – Blog Details" />
                 <div className="wrapper">
                     <Header />
                     <PageBanner

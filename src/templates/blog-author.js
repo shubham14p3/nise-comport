@@ -21,7 +21,7 @@ const BlogAuthor = ({
     return (
         <React.Fragment>
             <Layout>
-                <SEO title="Buznex – Blog Author" />
+                <SEO title="Nise-Comport – Blog Author" />
                 <div className="wrapper">
                     <Header />
                     <PageBanner

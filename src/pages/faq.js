@@ -12,7 +12,7 @@ const FaqPage = () => {
     return (
         <React.Fragment>
             <Layout>
-                <SEO title="Buznex – Faq" />
+                <SEO title="Nise-Comport – Faq" />
                 <div className="wrapper">
                     <Header />
                     <PageBanner

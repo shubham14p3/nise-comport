@@ -47,7 +47,7 @@ const TestimonialContainer = () => {
                             <div data-depth="0.2">
                                 <img
                                     src={`${process.env.PUBLIC_URL}/images/testimonial/1.png`}
-                                    alt="Buznex"
+                                    alt="Nise-Comport"
                                 />
                             </div>
                         </div>

@@ -13,7 +13,7 @@ const BlogRightSidebarPage = () => {
     return (
         <React.Fragment>
             <Layout>
-                <SEO title="Buznex – Blog Right Sidebar" />
+                <SEO title="Nise-Comport – Blog Right Sidebar" />
                 <div className="wrapper">
                     <Header />
                     <PageBanner

@@ -12,7 +12,7 @@ const ContactPage = () => {
     return (
         <React.Fragment>
             <Layout>
-                <SEO title="Buznex – Contact" />
+                <SEO title="Nise-Comport – Contact" />
                 <div className="wrapper">
                     <Header />
                     <PageBanner
