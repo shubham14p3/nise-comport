@@ -67,7 +67,7 @@
     },
     {
         "id": 7,
-        "icon": "./images/service/icon/6.png",
+        "icon": "./images/service/icon/7.png",
         "smallIcon": "/images/service/icon/small/8.png",
         "image": "./images/service/3.png",
         "title": "IT Sales & Service",
@@ -78,7 +78,7 @@
     },
     {
         "id": 8,
-        "icon": "./images/service/icon/6.png",
+        "icon": "./images/service/icon/8.png",
         "smallIcon": "/images/service/icon/small/8.png",
         "image": "./images/service/3.png",
         "title": "Travel",
