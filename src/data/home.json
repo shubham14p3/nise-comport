@@ -73,24 +73,52 @@
         "testimonial": [
             {
                 "id": 1,
-                "excerpt": "Pleasure rationally encounter consequences that are extremely painful. Nor again is there anyone who loves or pursues or desires maintain",
-                "authorThumb": "./images/testimonial/avater.png",
-                "name": "David Loyed",
-                "designation": "CEO, Omex"
+                "excerpt": "Service provided meets your expectations on time! Thanks for helping me out with my need. The customer dealing experience is good, staff are very polite while handling any corresponding requirements",
+                "authorThumb": "./images/testimonial/3.png",
+                "name": "Suraj Kumar",
+                "designation": "Customer"
             },
             {
                 "id": 2,
-                "excerpt": "Pleasure rationally encounter consequences that are extremely painful. Nor again is there anyone who loves or pursues or desires maintain",
-                "authorThumb": "./images/testimonial/2.png",
-                "name": "John Loyed",
-                "designation": "CEO, Omex"
+                "excerpt": "Xerox, Aadhaar Demographic Update, Caste Certificate, Domicile/Residential Certificate, Income / EWS Certificate, Birth/Death Certificate, Mutation, Pan Card, Passport, DL etc related work done here and also hardware and networking related also. It is also service dept for Bank of Baroda for opening Jan Dhan account .",
+                "authorThumb": "./images/testimonial/4.png",
+                "name": "Sumit Kumar",
+                "designation": "Customer"
             },
             {
                 "id": 3,
-                "excerpt": "Pleasure rationally encounter consequences that are extremely painful. Nor again is there anyone who loves or pursues or desires maintain",
+                "excerpt": "Laptop Repair best service",
                 "authorThumb": "./images/testimonial/avater.png",
-                "name": "David Loyed",
-                "designation": "CEO, Omex"
+                "name": "Dilip Das",
+                "designation": "Customer"
+            },
+            {
+                "id": 4,
+                "excerpt": "Life Certificate (Jeevan Praman)",
+                "authorThumb": "./images/testimonial/2.png",
+                "name": "Basant Oraon",
+                "designation": "Customer"
+            },
+            {
+                "id": 5,
+                "excerpt": "Ration card (New/ Apply/Corrrection), Ration-Aadhaar Seeding done here",
+                "authorThumb": "./images/testimonial/2.png",
+                "name": "Chando Rakab",
+                "designation": "Customer"
+            },
+            {
+                "id": 6,
+                "excerpt": "Good staff support. Helped in EPFO withdrawl",
+                "authorThumb": "./images/testimonial/avater.png",
+                "name": "Abhay Kumar",
+                "designation": "Customer"
+            },
+            {
+                "id": 7,
+                "excerpt": "When comes to pricing the place is Genuine to its competitors around, satisfaction for me was the plus point.",
+                "authorThumb": "./images/testimonial/2.png",
+                "name": "Vishnu Ruhi Das",
+                "designation": "Customer"
             }
         ]
     },
@@ -98,8 +126,8 @@
         "funfact": [
             {
                 "id": 1,
-                "number": 25000,
-                "title": "Loyal Customers"
+                "number": 10,
+                "title": "Year Service"
             },
             {
                 "id": 2,
