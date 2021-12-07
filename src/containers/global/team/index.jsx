@@ -17,11 +17,12 @@ const TeamContainer = ({ classOption }) => {
                                 subTitle="TEAM"
                                 title="People, <span class='text-primary'>Behind</span> the Screen"
                                 excerptClassOption="mb-5"
-                                excerpt="Pleasure rationally encounter consequences that are extremely painful. Nor again is there anyone who loves or pursues or desires to obtain"
+                                excerpt="These the people that make the magic happen.."
                             />
                             <p className="high-light mb-8">
-                                Pleasure rationally encounter consequences that
-                                are extremely painful. Nor again is there
+                                Form more details feel free to connect with us,
+                                we will happly help you get your problem
+                                resolved.
                             </p>
                             <Button
                                 classOption="btn btn-lg btn-dark btn-hover-dark"

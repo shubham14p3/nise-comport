@@ -21,8 +21,8 @@ const Footer = () => {
                                     image={`${process.env.PUBLIC_URL}/images/logo/logo-footer.png`}
                                 />
                                 <p>
-                                    Pleasure rationally encounter consequences
-                                    that extremely painful. Nor again is there
+                                    One Stop Solution for any Online Service
+                                    available.
                                 </p>
                                 <ul className="footer-social-links">
                                     <li>
@@ -49,7 +49,7 @@ const Footer = () => {
                                     <li>
                                         <SocialIcon
                                             classOption="footer-social-link"
-                                            path="https://www.whatsapp.com/"
+                                            path="https://wa.me/+919771219893"
                                             icon="icofont-whatsapp"
                                         />
                                     </li>
@@ -136,10 +136,21 @@ const Footer = () => {
                                             className="footer-link"
                                             to={
                                                 process.env.PUBLIC_URL +
+                                                `/service-details/1`
+                                            }
+                                        >
+                                            Banking
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link
+                                            className="footer-link"
+                                            to={
+                                                process.env.PUBLIC_URL +
                                                 `/service-details/2`
                                             }
                                         >
-                                            Business Plan
+                                            Government
                                         </Link>
                                     </li>
                                     <li>
@@ -150,7 +161,7 @@ const Footer = () => {
                                                 `/service-details/3`
                                             }
                                         >
-                                            Creative Strategy
+                                            Insurance
                                         </Link>
                                     </li>
                                     <li>
@@ -161,18 +172,7 @@ const Footer = () => {
                                                 `/service-details/4`
                                             }
                                         >
-                                            Branding{" "}
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link
-                                            className="footer-link"
-                                            to={
-                                                process.env.PUBLIC_URL +
-                                                `/service-details/1`
-                                            }
-                                        >
-                                            Digital Solution
+                                            Education
                                         </Link>
                                     </li>
                                     <li>
@@ -183,7 +183,7 @@ const Footer = () => {
                                                 `/service-details/5`
                                             }
                                         >
-                                            Marketing Policy
+                                            Fee Payment
                                         </Link>
                                     </li>
                                     <li>
@@ -194,7 +194,29 @@ const Footer = () => {
                                                 `/service-details/6`
                                             }
                                         >
-                                            Campaign &amp; PR
+                                            Form Filling
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link
+                                            className="footer-link"
+                                            to={
+                                                process.env.PUBLIC_URL +
+                                                `/service-details/7`
+                                            }
+                                        >
+                                            IT Sales & Service
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link
+                                            className="footer-link"
+                                            to={
+                                                process.env.PUBLIC_URL +
+                                                `/service-details/8`
+                                            }
+                                        >
+                                            Travel
                                         </Link>
                                     </li>
                                 </ul>
@@ -228,9 +250,9 @@ const Footer = () => {
                                     <li>
                                         <a
                                             className="address-link"
-                                            href="tel:+916572280722"
+                                            href="tel:+916572917622"
                                         >
-                                            0657 2280722
+                                            0657 2917622
                                         </a>
                                     </li>
                                     <li>
@@ -244,17 +266,17 @@ const Footer = () => {
                                     <li>
                                         <a
                                             className="address-link"
-                                            href="mailto:info@example.com"
+                                            href="mailto:nweb.hub@gmail.com"
                                         >
-                                            coming soon
+                                            nweb.hub@gmail.com
                                         </a>
                                     </li>
                                     <li>
                                         <a
                                             className="address-link"
-                                            href="mailto:info@example.com"
+                                            href="mailto:support@nisecomport.com"
                                         >
-                                            www.nisecomport.com(Soon.)
+                                            support@nisecomport.com
                                         </a>
                                     </li>
                                 </ul>
