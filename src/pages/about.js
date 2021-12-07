@@ -32,7 +32,7 @@ const AboutPage = () => {
                     <ServiceListContainer />
                     <TestimonialReverse />
                     <FunFactContainer classOption="mt-0 mt-lg-0" />
-                    <NewsletterArea />
+                    {/* <NewsletterArea /> */}
                     <Footer />
                     <ScrollToTop />
                 </div>
