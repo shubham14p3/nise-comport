@@ -51,21 +51,21 @@
                 "className": "grid-item mb-7",
                 "icon": "./images/feature/logo/1.png",
                 "title": "Strong Security",
-                "excerpt": "Pleasure rationally encounter are extremely painful anyone who loves or pursues"
+                "excerpt": "We make sure all your problem is resolved under our expertise guidance keeping all our data secure and authenticated."
             },
             {
                 "id": 2,
                 "className": "grid-item card-mt-75 mb-7",
                 "icon": "./images/feature/logo/2.png",
                 "title": "Creative Idea",
-                "excerpt": "Pleasure rationally encounter are extremely painful anyone who loves or pursues"
+                "excerpt": "We help you in coming up with a solution that can resolve your problem in the minimum way possible."
             },
             {
                 "id": 1,
                 "className": "grid-item mb-7",
                 "icon": "./images/feature/logo/3.png",
                 "title": "Best Service",
-                "excerpt": "Pleasure rationally encounter are extremely painful anyone who loves or pursues"
+                "excerpt": "From last 10+ years we have been prominent and keeping our client need first with best practices available today."
             }
         ]
     },
