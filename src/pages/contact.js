@@ -22,8 +22,8 @@ const ContactPage = () => {
                     />
                     <ContactContainer />
                     {/* <NewsletterArea /> */}
-                    <Footer />
                     <ScrollToTop />
+                    <Footer />
                 </div>
             </Layout>
         </React.Fragment>

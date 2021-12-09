@@ -71,7 +71,7 @@ const Footer = () => {
                                             About us
                                         </Link>
                                     </li>
-                                    <li>
+                                    {/* <li>
                                         <Link
                                             className="footer-link"
                                             to={
@@ -81,8 +81,8 @@ const Footer = () => {
                                         >
                                             Pricing Plan
                                         </Link>
-                                    </li>
-                                    <li>
+                                    </li> */}
+                                    {/* <li>
                                         <Link
                                             className="footer-link"
                                             to={
@@ -92,7 +92,7 @@ const Footer = () => {
                                         >
                                             Conditions
                                         </Link>
-                                    </li>
+                                    </li> */}
                                     <li>
                                         <Link
                                             className="footer-link"
@@ -100,7 +100,7 @@ const Footer = () => {
                                                 process.env.PUBLIC_URL + "/blog"
                                             }
                                         >
-                                            Blog Post
+                                            Blog Service
                                         </Link>
                                     </li>
                                     <li>
@@ -110,7 +110,7 @@ const Footer = () => {
                                                 process.env.PUBLIC_URL + "/team"
                                             }
                                         >
-                                            Our Clients
+                                            Our Partners
                                         </Link>
                                     </li>
                                     <li>
@@ -293,14 +293,13 @@ const Footer = () => {
                                 <p>
                                     Copyright &copy;{Date().getFullYear} Made
                                     with
-                                    <i className="icofont-heart-alt"></i> By
+                                    <i className="icofont-heart-alt"> </i> By
                                     <a
-                                        href="https://www.shubhamraj.dev"
+                                        href="https://www.nisecomport.com"
                                         target="_blank"
                                         rel="noreferrer"
                                     >
-                                        {" "}
-                                        Nise-Comport
+                                        -- NISE-COMPORT --
                                     </a>
                                     , All Rights Reserved
                                 </p>
