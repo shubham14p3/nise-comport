@@ -21,8 +21,8 @@ const Footer = () => {
                                     image={`${process.env.PUBLIC_URL}/images/logo/logo-footer.png`}
                                 />
                                 <p>
-                                    Pleasure rationally encounter consequences
-                                    that extremely painful. Nor again is there
+                                    One Stop Solution for any Online Service
+                                    available.
                                 </p>
                                 <ul className="footer-social-links">
                                     <li>
@@ -49,7 +49,7 @@ const Footer = () => {
                                     <li>
                                         <SocialIcon
                                             classOption="footer-social-link"
-                                            path="https://www.whatsapp.com/"
+                                            path="https://wa.me/+919771219893"
                                             icon="icofont-whatsapp"
                                         />
                                     </li>
@@ -71,7 +71,7 @@ const Footer = () => {
                                             About us
                                         </Link>
                                     </li>
-                                    <li>
+                                    {/* <li>
                                         <Link
                                             className="footer-link"
                                             to={
@@ -81,8 +81,8 @@ const Footer = () => {
                                         >
                                             Pricing Plan
                                         </Link>
-                                    </li>
-                                    <li>
+                                    </li> */}
+                                    {/* <li>
                                         <Link
                                             className="footer-link"
                                             to={
@@ -92,7 +92,7 @@ const Footer = () => {
                                         >
                                             Conditions
                                         </Link>
-                                    </li>
+                                    </li> */}
                                     <li>
                                         <Link
                                             className="footer-link"
@@ -100,7 +100,7 @@ const Footer = () => {
                                                 process.env.PUBLIC_URL + "/blog"
                                             }
                                         >
-                                            Blog Post
+                                            Blog Service
                                         </Link>
                                     </li>
                                     <li>
@@ -110,7 +110,7 @@ const Footer = () => {
                                                 process.env.PUBLIC_URL + "/team"
                                             }
                                         >
-                                            Our Clients
+                                            Our Partners
                                         </Link>
                                     </li>
                                     <li>
@@ -136,10 +136,21 @@ const Footer = () => {
                                             className="footer-link"
                                             to={
                                                 process.env.PUBLIC_URL +
+                                                `/service-details/1`
+                                            }
+                                        >
+                                            Banking
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link
+                                            className="footer-link"
+                                            to={
+                                                process.env.PUBLIC_URL +
                                                 `/service-details/2`
                                             }
                                         >
-                                            Business Plan
+                                            Government
                                         </Link>
                                     </li>
                                     <li>
@@ -150,7 +161,7 @@ const Footer = () => {
                                                 `/service-details/3`
                                             }
                                         >
-                                            Creative Strategy
+                                            Insurance
                                         </Link>
                                     </li>
                                     <li>
@@ -161,18 +172,7 @@ const Footer = () => {
                                                 `/service-details/4`
                                             }
                                         >
-                                            Branding{" "}
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link
-                                            className="footer-link"
-                                            to={
-                                                process.env.PUBLIC_URL +
-                                                `/service-details/1`
-                                            }
-                                        >
-                                            Digital Solution
+                                            Education
                                         </Link>
                                     </li>
                                     <li>
@@ -183,7 +183,7 @@ const Footer = () => {
                                                 `/service-details/5`
                                             }
                                         >
-                                            Marketing Policy
+                                            Fee Payment
                                         </Link>
                                     </li>
                                     <li>
@@ -194,7 +194,29 @@ const Footer = () => {
                                                 `/service-details/6`
                                             }
                                         >
-                                            Campaign &amp; PR
+                                            Form Filling
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link
+                                            className="footer-link"
+                                            to={
+                                                process.env.PUBLIC_URL +
+                                                `/service-details/7`
+                                            }
+                                        >
+                                            IT Sales & Service
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link
+                                            className="footer-link"
+                                            to={
+                                                process.env.PUBLIC_URL +
+                                                `/service-details/8`
+                                            }
+                                        >
+                                            Travel
                                         </Link>
                                     </li>
                                 </ul>
@@ -204,39 +226,57 @@ const Footer = () => {
                             <div className="footer-widget">
                                 <h4 className="title">Contact info</h4>
                                 <p>
-                                    245 Southern Street, Apt. 147 New York, USA
+                                    Shop No 3, Ground Floor, Singh Building,
+                                    Hanuman Mandir Road, Kharangajhar, Telco,
+                                    Jamshedpur, Jharkhand, India
                                 </p>
                                 <ul className="address">
                                     <li>
                                         <a
                                             className="address-link"
-                                            href="tel:+12354569874"
+                                            href="tel:+919771219893"
                                         >
-                                            +12354 569 874
+                                            +91 97712 19893
                                         </a>
                                     </li>
                                     <li>
                                         <a
                                             className="address-link"
-                                            href="tel:+98745612398"
+                                            href="tel:+919835552756"
                                         >
-                                            +98745 612 398
+                                            +91 98355 52756
                                         </a>
                                     </li>
                                     <li>
                                         <a
                                             className="address-link"
-                                            href="mailto:info@example.com"
+                                            href="tel:+916572917622"
                                         >
-                                            info@example.com
+                                            0657 2917622
                                         </a>
                                     </li>
                                     <li>
                                         <a
                                             className="address-link"
-                                            href="mailto:info@example.com"
+                                            href="tel:+916572279322"
                                         >
-                                            www.example.com
+                                            0657 2280722
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a
+                                            className="address-link"
+                                            href="mailto:nweb.hub@gmail.com"
+                                        >
+                                            nweb.hub@gmail.com
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a
+                                            className="address-link"
+                                            href="mailto:support@nisecomport.com"
+                                        >
+                                            support@nisecomport.com
                                         </a>
                                     </li>
                                 </ul>
@@ -251,14 +291,15 @@ const Footer = () => {
                         <div className="col-12">
                             <div className="copyright-info text-center">
                                 <p>
-                                    Copyright &copy; 2021 Made with{" "}
-                                    <i className="icofont-heart-alt"></i> By{" "}
+                                    Copyright &copy;{Date().getFullYear} Made
+                                    with
+                                    <i className="icofont-heart-alt"> </i> By
                                     <a
-                                        href="https://themeforest.net/user/codecarnival/portfolio"
+                                        href="https://www.nisecomport.com"
                                         target="_blank"
                                         rel="noreferrer"
                                     >
-                                        codecarnival
+                                        -- NISE-COMPORT --
                                     </a>
                                     , All Rights Reserved
                                 </p>

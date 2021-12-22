@@ -23,7 +23,7 @@ const BlogPage = () => {
                         image="./images/blog/banner.png"
                     />
                     <BlogItemContainer data={BlogData} />
-                    <NewsletterArea />
+                    {/* <NewsletterArea /> */}
                     <Footer />
                     <ScrollToTop />
                 </div>

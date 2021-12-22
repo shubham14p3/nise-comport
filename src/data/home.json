@@ -4,7 +4,7 @@
             {
                 "id": 1,
                 "image": "./images/slider/slide2.png",
-                "title": "Full Solution <br />for your <span class='text-decoration-underline'>Business</span><br />Development"
+                "title": "One Stop Solution <br />for any <span class='text-decoration-underline'>Online</span><br />Service"
             }
         ]
     },
@@ -25,6 +25,22 @@
             {
                 "id": 4,
                 "image": "./images/brand-logo/4.png"
+            },
+            {
+                "id": 5,
+                "image": "./images/brand-logo/3.png"
+            },
+            {
+                "id": 6,
+                "image": "./images/brand-logo/4.png"
+            },
+            {
+                "id": 7,
+                "image": "./images/brand-logo/3.png"
+            },
+            {
+                "id": 8,
+                "image": "./images/brand-logo/4.png"
             }
         ]
     },
@@ -35,21 +51,21 @@
                 "className": "grid-item mb-7",
                 "icon": "./images/feature/logo/1.png",
                 "title": "Strong Security",
-                "excerpt": "Pleasure rationally encounter are extremely painful anyone who loves or pursues"
+                "excerpt": "We make sure all your problem is resolved under our expertise guidance keeping all our data secure and authenticated."
             },
             {
                 "id": 2,
                 "className": "grid-item card-mt-75 mb-7",
                 "icon": "./images/feature/logo/2.png",
                 "title": "Creative Idea",
-                "excerpt": "Pleasure rationally encounter are extremely painful anyone who loves or pursues"
+                "excerpt": "We help you in coming up with a solution that can resolve your problem in the minimum way possible."
             },
             {
                 "id": 1,
                 "className": "grid-item mb-7",
                 "icon": "./images/feature/logo/3.png",
                 "title": "Best Service",
-                "excerpt": "Pleasure rationally encounter are extremely painful anyone who loves or pursues"
+                "excerpt": "From last 10+ years we have been prominent and keeping our client need first with best practices available today."
             }
         ]
     },
@@ -57,24 +73,52 @@
         "testimonial": [
             {
                 "id": 1,
-                "excerpt": "Pleasure rationally encounter consequences that are extremely painful. Nor again is there anyone who loves or pursues or desires maintain",
-                "authorThumb": "./images/testimonial/avater.png",
-                "name": "David Loyed",
-                "designation": "CEO, Omex"
+                "excerpt": "Service provided meets your expectations on time! Thanks for helping me out with my need. The customer dealing experience is good, staff are very polite while handling any corresponding requirements",
+                "authorThumb": "./images/testimonial/3.png",
+                "name": "Suraj Kumar",
+                "designation": "Customer"
             },
             {
                 "id": 2,
-                "excerpt": "Pleasure rationally encounter consequences that are extremely painful. Nor again is there anyone who loves or pursues or desires maintain",
-                "authorThumb": "./images/testimonial/2.png",
-                "name": "John Loyed",
-                "designation": "CEO, Omex"
+                "excerpt": "Xerox, Aadhaar Demographic Update, Caste Certificate, Domicile/Residential Certificate, Income / EWS Certificate, Birth/Death Certificate, Mutation, Pan Card, Passport, DL etc related work done here and also hardware and networking related also. It is also service dept for Bank of Baroda for opening Jan Dhan account .",
+                "authorThumb": "./images/testimonial/4.png",
+                "name": "Sumit Kumar",
+                "designation": "Customer"
             },
             {
                 "id": 3,
-                "excerpt": "Pleasure rationally encounter consequences that are extremely painful. Nor again is there anyone who loves or pursues or desires maintain",
+                "excerpt": "Laptop Repair best service",
                 "authorThumb": "./images/testimonial/avater.png",
-                "name": "David Loyed",
-                "designation": "CEO, Omex"
+                "name": "Dilip Das",
+                "designation": "Customer"
+            },
+            {
+                "id": 4,
+                "excerpt": "Life Certificate (Jeevan Praman)",
+                "authorThumb": "./images/testimonial/2.png",
+                "name": "Basant Oraon",
+                "designation": "Customer"
+            },
+            {
+                "id": 5,
+                "excerpt": "Ration card (New/ Apply/Corrrection), Ration-Aadhaar Seeding done here",
+                "authorThumb": "./images/testimonial/2.png",
+                "name": "Chando Rakab",
+                "designation": "Customer"
+            },
+            {
+                "id": 6,
+                "excerpt": "Good staff support. Helped in EPFO withdrawl",
+                "authorThumb": "./images/testimonial/avater.png",
+                "name": "Abhay Kumar",
+                "designation": "Customer"
+            },
+            {
+                "id": 7,
+                "excerpt": "When comes to pricing the place is Genuine to its competitors around, satisfaction for me was the plus point.",
+                "authorThumb": "./images/testimonial/2.png",
+                "name": "Vishnu Ruhi Das",
+                "designation": "Customer"
             }
         ]
     },
@@ -82,23 +126,23 @@
         "funfact": [
             {
                 "id": 1,
-                "number": 1200,
-                "title": "Projects done"
+                "number": 10,
+                "title": "Year Service"
             },
             {
                 "id": 2,
-                "number": 2354,
-                "title": "Happy Clients"
+                "number": 4,
+                "title": "Google Rating"
             },
             {
                 "id": 3,
-                "number": 3299,
-                "title": "Cup Coffee"
+                "number": 5600,
+                "title": "Aadhaar Updated"
             },
             {
                 "id": 4,
-                "number": 101,
-                "title": "Award Wins"
+                "number": 2500,
+                "title": "Pan Applied"
             }
         ]
     },
@@ -106,21 +150,21 @@
         "team": [
             {
                 "id": 1,
-                "thumb": "./images/team/rounded-img1.png",
-                "name": "Cristopher Williams",
-                "designation": "Head of Idea"
+                "thumb": "./images/team/1.png",
+                "name": "Sanjay Kumar",
+                "designation": "Head of Firm"
             },
             {
                 "id": 2,
-                "thumb": "./images/team/rounded-img2.png",
-                "name": "Rebeca Smith",
-                "designation": "Head of HR"
+                "thumb": "./images/team/2.png",
+                "name": "Chandrakala Devi",
+                "designation": "Head of Finance"
             },
             {
                 "id": 3,
-                "thumb": "./images/team/rounded-img3.png",
-                "name": "Ricardo Powel",
-                "designation": "Head of Development"
+                "thumb": "./images/team/3.png",
+                "name": "Shubham Raj",
+                "designation": "Head of Idea"
             }
         ]
     }

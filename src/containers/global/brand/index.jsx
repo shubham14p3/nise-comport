@@ -41,6 +41,7 @@ const BrandContainer = () => {
                 <div className="row">
                     <div className="col-12">
                         <Swiper className="brand-carousel" {...swiperOption}>
+                            {console.log(HomeData[1].brand)}
                             {HomeData[1].brand &&
                                 HomeData[1].brand.map((single, key) => {
                                     return (

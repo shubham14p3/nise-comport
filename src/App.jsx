@@ -15,6 +15,7 @@ import BlogDate from "./templates/blog-date";
 import BlogTag from "./templates/blog-tag";
 import BlogCategory from "./templates/blog-category";
 import ContactPage from "./pages/contact";
+import PageNotFound from "./pages/404-page";
 import "swiper/components/navigation/navigation.scss";
 import "swiper/swiper.scss";
 import "./assets/css/vendor/metropolis.css";
@@ -23,6 +24,7 @@ import "./assets/css/vendor/font-awesome.css";
 import "./assets/css/vendor/material-design-iconic.min.css";
 import "./assets/css/plugins/animate.min.css";
 import "./assets/scss/style.scss";
+import "./assets/scss/404.scss";
 
 const App = () => {
     return (
@@ -96,6 +98,7 @@ const App = () => {
                         path={`${process.env.PUBLIC_URL + "/category/:slug"}`}
                         component={BlogCategory}
                     />
+                    <Route component={PageNotFound} />
                 </Switch>
             </NavScrollTop>
         </Router>

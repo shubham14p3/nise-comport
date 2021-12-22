@@ -17,12 +17,11 @@ const TeamPage = () => {
                     <Header />
                     <PageBanner
                         title="Our Team"
-                        excerpt="Pleasure rationally encounter consequences <br />
-                        are extremely painful great oppurtunity"
+                        excerpt="These the people that make the magic happen..."
                         image="./images/team/5.png"
                     />
                     <TeampPageContainer />
-                    <NewsletterArea />
+                    {/* <NewsletterArea /> */}
                     <Footer />
                     <ScrollToTop />
                 </div>

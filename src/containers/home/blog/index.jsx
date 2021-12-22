@@ -10,9 +10,9 @@ const HomeBlog = () => {
                 <SectionTitleTwo
                     classOption="title-section mb-lg-10 pb-lg-1"
                     subTitle="BLOG POST"
-                    title="Latest<span class='text-primary'>Post</span> from Blog"
+                    title="Latest <span class='text-primary'>Post</span> from Us"
                     excerptClassOption="mt-lg-10 pt-lg-3 mb-10 mb-lg-0"
-                    excerpt="Pleasure rationally encounter consequences that are extremely painful. Nor again is there anyone who loves or pursues or desires to obtain"
+                    excerpt="Kindly find the latest post regarding our services we are currently working with "
                 />
                 <div className="row mb-n7">
                     {BlogData &&

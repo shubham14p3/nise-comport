@@ -66,7 +66,7 @@ const MobileMenu = ({ show, onClose }) => {
                                 >
                                     Service
                                 </NavLink>
-                                <span
+                                {/* <span
                                     className="menu-expand"
                                     onClick={onClickHandler}
                                     aria-hidden="true"
@@ -92,11 +92,11 @@ const MobileMenu = ({ show, onClose }) => {
                                             single service
                                         </NavLink>
                                     </li>
-                                </ul>
+                                </ul> */}
                             </li>
                             <li>
                                 <NavLink to="/">Pages</NavLink>
-                                <span
+                                {/* <span
                                     className="menu-expand"
                                     onClick={onClickHandler}
                                     aria-hidden="true"
@@ -118,13 +118,13 @@ const MobileMenu = ({ show, onClose }) => {
                                             team
                                         </NavLink>
                                     </li>
-                                </ul>
+                                </ul> */}
                             </li>
                             <li>
                                 <NavLink to={process.env.PUBLIC_URL + "/blog"}>
                                     Blog
                                 </NavLink>
-                                <span
+                                {/* <span
                                     className="menu-expand"
                                     onClick={onClickHandler}
                                     aria-hidden="true"
@@ -169,7 +169,7 @@ const MobileMenu = ({ show, onClose }) => {
                                             blog details
                                         </NavLink>
                                     </li>
-                                </ul>
+                                </ul> */}
                             </li>
                             <li>
                                 <NavLink

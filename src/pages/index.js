@@ -14,24 +14,25 @@ import ServiceListContainer from "../containers/service/service-list";
 import Footer from "../layouts/footer";
 import Header from "../layouts/header";
 import Layout from "../layouts/index";
+import "../assets/css/style.css";
 
 const HomePage = () => {
     return (
         <React.Fragment>
             <Layout>
-                <SEO title="Nise-Comport – Business React JS Template" />
+                <SEO title="Nise-Comport" />
                 <div className="wrapper">
                     <Header />
                     <IntroContainer />
-                    <BrandContainer />
-                    <IconBoxContainer classOption="section-pb" />
-                    <HomeAboutContainer />
+                    {/* <BrandContainer /> */}
+                    {/* <IconBoxContainer classOption="section-pb" /> */}
+                    {/* <HomeAboutContainer /> */}
                     <ServiceListContainer />
                     <TestimonialContainer />
                     <FunFactContainer classOption="mt-10 mt-lg-0" />
                     <TeamContainer classOption="section-pb" />
                     <HomeBlog />
-                    <NewsletterArea />
+                    {/* <NewsletterArea /> */}
                     <Footer />
                     <ScrollToTop />
                 </div>

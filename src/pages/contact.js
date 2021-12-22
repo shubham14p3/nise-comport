@@ -21,9 +21,9 @@ const ContactPage = () => {
                         image="./images/contact/1.png"
                     />
                     <ContactContainer />
-                    <NewsletterArea />
-                    <Footer />
+                    {/* <NewsletterArea /> */}
                     <ScrollToTop />
+                    <Footer />
                 </div>
             </Layout>
         </React.Fragment>
