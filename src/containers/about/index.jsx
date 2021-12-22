@@ -30,22 +30,29 @@ const AboutContainer = () => {
                                 in the Town"
                             />
                             <span className="date-meta">
-                                Scince 2001 <span className="hr"></span>
+                                Since 2010 + <span className="hr"></span>
                             </span>
                             <p className="mb-5">
-                                Pleasure rationally encounter consequences that
-                                are extremely painful. Nor again is there anyone
-                                who loves or pursues or desires to obtain
+                                We have made all our way from NISE to NISE
+                                COMPORT, it all because of you, that we stand
+                                tall & proud about.
                             </p>
                             <p className="high-light mb-8">
-                                Pleasure rationally encounter consequences that
-                                are extremely painful. Nor again is there
+                                We have never forgot aur ethic that is to serve
+                                the people provide each and every person our
+                                honest service at best competition price i.e
+                                available in the market today.
                             </p>
-                            <Button
+                            <p className="high-light mb-8">
+                                We look forward to continue serving the way we
+                                are and try to come up with more exiting
+                                services that can help our community to grow.
+                            </p>
+                            {/* <Button
                                 classOption="btn btn-lg btn-dark btn-hover-dark"
                                 text="Learn more"
                                 path="/about"
-                            />
+                            /> */}
                         </div>
                     </div>
                     <div className="col-xl-6 order-lg-first col-md-6 mb-7">

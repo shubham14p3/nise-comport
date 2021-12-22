@@ -14,7 +14,7 @@ const ServiceListContainer = () => {
                             subTitle="services"
                             title="Check <span class='text-primary'>our</span> Services"
                             excerptClassOption="null"
-                            excerpt="Pleasure rationally encounter consequences that are <br class='d-none d-xl-block' /> painful. Nor again is there anyone who pursues"
+                            excerpt="We are here to help you. <br class='d-none d-xl-block' /> Feel free to know more"
                         />
                     </div>
                 </div>
@@ -23,7 +23,7 @@ const ServiceListContainer = () => {
                     <div className="col-md-6 col-xl-4 mb-7">
                         <div className="service-media-wrapper media-spacing-left">
                             {ServiceData &&
-                                ServiceData.slice(0, 3).map((single, key) => {
+                                ServiceData.slice(0, 4).map((single, key) => {
                                     return (
                                         <ServiceBox data={single} key={key} />
                                     );
@@ -42,7 +42,7 @@ const ServiceListContainer = () => {
                     <div className="col-md-6 col-xl-4 mb-7">
                         <div className="service-media-wrapper media-spacing-right">
                             {ServiceData &&
-                                ServiceData.slice(3, 6).map((single, key) => {
+                                ServiceData.slice(4, 8).map((single, key) => {
                                     return (
                                         <ServiceBox data={single} key={key} />
                                     );

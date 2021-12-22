@@ -17,12 +17,11 @@ const FaqPage = () => {
                     <Header />
                     <PageBanner
                         title="FAQ"
-                        excerpt="Pleasure rationally encounter consequences <br />
-                        are extremely painful great oppurtunity"
+                        excerpt="You can find basic questions answered here"
                         image="./images/faq/1.png"
                     />
                     <AccordionContainer />
-                    <NewsletterArea />
+                    {/* <NewsletterArea /> */}
                     <Footer />
                     <ScrollToTop />
                 </div>

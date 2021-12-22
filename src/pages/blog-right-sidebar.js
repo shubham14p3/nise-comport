@@ -23,7 +23,7 @@ const BlogRightSidebarPage = () => {
                         image="./images/blog/banner.png"
                     />
                     <BlogItemRightContainer data={BlogData} />
-                    <NewsletterArea />
+                    {/* <NewsletterArea /> */}
                     <Footer />
                     <ScrollToTop />
                 </div>
