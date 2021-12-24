@@ -48,7 +48,7 @@ class ActionProvider {
 
     handleContact = () => {
         const message = this.createChatBotMessage(
-            "Call 1999 for Trilingual Health Assistance.",
+            "Call +919835552756 for Assistance.",
             {
                 widget: "emergencyContact",
                 loading: true,
