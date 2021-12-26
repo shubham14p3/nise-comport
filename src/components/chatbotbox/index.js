@@ -5,7 +5,6 @@ import Chatbot from "react-chatbot-kit";
 import config from "./chatbotConfig";
 import MessageParser from "./MessageParser";
 import ActionProvider from "./ActionProvider";
-import "../../assets/scss/component/_chatbotbox.scss";
 
 export default function Chatbotbox() {
     const [showBot, toggleBot] = useState(false);
@@ -28,7 +27,7 @@ export default function Chatbotbox() {
                     className="app-chatbotbox-button"
                     onClick={() => toggleBot((prev) => !prev)}
                 >
-                    <div>Bot</div>
+                    <div>Chat</div>
                     <svg
                         viewBox="0 0 640 512"
                         className="app-chatbotbox-button-icon"
