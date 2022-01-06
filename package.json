@@ -1,6 +1,7 @@
 {
   "name": "nise-comport",
   "version": "0.1.0",
+  "homepage": "nisecomport.minusoft.co.in",
   "private": true,
   "dependencies": {
     "@axetroy/react-download": "^1.1.1",
