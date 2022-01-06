@@ -1,0 +1,213 @@
+[
+    {
+        "id": 1,
+        "icon": "./images/service/icon/1.png",
+        "smallIcon": "/images/service/icon/small/1.png",
+        "image": "./images/service/3.png",
+        "title": "Banking",
+        "categories": [
+            "Digital Banking",
+            "Banking",
+            "Online Payment",
+            "Bank of Baroda",
+            "HDFC",
+            "ICICI",
+            "PO Payment",
+            "Money Transfer",
+            "Money Withdrawl"
+        ],
+        "excerpt": "Account Opening, Money Transfer, Money Withdrawal & many more service.",
+        "body": [
+            "<p class='text-primary fw-semi-bold mb-6'>Business Correspondent (BC)<br class='d-none d-xl-block' /></p>",
+            "<p class='mb-8'>As a Business correspondents we are bank representatives. We help customers to open bank accounts, deposit money, withdraw money, transfer money, fix deposit, gold loan, personal loan, bike, car or home loan etc. We have partnered up with multiple banks to allow seemless flow for banking. </p>",
+            "<div class='single-service-list'><p><i class='fa fa-angle-double-right'></i>Bank of Baroda (Telco Branch)</p> <p><i class='fa fa-angle-double-right'></i>ICICI Bank (Telco Branch) </p><p><i class='fa fa-angle-double-right'></i>HDFC Bank (Telco Branch)</p><p><i class='fa fa-angle-double-right'></i>Digipay</p></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Account Opening</h3><p>We provide our customers with the option of choosing from a wide range of Savings Accounts with different features and benefits. The Savings Accounts are designed to meet the banking needs of people from all walks of life. Each Savings Account offers unique features such as high transaction limit, cheque books, debit & credit cards etc. </p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Mithdrawal</h3><p>money withdrawal</p></div></div></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Money Deposit</h3><p>Money Deposit</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Transfer</h3><p>Money Transfer</p></div></div></div>"
+        ],
+        "bodyBottom": "We provide extra services such as Gold Loan, Finance, Fix Deposit at good price, Feel free to reach out to us if you are in need any help regarding the above."
+    },
+    {
+        "id": 2,
+        "icon": "./images/service/icon/2.png",
+        "smallIcon": "/images/service/icon/small/2.png",
+        "image": "./images/service/3.png",
+        "title": "Government",
+        "categories": [
+            "Digital Solution",
+            "Business Plan",
+            "Creative Strategy",
+            "Branding",
+            "Marketing Policy",
+            "Campaign & PR"
+        ],
+        "excerpt": "Aadhaar, Pan Card, Voter Id, Passport, Transport & many more service.  ",
+        "body": [
+            "<p class='text-primary fw-semi-bold mb-6'>Business Correspondent (BC)<br class='d-none d-xl-block' /></p>",
+            "<p class='mb-8'>As a Business correspondents we are bank representatives. We help customers to open bank accounts, deposit money, withdraw money, transfer money, fix deposit, gold loan, personal loan, bike, car or home loan etc. We have partnered up with multiple banks to allow seemless flow for banking. </p>",
+            "<div class='single-service-list'><p><i class='fa fa-angle-double-right'></i>Bank of Baroda (Telco Branch)</p> <p><i class='fa fa-angle-double-right'></i>ICICI Bank (Telco Branch) </p><p><i class='fa fa-angle-double-right'></i>HDFC Bank (Telco Branch)</p><p><i class='fa fa-angle-double-right'></i>Digipay</p></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Account Opening</h3><p>We provide our customers with the option of choosing from a wide range of Savings Accounts with different features and benefits. The Savings Accounts are designed to meet the banking needs of people from all walks of life. Each Savings Account offers unique features such as high transaction limit, cheque books, debit & credit cards etc. </p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Money Deposit</h3><p>& many more</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>"
+        ],
+        "bodyBottom": "Pleasure rationally encounter consequences that are extremely painful. Nor again there anyone who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit"
+    },
+    {
+        "id": 3,
+        "icon": "./images/service/icon/3.png",
+        "smallIcon": "/images/service/icon/small/3.png",
+        "image": "./images/service/3.png",
+        "title": "Insurance",
+        "categories": [
+            "Digital Solution",
+            "Business Plan",
+            "Creative Strategy",
+            "Branding",
+            "Marketing Policy",
+            "Campaign & PR"
+        ],
+        "excerpt": "Bike, Car, Truck, Bus, Life & accidental insurance",
+        "body": [
+            "<p class='text-primary fw-semi-bold mb-6'>Business Correspondent (BC)<br class='d-none d-xl-block' /></p>",
+            "<p class='mb-8'>As a Business correspondents we are bank representatives. We help customers to open bank accounts, deposit money, withdraw money, transfer money, fix deposit, gold loan, personal loan, bike, car or home loan etc. We have partnered up with multiple banks to allow seemless flow for banking. </p>",
+            "<div class='single-service-list'><p><i class='fa fa-angle-double-right'></i>Bank of Baroda (Telco Branch)</p> <p><i class='fa fa-angle-double-right'></i>ICICI Bank (Telco Branch) </p><p><i class='fa fa-angle-double-right'></i>HDFC Bank (Telco Branch)</p><p><i class='fa fa-angle-double-right'></i>Digipay</p></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Account Opening</h3><p>We provide our customers with the option of choosing from a wide range of Savings Accounts with different features and benefits. The Savings Accounts are designed to meet the banking needs of people from all walks of life. Each Savings Account offers unique features such as high transaction limit, cheque books, debit & credit cards etc. </p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Money Deposit</h3><p>& many more</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>"
+        ],
+        "bodyBottom": "Pleasure rationally encounter consequences that are extremely painful. Nor again there anyone who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit"
+    },
+    {
+        "id": 4,
+        "icon": "./images/service/icon/4.png",
+        "smallIcon": "/images/service/icon/small/4.png",
+        "image": "./images/service/3.png",
+        "title": "Education",
+        "categories": [
+            "Digital Solution",
+            "Business Plan",
+            "Creative Strategy",
+            "Branding",
+            "Marketing Policy",
+            "Campaign & PR"
+        ],
+        "excerpt": "E-learning, AWS, Udemy & many more cources",
+        "body": [
+            "<p class='text-primary fw-semi-bold mb-6'>Business Correspondent (BC)<br class='d-none d-xl-block' /></p>",
+            "<p class='mb-8'>As a Business correspondents we are bank representatives. We help customers to open bank accounts, deposit money, withdraw money, transfer money, fix deposit, gold loan, personal loan, bike, car or home loan etc. We have partnered up with multiple banks to allow seemless flow for banking. </p>",
+            "<div class='single-service-list'><p><i class='fa fa-angle-double-right'></i>Bank of Baroda (Telco Branch)</p> <p><i class='fa fa-angle-double-right'></i>ICICI Bank (Telco Branch) </p><p><i class='fa fa-angle-double-right'></i>HDFC Bank (Telco Branch)</p><p><i class='fa fa-angle-double-right'></i>Digipay</p></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Account Opening</h3><p>We provide our customers with the option of choosing from a wide range of Savings Accounts with different features and benefits. The Savings Accounts are designed to meet the banking needs of people from all walks of life. Each Savings Account offers unique features such as high transaction limit, cheque books, debit & credit cards etc. </p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Money Deposit</h3><p>& many more</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>"
+        ],
+        "bodyBottom": "Pleasure rationally encounter consequences that are extremely painful. Nor again there anyone who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit"
+    },
+    {
+        "id": 5,
+        "icon": "./images/service/icon/5.png",
+        "smallIcon": "/images/service/icon/small/5.png",
+        "image": "./images/service/3.png",
+        "title": "Fee Payment",
+        "categories": [
+            "Digital Solution",
+            "Business Plan",
+            "Creative Strategy",
+            "Branding",
+            "Marketing Policy",
+            "Campaign & PR"
+        ],
+        "excerpt": "College Fees, School Fees, Tax Fees & many more payments",
+        "body": [
+            "<p class='text-primary fw-semi-bold mb-6'>Business Correspondent (BC)<br class='d-none d-xl-block' /></p>",
+            "<p class='mb-8'>As a Business correspondents we are bank representatives. We help customers to open bank accounts, deposit money, withdraw money, transfer money, fix deposit, gold loan, personal loan, bike, car or home loan etc. We have partnered up with multiple banks to allow seemless flow for banking. </p>",
+            "<div class='single-service-list'><p><i class='fa fa-angle-double-right'></i>Bank of Baroda (Telco Branch)</p> <p><i class='fa fa-angle-double-right'></i>ICICI Bank (Telco Branch) </p><p><i class='fa fa-angle-double-right'></i>HDFC Bank (Telco Branch)</p><p><i class='fa fa-angle-double-right'></i>Digipay</p></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Account Opening</h3><p>We provide our customers with the option of choosing from a wide range of Savings Accounts with different features and benefits. The Savings Accounts are designed to meet the banking needs of people from all walks of life. Each Savings Account offers unique features such as high transaction limit, cheque books, debit & credit cards etc. </p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Money Deposit</h3><p>& many more</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>"
+        ],
+        "bodyBottom": "Pleasure rationally encounter consequences that are extremely painful. Nor again there anyone who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit"
+    },
+    {
+        "id": 6,
+        "icon": "./images/service/icon/6.png",
+        "smallIcon": "/images/service/icon/small/6.png",
+        "image": "./images/service/3.png",
+        "title": "Form Filing",
+        "categories": [
+            "Digital Solution",
+            "Business Plan",
+            "Creative Strategy",
+            "Branding",
+            "Marketing Policy",
+            "Campaign & PR"
+        ],
+        "excerpt": "ITR (Income Tax Return), GST, School Forms, College Forms & many more ",
+        "body": [
+            "<p class='text-primary fw-semi-bold mb-6'>Business Correspondent (BC)<br class='d-none d-xl-block' /></p>",
+            "<p class='mb-8'>As a Business correspondents we are bank representatives. We help customers to open bank accounts, deposit money, withdraw money, transfer money, fix deposit, gold loan, personal loan, bike, car or home loan etc. We have partnered up with multiple banks to allow seemless flow for banking. </p>",
+            "<div class='single-service-list'><p><i class='fa fa-angle-double-right'></i>Bank of Baroda (Telco Branch)</p> <p><i class='fa fa-angle-double-right'></i>ICICI Bank (Telco Branch) </p><p><i class='fa fa-angle-double-right'></i>HDFC Bank (Telco Branch)</p><p><i class='fa fa-angle-double-right'></i>Digipay</p></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Account Opening</h3><p>We provide our customers with the option of choosing from a wide range of Savings Accounts with different features and benefits. The Savings Accounts are designed to meet the banking needs of people from all walks of life. Each Savings Account offers unique features such as high transaction limit, cheque books, debit & credit cards etc. </p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Money Deposit</h3><p>& many more</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>"
+        ],
+        "bodyBottom": "Pleasure rationally encounter consequences that are extremely painful. Nor again there anyone who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit"
+    },
+    {
+        "id": 7,
+        "icon": "./images/service/icon/7.png",
+        "smallIcon": "/images/service/icon/small/7.png",
+        "image": "./images/service/3.png",
+        "title": "IT Sales & Service",
+        "categories": [
+            "Digital Solution",
+            "Business Plan",
+            "Creative Strategy",
+            "Branding",
+            "Marketing Policy",
+            "Campaign & PR"
+        ],
+        "excerpt": "Laptop, Desktop Sales and Service with peripherals",
+        "body": [
+            "<p class='text-primary fw-semi-bold mb-6'>Business Correspondent (BC)<br class='d-none d-xl-block' /></p>",
+            "<p class='mb-8'>As a Business correspondents we are bank representatives. We help customers to open bank accounts, deposit money, withdraw money, transfer money, fix deposit, gold loan, personal loan, bike, car or home loan etc. We have partnered up with multiple banks to allow seemless flow for banking. </p>",
+            "<div class='single-service-list'><p><i class='fa fa-angle-double-right'></i>Bank of Baroda (Telco Branch)</p> <p><i class='fa fa-angle-double-right'></i>ICICI Bank (Telco Branch) </p><p><i class='fa fa-angle-double-right'></i>HDFC Bank (Telco Branch)</p><p><i class='fa fa-angle-double-right'></i>Digipay</p></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Account Opening</h3><p>We provide our customers with the option of choosing from a wide range of Savings Accounts with different features and benefits. The Savings Accounts are designed to meet the banking needs of people from all walks of life. Each Savings Account offers unique features such as high transaction limit, cheque books, debit & credit cards etc. </p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Money Deposit</h3><p>& many more</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>"
+        ],
+        "bodyBottom": "Pleasure rationally encounter consequences that are extremely painful. Nor again there anyone who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit"
+    },
+    {
+        "id": 8,
+        "icon": "./images/service/icon/8.png",
+        "smallIcon": "/images/service/icon/small/8.png",
+        "image": "./images/service/3.png",
+        "title": "Travel",
+        "categories": [
+            "Digital Solution",
+            "Business Plan",
+            "Creative Strategy",
+            "Branding",
+            "Marketing Policy",
+            "Campaign & PR"
+        ],
+        "excerpt": "Flight booking, Train booking, Bus booking, Hotel booking & many more travel service",
+        "body": [
+            "<p class='text-primary fw-semi-bold mb-6'>Business Correspondent (BC)<br class='d-none d-xl-block' /></p>",
+            "<p class='mb-8'>As a Business correspondents we are bank representatives. We help customers to open bank accounts, deposit money, withdraw money, transfer money, fix deposit, gold loan, personal loan, bike, car or home loan etc. We have partnered up with multiple banks to allow seemless flow for banking. </p>",
+            "<div class='single-service-list'><p><i class='fa fa-angle-double-right'></i>Bank of Baroda (Telco Branch)</p> <p><i class='fa fa-angle-double-right'></i>ICICI Bank (Telco Branch) </p><p><i class='fa fa-angle-double-right'></i>HDFC Bank (Telco Branch)</p><p><i class='fa fa-angle-double-right'></i>Digipay</p></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Account Opening</h3><p>We provide our customers with the option of choosing from a wide range of Savings Accounts with different features and benefits. The Savings Accounts are designed to meet the banking needs of people from all walks of life. Each Savings Account offers unique features such as high transaction limit, cheque books, debit & credit cards etc. </p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Money Deposit</h3><p>& many more</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>"
+        ],
+        "bodyBottom": "Pleasure rationally encounter consequences that are extremely painful. Nor again there anyone who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit"
+    }
+]

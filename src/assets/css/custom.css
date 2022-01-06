@@ -1,0 +1,12 @@
+.sub-title-1{
+padding-top: 140px!important;
+}
+
+.mail-div-404 {
+    width: calc(100% - 4rem);
+    display: flex;
+    align-items: center;
+    height: 100vh;
+    max-width: 1000px;
+    margin: 0 auto;
+}

@@ -1,0 +1,28 @@
+[
+    {
+        "id": 1,
+        "classOption": "address-list mb-4 mb-xl-10 pb-2",
+        "title": "Office Address",
+        "info": "Shop No 3, Ground Floor, Singh Building, Hanuman Mandir Road, Kharangajhar, Telco, Jamshedpur, Jharkhand, India"
+    },
+    {
+        "id": 2,
+        "classOption": "address-list mb-4 mb-xl-10 pb-2",
+        "title": "Phone Number",
+        "info": "+91 97712 19893<br />+91 98355 52756"
+    },
+    {
+        "id": 3,
+        "classOption": "address-list mb-4 mb-xl-10 pb-2",
+        "title": "Landline Number",
+        "info": "0657 2917622<br />0657 2280722"
+    },
+    {
+        "id": 4,
+        "classOption": "address-list",
+        "title": "Web Address",
+        "info": "nweb.hub@gmail.com<br/> support@nisecomport.com"
+        
+    }
+
+]
