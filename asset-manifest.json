@@ -1,0 +1,27 @@
+{
+  "files": {
+    "main.css": "/nise-comport/static/css/main.5634ccaa.chunk.css",
+    "main.js": "/nise-comport/static/js/main.be2e6703.chunk.js",
+    "main.js.map": "/nise-comport/static/js/main.be2e6703.chunk.js.map",
+    "runtime-main.js": "/nise-comport/static/js/runtime-main.3d66f39d.js",
+    "runtime-main.js.map": "/nise-comport/static/js/runtime-main.3d66f39d.js.map",
+    "static/css/2.2925b2da.chunk.css": "/nise-comport/static/css/2.2925b2da.chunk.css",
+    "static/js/2.ccfb71dd.chunk.js": "/nise-comport/static/js/2.ccfb71dd.chunk.js",
+    "static/js/2.ccfb71dd.chunk.js.map": "/nise-comport/static/js/2.ccfb71dd.chunk.js.map",
+    "index.html": "/nise-comport/index.html",
+    "static/css/2.2925b2da.chunk.css.map": "/nise-comport/static/css/2.2925b2da.chunk.css.map",
+    "static/css/main.5634ccaa.chunk.css.map": "/nise-comport/static/css/main.5634ccaa.chunk.css.map",
+    "static/js/2.ccfb71dd.chunk.js.LICENSE.txt": "/nise-comport/static/js/2.ccfb71dd.chunk.js.LICENSE.txt",
+    "static/media/material-design-iconic.min.css": "/nise-comport/static/media/Material-Design-Iconic-Font.bd9b02bf.woff",
+    "static/media/metropolis.css": "/nise-comport/static/media/Metropolis-ThinItalic.b82fd781.woff",
+    "static/media/font-awesome.css": "/nise-comport/static/media/fontawesome-webfont.f691f37e.woff",
+    "static/media/icofont.min.css": "/nise-comport/static/media/icofont.dad3accb.woff"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.3d66f39d.js",
+    "static/css/2.2925b2da.chunk.css",
+    "static/js/2.ccfb71dd.chunk.js",
+    "static/css/main.5634ccaa.chunk.css",
+    "static/js/main.be2e6703.chunk.js"
+  ]
+}
