@@ -2,46 +2,67 @@
     {
         "id": 1,
         "media": {
-            "rcImage": "./images/blog/post/1.png",
-            "gridImage": "./images/blog/1.png",
-            "largeImage": "./images/blog-details/1.png"
+            "rcImage": "./images/blog/post/aadhaar-post.png",
+            "gridImage": "./images/blog/aadhaar.png",
+            "largeImage": "./images/blog-details/aadhaar-banner.png"
         },
-        "title": "Aadhaar Demographic Update Started",
+        "title": "Aadhaar Demographic Update",
         "author": "Shubham",
-        "date": "25 September, 2021",
-        "categories": ["Business"],
-        "tags": ["Structure", "React", "Premium", "Clean", "WordPress"],
+        "date": "1 January, 2021",
+        "categories": ["Service"],
+        "tags": [
+            "Aadhaar",
+            "Demographic Update",
+            "CSC",
+            "Pragya Kendra",
+            "Digital Seva",
+            "Telco",
+            "India",
+            "NISE-COMPORT",
+            "NISE"
+        ],
         "body": [
-            "<p class='pb-2'>Pleasure rationally encounter consequences that are extremely painful. Nor again there <br class='d-none d-xl-block' /> who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed <br class='d-none d-xl-block' /> consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro <br class='d-none d-xl-block' /> est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit </p>",
-            "<div class='blog-details-list'><p><i class='fa fa-angle-double-right'></i>Quisquam est qui dolorem ipsum quia dolor sit amet consectetur</p><p><i class='fa fa-angle-double-right'></i>hese cases are perfectly simple and easy todistinguish</p></div>",
-            "<div class='blog-qutation'><p>Pleasure rationally encounter consequences that are extremely painful there who loves or pursues or desires to obtain voluptas sit aspernatur aut odit sed consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt </p><i class='icofont-quote-right'></i></div>",
-            "<div class='blog-details-grid'><div class='row mb-n7'><div class='col mb-7'><p>Pleasure rationally service are extremely are anyone who loves or pursues These cases are perfectly simple and easy to a distinguish. In a free hour, when our power of choice is untrammelled a circumstances and owing to the claims of duty some of the maintain detials for the Business</p></div><div class='col mb-7 text-end'><img class='d-block mx-auto mx-lg-0' src='/images/blog-details/2.png' alt='img' /></div><div class='col-12 mb-7'><p class='pt-2>Pleasure rationally encounter consequences that are extremely painful. Nor again there who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.</p></div></div></div>"
+            "<p class='pb-2'>We have happy to share that we have started Aadhaar Demographic update  service<br class='d-none d-xl-block' /> We currently provide the following mentioned service below  </p>",
+            "<div class='blog-details-list'><p><i class='fa fa-angle-double-right'></i>Mobile Update / Correction</p><p><i class='fa fa-angle-double-right'></i>Email Id Update / Correction</p><p><i class='fa fa-angle-double-right'></i>Name Update / Correction</p><p><i class='fa fa-angle-double-right'></i>Address Update / Correction</p><p><i class='fa fa-angle-double-right'></i>DOB Update / Correction</p></div>",
+            "<div class='blog-qutation'><p>Aadhaar - AAM ADMI KA ADHIKAR </p><i class='icofont-quote-right'>UIDAI</i></div>",
+            "<div class='blog-details-grid'><div class='row mb-n7'><div class='col mb-7'><p>To avail this service , user / candidate need to take an prior appointment as per Covid guideline, and shall maintain safety regulation at the premises. Note: Kindly provide the Original document as well as prescribed documentation as per provide by UIDAI Guideline. </p></div><div class='col mb-7 text-end'><img class='d-block mx-auto mx-lg-0' src='/images/blog-details/2.png' alt='img' /></div></p></div></div></div>"
         ]
     },
     {
         "id": 2,
         "media": {
             "rcImage": "./images/blog/post/2.png",
-            "gridImage": "images/blog/2.png",
-            "largeImage": "./images/blog-details/1.png"
+            "gridImage": "images/blog/pan.png",
+            "largeImage": "./images/blog-details/pan-banner.png"
         },
-        "title": "Pan Card authorised apply",
-        "author": "Shubham",
-        "date": "20 September, 2021",
-        "categories": ["News"],
-        "tags": ["Structure", "React", "Premium", "Clean", "WordPress"],
+        "title": "Pan Card Service",
+        "author": "Sanjay Kumar",
+        "date": "20 September, 2018",
+        "categories": ["Service"],
+        "tags": [
+            "CSC",
+            "Pragya Kendra",
+            "Digital Seva",
+            "Telco",
+            "India",
+            "NISE-COMPORT",
+            "NISE",
+            "PAN",
+            "NSDL",
+            "UTI"
+        ],
         "body": [
-            "<p class='pb-2'>Pleasure rationally encounter consequences that are extremely painful. Nor again there <br class='d-none d-xl-block' /> who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed <br class='d-none d-xl-block' /> consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro <br class='d-none d-xl-block' /> est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit </p>",
-            "<div class='blog-details-list'><p><i class='fa fa-angle-double-right'></i>Quisquam est qui dolorem ipsum quia dolor sit amet consectetur</p><p><i class='fa fa-angle-double-right'></i>hese cases are perfectly simple and easy todistinguish</p></div>",
-            "<div class='blog-qutation'><p>Pleasure rationally encounter consequences that are extremely painful there who loves or pursues or desires to obtain voluptas sit aspernatur aut odit sed consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt </p><i class='icofont-quote-right'></i></div>",
-            "<div class='blog-details-grid'><div class='row mb-n7'><div class='col mb-7'><p>Pleasure rationally service are extremely are anyone who loves or pursues These cases are perfectly simple and easy to a distinguish. In a free hour, when our power of choice is untrammelled a circumstances and owing to the claims of duty some of the maintain detials for the Business</p></div><div class='col mb-7 text-end'><img class='d-block mx-auto mx-lg-0' src='/images/blog-details/2.png' alt='img' /></div><div class='col-12 mb-7'><p class='pt-2>Pleasure rationally encounter consequences that are extremely painful. Nor again there who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.</p></div></div></div>"
+            "<p class='pb-2'>We provide Pan service, where user can either apply for new / correction / lost. <br class='d-none d-xl-block' /> we work with major Pan authorised company which is tied up with CSC </p>",
+            "<div class='blog-details-list'><p><i class='fa fa-angle-double-right'></i>UTI</p><p><i class='fa fa-angle-double-right'></i>NSDL</p></div>",
+            "<div class='blog-qutation'><p>BUILDING A GOOD CUSTOMER EXPERIENCE DOES NOT HAPPEN BY ACCIDENT. IT HAPPENS BY DESIGN</p><i class='icofont-quote-right'>Anonymous</i></div>",
+            "<div class='blog-details-grid'><div class='row mb-n7'><div class='col mb-7'><p>For applying Pan card, user need to visit the center (If applying in Physical mode) and provide a copy of Aadhaar & two Passport size photos, for correction additional Pan card copy is required with the correcting details.<br> Do provide the correct details ,if there is any Incorrect data or document is provided. User/Applicant has to bear the charges.   </p></div><div class='col mb-7 text-end'><img class='d-block mx-auto mx-lg-0' src='/images/blog-details/2.png' alt='img' /></div><div class='col-12 mb-7'><p class='pt-2>Pleasure rationally encounter consequences that are extremely painful. Nor again there who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt.</p></div></div></div>"
         ]
     },
     {
         "id": 3,
         "media": {
             "rcImage": "./images/blog/post/3.png",
-            "gridImage": "images/blog/3.png",
+            "gridImage": "images/blog/passport.png",
             "largeImage": "./images/blog-details/1.png"
         },
         "title": "Indian Passport",
@@ -60,10 +81,10 @@
         "id": 4,
         "media": {
             "rcImage": "./images/blog/post/1.png",
-            "gridImage": "images/blog/4.png",
+            "gridImage": "images/blog/voter.png",
             "largeImage": "./images/blog-details/1.png"
         },
-        "title": "Indian Visa",
+        "title": "Voter ID / EPIC",
         "author": "Shubham",
         "date": "25 September, 2021",
         "categories": ["Consultancy"],
@@ -79,7 +100,7 @@
         "id": 5,
         "media": {
             "rcImage": "./images/blog/post/2.png",
-            "gridImage": "images/blog/6.png",
+            "gridImage": "images/blog/jeevanpraman.png",
             "largeImage": "./images/blog-details/1.png"
         },
         "title": "Life Certificate, Jeevan Praman Live",
@@ -98,7 +119,7 @@
         "id": 6,
         "media": {
             "rcImage": "./images/blog/post/3.png",
-            "gridImage": "images/blog/10.png",
+            "gridImage": "images/blog/certificate.png",
             "largeImage": "./images/blog-details/1.png"
         },
         "title": "EWS Certificate",
@@ -117,7 +138,7 @@
         "id": 7,
         "media": {
             "rcImage": "./images/blog/post/1.png",
-            "gridImage": "images/blog/12.png",
+            "gridImage": "images/blog/insurance.png",
             "largeImage": "./images/blog-details/1.png"
         },
         "title": "Bike, Car Insurance",
@@ -193,7 +214,7 @@
         "id": 11,
         "media": {
             "rcImage": "./images/blog/post/2.png",
-            "gridImage": "images/blog/9.png",
+            "gridImage": "images/blog/certificate.png",
             "largeImage": "./images/blog-details/1.png"
         },
         "title": "Income Certificate",
