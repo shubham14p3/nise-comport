@@ -1,7 +1,0 @@
-{
-  "name": "NISECOMPORT",
-  "integrations": {
-    "capacitor": {}
-  },
-  "type": "react"
-}
