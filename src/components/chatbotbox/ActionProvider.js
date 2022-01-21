@@ -62,9 +62,9 @@ class ActionProvider {
 
     handleMedicine = () => {
         const message = this.createChatBotMessage(
-            "To have clinical medicine safely delivered to your home, please refer to the link below.",
+            "To apply for Pan related query, please refer to the link below.",
             {
-                widget: "medicineDelivery",
+                widget: "Pan",
                 loading: true,
                 terminateLoading: true,
                 withAvatar: true,
@@ -87,6 +87,65 @@ class ActionProvider {
         var randomJoke = jokes[Math.floor(Math.random() * jokes.length)];
 
         const message = this.createChatBotMessage(randomJoke);
+
+        this.addMessageToState(message);
+    };
+    // pan
+    handlePan = () => {
+        const message = this.createChatBotMessage(
+            "To apply for Pan related queries , please refer to the link below.",
+            {
+                widget: "Pan",
+                loading: true,
+                terminateLoading: true,
+                withAvatar: true,
+            }
+        );
+
+        this.addMessageToState(message);
+    };
+
+    // Dl
+    handleDl = () => {
+        const message = this.createChatBotMessage(
+            "To apply for DL related queries , please refer to the link below.",
+            {
+                widget: "Dl",
+                loading: true,
+                terminateLoading: true,
+                withAvatar: true,
+            }
+        );
+
+        this.addMessageToState(message);
+    };
+
+    // Voter
+    handleVoter = () => {
+        const message = this.createChatBotMessage(
+            "To apply for Voter related queries , please refer to the link below.",
+            {
+                widget: "Voter",
+                loading: true,
+                terminateLoading: true,
+                withAvatar: true,
+            }
+        );
+
+        this.addMessageToState(message);
+    };
+
+    // Passport
+    handlePassport = () => {
+        const message = this.createChatBotMessage(
+            "To apply for Passport related queries , please refer to the link below.",
+            {
+                widget: "Passport",
+                loading: true,
+                terminateLoading: true,
+                withAvatar: true,
+            }
+        );
 
         this.addMessageToState(message);
     };
