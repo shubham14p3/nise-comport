@@ -3,7 +3,10 @@ import Overview from "../widgets/Overview";
 import GlobalStatistics from "../widgets/GlobalStatistics";
 import LocalStatistics from "../widgets/LocalStatistics";
 import Contact from "../widgets/Contact";
-import MedicineDelivery from "../widgets/MedicineDelivery";
+import Pan from "../widgets/Pan";
+import Voter from "../widgets/Voter";
+import Dl from "../widgets/Dl";
+import Passport from "../widgets/Passport";
 import CoBotAvatar from "./CoBotAvatar";
 
 const config = {
@@ -49,8 +52,20 @@ const config = {
             widgetFunc: (props) => <Contact />,
         },
         {
-            widgetName: "medicineDelivery",
-            widgetFunc: (props) => <MedicineDelivery />,
+            widgetName: "Pan",
+            widgetFunc: (props) => <Pan />,
+        },
+        {
+            widgetName: "Dl",
+            widgetFunc: (props) => <Dl />,
+        },
+        {
+            widgetName: "Passport",
+            widgetFunc: (props) => <Passport />,
+        },
+        {
+            widgetName: "Voter",
+            widgetFunc: (props) => <Voter />,
         },
     ],
 };
