@@ -29,12 +29,11 @@ import "./assets/scss/style.scss";
 const App = () => {
     return (
         <BrowserRouter>
-        <Chatbotbox />
+            <Chatbotbox />
             <NavScrollTop>
                 <Routes>
                     <Route
                         path={`${process.env.PUBLIC_URL + "/"}`}
-                        exact
                         element={<HomePage />}
                     />
                     <Route
@@ -100,11 +99,10 @@ const App = () => {
                         path={`${process.env.PUBLIC_URL + "/category/:slug"}`}
                         element={<BlogCategory />}
                     />
-                    <Route element={<PageNotFound />} />
+                    <Route path="*" element={<PageNotFound />} />
                 </Routes>
             </NavScrollTop>
         </BrowserRouter>
-
     );
 };
 

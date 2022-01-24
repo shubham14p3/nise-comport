@@ -4,50 +4,34 @@
   "private": true,
   "dependencies": {
     "@axetroy/react-download": "^1.1.1",
-<<<<<<< HEAD
     "@babel/preset-react": "^7.16.7",
     "disqus-react": "^1.1.1",
     "parallax-js": "^3.1.0",
     "react": "^17.0.2",
     "react-countup": "6.1.1",
-=======
     "@capacitor/android": "3.3.3",
     "@capacitor/core": "^3.3.3",
     "@emotion/react": "^11.7.1",
     "@emotion/styled": "^11.6.0",
     "@mui/icons-material": "^5.2.5",
     "@mui/material": "^5.2.8",
-    "@mui/styled-engine-sc": "^5.1.0",
-    "disqus-react": "^1.1.1",
-    "parallax-js": "^3.1.0",
-    "react": "^17.0.2",
+    "@mui/styled-engine-sc": "^5.1.0",   
     "react-chat-widget": "^3.1.4",
-    "react-chatbot-kit": "^2.0.1",
-    "react-countup": "^4.3.3",
->>>>>>> 0419e9a0d69a7c3948783130bbcf6a4d8e9949ef
+    "react-chatbot-kit": "^2.0.1",  
     "react-dom": "^17.0.2",
     "react-helmet": "^6.1.0",
     "react-hook-form": "7.25.0",
     "react-mailchimp-subscribe": "^2.1.3",
-<<<<<<< HEAD
     "react-router-dom": "^6.2.1",
     "react-scripts": "^5.0.0",
-=======
     "react-meta-tags": "1.0.1",
     "react-reveal": "1.2.2",
-    "react-router-dom": "^5.2.0",
-    "react-scripts": "^5.0.0",
     "react-spinners": "0.11.0",
->>>>>>> 0419e9a0d69a7c3948783130bbcf6a4d8e9949ef
     "react-visibility-sensor": "^5.1.1",
     "reactstrap": "9.0.1",
-    "sass": "^1.34.0",
-<<<<<<< HEAD
-    "swiper": "6.6.2"
-=======
+    "sass": "^1.34.0",   
     "styled-components": "^5.3.3",
     "swiper": "^6.6.2"
->>>>>>> 0419e9a0d69a7c3948783130bbcf6a4d8e9949ef
   },
   "scripts": {
     "start": "react-scripts start",
