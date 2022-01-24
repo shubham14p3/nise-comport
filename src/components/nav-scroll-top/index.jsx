@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { withRouter } from "react-router-dom";
+import { withRouter } from "./withRouter";
 
 const NavScrollTop = (props) => {
     useEffect(() => {

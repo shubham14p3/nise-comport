@@ -18,7 +18,7 @@ import "../assets/css/style.css";
 
 const HomePage = () => {
     return (
-        <React.Fragment>
+        <>
             <Layout>
                 <SEO title="Nise-Comport" />
                 <div className="wrapper">
@@ -37,7 +37,7 @@ const HomePage = () => {
                     <ScrollToTop />
                 </div>
             </Layout>
-        </React.Fragment>
+        </>
     );
 };
 

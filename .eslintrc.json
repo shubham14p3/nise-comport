@@ -1,6 +1,6 @@
 {
-    "parser": "babel-eslint",
-    "root": true,
+    "parser": "@babel/eslint-parser",
+      "root": true,
     "extends": [
         "plugin:react/recommended",
         "plugin:import/warnings",
@@ -8,6 +8,7 @@
         "plugin:prettier/recommended",
         "prettier"
     ],
+    
     "settings": {
         "react": {
             "version": "detect"
@@ -22,7 +23,11 @@
         "ecmaFeatures": {
             "jsx": true
         },
+        "babelOptions": {
+            "presets": ["@babel/preset-react"]
+         },
         "ecmaVersion": 12,
+        "requireConfigFile": false,
         "sourceType": "module"
     },
     "plugins": [
