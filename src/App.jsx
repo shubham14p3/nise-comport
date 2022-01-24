@@ -1,4 +1,3 @@
-// import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import NavScrollTop from "./components/nav-scroll-top";
 import HomePage from "./pages/index";
@@ -17,19 +16,20 @@ import BlogTag from "./templates/blog-tag";
 import BlogCategory from "./templates/blog-category";
 import ContactPage from "./pages/contact";
 import PageNotFound from "./pages/404-page";
+import Chatbotbox from "./components/chatbotbox/index";
 import "swiper/components/navigation/navigation.scss";
 import "swiper/swiper.scss";
 import "./assets/css/vendor/metropolis.css";
-// import "./assets/css/vendor/icofont.min.css";
+import "./assets/css/vendor/icofont.min.css";
 import "./assets/css/vendor/font-awesome.css";
 import "./assets/css/vendor/material-design-iconic.min.css";
 import "./assets/css/plugins/animate.min.css";
 import "./assets/scss/style.scss";
-import "./assets/scss/404.scss";
 
 const App = () => {
     return (
         <BrowserRouter>
+        <Chatbotbox />
             <NavScrollTop>
                 <Routes>
                     <Route
@@ -104,6 +104,7 @@ const App = () => {
                 </Routes>
             </NavScrollTop>
         </BrowserRouter>
+
     );
 };
 

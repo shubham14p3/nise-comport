@@ -49,7 +49,7 @@ const Footer = () => {
                                     <li>
                                         <SocialIcon
                                             classOption="footer-social-link"
-                                            path="https://wa.me/+919771219893"
+                                            path="https://wa.me/919771219893"
                                             icon="icofont-whatsapp"
                                         />
                                     </li>

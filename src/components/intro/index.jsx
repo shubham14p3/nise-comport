@@ -39,7 +39,7 @@ const Intro = ({ data }) => {
                             />
                             <SocialIcon
                                 classOption="btn btn-lg animated delay2 btn-secondary btn-hover-secondary mb-3 mb-sm-0 "
-                                path="https://wa.me/+919771219893"
+                                path="https://wa.me/919771219893"
                                 icon="icofont-whatsapp"
                             />
                         </div>
