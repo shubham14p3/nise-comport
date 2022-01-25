@@ -17,8 +17,6 @@ import BlogCategory from "./templates/blog-category";
 import ContactPage from "./pages/contact";
 import PageNotFound from "./pages/404-page";
 import Chatbotbox from "./components/chatbotbox/index";
-import "swiper/components/navigation/navigation.scss";
-import "swiper/swiper.scss";
 import "./assets/css/vendor/metropolis.css";
 import "./assets/css/vendor/icofont.min.css";
 import "./assets/css/vendor/font-awesome.css";
@@ -46,11 +44,14 @@ const App = () => {
                         element={<ServicePage />}
                     />
                     <Route
-                        path={`${
-                            process.env.PUBLIC_URL + "/service-details/:id"
-                        }`}
+                        path={`${process.env.PUBLIC_URL + "/service-details"}`}
                         element={<ServiceDetails />}
-                    />
+                    >
+                        <Route
+                            path={`${process.env.PUBLIC_URL + ":id"}`}
+                            element={<ServiceDetails />}
+                        />
+                    </Route>
                     <Route
                         path={`${process.env.PUBLIC_URL + "/team"}`}
                         element={<TeamPage />}
