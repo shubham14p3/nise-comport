@@ -1,3 +1,4 @@
+import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import NavScrollTop from "./components/nav-scroll-top";
 import HomePage from "./pages/index";
@@ -26,84 +27,89 @@ import "./assets/scss/style.scss";
 
 const App = () => {
     return (
-        <BrowserRouter>
-            <Chatbotbox />
-            <NavScrollTop>
-                <Routes>
-                    <Route
-                        path={`${process.env.PUBLIC_URL + "/"}`}
-                        element={<HomePage />}
-                    />
-                    <Route
-                        path={`${process.env.PUBLIC_URL + "/about"}`}
-                        element={<AboutPage />}
-                    />
-
-                    <Route
-                        path={`${process.env.PUBLIC_URL + "/service"}`}
-                        element={<ServicePage />}
-                    />
-                    <Route
-                        path={`${process.env.PUBLIC_URL + "/service-details"}`}
-                        element={<ServiceDetails />}
-                    >
+        <React.StrictMode>
+            <BrowserRouter>
+                <Chatbotbox />
+                <NavScrollTop>
+                    <Routes>
                         <Route
-                            path={`${process.env.PUBLIC_URL + ":id"}`}
+                            path={`${process.env.PUBLIC_URL + "/"}`}
+                            element={<HomePage />}
+                        />
+                        <Route
+                            path={`${process.env.PUBLIC_URL + "/about"}`}
+                            element={<AboutPage />}
+                        />
+
+                        <Route
+                            path={`${process.env.PUBLIC_URL + "/service"}`}
+                            element={<ServicePage />}
+                        />
+                        <Route
+                            path={`${
+                                process.env.PUBLIC_URL + "/service-details/:id"
+                            }`}
                             element={<ServiceDetails />}
                         />
-                    </Route>
-                    <Route
-                        path={`${process.env.PUBLIC_URL + "/team"}`}
-                        element={<TeamPage />}
-                    />
-                    <Route
-                        path={`${process.env.PUBLIC_URL + "/faq"}`}
-                        element={<FaqPage />}
-                    />
-                    <Route
-                        path={`${process.env.PUBLIC_URL + "/contact"}`}
-                        element={<ContactPage />}
-                    />
-                    <Route
-                        path={`${process.env.PUBLIC_URL + "/blog"}`}
-                        element={<BlogPage />}
-                    />
-                    <Route
-                        path={`${
-                            process.env.PUBLIC_URL + "/blog-left-sidebar"
-                        }`}
-                        element={<BlogLeftSidebarPage />}
-                    />
-                    <Route
-                        path={`${
-                            process.env.PUBLIC_URL + "/blog-right-sidebar"
-                        }`}
-                        element={<BlogRightSidebarPage />}
-                    />
-                    <Route
-                        path={`${process.env.PUBLIC_URL + "/blog-details/:id"}`}
-                        element={<BlogDetailsPage />}
-                    />
-                    <Route
-                        path={`${process.env.PUBLIC_URL + "/author/:author"}`}
-                        element={<BlogAuthor />}
-                    />
-                    <Route
-                        path={`${process.env.PUBLIC_URL + "/date/:date"}`}
-                        element={<BlogDate />}
-                    />
-                    <Route
-                        path={`${process.env.PUBLIC_URL + "/tag/:slug"}`}
-                        element={<BlogTag />}
-                    />
-                    <Route
-                        path={`${process.env.PUBLIC_URL + "/category/:slug"}`}
-                        element={<BlogCategory />}
-                    />
-                    <Route path="*" element={<PageNotFound />} />
-                </Routes>
-            </NavScrollTop>
-        </BrowserRouter>
+                        <Route
+                            path={`${process.env.PUBLIC_URL + "/team"}`}
+                            element={<TeamPage />}
+                        />
+                        <Route
+                            path={`${process.env.PUBLIC_URL + "/faq"}`}
+                            element={<FaqPage />}
+                        />
+                        <Route
+                            path={`${process.env.PUBLIC_URL + "/contact"}`}
+                            element={<ContactPage />}
+                        />
+                        <Route
+                            path={`${process.env.PUBLIC_URL + "/blog"}`}
+                            element={<BlogPage />}
+                        />
+                        <Route
+                            path={`${
+                                process.env.PUBLIC_URL + "/blog-left-sidebar"
+                            }`}
+                            element={<BlogLeftSidebarPage />}
+                        />
+                        <Route
+                            path={`${
+                                process.env.PUBLIC_URL + "/blog-right-sidebar"
+                            }`}
+                            element={<BlogRightSidebarPage />}
+                        />
+                        <Route
+                            path={`${
+                                process.env.PUBLIC_URL + "/blog-details/:id"
+                            }`}
+                            element={<BlogDetailsPage />}
+                        />
+                        <Route
+                            path={`${
+                                process.env.PUBLIC_URL + "/author/:author"
+                            }`}
+                            element={<BlogAuthor />}
+                        />
+                        <Route
+                            path={`${process.env.PUBLIC_URL + "/date/:date"}`}
+                            element={<BlogDate />}
+                        />
+                        <Route
+                            path={`${process.env.PUBLIC_URL + "/tag/:slug"}`}
+                            element={<BlogTag />}
+                        />
+                        <Route
+                            path={`${
+                                process.env.PUBLIC_URL + "/category/:slug"
+                            }`}
+                            element={<BlogCategory />}
+                        />
+                        <Route path="*" element={<PageNotFound />} />
+                    </Routes>
+                </NavScrollTop>
+            </BrowserRouter>
+        </React.StrictMode>
     );
 };
 
