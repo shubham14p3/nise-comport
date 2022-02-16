@@ -65,6 +65,38 @@
     width: 80px;
     left: 60px;
   }
+
+  .swiper {
+    list-style: none;
+    margin-left: auto;
+    margin-right: auto;
+    overflow: hidden;
+    padding: 0;
+    position: relative;
+    z-index: 1;
+}
+.swiper-wrapper {
+  box-sizing: content-box;
+  display: flex;
+  height: 100%;
+  position: relative;
+  transition-property: -webkit-transform;
+  transition-property: transform;
+  transition-property: transform,-webkit-transform;
+  width: 100%;
+  z-index: 1;
+}
+.swiper-pointer-events {
+  touch-action: pan-y;
+}
+.swiper-slide {
+  flex-shrink: 0;
+  height: 100%;
+  position: relative;  
+  transition-property: transform,-webkit-transform;
+  width: 100%;
+}
+
 }
 
 .testimonial-carousel {
