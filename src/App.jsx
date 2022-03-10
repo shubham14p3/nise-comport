@@ -27,7 +27,7 @@ import "./assets/scss/style.scss";
 
 const App = () => {
     return (
-        <React.StrictMode>
+        <React.Fragment>
             <BrowserRouter>
                 <Chatbotbox />
                 <NavScrollTop>
@@ -109,7 +109,7 @@ const App = () => {
                     </Routes>
                 </NavScrollTop>
             </BrowserRouter>
-        </React.StrictMode>
+        </React.Fragment>
     );
 };
 
