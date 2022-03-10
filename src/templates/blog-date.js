@@ -10,12 +10,9 @@ import BlogItemContainer from "../containers/blog/blog-item";
 import { slugify } from "../utils";
 import ScrollToTop from "../components/scroll-to-top";
 import SEO from "../components/seo";
-
-const BlogDate = ({
-    match: {
-        params: { date },
-    },
-}) => {
+import { useParams } from "react-router-dom";
+const BlogDate = () => {
+    const { date } = useParams();
     const data = BlogData.filter((blog) => slugify(blog.date) === date);
     const dateTitle = data[0].date;
     return (

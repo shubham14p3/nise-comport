@@ -10,12 +10,9 @@ import BlogItemContainer from "../containers/blog/blog-item";
 import { slugify } from "../utils";
 import ScrollToTop from "../components/scroll-to-top";
 import SEO from "../components/seo";
-
-const BlogCategory = ({
-    match: {
-        params: { slug },
-    },
-}) => {
+import { useParams } from "react-router-dom";
+const BlogCategory = () => {
+    const { slug } = useParams();
     const data = BlogData.map((blog) => {
         return {
             ...blog,

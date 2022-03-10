@@ -10,12 +10,9 @@ import BlogItemContainer from "../containers/blog/blog-item";
 import { slugify } from "../utils";
 import ScrollToTop from "../components/scroll-to-top";
 import SEO from "../components/seo";
-
-const BlogAuthor = ({
-    match: {
-        params: { author },
-    },
-}) => {
+import { useParams } from "react-router-dom";
+const BlogAuthor = () => {
+    const { author } = useParams();
     const data = BlogData.filter((blog) => slugify(blog.author) === author);
     const authorTitle = data[0].author;
     return (
