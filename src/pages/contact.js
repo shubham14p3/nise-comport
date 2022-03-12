@@ -2,7 +2,7 @@ import React from "react";
 import ScrollToTop from "../components/scroll-to-top";
 import SEO from "../components/seo";
 import ContactContainer from "../containers/contact";
-import NewsletterArea from "../containers/global/newsletter";
+// import NewsletterArea from "../containers/global/newsletter";
 import PageBanner from "../containers/global/page-banner";
 import Footer from "../layouts/footer";
 import Header from "../layouts/header";

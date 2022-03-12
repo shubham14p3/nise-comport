@@ -10,19 +10,18 @@ const ContactForm = () => {
             <form
                 id="contactForm"
                 className="row"
-                action="https://getform.io/f/401bf737-2f28-42ad-8ec1-822d05e60e0f"
+                action="https://getform.io/f/646c8e11-c2c3-4c06-8caf-c32138cbb0c8"
                 method="POST"
             >
                 <div className="col-12 col-sm-6 mb-7">
                     <input
                         type="text"
-                        className="form-control"
-                        id="name"
                         name="name"
                         placeholder="Your Name*"
-                        ref={register({ required: "Name is required" })}
+                        id="name"
+                        className="form-control"
+                        required
                     />
-                    {errors.name && <p>{errors.name.message}</p>}
                 </div>
                 <div className="col-12 col-sm-6 mb-7">
                     <input
@@ -31,15 +30,18 @@ const ContactForm = () => {
                         id="email"
                         name="email"
                         placeholder="Your Email*"
-                        ref={register({
-                            required: "Email is required",
-                            pattern: {
-                                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i,
-                                message: "invalid email address",
-                            },
-                        })}
+                        required
                     />
-                    {errors.email && <p>{errors.email.message}</p>}
+                </div>
+                <div className="col-12 mb-9">
+                    <input
+                        type="text"
+                        className="form-control"
+                        id="Mobile"
+                        name="Mobile"
+                        placeholder="Your Mobile Number*"
+                        required
+                    />
                 </div>
 
                 <div className="col-12 mb-9">
@@ -50,11 +52,8 @@ const ContactForm = () => {
                         cols="30"
                         rows="10"
                         placeholder="Message"
-                        ref={register({
-                            required: "Message is required",
-                        })}
+                        required
                     ></textarea>
-                    {errors.message && <p>{errors.message.message}</p>}
                 </div>
                 <div className="col-12">
                     <button
