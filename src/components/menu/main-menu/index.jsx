@@ -5,7 +5,7 @@ const MainMenu = () => {
         <nav className="main-menu d-none d-lg-block">
             <ul className="d-flex">
                 <li>
-                    <NavLink exact to="/">
+                    <NavLink to="/" end>
                         Home
                     </NavLink>
                 </li>
