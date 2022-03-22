@@ -9,12 +9,10 @@ import ServiceData from "../data/service.json";
 import ServiceDetailsContainer from "../containers/service/service-details";
 import ScrollToTop from "../components/scroll-to-top";
 import SEO from "../components/seo";
+import { useParams } from "react-router-dom";
 
-const ServiceDetails = ({
-    match: {
-        params: { id },
-    },
-}) => {
+const ServiceDetails = () => {
+    const { id } = useParams();
     const serviceId = parseInt(id, 10);
     const data = ServiceData.filter((service) => service.id === serviceId);
     return (

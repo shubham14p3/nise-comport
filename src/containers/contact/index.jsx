@@ -1,5 +1,4 @@
 import React from "react";
-
 import ContactForm from "../../components/contact-form";
 import ContactInfo from "../../components/contact-info";
 import ContactData from "../../data/contact.json";
@@ -18,8 +17,8 @@ const ContactContainer = () => {
                                 OLD SCHOOL PHONE CALL WORKS FINE AS WELL
                             </p>
                         </div>
-
                         <ContactForm />
+                        {/* <ContactForm /> */}
                     </div>
 
                     <div className="col-xl-5 col-lg-6 mb-7 offset-xl-1">

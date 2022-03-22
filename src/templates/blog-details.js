@@ -9,12 +9,9 @@ import BlogDetailsContainer from "../containers/blog/blog-details";
 import BlogData from "../data/blog.json";
 import ScrollToTop from "../components/scroll-to-top";
 import SEO from "../components/seo";
-
-const BlogDetailsPage = ({
-    match: {
-        params: { id },
-    },
-}) => {
+import { useParams } from "react-router-dom";
+const BlogDetailsPage = () => {
+    const { id } = useParams();
     const blogId = parseInt(id, 10);
     const data = BlogData.filter((blogItem) => blogItem.id === blogId);
     return (

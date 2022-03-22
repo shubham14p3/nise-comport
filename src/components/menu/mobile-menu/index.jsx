@@ -50,16 +50,11 @@ const MobileMenu = ({ show, onClose }) => {
 
                     <nav id="offcanvasNav" className="offcanvas-menu">
                         <ul>
-                            <li>
-                                <NavLink exact to="/">
-                                    Home
-                                </NavLink>
-                            </li>
-                            <li>
+                            {/* <li>
                                 <NavLink to={process.env.PUBLIC_URL + "/about"}>
                                     About
                                 </NavLink>
-                            </li>
+                            </li> */}
                             <li>
                                 <NavLink
                                     to={process.env.PUBLIC_URL + "/service"}
@@ -90,32 +85,6 @@ const MobileMenu = ({ show, onClose }) => {
                                             }
                                         >
                                             single service
-                                        </NavLink>
-                                    </li>
-                                </ul> */}
-                            </li>
-                            <li>
-                                <NavLink to="/">Pages</NavLink>
-                                {/* <span
-                                    className="menu-expand"
-                                    onClick={onClickHandler}
-                                    aria-hidden="true"
-                                ></span>
-                                <ul>
-                                    <li>
-                                        <NavLink
-                                            to={process.env.PUBLIC_URL + "/faq"}
-                                        >
-                                            faq
-                                        </NavLink>
-                                    </li>
-                                    <li>
-                                        <NavLink
-                                            to={
-                                                process.env.PUBLIC_URL + "/team"
-                                            }
-                                        >
-                                            team
                                         </NavLink>
                                     </li>
                                 </ul> */}
@@ -171,12 +140,65 @@ const MobileMenu = ({ show, onClose }) => {
                                     </li>
                                 </ul> */}
                             </li>
-                            <li>
+                            {/* <li>
                                 <NavLink
                                     to={process.env.PUBLIC_URL + "/contact"}
                                 >
                                     Contact
                                 </NavLink>
+                            </li> */}
+                            <li>
+                                <NavLink to={process.env.PUBLIC_URL + "/Offer"}>
+                                    Offer
+                                </NavLink>
+                            </li>
+                            <li>
+                                <NavLink to="/" end>
+                                    Company
+                                </NavLink>
+                                <span
+                                    className="menu-expand"
+                                    onClick={onClickHandler}
+                                    aria-hidden="true"
+                                ></span>
+                                <ul>
+                                    <li>
+                                        <NavLink
+                                            to={
+                                                process.env.PUBLIC_URL +
+                                                "/About"
+                                            }
+                                        >
+                                            About
+                                        </NavLink>
+                                    </li>
+                                    <li>
+                                        <NavLink
+                                            to={process.env.PUBLIC_URL + "/faq"}
+                                        >
+                                            Faq
+                                        </NavLink>
+                                    </li>
+                                    <li>
+                                        <NavLink
+                                            to={
+                                                process.env.PUBLIC_URL + "/team"
+                                            }
+                                        >
+                                            Team
+                                        </NavLink>
+                                    </li>
+                                    <li>
+                                        <NavLink
+                                            to={
+                                                process.env.PUBLIC_URL +
+                                                "/Contact"
+                                            }
+                                        >
+                                            Contact
+                                        </NavLink>
+                                    </li>
+                                </ul>
                             </li>
                         </ul>
                     </nav>

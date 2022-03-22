@@ -108,7 +108,6 @@ function slideToggle(element, duration = 500) {
 function containsObject(obj, list) {
     var i;
     for (i = 0; i < list.length; i++) {
-        console.log();
         if (list[i].slug === obj.slug) {
             return i;
         }

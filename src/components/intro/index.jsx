@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import Button from "../button";
 import Parallax from "parallax-js";
+import SocialIcon from "../../components/social-icon";
 
 const Intro = ({ data }) => {
     const sceneEl = useRef(null);
@@ -15,6 +16,7 @@ const Intro = ({ data }) => {
 
         return () => parallaxInstance.disable();
     }, []);
+
     return (
         <div className="hero-slider">
             <div className="container">
@@ -34,6 +36,11 @@ const Intro = ({ data }) => {
                                 classOption="btn btn-lg animated delay1 btn-dark btn-hover-dark me-4 mb-3 mb-sm-0"
                                 text="Contact Us"
                                 path="/contact"
+                            />
+                            <SocialIcon
+                                classOption="btn btn-lg animated delay2 btn-secondary btn-hover-secondary mb-3 mb-sm-0 "
+                                path="https://wa.me/919771219893"
+                                icon="icofont-whatsapp"
                             />
                         </div>
                     </div>

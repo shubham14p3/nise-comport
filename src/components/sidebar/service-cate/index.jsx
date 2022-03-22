@@ -26,7 +26,6 @@ const ServiceCate = ({ data }) => {
             categories.push(obj);
         }
     });
-    console.log(categories);
     return (
         <div className="sidbar-menu">
             <ul>

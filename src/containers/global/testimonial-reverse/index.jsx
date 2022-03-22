@@ -48,7 +48,10 @@ const TestimonialReverse = () => {
                             </h5>
                         </div>
                         <div className="testimonial-carousel position-relative">
-                            <Swiper {...swiperOption}>
+                            <Swiper
+                                {...swiperOption}
+                                className="swiper-container swiper-container-initialized swiper-container-horizontal swiper-container-pointer-events"
+                            >
                                 {HomeData[3].testimonial &&
                                     HomeData[3].testimonial.map(
                                         (single, key) => {
