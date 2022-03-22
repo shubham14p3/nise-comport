@@ -52,7 +52,8 @@ const App = () => {
                         />
                         <Route
                             path={`${
-                                process.env.PUBLIC_URL + "/service-details/:id"
+                                process.env.PUBLIC_URL +
+                                "/service-details/:title"
                             }`}
                             element={<ServiceDetails />}
                         />

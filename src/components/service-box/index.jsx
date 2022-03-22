@@ -8,7 +8,7 @@ const ServiceBox = ({ data }) => {
             <Link
                 to={
                     process.env.PUBLIC_URL +
-                    `/service-details/${slugify(data.id)}`
+                    `/service-details/${slugify(data.title)}`
                 }
             >
                 <img
@@ -22,7 +22,7 @@ const ServiceBox = ({ data }) => {
                     <Link
                         to={
                             process.env.PUBLIC_URL +
-                            `/service-details/${slugify(data.id)}`
+                            `/service-details/${slugify(data.title)}`
                         }
                     >
                         {data.title}
@@ -31,7 +31,7 @@ const ServiceBox = ({ data }) => {
                 <Link
                     to={
                         process.env.PUBLIC_URL +
-                        `/service-details/${slugify(data.id)}`
+                        `/service-details/${slugify(data.title)}`
                     }
                 >
                     <p>{data.excerpt}</p>

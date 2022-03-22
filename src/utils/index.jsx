@@ -116,6 +116,51 @@ function containsObject(obj, list) {
     return -1;
 }
 
+export const serviceID = (title) => {
+    let id;
+    if (title === "Banking" || title === "banking" || title === "BANKING") {
+        return (id = 1);
+    } else if (
+        title === "Government" ||
+        title === "government" ||
+        title === "GOVERNMENT"
+    ) {
+        return (id = 2);
+    } else if (
+        title === "Insurance" ||
+        title === "insurance" ||
+        title === "INSURANCE"
+    ) {
+        return (id = 3);
+    } else if (
+        title === "Education" ||
+        title === "education" ||
+        title === "EDUCATION"
+    ) {
+        return (id = 4);
+    } else if (
+        title === "Fee-Payment" ||
+        title === "fee-payment" ||
+        title === "FEE-PAYMENT"
+    ) {
+        return (id = 5);
+    } else if (
+        title === "Form-Filing" ||
+        title === "form-filing" ||
+        title === "FORM-FILLING"
+    ) {
+        return (id = 6);
+    } else if (
+        title === "IT-Sales-Service" ||
+        title === "it-sales-service" ||
+        title === "IT-SALE-SERVICE"
+    ) {
+        return (id = 7);
+    } else if (title === "Travel" || title === "travel" || title === "TRAVEL") {
+        return (id = 8);
+    }
+};
+
 export {
     containsObject,
     flatDeep,
