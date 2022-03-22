@@ -1,4 +1,6 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
+import { slugify } from "../../../utils";
+import service from "../../../data/service.json";
 
 const MainMenu = () => {
     return (
@@ -9,27 +11,25 @@ const MainMenu = () => {
                         Service
                     </NavLink>
 
-                    {/* <ul className="sub-menu">
-                        <li className="sub-menu-item">
-                            <NavLink
-                                className="sub-menu-link"
-                                to={process.env.PUBLIC_URL + "/Service"}
-                            >
-                                Service
-                            </NavLink>
-                        </li>
-                        <li className="sub-menu-item">
-                            <NavLink
-                                className="sub-menu-link"
-                                to={
-                                    process.env.PUBLIC_URL +
-                                    "/Service-details/1"
-                                }
-                            >
-                                single service
-                            </NavLink>
-                        </li>
-                    </ul> */}
+                    <ul className="sub-menu">
+                        {service.map((id, i) => {
+                            return (
+                                <li key={i} className="sub-menu-item">
+                                    <Link
+                                        className="sub-menu-link"
+                                        to={
+                                            process.env.PUBLIC_URL +
+                                            `/service-details/${slugify(
+                                                id.title
+                                            )}`
+                                        }
+                                    >
+                                        {id.title}
+                                    </Link>
+                                </li>
+                            );
+                        })}
+                    </ul>
                 </li>
                 <li>
                     <NavLink to={process.env.PUBLIC_URL + "/Blog"}>

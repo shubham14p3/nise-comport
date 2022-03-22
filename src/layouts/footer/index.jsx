@@ -1,7 +1,9 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { slugify } from "../../utils";
 import Logo from "../../components/logo";
 import SocialIcon from "../../components/social-icon";
+import service from "../../data/service.json";
 
 const Footer = () => {
     return (
@@ -131,94 +133,23 @@ const Footer = () => {
                             <div className="footer-widget">
                                 <h4 className="title">Services</h4>
                                 <ul className="footer-menu">
-                                    <li>
-                                        <Link
-                                            className="footer-link"
-                                            to={
-                                                process.env.PUBLIC_URL +
-                                                `/service-details/1`
-                                            }
-                                        >
-                                            Banking
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link
-                                            className="footer-link"
-                                            to={
-                                                process.env.PUBLIC_URL +
-                                                `/service-details/2`
-                                            }
-                                        >
-                                            Government
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link
-                                            className="footer-link"
-                                            to={
-                                                process.env.PUBLIC_URL +
-                                                `/service-details/3`
-                                            }
-                                        >
-                                            Insurance
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link
-                                            className="footer-link"
-                                            to={
-                                                process.env.PUBLIC_URL +
-                                                `/service-details/4`
-                                            }
-                                        >
-                                            Education
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link
-                                            className="footer-link"
-                                            to={
-                                                process.env.PUBLIC_URL +
-                                                `/service-details/5`
-                                            }
-                                        >
-                                            Fee Payment
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link
-                                            className="footer-link"
-                                            to={
-                                                process.env.PUBLIC_URL +
-                                                `/service-details/6`
-                                            }
-                                        >
-                                            Form Filling
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link
-                                            className="footer-link"
-                                            to={
-                                                process.env.PUBLIC_URL +
-                                                `/service-details/7`
-                                            }
-                                        >
-                                            IT Sales & Service
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link
-                                            className="footer-link"
-                                            to={
-                                                process.env.PUBLIC_URL +
-                                                `/service-details/8`
-                                            }
-                                        >
-                                            Travel
-                                        </Link>
-                                    </li>
+                                    {service.map((id, i) => {
+                                        return (
+                                            <li key={i}>
+                                                <Link
+                                                    className="footer-link"
+                                                    to={
+                                                        process.env.PUBLIC_URL +
+                                                        `/service-details/${slugify(
+                                                            id.title
+                                                        )}`
+                                                    }
+                                                >
+                                                    {id.title}
+                                                </Link>
+                                            </li>
+                                        );
+                                    })}
                                 </ul>
                             </div>
                         </div>

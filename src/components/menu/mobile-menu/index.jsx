@@ -1,7 +1,14 @@
 import PropTypes from "prop-types";
-import { NavLink } from "react-router-dom";
-import { getClosest, getSiblings, slideToggle, slideUp } from "../../../utils";
+import { NavLink, Link } from "react-router-dom";
+import {
+    getClosest,
+    getSiblings,
+    slideToggle,
+    slideUp,
+    slugify,
+} from "../../../utils";
 import Logo from "../../logo";
+import service from "../../../data/service.json";
 
 const MobileMenu = ({ show, onClose }) => {
     const onClickHandler = (e) => {
@@ -50,45 +57,37 @@ const MobileMenu = ({ show, onClose }) => {
 
                     <nav id="offcanvasNav" className="offcanvas-menu">
                         <ul>
-                            {/* <li>
-                                <NavLink to={process.env.PUBLIC_URL + "/about"}>
-                                    About
-                                </NavLink>
-                            </li> */}
                             <li>
                                 <NavLink
                                     to={process.env.PUBLIC_URL + "/service"}
                                 >
                                     Service
                                 </NavLink>
-                                {/* <span
+                                <span
                                     className="menu-expand"
                                     onClick={onClickHandler}
                                     aria-hidden="true"
                                 ></span>
                                 <ul>
-                                    <li>
-                                        <NavLink
-                                            to={
-                                                process.env.PUBLIC_URL +
-                                                "/service"
-                                            }
-                                        >
-                                            service
-                                        </NavLink>
-                                    </li>
-                                    <li>
-                                        <NavLink
-                                            to={
-                                                process.env.PUBLIC_URL +
-                                                "/service-details/1"
-                                            }
-                                        >
-                                            single service
-                                        </NavLink>
-                                    </li>
-                                </ul> */}
+                                    {service.map((id, i) => {
+                                        return (
+                                            <li key={i}>
+                                                <Link
+                                                    to={
+                                                        process.env.PUBLIC_URL +
+                                                        `/service-details/${slugify(
+                                                            id.title
+                                                        )}`
+                                                    }
+                                                >
+                                                    {id.title}
+                                                </Link>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
                             </li>
+
                             <li>
                                 <NavLink to={process.env.PUBLIC_URL + "/blog"}>
                                     Blog
