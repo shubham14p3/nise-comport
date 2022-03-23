@@ -11,7 +11,7 @@ const OfferSidebarPost = ({ data }) => {
                         <Link
                             to={
                                 process.env.PUBLIC_URL +
-                                `/blog-details/${slugify(single.title)}`
+                                `/offer-details/${slugify(single.title)}`
                             }
                             className="post-thumb"
                         >
@@ -25,7 +25,9 @@ const OfferSidebarPost = ({ data }) => {
                                 <Link
                                     to={
                                         process.env.PUBLIC_URL +
-                                        `/blog-details/${slugify(single.title)}`
+                                        `/offer-details/${slugify(
+                                            single.title
+                                        )}`
                                     }
                                 >
                                     {single.title}

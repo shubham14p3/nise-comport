@@ -23,8 +23,8 @@ import OfferLeftSidebarPage from "./pages/offer-left-sidebar";
 import OfferRightSidebarPage from "./pages/offer-right-sidebar";
 import OfferDetailsPage from "./templates/offer-details";
 // import OfferAuthor from "./templates/offer-author";
-// import OfferDate from "./templates/offer-date";
-// import OfferTag from "./templates/offer-tag";
+import OfferDate from "./templates/offer-date";
+import OfferTag from "./templates/offer-tag";
 import OfferCategory from "./templates/offer-category";
 import "./assets/css/vendor/metropolis.css";
 import "./assets/css/vendor/icofont.min.css";
@@ -77,6 +77,18 @@ const App = () => {
                             }`}
                             element={<OfferCategory />}
                         />
+                        <Route
+                            path={`${
+                                process.env.PUBLIC_URL + "/offer-date/:date"
+                            }`}
+                            element={<OfferDate />}
+                        />
+                        <Route
+                            path={`${
+                                process.env.PUBLIC_URL + "/offer-tag/:slug"
+                            }`}
+                            element={<OfferTag />}
+                        />
                         {/* 
                         
                         <Route
@@ -85,14 +97,8 @@ const App = () => {
                             }`}
                             element={<OfferAuthor />}
                         />
-                        <Route
-                            path={`${process.env.PUBLIC_URL + "/date/:date"}`}
-                            element={<OfferDate />}
-                        />
-                        <Route
-                            path={`${process.env.PUBLIC_URL + "/tag/:slug"}`}
-                            element={<OfferTag />}
-                        />
+                        
+                       
                         */}
                         <Route
                             path={`${process.env.PUBLIC_URL + "/service"}`}

@@ -30,7 +30,9 @@ const OfferSidebarTag = ({ data }) => {
                     <Link
                         key={i}
                         className="widget-tag-link"
-                        to={process.env.PUBLIC_URL + `/offer-tag/${single.slug}`}
+                        to={
+                            process.env.PUBLIC_URL + `/offer-tag/${single.slug}`
+                        }
                     >
                         {single.title}
                     </Link>

@@ -37,7 +37,7 @@ const OfferSidebarArchive = ({ data }) => {
                                 className="d-flex justify-content-between align-items-center"
                                 to={
                                     process.env.PUBLIC_URL +
-                                    `/date/${single.slug}`
+                                    `/offer-date/${single.slug}`
                                 }
                             >
                                 {single.title} <span>{single.count}</span>
