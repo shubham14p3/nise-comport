@@ -1,5 +1,6 @@
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
+import { slugify } from "../../../utils";
 
 const SidebarPost = ({ data }) => {
     return (
@@ -10,7 +11,7 @@ const SidebarPost = ({ data }) => {
                         <Link
                             to={
                                 process.env.PUBLIC_URL +
-                                `/blog-details/${single.id}`
+                                `/blog-details/${slugify(single.title)}`
                             }
                             className="post-thumb"
                         >
@@ -24,7 +25,7 @@ const SidebarPost = ({ data }) => {
                                 <Link
                                     to={
                                         process.env.PUBLIC_URL +
-                                        `/blog-details/${single.id}`
+                                        `/blog-details/${slugify(single.title)}`
                                     }
                                 >
                                     {single.title}

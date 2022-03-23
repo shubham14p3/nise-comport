@@ -7,7 +7,12 @@ const BlogGrid = ({ data, classOption }) => {
     return (
         <div className="blog-card">
             <div className={`thumb bg-light text-center ${classOption}`}>
-                <Link to={process.env.PUBLIC_URL + `/blog-details/${data.id}`}>
+                <Link
+                    to={
+                        process.env.PUBLIC_URL +
+                        `/blog-details/${slugify(data.title)}`
+                    }
+                >
                     <img
                         src={`${process.env.PUBLIC_URL}/${data.media.gridImage}`}
                         alt="img"
@@ -31,7 +36,10 @@ const BlogGrid = ({ data, classOption }) => {
                 </Link>
                 <h3 className="title">
                     <Link
-                        to={process.env.PUBLIC_URL + `/blog-details/${data.id}`}
+                        to={
+                            process.env.PUBLIC_URL +
+                            `/blog-details/${slugify(data.title)}`
+                        }
                     >
                         {data.title}
                     </Link>
