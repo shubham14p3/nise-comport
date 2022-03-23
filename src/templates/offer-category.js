@@ -5,32 +5,34 @@ import PageBanner from "../containers/global/page-banner";
 import Footer from "../layouts/footer";
 import Header from "../layouts/header";
 import Layout from "../layouts/index";
-import ServiceData from "../data/service.json";
-import ServiceDetailsContainer from "../containers/service/service-details";
+import OfferData from "../data/offer.json";
+import OfferItemContainer from "../containers/offer/offer-item";
+import { slugify } from "../utils";
 import ScrollToTop from "../components/scroll-to-top";
 import SEO from "../components/seo";
 import { useParams } from "react-router-dom";
-import { slugify } from "../utils";
-
-const ServiceDetails = () => {
-    const { title } = useParams();
-    const serviceId = slugify(title);
-    const data = ServiceData.filter(
-        (service) => slugify(service.title) === serviceId
-    );
+const OfferCategory = () => {
+    const { slug } = useParams();
+    const data = OfferData.map((offer) => {
+        return {
+            ...offer,
+            categories: offer.categories.filter((cat) => slugify(cat) === slug),
+        };
+    }).filter((offer) => offer.categories.length > 0);
+    const categoryTitle = data[0].categories[0];
     return (
         <React.Fragment>
             <Layout>
-                <SEO title="Nise-Comport – Service Details" />
+                <SEO title="Nise-Comport – Offer Categories" />
                 <div className="wrapper">
                     <Header />
                     <PageBanner
-                        title={data[0]?.title}
+                        title={categoryTitle}
                         excerpt="Pleasure rationally encounter consequences <br />
                         are extremely painful great oppurtunity"
-                        image="/images/service/2.png"
+                        image="/images/offer/banner.png"
                     />
-                    <ServiceDetailsContainer data={data[0]} />
+                    <OfferItemContainer data={data} />
                     <NewsletterArea />
                     <Footer />
                     <ScrollToTop />
@@ -40,12 +42,12 @@ const ServiceDetails = () => {
     );
 };
 
-ServiceDetails.propTypes = {
+OfferCategory.propTypes = {
     match: PropTypes.shape({
         params: PropTypes.shape({
-            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+            slug: PropTypes.string,
         }),
     }),
 };
 
-export default ServiceDetails;
+export default OfferCategory;

@@ -5,32 +5,31 @@ import PageBanner from "../containers/global/page-banner";
 import Footer from "../layouts/footer";
 import Header from "../layouts/header";
 import Layout from "../layouts/index";
-import ServiceData from "../data/service.json";
-import ServiceDetailsContainer from "../containers/service/service-details";
+import OfferDetailsContainer from "../containers/offer/offer-details";
+import OfferData from "../data/offer.json";
 import ScrollToTop from "../components/scroll-to-top";
 import SEO from "../components/seo";
 import { useParams } from "react-router-dom";
 import { slugify } from "../utils";
+const OfferDetailsPage = () => {
+    const { offerId } = useParams();
 
-const ServiceDetails = () => {
-    const { title } = useParams();
-    const serviceId = slugify(title);
-    const data = ServiceData.filter(
-        (service) => slugify(service.title) === serviceId
+    const data = OfferData.filter(
+        (offerItem) => slugify(offerItem.title) === offerId
     );
     return (
         <React.Fragment>
             <Layout>
-                <SEO title="Nise-Comport – Service Details" />
+                <SEO title="Nise-Comport – Offer Details" />
                 <div className="wrapper">
                     <Header />
                     <PageBanner
-                        title={data[0]?.title}
+                        title="Offer Details"
                         excerpt="Pleasure rationally encounter consequences <br />
                         are extremely painful great oppurtunity"
-                        image="/images/service/2.png"
+                        image="/images/offer/banner.png"
                     />
-                    <ServiceDetailsContainer data={data[0]} />
+                    <OfferDetailsContainer data={data[0]} />
                     <NewsletterArea />
                     <Footer />
                     <ScrollToTop />
@@ -40,7 +39,7 @@ const ServiceDetails = () => {
     );
 };
 
-ServiceDetails.propTypes = {
+OfferDetailsPage.propTypes = {
     match: PropTypes.shape({
         params: PropTypes.shape({
             id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
@@ -48,4 +47,4 @@ ServiceDetails.propTypes = {
     }),
 };
 
-export default ServiceDetails;
+export default OfferDetailsPage;

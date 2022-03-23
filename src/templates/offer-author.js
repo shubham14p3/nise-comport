@@ -5,32 +5,29 @@ import PageBanner from "../containers/global/page-banner";
 import Footer from "../layouts/footer";
 import Header from "../layouts/header";
 import Layout from "../layouts/index";
-import ServiceData from "../data/service.json";
-import ServiceDetailsContainer from "../containers/service/service-details";
+import OfferData from "../data/offer.json";
+import OfferItemContainer from "../containers/offer/offer-item";
+import { slugify } from "../utils";
 import ScrollToTop from "../components/scroll-to-top";
 import SEO from "../components/seo";
 import { useParams } from "react-router-dom";
-import { slugify } from "../utils";
-
-const ServiceDetails = () => {
-    const { title } = useParams();
-    const serviceId = slugify(title);
-    const data = ServiceData.filter(
-        (service) => slugify(service.title) === serviceId
-    );
+const OfferAuthor = () => {
+    const { author } = useParams();
+    const data = OfferData.filter((offer) => slugify(offer.author) === author);
+    const authorTitle = data[0].author;
     return (
         <React.Fragment>
             <Layout>
-                <SEO title="Nise-Comport – Service Details" />
+                <SEO title="Nise-Comport – Offer Author" />
                 <div className="wrapper">
                     <Header />
                     <PageBanner
-                        title={data[0]?.title}
+                        title={authorTitle}
                         excerpt="Pleasure rationally encounter consequences <br />
                         are extremely painful great oppurtunity"
-                        image="/images/service/2.png"
+                        image="/images/offer/banner.png"
                     />
-                    <ServiceDetailsContainer data={data[0]} />
+                    <OfferItemContainer data={data} />
                     <NewsletterArea />
                     <Footer />
                     <ScrollToTop />
@@ -40,12 +37,12 @@ const ServiceDetails = () => {
     );
 };
 
-ServiceDetails.propTypes = {
+OfferAuthor.propTypes = {
     match: PropTypes.shape({
         params: PropTypes.shape({
-            id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+            author: PropTypes.string,
         }),
     }),
 };
 
-export default ServiceDetails;
+export default OfferAuthor;
