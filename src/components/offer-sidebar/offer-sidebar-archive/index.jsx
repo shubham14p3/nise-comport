@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { flatDeep, slugify, containsObject } from "../../../utils";
 import { Link } from "react-router-dom";
 
-const SidebarArchive = ({ data }) => {
+const OfferSidebarArchive = ({ data }) => {
     const postDate = data.map((item) => {
         return item.date;
     });
@@ -50,8 +50,8 @@ const SidebarArchive = ({ data }) => {
     );
 };
 
-SidebarArchive.propTypes = {
+OfferSidebarArchive.propTypes = {
     data: PropTypes.array,
 };
 
-export default SidebarArchive;
+export default OfferSidebarArchive;

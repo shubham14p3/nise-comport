@@ -2,10 +2,10 @@ import React from "react";
 import PropTypes from "prop-types";
 import OfferSidebarCategories from "../../../components/offer-sidebar/offer-categories";
 import SidebarSearch from "../../../components/sidebar/search";
-import SidebarTag from "../../../components/sidebar/sidbar-tag";
-import SidebarArchive from "../../../components/sidebar/sidebar-archive";
-import SidebarPost from "../../../components/sidebar/sidebar-post";
-import SidebarTitle from "../../../components/sidebar/sidebar-title";
+import OfferSidebarTag from "../../../components/offer-sidebar/offer-sidbar-tag";
+import OfferSidebarArchive from "../../../components/offer-sidebar/offer-sidebar-archive";
+import OfferSidebarPost from "../../../components/offer-sidebar/offer-sidebar-post";
+import OfferSidebarTitle from "../../../components/offer-sidebar/offer-sidebar-title";
 import OfferData from "../../../data/offer.json";
 import OfferDetailsWrap from "../../../components/offer-details";
 import Comment from "../../../components/comment";
@@ -41,27 +41,27 @@ const OfferDetailsContainer = ({ data }) => {
                     <div className="col-xl-3 col-lg-4 mb-7 offset-xl-1">
                         <div className="widget-wrapper widget-wrapper-nl">
                             <div className="sidebar-widget">
-                                <SidebarTitle title="Search" />
+                                <OfferSidebarTitle title="Search" />
                                 <SidebarSearch />
                             </div>
 
                             <div className="sidebar-widget">
-                                <SidebarTitle title="Categories" />
+                                <OfferSidebarTitle title="Categories" />
                                 <OfferSidebarCategories data={OfferData} />
                             </div>
                             <div className="sidebar-widget">
-                                <SidebarTitle title="popular post" />
-                                <SidebarPost data={OfferData} />
+                                <OfferSidebarTitle title="popular post" />
+                                <OfferSidebarPost data={OfferData} />
                             </div>
 
                             <div className="sidebar-widget">
-                                <SidebarTitle title="Archive" />
-                                <SidebarArchive data={OfferData} />
+                                <OfferSidebarTitle title="Archive" />
+                                <OfferSidebarArchive data={OfferData} />
                             </div>
 
                             <div className="sidebar-widget">
-                                <SidebarTitle title="Tags" />
-                                <SidebarTag data={OfferData} />
+                                <OfferSidebarTitle title="Tags" />
+                                <OfferSidebarTag data={OfferData} />
                             </div>
                         </div>
                     </div>

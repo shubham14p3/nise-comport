@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import { flatDeep, slugify, containsObject } from "../../../utils";
 
-const SidebarTag = ({ data }) => {
+const OfferSidebarTag = ({ data }) => {
     const tags = data.map((item) => {
         return item.tags;
     });
@@ -30,7 +30,7 @@ const SidebarTag = ({ data }) => {
                     <Link
                         key={i}
                         className="widget-tag-link"
-                        to={process.env.PUBLIC_URL + `/tag/${single.slug}`}
+                        to={process.env.PUBLIC_URL + `/offer-tag/${single.slug}`}
                     >
                         {single.title}
                     </Link>
@@ -40,8 +40,8 @@ const SidebarTag = ({ data }) => {
     );
 };
 
-SidebarTag.propTypes = {
+OfferSidebarTag.propTypes = {
     data: PropTypes.array,
 };
 
-export default SidebarTag;
+export default OfferSidebarTag;

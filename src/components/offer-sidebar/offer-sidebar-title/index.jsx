@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 
-const SidebarTitle = ({ title }) => {
+const OfferSidebarTitle = ({ title }) => {
     return (
         <React.Fragment>
             <h3 className="widget-title">{title}</h3>
@@ -9,8 +9,8 @@ const SidebarTitle = ({ title }) => {
     );
 };
 
-SidebarTitle.propTypes = {
+OfferSidebarTitle.propTypes = {
     title: PropTypes.string,
 };
 
-export default SidebarTitle;
+export default OfferSidebarTitle;

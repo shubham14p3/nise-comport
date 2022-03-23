@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import { slugify } from "../../../utils";
 
-const SidebarPost = ({ data }) => {
+const OfferSidebarPost = ({ data }) => {
     return (
         <div className="widget-post-wrap">
             {data.slice(0, 3).map((single, i) => {
@@ -40,8 +40,8 @@ const SidebarPost = ({ data }) => {
     );
 };
 
-SidebarPost.propTypes = {
+OfferSidebarPost.propTypes = {
     data: PropTypes.array,
 };
 
-export default SidebarPost;
+export default OfferSidebarPost;
