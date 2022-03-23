@@ -22,9 +22,9 @@ import OfferPage from "./pages/offer";
 import OfferLeftSidebarPage from "./pages/offer-left-sidebar";
 import OfferRightSidebarPage from "./pages/offer-right-sidebar";
 import OfferDetailsPage from "./templates/offer-details";
-import OfferAuthor from "./templates/offer-author";
-import OfferDate from "./templates/offer-date";
-import OfferTag from "./templates/offer-tag";
+// import OfferAuthor from "./templates/offer-author";
+// import OfferDate from "./templates/offer-date";
+// import OfferTag from "./templates/offer-tag";
 import OfferCategory from "./templates/offer-category";
 import "./assets/css/vendor/metropolis.css";
 import "./assets/css/vendor/icofont.min.css";
@@ -54,6 +54,13 @@ const App = () => {
                         />
                         <Route
                             path={`${
+                                process.env.PUBLIC_URL +
+                                "/offer-details/:offerId"
+                            }`}
+                            element={<OfferDetailsPage />}
+                        />
+                        <Route
+                            path={`${
                                 process.env.PUBLIC_URL + "/offer-left-sidebar"
                             }`}
                             element={<OfferLeftSidebarPage />}
@@ -66,11 +73,12 @@ const App = () => {
                         />
                         <Route
                             path={`${
-                                process.env.PUBLIC_URL +
-                                "/offer-details/:offerId"
+                                process.env.PUBLIC_URL + "/offer-category/:slug"
                             }`}
-                            element={<OfferDetailsPage />}
+                            element={<OfferCategory />}
                         />
+                        {/* 
+                        
                         <Route
                             path={`${
                                 process.env.PUBLIC_URL + "/author/:author"
@@ -85,12 +93,7 @@ const App = () => {
                             path={`${process.env.PUBLIC_URL + "/tag/:slug"}`}
                             element={<OfferTag />}
                         />
-                        <Route
-                            path={`${
-                                process.env.PUBLIC_URL + "/category/:slug"
-                            }`}
-                            element={<OfferCategory />}
-                        />
+                        */}
                         <Route
                             path={`${process.env.PUBLIC_URL + "/service"}`}
                             element={<ServicePage />}

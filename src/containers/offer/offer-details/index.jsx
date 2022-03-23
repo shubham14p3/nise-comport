@@ -1,6 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
-import SidebarCategories from "../../../components/sidebar/categories";
+import OfferSidebarCategories from "../../../components/offer-sidebar/offer-categories";
 import SidebarSearch from "../../../components/sidebar/search";
 import SidebarTag from "../../../components/sidebar/sidbar-tag";
 import SidebarArchive from "../../../components/sidebar/sidebar-archive";
@@ -47,7 +47,7 @@ const OfferDetailsContainer = ({ data }) => {
 
                             <div className="sidebar-widget">
                                 <SidebarTitle title="Categories" />
-                                <SidebarCategories data={OfferData} />
+                                <OfferSidebarCategories data={OfferData} />
                             </div>
                             <div className="sidebar-widget">
                                 <SidebarTitle title="popular post" />

@@ -82,7 +82,7 @@ const MainMenu = () => {
                     </NavLink>
                 </li> */}
                 <li>
-                    <NavLink to={process.env.PUBLIC_URL + "/Offer"}>
+                    <NavLink to={process.env.PUBLIC_URL + "/offer"}>
                         Offer
                     </NavLink>
                 </li>
