@@ -14,10 +14,10 @@
             "100 Off"
         ],
         "body": [
-            "<p class='pb-2'>We have happy to share that we have started Aadhaar Demographic update  service<br class='d-none d-xl-block' /> We currently provide the following mentioned service below  </p>",
-            "<div class='blog-details-list'><p><i class='fa fa-angle-double-right'></i>Mobile Update / Correction</p><p><i class='fa fa-angle-double-right'></i>Email Id Update / Correction</p><p><i class='fa fa-angle-double-right'></i>Name Update / Correction</p><p><i class='fa fa-angle-double-right'></i>Address Update / Correction</p><p><i class='fa fa-angle-double-right'></i>DOB Update / Correction</p></div>",
-            "<div class='blog-qutation'><p>Aadhaar - AAM ADMI KA ADHIKAR </p><i class='icofont-quote-right'>UIDAI</i></div>",
-            "<div class='blog-details-grid'><div class='row mb-n7'><div class='col mb-7'><p>To avail this service , user / candidate need to take an prior appointment as per Covid guideline, and shall maintain safety regulation at the premises. Note: Kindly provide the Original document as well as prescribed documentation as per provide by UIDAI Guideline. </p></div><div class='col mb-7 text-end'><img class='d-block mx-auto mx-lg-0' src='/images/blog-details/2.png' alt='img' /></div></p></div></div></div>"
+            "<span class='pb-2'>We have happy to share that we have started Aadhaar Demographic update  service<br class='d-none d-xl-block' /> We currently provide the following mentioned service below  </span>",
+            "<div class='blog-details-list'><span><i class='fa fa-angle-double-right'></i>Mobile Update / Correction</span><span><i class='fa fa-angle-double-right'></i>Email Id Update / Correction</span><span><i class='fa fa-angle-double-right'></i>Name Update / Correction</span><span><i class='fa fa-angle-double-right'></i>Address Update / Correction</span><span><i class='fa fa-angle-double-right'></i>DOB Update / Correction</span></div>",
+            "<div class='blog-qutation'><span>Aadhaar - AAM ADMI KA ADHIKAR </span><i class='icofont-quote-right'>UIDAI</i></div>",
+            "<div class='blog-details-grid'><div class='row mb-n7'><div class='col mb-7'><span>To avail this service , user / candidate need to take an prior appointment as per Covid guideline, and shall maintain safety regulation at the premises. Note: Kindly provide the Original document as well as prescribed documentation as per provide by UIDAI Guideline. </span></div><div class='col mb-7 text-end'><img class='d-block mx-auto mx-lg-0' src='/images/blog-details/2.png' alt='img' /></div></span></div></div></div>"
         ]
     },
     {
@@ -35,10 +35,10 @@
            "50 Offer"
         ],
         "body": [
-            "<p class='pb-2'>We have happy to share that we have started Aadhaar Demographic update  service<br class='d-none d-xl-block' /> We currently provide the following mentioned service below  </p>",
-            "<div class='blog-details-list'><p><i class='fa fa-angle-double-right'></i>Mobile Update / Correction</p><p><i class='fa fa-angle-double-right'></i>Email Id Update / Correction</p><p><i class='fa fa-angle-double-right'></i>Name Update / Correction</p><p><i class='fa fa-angle-double-right'></i>Address Update / Correction</p><p><i class='fa fa-angle-double-right'></i>DOB Update / Correction</p></div>",
-            "<div class='blog-qutation'><p>Aadhaar - AAM ADMI KA ADHIKAR </p><i class='icofont-quote-right'>UIDAI</i></div>",
-            "<div class='blog-details-grid'><div class='row mb-n7'><div class='col mb-7'><p>To avail this service , user / candidate need to take an prior appointment as per Covid guideline, and shall maintain safety regulation at the premises. Note: Kindly provide the Original document as well as prescribed documentation as per provide by UIDAI Guideline. </p></div><div class='col mb-7 text-end'><img class='d-block mx-auto mx-lg-0' src='/images/blog-details/2.png' alt='img' /></div></p></div></div></div>"
+            "<span class='pb-2'>We have happy to share that we have started Aadhaar Demographic update  service<br class='d-none d-xl-block' /> We currently provide the following mentioned service below  </span>",
+            "<div class='blog-details-list'><span><i class='fa fa-angle-double-right'></i>Mobile Update / Correction</span><span><i class='fa fa-angle-double-right'></i>Email Id Update / Correction</span><span><i class='fa fa-angle-double-right'></i>Name Update / Correction</span><span><i class='fa fa-angle-double-right'></i>Address Update / Correction</span><span><i class='fa fa-angle-double-right'></i>DOB Update / Correction</span></div>",
+            "<div class='blog-qutation'><span>Aadhaar - AAM ADMI KA ADHIKAR </span><i class='icofont-quote-right'>UIDAI</i></div>",
+            "<div class='blog-details-grid'><div class='row mb-n7'><div class='col mb-7'><span>To avail this service , user / candidate need to take an prior appointment as per Covid guideline, and shall maintain safety regulation at the premises. Note: Kindly provide the Original document as well as prescribed documentation as per provide by UIDAI Guideline. </span></div><div class='col mb-7 text-end'><img class='d-block mx-auto mx-lg-0' src='/images/blog-details/2.png' alt='img' /></div></span></div></div></div>"
         ]
     }        
 ]

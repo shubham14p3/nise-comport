@@ -18,7 +18,7 @@ const OfferDetailsContainer = ({ data }) => {
                     <div className="col-xl-8 col-lg-8 mb-7">
                         <div className="blog-details-content">
                             <OfferDetailsWrap data={data} />
-                            <div className="blog-comments ">
+                            {/* <div className="blog-comments ">
                                 <h3 className="blog-comment-title">
                                     Leave a Reply or Comment
                                 </h3>
@@ -29,13 +29,13 @@ const OfferDetailsContainer = ({ data }) => {
                                     to obtain These cases are perfectly simple
                                     and easy
                                 </p>
-                            </div>
+                            </div> */}
 
-                            <Comment
+                            {/* <Comment
                                 url=""
                                 id={OfferData.id}
                                 title={OfferData.title}
-                            />
+                            /> */}
                         </div>
                     </div>
                     <div className="col-xl-3 col-lg-4 mb-7 offset-xl-1">
