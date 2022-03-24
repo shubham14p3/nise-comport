@@ -10,10 +10,13 @@ import BlogData from "../data/blog.json";
 import ScrollToTop from "../components/scroll-to-top";
 import SEO from "../components/seo";
 import { useParams } from "react-router-dom";
+import { slugify } from "../utils";
 const BlogDetailsPage = () => {
-    const { id } = useParams();
-    const blogId = parseInt(id, 10);
-    const data = BlogData.filter((blogItem) => blogItem.id === blogId);
+    const { blogId } = useParams();
+
+    const data = BlogData.filter(
+        (blogItem) => slugify(blogItem.title) === blogId
+    );
     return (
         <React.Fragment>
             <Layout>

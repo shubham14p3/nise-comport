@@ -10,11 +10,14 @@ import ServiceDetailsContainer from "../containers/service/service-details";
 import ScrollToTop from "../components/scroll-to-top";
 import SEO from "../components/seo";
 import { useParams } from "react-router-dom";
+import { slugify } from "../utils";
 
 const ServiceDetails = () => {
-    const { id } = useParams();
-    const serviceId = parseInt(id, 10);
-    const data = ServiceData.filter((service) => service.id === serviceId);
+    const { title } = useParams();
+    const serviceId = slugify(title);
+    const data = ServiceData.filter(
+        (service) => slugify(service.title) === serviceId
+    );
     return (
         <React.Fragment>
             <Layout>

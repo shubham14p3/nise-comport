@@ -36,7 +36,7 @@ const ServiceCate = ({ data }) => {
                                 activeClassName="active"
                                 to={
                                     process.env.PUBLIC_URL +
-                                    `/service-details/${slugify(single.id)}`
+                                    `/service-details/${slugify(single.title)}`
                                 }
                             >
                                 <img src={single.smallIcon} alt="logo" />

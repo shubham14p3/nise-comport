@@ -6,7 +6,6 @@ import AboutPage from "./pages/about";
 import ServicePage from "./pages/service";
 import ServiceDetails from "./templates/service-details";
 import TeamPage from "./pages/team";
-import Offer from "./pages/offer";
 import FaqPage from "./pages/faq";
 import BlogPage from "./pages/blog";
 import BlogLeftSidebarPage from "./pages/blog-left-sidebar";
@@ -19,6 +18,14 @@ import BlogCategory from "./templates/blog-category";
 import ContactPage from "./pages/contact";
 import PageNotFound from "./pages/404-page";
 import Chatbotbox from "./components/chatbotbox/index";
+import OfferPage from "./pages/offer";
+import OfferLeftSidebarPage from "./pages/offer-left-sidebar";
+import OfferRightSidebarPage from "./pages/offer-right-sidebar";
+import OfferDetailsPage from "./templates/offer-details";
+// import OfferAuthor from "./templates/offer-author";
+import OfferDate from "./templates/offer-date";
+import OfferTag from "./templates/offer-tag";
+import OfferCategory from "./templates/offer-category";
 import "./assets/css/vendor/metropolis.css";
 import "./assets/css/vendor/icofont.min.css";
 import "./assets/css/vendor/font-awesome.css";
@@ -43,16 +50,64 @@ const App = () => {
                         />
                         <Route
                             path={`${process.env.PUBLIC_URL + "/offer"}`}
-                            element={<Offer />}
+                            element={<OfferPage />}
                         />
-
+                        <Route
+                            path={`${
+                                process.env.PUBLIC_URL +
+                                "/offer-details/:offerId"
+                            }`}
+                            element={<OfferDetailsPage />}
+                        />
+                        <Route
+                            path={`${
+                                process.env.PUBLIC_URL + "/offer-left-sidebar"
+                            }`}
+                            element={<OfferLeftSidebarPage />}
+                        />
+                        <Route
+                            path={`${
+                                process.env.PUBLIC_URL + "/offer-right-sidebar"
+                            }`}
+                            element={<OfferRightSidebarPage />}
+                        />
+                        <Route
+                            path={`${
+                                process.env.PUBLIC_URL + "/offer-category/:slug"
+                            }`}
+                            element={<OfferCategory />}
+                        />
+                        <Route
+                            path={`${
+                                process.env.PUBLIC_URL + "/offer-date/:date"
+                            }`}
+                            element={<OfferDate />}
+                        />
+                        <Route
+                            path={`${
+                                process.env.PUBLIC_URL + "/offer-tag/:slug"
+                            }`}
+                            element={<OfferTag />}
+                        />
+                        {/* 
+                        
+                        <Route
+                            path={`${
+                                process.env.PUBLIC_URL + "/author/:author"
+                            }`}
+                            element={<OfferAuthor />}
+                        />
+                        
+                       
+                        */}
                         <Route
                             path={`${process.env.PUBLIC_URL + "/service"}`}
                             element={<ServicePage />}
                         />
                         <Route
                             path={`${
-                                process.env.PUBLIC_URL + "/service-details/:id"
+                                process.env.PUBLIC_URL +
+                                "/service-details/:title"
                             }`}
                             element={<ServiceDetails />}
                         />
@@ -86,7 +141,7 @@ const App = () => {
                         />
                         <Route
                             path={`${
-                                process.env.PUBLIC_URL + "/blog-details/:id"
+                                process.env.PUBLIC_URL + "/blog-details/:blogId"
                             }`}
                             element={<BlogDetailsPage />}
                         />

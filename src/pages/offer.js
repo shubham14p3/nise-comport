@@ -1,11 +1,11 @@
 import React from "react";
-import BlogItemContainer from "../containers/blog/blog-item";
+import OfferItemContainer from "../containers/offer/offer-item";
 import NewsletterArea from "../containers/global/newsletter";
 import PageBanner from "../containers/global/page-banner";
 import Footer from "../layouts/footer";
 import Header from "../layouts/header";
 import Layout from "../layouts/index";
-import BlogData from "../data/offer.json";
+import OfferData from "../data/offer.json";
 import ScrollToTop from "../components/scroll-to-top";
 import SEO from "../components/seo";
 
@@ -22,7 +22,7 @@ const Offer = () => {
                         have the best service and get good returns."
                         image="./images/blog/banner.png"
                     />
-                    <BlogItemContainer data={BlogData} />
+                    <OfferItemContainer data={OfferData} />
                     <NewsletterArea />
                     <Footer />
                     <ScrollToTop />
