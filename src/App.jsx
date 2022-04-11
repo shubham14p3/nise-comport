@@ -4,6 +4,7 @@ import NavScrollTop from "./components/nav-scroll-top";
 import HomePage from "./pages/index";
 import AboutPage from "./pages/about";
 import ServicePage from "./pages/service";
+import AllServices from "./pages/all-services";
 import ServiceDetails from "./templates/service-details";
 import TeamPage from "./pages/team";
 import FaqPage from "./pages/faq";
@@ -47,6 +48,10 @@ const App = () => {
                         <Route
                             path={`${process.env.PUBLIC_URL + "/about"}`}
                             element={<AboutPage />}
+                        />
+                        <Route
+                            path={`${process.env.PUBLIC_URL + "/all-services"}`}
+                            element={<AllServices />}
                         />
                         <Route
                             path={`${process.env.PUBLIC_URL + "/offer"}`}
