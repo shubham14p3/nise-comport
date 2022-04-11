@@ -26,8 +26,7 @@ const ServiceDetails = () => {
                     <Header />
                     <PageBanner
                         title={data[0]?.title}
-                        excerpt="Pleasure rationally encounter consequences <br />
-                        are extremely painful great oppurtunity"
+                        excerpt={data[0]?.subtitle}
                         image="/images/service/2.png"
                     />
                     <ServiceDetailsContainer data={data[0]} />

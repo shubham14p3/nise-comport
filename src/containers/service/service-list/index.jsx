@@ -2,6 +2,7 @@ import React from "react";
 import SectionTitle from "../../../components/section-title";
 import ServiceBox from "../../../components/service-box";
 import ServiceData from "../../../data/service.json";
+import Button from "../../../components/button";
 
 const ServiceListContainer = () => {
     return (
@@ -36,6 +37,13 @@ const ServiceListContainer = () => {
                             <img
                                 src={`${process.env.PUBLIC_URL}/images/service/media.png`}
                                 alt="images_not_found"
+                            />
+                            <br />
+                            <br />
+                            <Button
+                                classOption="btn btn-lg btn-dark btn-hover-dark"
+                                text="View all services"
+                                path="/all-services"
                             />
                         </div>
                     </div>

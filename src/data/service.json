@@ -5,6 +5,7 @@
         "smallIcon": "/images/service/icon/small/1.png",
         "image": "./images/service/3.png",
         "title": "Banking",
+        "subtitle": "We  are delighted to bring banking services to our customers",
         "categories": [
             "Digital Banking",
             "Banking",
@@ -22,9 +23,9 @@
             "<p class='mb-8'>As a Business correspondents we are bank representatives. We help customers to open bank accounts, deposit money, withdraw money, transfer money, fix deposit, gold loan, personal loan, bike, car or home loan etc. We have partnered up with multiple banks to allow seemless flow for banking. </p>",
             "<div class='single-service-list'><p><i class='fa fa-angle-double-right'></i>Bank of Baroda (Telco Branch)</p> <p><i class='fa fa-angle-double-right'></i>ICICI Bank (Telco Branch) </p><p><i class='fa fa-angle-double-right'></i>HDFC Bank (Telco Branch)</p><p><i class='fa fa-angle-double-right'></i>Digipay</p></div>",
             "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Account Opening</h3><p>We provide our customers with the option of choosing from a wide range of Savings Accounts with different features and benefits. The Savings Accounts are designed to meet the banking needs of people from all walks of life. Each Savings Account offers unique features such as high transaction limit, cheque books, debit & credit cards etc. </p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
-            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Mithdrawal</h3><p>money withdrawal</p></div></div></div>",
-            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Money Deposit</h3><p>Money Deposit</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
-            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Transfer</h3><p>Money Transfer</p></div></div></div>"
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawal</h3><p>We help in withdrawing money to other banking patners with client permission.</p></div></div></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Money Deposit</h3><p>We help in money deposit to self, other banking patners with client permission.</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Transfer</h3><p>We help in transfering money to other banking patners with client permission.</p></div></div></div>"
         ],
         "bodyBottom": "We provide extra services such as Gold Loan, Finance, Fix Deposit at good price, Feel free to reach out to us if you are in need any help regarding the above."
     },
@@ -34,25 +35,38 @@
         "smallIcon": "/images/service/icon/small/2.png",
         "image": "./images/service/3.png",
         "title": "Government",
+        "subtitle": "We  are delighted to bring government services to our customers",
         "categories": [
             "Digital Solution",
             "Business Plan",
             "Creative Strategy",
             "Branding",
             "Marketing Policy",
-            "Campaign & PR"
+            "Campaign & PR",
+            "PAN",
+            "pan",
+            "Pan",
+            "PAN Card",
+            "card",
+            "AADHAAR",
+            "Aadhaar",
+            "Aadhaar New",
+            "New Aadhaar",
+            "PASSPORT",
+            "ELECTION",
+            "E-district"
         ],
         "excerpt": "Aadhaar, Pan Card, Voter Id, Passport, Transport & many more service.  ",
         "body": [
-            "<p class='text-primary fw-semi-bold mb-6'>Business Correspondent (BC)<br class='d-none d-xl-block' /></p>",
-            "<p class='mb-8'>As a Business correspondents we are bank representatives. We help customers to open bank accounts, deposit money, withdraw money, transfer money, fix deposit, gold loan, personal loan, bike, car or home loan etc. We have partnered up with multiple banks to allow seemless flow for banking. </p>",
-            "<div class='single-service-list'><p><i class='fa fa-angle-double-right'></i>Bank of Baroda (Telco Branch)</p> <p><i class='fa fa-angle-double-right'></i>ICICI Bank (Telco Branch) </p><p><i class='fa fa-angle-double-right'></i>HDFC Bank (Telco Branch)</p><p><i class='fa fa-angle-double-right'></i>Digipay</p></div>",
-            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Account Opening</h3><p>We provide our customers with the option of choosing from a wide range of Savings Accounts with different features and benefits. The Savings Accounts are designed to meet the banking needs of people from all walks of life. Each Savings Account offers unique features such as high transaction limit, cheque books, debit & credit cards etc. </p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
-            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>",
-            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Money Deposit</h3><p>& many more</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
-            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>"
+            "<p class='text-primary fw-semi-bold mb-6'>NISE COMPORT offers various Government services through the our Portal.<br/> Below is the list of all such services:<br class='d-none d-xl-block' /></p>",
+            "<div class='single-service-list'><p><i class='fa fa-angle-double-right'></i>  Election</p><p><i class='fa fa-angle-double-right'></i>  Aadhaar</p><p><i class='fa fa-angle-double-right'></i>  Passport</p><p><i class='fa fa-angle-double-right'></i>  Pan Card</p><p><i class='fa fa-angle-double-right'></i>  E-district</p><p><i class='fa fa-angle-double-right'></i>  ITR</p><p><i class='fa fa-angle-double-right'></i> GST</p><p><i class='fa fa-angle-double-right'></i> FSSAI</p></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Election</h3> <p>To improve voter enrolment in Elections, we help the citizen to get there details updated or applying new Electrol. Also we provide various Electoral Registration Services through NISE COMPORT.</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/voter.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/aadhaar.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Aadhaar</h3><p>We at NISE COMPORT provide demographic update such as Name, DOB, Address Correction. We do also work with CSC and provide the UCL service were we update Mobile no and other Demographics Update at our center Physically (Charges are applicables as per UIDAI guidelines)</p></div></div></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Passport</h3><p>NISE COMPORT provide Passport-related services through the portal or our center. Under Passport Seva, the entire form filing process, including payment of fee and scheduling of appointment for a visit to Passport Kendra, is done by us.</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/passport.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/pan.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Pan card</h3><p>To improve PAN services through either NSDL or UTI. We help in  getting the citizen applying new or corrections for the indian citizens providing the valid documentation against it digitally or physically at our center.</p></div></div></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>E-district</h3><p>The E-District projects intend to provide Government services to citizens through NISE COMPORT which are easily accessible. Services from different departments are brought under one umbrella at NISE COMPORT. </p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>"
         ],
-        "bodyBottom": "Pleasure rationally encounter consequences that are extremely painful. Nor again there anyone who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit"
+        "bodyBottom": "We at NISE COMPORT provide all the above services. (Note: We are an private organisation who provides the services and make the above services easy and resolve the clients problems as per Norms under each category given by goverment).   "
     },
     {
         "id": 3,
@@ -60,6 +74,7 @@
         "smallIcon": "/images/service/icon/small/3.png",
         "image": "./images/service/3.png",
         "title": "Insurance",
+        "subtitle": "We  are delighted to bring insurance services to our customers",
         "categories": [
             "Digital Solution",
             "Business Plan",
@@ -70,15 +85,14 @@
         ],
         "excerpt": "Bike, Car, Truck, Bus, Life & accidental insurance",
         "body": [
-            "<p class='text-primary fw-semi-bold mb-6'>Business Correspondent (BC)<br class='d-none d-xl-block' /></p>",
-            "<p class='mb-8'>As a Business correspondents we are bank representatives. We help customers to open bank accounts, deposit money, withdraw money, transfer money, fix deposit, gold loan, personal loan, bike, car or home loan etc. We have partnered up with multiple banks to allow seemless flow for banking. </p>",
-            "<div class='single-service-list'><p><i class='fa fa-angle-double-right'></i>Bank of Baroda (Telco Branch)</p> <p><i class='fa fa-angle-double-right'></i>ICICI Bank (Telco Branch) </p><p><i class='fa fa-angle-double-right'></i>HDFC Bank (Telco Branch)</p><p><i class='fa fa-angle-double-right'></i>Digipay</p></div>",
-            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Account Opening</h3><p>We provide our customers with the option of choosing from a wide range of Savings Accounts with different features and benefits. The Savings Accounts are designed to meet the banking needs of people from all walks of life. Each Savings Account offers unique features such as high transaction limit, cheque books, debit & credit cards etc. </p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
-            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>",
-            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Money Deposit</h3><p>& many more</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
-            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>"
+            "<p class='text-primary fw-semi-bold mb-6'>Motor Insurance, Life Insurance etc<br class='d-none d-xl-block' /></p>",
+            "<p class='mb-8'>We at NISE COMPORT, provide motor insurace at nearly zero cost, lowest market prices and also with great offers.</p>",
+            "<div class='single-service-list'><p>We have curretnly working with</p><p><i class='fa fa-angle-double-right'></i>GoDigit</p> <p><i class='fa fa-angle-double-right'></i>Bajaj Allianz</p><p><i class='fa fa-angle-double-right'></i>HDFC Ergo </p><p><i class='fa fa-angle-double-right'></i>ICICI Lombard</p><p><i class='fa fa-angle-double-right'></i>Chola MS</p><p><i class='fa fa-angle-double-right'></i>SBI General</p><p><i class='fa fa-angle-double-right'></i>Shriram Insurance</p><p><i class='fa fa-angle-double-right'></i>Reliance</p><p><i class='fa fa-angle-double-right'></i>The New India Insurance Company Limited</p><p><i class='fa fa-angle-double-right'></i>National InsuranceCompany Limited</p> <p><i class='fa fa-angle-double-right'></i>TATA Aig</p><p><i class='fa fa-angle-double-right'></i>Iffcon-Tokio</p></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Two Wheeler</h3><p>Two weelers insurance starting from 482*.</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/two-wheeler.png' alt='service' /></div></div>",
+            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/four-wheeler.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Private Cars* (Four Wheeler)</h3><p> Insurance Price startting from 2072*. </p></div></div></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Good Carrying Vehicles </h3><p> Contact us to know the latest price (We provide the latest offer and lowest price as per market)</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/transport-wheeler.png' alt='service' /></div></div>"
         ],
-        "bodyBottom": "Pleasure rationally encounter consequences that are extremely painful. Nor again there anyone who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit"
+        "bodyBottom": "We at NISE COMPORT help the Indian citizen to gett he insurance done hassle free. The services can be avail directly either by visiting the office, or reaching out onlineor via whatsapp"
     },
     {
         "id": 4,
@@ -86,6 +100,7 @@
         "smallIcon": "/images/service/icon/small/4.png",
         "image": "./images/service/3.png",
         "title": "Education",
+        "subtitle": "We  are delighted to bring education services to our customers",
         "categories": [
             "Digital Solution",
             "Business Plan",
@@ -96,22 +111,19 @@
         ],
         "excerpt": "E-learning, AWS, Udemy & many more cources",
         "body": [
-            "<p class='text-primary fw-semi-bold mb-6'>Business Correspondent (BC)<br class='d-none d-xl-block' /></p>",
-            "<p class='mb-8'>As a Business correspondents we are bank representatives. We help customers to open bank accounts, deposit money, withdraw money, transfer money, fix deposit, gold loan, personal loan, bike, car or home loan etc. We have partnered up with multiple banks to allow seemless flow for banking. </p>",
-            "<div class='single-service-list'><p><i class='fa fa-angle-double-right'></i>Bank of Baroda (Telco Branch)</p> <p><i class='fa fa-angle-double-right'></i>ICICI Bank (Telco Branch) </p><p><i class='fa fa-angle-double-right'></i>HDFC Bank (Telco Branch)</p><p><i class='fa fa-angle-double-right'></i>Digipay</p></div>",
-            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Account Opening</h3><p>We provide our customers with the option of choosing from a wide range of Savings Accounts with different features and benefits. The Savings Accounts are designed to meet the banking needs of people from all walks of life. Each Savings Account offers unique features such as high transaction limit, cheque books, debit & credit cards etc. </p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
-            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>",
-            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Money Deposit</h3><p>& many more</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
-            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>"
+            "<p class='text-primary fw-semi-bold mb-6'>Education & Forms Filing <br class='d-none d-xl-block' /></p>",
+            "<p class='mb-8'>We at NISE COMPORT, help students, proffessional, Elders in filling various goverment forms, schemes available in that the year. </p>",
+            "<div class='single-service-list'><p><i class='fa fa-angle-double-right'></i>Competition Forms </p> <p><i class='fa fa-angle-double-right'></i> School/ Colleges/ Universities Admission Forms</p><p><i class='fa fa-angle-double-right'></i>Governemnt Schemes</p><p><i class='fa fa-angle-double-right'></i>Digital Certificates like (Residential, Income, Caste, Birth, Death etc)</p></div>"
         ],
-        "bodyBottom": "Pleasure rationally encounter consequences that are extremely painful. Nor again there anyone who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit"
+        "bodyBottom": "We at NISE COMPORT help in getting you online filling , payment and other form filling services at our offices."
     },
     {
         "id": 5,
         "icon": "./images/service/icon/5.png",
         "smallIcon": "/images/service/icon/small/5.png",
         "image": "./images/service/3.png",
-        "title": "Fee Payment",
+        "title": "Website",
+        "subtitle": "We are delighted to bring website services to our customers",
         "categories": [
             "Digital Solution",
             "Business Plan",
@@ -120,17 +132,14 @@
             "Marketing Policy",
             "Campaign & PR"
         ],
-        "excerpt": "College Fees, School Fees, Tax Fees & many more payments",
+        "excerpt": "Creating websites, hosting, ecommerce  projects etc",
         "body": [
-            "<p class='text-primary fw-semi-bold mb-6'>Business Correspondent (BC)<br class='d-none d-xl-block' /></p>",
-            "<p class='mb-8'>As a Business correspondents we are bank representatives. We help customers to open bank accounts, deposit money, withdraw money, transfer money, fix deposit, gold loan, personal loan, bike, car or home loan etc. We have partnered up with multiple banks to allow seemless flow for banking. </p>",
-            "<div class='single-service-list'><p><i class='fa fa-angle-double-right'></i>Bank of Baroda (Telco Branch)</p> <p><i class='fa fa-angle-double-right'></i>ICICI Bank (Telco Branch) </p><p><i class='fa fa-angle-double-right'></i>HDFC Bank (Telco Branch)</p><p><i class='fa fa-angle-double-right'></i>Digipay</p></div>",
-            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Account Opening</h3><p>We provide our customers with the option of choosing from a wide range of Savings Accounts with different features and benefits. The Savings Accounts are designed to meet the banking needs of people from all walks of life. Each Savings Account offers unique features such as high transaction limit, cheque books, debit & credit cards etc. </p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
-            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>",
-            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Money Deposit</h3><p>& many more</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
-            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>"
+            "<p class='text-primary fw-semi-bold mb-6'>Create & Deploy<br class='d-none d-xl-block' /></p>",
+            "<p class='mb-8'>We help in creating , deploying various small buisnesses and provide them the platform for being digital. We are market best budget freindly organisation that help the buisness to turn into online.</p>",
+            "<div class='single-service-list'><p>Stack that we use are </p> <p><i class='fa fa-angle-double-right'></i>React</p><p><i class='fa fa-angle-double-right'></i>Angular</p><p><i class='fa fa-angle-double-right'></i>Wordpress</p></div>",
+            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Use Cases</h3><p>For security purposes we are not added the client portfolios, once proper aggrement is done we will provide the Clients Website links</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/website.png' alt='service' /></div></div>"
         ],
-        "bodyBottom": "Pleasure rationally encounter consequences that are extremely painful. Nor again there anyone who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit"
+        "bodyBottom": "We at NISE COMPORT, help in getting our client what they need at best possible services, We fincaise the client idea, give them the prototype, sign aggrement, and start working on the project and get it delivered."
     },
     {
         "id": 6,
@@ -138,6 +147,7 @@
         "smallIcon": "/images/service/icon/small/6.png",
         "image": "./images/service/3.png",
         "title": "Form Filing",
+        "subtitle": "We  are delighted to bring form filling services to our customers",
         "categories": [
             "Digital Solution",
             "Business Plan",
@@ -148,13 +158,8 @@
         ],
         "excerpt": "ITR (Income Tax Return), GST, School Forms, College Forms & many more ",
         "body": [
-            "<p class='text-primary fw-semi-bold mb-6'>Business Correspondent (BC)<br class='d-none d-xl-block' /></p>",
-            "<p class='mb-8'>As a Business correspondents we are bank representatives. We help customers to open bank accounts, deposit money, withdraw money, transfer money, fix deposit, gold loan, personal loan, bike, car or home loan etc. We have partnered up with multiple banks to allow seemless flow for banking. </p>",
-            "<div class='single-service-list'><p><i class='fa fa-angle-double-right'></i>Bank of Baroda (Telco Branch)</p> <p><i class='fa fa-angle-double-right'></i>ICICI Bank (Telco Branch) </p><p><i class='fa fa-angle-double-right'></i>HDFC Bank (Telco Branch)</p><p><i class='fa fa-angle-double-right'></i>Digipay</p></div>",
-            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Account Opening</h3><p>We provide our customers with the option of choosing from a wide range of Savings Accounts with different features and benefits. The Savings Accounts are designed to meet the banking needs of people from all walks of life. Each Savings Account offers unique features such as high transaction limit, cheque books, debit & credit cards etc. </p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
-            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>",
-            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Money Deposit</h3><p>& many more</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
-            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>"
+            "<p class='text-primary fw-semi-bold mb-6'>Goverment Filling done as following<br class='d-none d-xl-block' /></p>",
+            "<p class='mb-8'>At NISE COMPORT we provide many services that are related to Buisness consultant such as filing GST, ITR (Income Tax Return) for Company or Individuals, FSSAI, FOOD LICENSE, Udyam Registration and many more</p>"
         ],
         "bodyBottom": "Pleasure rationally encounter consequences that are extremely painful. Nor again there anyone who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit"
     },
@@ -164,6 +169,7 @@
         "smallIcon": "/images/service/icon/small/7.png",
         "image": "./images/service/3.png",
         "title": "IT Sales & Service",
+        "subtitle": "We  are delighted to bring IT Sales & Service to our customers",
         "categories": [
             "Digital Solution",
             "Business Plan",
@@ -174,15 +180,11 @@
         ],
         "excerpt": "Laptop, Desktop Sales and Service with peripherals",
         "body": [
-            "<p class='text-primary fw-semi-bold mb-6'>Business Correspondent (BC)<br class='d-none d-xl-block' /></p>",
-            "<p class='mb-8'>As a Business correspondents we are bank representatives. We help customers to open bank accounts, deposit money, withdraw money, transfer money, fix deposit, gold loan, personal loan, bike, car or home loan etc. We have partnered up with multiple banks to allow seemless flow for banking. </p>",
-            "<div class='single-service-list'><p><i class='fa fa-angle-double-right'></i>Bank of Baroda (Telco Branch)</p> <p><i class='fa fa-angle-double-right'></i>ICICI Bank (Telco Branch) </p><p><i class='fa fa-angle-double-right'></i>HDFC Bank (Telco Branch)</p><p><i class='fa fa-angle-double-right'></i>Digipay</p></div>",
-            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Account Opening</h3><p>We provide our customers with the option of choosing from a wide range of Savings Accounts with different features and benefits. The Savings Accounts are designed to meet the banking needs of people from all walks of life. Each Savings Account offers unique features such as high transaction limit, cheque books, debit & credit cards etc. </p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
-            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>",
-            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Money Deposit</h3><p>& many more</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
-            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>"
+            "<p class='text-primary fw-semi-bold mb-6'>PC | LAPTOP | PERIPHERAL | SECURITY <br class='d-none d-xl-block' /></p>",
+            "<p class='mb-8'>We at NISE COMPORT provide IT solutions & service. We also give sales & service related to Laptop and desktop. We also deal in Printes, Ink, Printing Cards, CCTV, security services and many more.</p>",
+            "<div class='single-service-list'><p>Brands we deal in</p><p><i class='fa fa-angle-double-right'></i>Dell</p><p><i class='fa fa-angle-double-right'></i>Lenovo</p><p><i class='fa fa-angle-double-right'></i>Acer</p><p><i class='fa fa-angle-double-right'></i>Asus</p><p><i class='fa fa-angle-double-right'></i>Hp</p><p><i class='fa fa-angle-double-right'></i>Toshiba</p><p><i class='fa fa-angle-double-right'></i>& many more</p></div>"
         ],
-        "bodyBottom": "Pleasure rationally encounter consequences that are extremely painful. Nor again there anyone who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit"
+        "bodyBottom": "We at NISE COMPORT provide all services under one umbrella."
     },
     {
         "id": 8,
@@ -190,6 +192,7 @@
         "smallIcon": "/images/service/icon/small/8.png",
         "image": "./images/service/3.png",
         "title": "Travel",
+        "subtitle": "We  are delighted to bring travel services to our customers",
         "categories": [
             "Digital Solution",
             "Business Plan",
@@ -200,14 +203,10 @@
         ],
         "excerpt": "Flight booking, Train booking, Bus booking, Hotel booking & many more travel service",
         "body": [
-            "<p class='text-primary fw-semi-bold mb-6'>Business Correspondent (BC)<br class='d-none d-xl-block' /></p>",
-            "<p class='mb-8'>As a Business correspondents we are bank representatives. We help customers to open bank accounts, deposit money, withdraw money, transfer money, fix deposit, gold loan, personal loan, bike, car or home loan etc. We have partnered up with multiple banks to allow seemless flow for banking. </p>",
-            "<div class='single-service-list'><p><i class='fa fa-angle-double-right'></i>Bank of Baroda (Telco Branch)</p> <p><i class='fa fa-angle-double-right'></i>ICICI Bank (Telco Branch) </p><p><i class='fa fa-angle-double-right'></i>HDFC Bank (Telco Branch)</p><p><i class='fa fa-angle-double-right'></i>Digipay</p></div>",
-            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Account Opening</h3><p>We provide our customers with the option of choosing from a wide range of Savings Accounts with different features and benefits. The Savings Accounts are designed to meet the banking needs of people from all walks of life. Each Savings Account offers unique features such as high transaction limit, cheque books, debit & credit cards etc. </p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
-            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>",
-            "<div class='row sub-section-mb mt-7 mt-lg-0'><div class='col-xl-6 col-md-6'><div class='sub-section-title'><h3 class='title'>Money Deposit</h3><p>& many more</p></div></div><div class='col-xl-5 col-md-6 text-center mt-7 mt-md-0 offset-xl-1'><img class='mt-xl-n3 ml-n2' src='/images/service/4.png' alt='service' /></div></div>",
-            "<div class='row sub-section-mb70'><div class='col-xl-6 col-md-5 order-last order-lg-first text-center'><img class='mr-n2 mt-7 mt-md-0' src='/images/service/5.png' alt='service' /></div><div class='col-xl-5 col-md-6 offset-xl-1'><div class='sub-section-title'><h3 class='title'>Money Withdrawl</h3><p>& many more </p></div></div></div>"
+            "<p class='text-primary fw-semi-bold mb-6'>Flight | Train | Bus  <br class='d-none d-xl-block' /></p>",
+            "<p class='mb-8'>We at NISE COMPORT provide provide booking for Flight, Train and bus as nominal prices.</p>",
+            "<div class='single-service-list'><p>We are working with </p><p><i class='fa fa-angle-double-right'></i>IRCTC</p><p><i class='fa fa-angle-double-right'></i>IRCTC Air</p><p><i class='fa fa-angle-double-right'></i>BookMyTicket</p><p><i class='fa fa-angle-double-right'></i>GoIbibo</p><p><i class='fa fa-angle-double-right'></i>Hp</p><p><i class='fa fa-angle-double-right'></i>HolidayINN</p><p><i class='fa fa-angle-double-right'></i>& many more</p></div>"
         ],
-        "bodyBottom": "Pleasure rationally encounter consequences that are extremely painful. Nor again there anyone who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit"
+        "bodyBottom": "We at NISE COMPORT provide booking services to our clients at best possible ways"
     }
 ]

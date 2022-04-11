@@ -37,6 +37,8 @@ const BrandContainer = () => {
     };
     return (
         <div className="brand-section section-py">
+            {console.log("Hitting here", swiperOption)}
+            {console.log("HomeData here", HomeData)}
             <div className="container">
                 <div className="row">
                     <div className="col-12">
@@ -45,7 +47,8 @@ const BrandContainer = () => {
                                 HomeData[1].brand.map((single, key) => {
                                     return (
                                         <SwiperSlide key={key}>
-                                            <Brand key={key} data={single} />
+                                            <div key={key}>Hello</div>
+                                            {/* <Brand key={key} data={single} /> */}
                                         </SwiperSlide>
                                     );
                                 })}
