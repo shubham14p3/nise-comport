@@ -4,18 +4,6 @@ import SectionTitle from "../../components/section-title";
 import Parallax from "parallax-js";
 import { Link } from "react-router-dom";
 const SignInForm = () => {
-    // const sceneEl = useRef(null);
-
-    // useEffect(() => {
-    //     const parallaxInstance = new Parallax(sceneEl.current, {
-    //         relativeInput: true,
-    //     });
-
-    //     parallaxInstance.enable();
-
-    //     return () => parallaxInstance.disable();
-    // }, []);
-
     const [swapPanel, setSwapPanel] = useState(false);
 
     const signUpButton = () => {
@@ -39,7 +27,8 @@ const SignInForm = () => {
     let handleSubmit = async (e) => {
         e.preventDefault();
         const { name, email, password } = user;
-        const res = await fetch("/register", {
+        // "proxy": "https://ns-db-2022.herokuapp.com",
+        const res = await fetch("https://ns-db-2022.herokuapp.com/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
