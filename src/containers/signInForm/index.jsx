@@ -24,7 +24,36 @@ const SignInForm = () => {
     const signInButton = () => {
         setSwapPanel(false);
     };
+    const [user, setUser] = useState({
+        name: "",
+        email: "",
+        password: "",
+    });
+    let name, value;
+    const handleInput = (e) => {
+        name = e.target.name;
+        value = e.target.value;
+        setUser({ ...user, [name]: value });
+    };
 
+    let handleSubmit = async (e) => {
+        e.preventDefault();
+        const { name, email, password } = user;
+        const res = await fetch("/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                name,
+                email,
+                password,
+            }),
+        });
+        const resJson = await res.json();
+        console.log("resJson:", resJson);
+        if (resJson.status === 200 || resJson) {
+            window.alert("Successful");
+        }
+    };
     return (
         <div className="sigin">
             <div
@@ -37,16 +66,35 @@ const SignInForm = () => {
                 id="container"
             >
                 <div className="form-container sign-up-container">
-                    <form action="#">
+                    <form method="POST">
                         <h1>Create Account</h1>
                         <div className="social-container"></div>
                         <span>or use your email for registration</span>
-                        <input type="text" placeholder="Name" />
-                        <input type="email" placeholder="Email" />
-                        <input type="password" placeholder="Password" />
+                        <input
+                            type="text"
+                            placeholder="Name"
+                            name="name"
+                            value={user.name}
+                            onChange={handleInput}
+                        />
+                        <input
+                            type="email"
+                            placeholder="Email"
+                            name="email"
+                            value={user.email}
+                            onChange={handleInput}
+                        />
+                        <input
+                            type="password"
+                            placeholder="Password"
+                            name="password"
+                            value={user.password}
+                            onChange={handleInput}
+                        />
                         <button
                             className="btn btn-lg btn-dark btn-hover-dark"
-                            onClick={""}
+                            type="submit"
+                            onClick={handleSubmit}
                         >
                             Sign Up
                         </button>
