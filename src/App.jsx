@@ -27,6 +27,7 @@ import OfferDetailsPage from "./templates/offer-details";
 import OfferDate from "./templates/offer-date";
 import OfferTag from "./templates/offer-tag";
 import OfferCategory from "./templates/offer-category";
+import SignIn from "./pages/sigin";
 import "./assets/css/vendor/metropolis.css";
 import "./assets/css/vendor/icofont.min.css";
 import "./assets/css/vendor/font-awesome.css";
@@ -169,6 +170,10 @@ const App = () => {
                                 process.env.PUBLIC_URL + "/category/:slug"
                             }`}
                             element={<BlogCategory />}
+                        />
+                        <Route
+                            path={`${process.env.PUBLIC_URL + "/login"}`}
+                            element={<SignIn />}
                         />
                         <Route path="*" element={<PageNotFound />} />
                     </Routes>
