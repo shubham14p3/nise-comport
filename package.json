@@ -1,8 +1,7 @@
 {
   "name": "nise-comport",
   "version": "0.1.0",
-  "private": true,
-  "proxy": "https://ns-db-2022.herokuapp.com",
+  "private": true,  
   "dependencies": {
     "@axetroy/react-download": "^1.1.1",
     "@babel/preset-react": "^7.16.7",
