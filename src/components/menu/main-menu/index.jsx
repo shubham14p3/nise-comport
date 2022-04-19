@@ -125,6 +125,14 @@ const MainMenu = () => {
                         </li>
                     </ul>
                 </li>
+                <li>
+                    <NavLink
+                        // className="sub-menu-link"
+                        to={process.env.PUBLIC_URL + "/login"}
+                    >
+                        LogIn
+                    </NavLink>
+                </li>
             </ul>
         </nav>
     );
