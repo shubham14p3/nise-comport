@@ -23,12 +23,18 @@ const SignInForm = () => {
         value = e.target.value;
         setUser({ ...user, [name]: value });
     };
+    const baseURL =
+        process.env.NODE_ENV === "development"
+            ? "localhost:5000"
+            : "https://ns-db-2022.herokuapp.com";
+
+    const endpoint = "/register";
 
     let handleSubmit = async (e) => {
         e.preventDefault();
         const { name, email, password } = user;
         // "proxy": "https://ns-db-2022.herokuapp.com",
-        const res = await fetch("https://ns-db-2022.herokuapp.com/register", {
+        const res = await fetch(baseURL + endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
