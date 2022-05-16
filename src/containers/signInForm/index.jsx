@@ -16,6 +16,7 @@ const SignInForm = () => {
         name: "",
         email: "",
         password: "",
+        cpassword: "",
     });
     let name, value;
     const handleInput = (e) => {
@@ -25,20 +26,38 @@ const SignInForm = () => {
     };
     const baseURL =
         process.env.NODE_ENV === "development"
-            ? "localhost:5000"
+            ? "https://ns-db-2022.herokuapp.com"
             : "https://ns-db-2022.herokuapp.com";
 
-    const endpoint = "/register";
+    const signUpEndPoint = "/register";
+    const signnInEndPoint = "/signin";
 
-    let handleSubmit = async (e) => {
+    const handleSingUpSubmit = async (e) => {
         e.preventDefault();
-        const { name, email, password } = user;
-        // "proxy": "https://ns-db-2022.herokuapp.com",
-        const res = await fetch(baseURL + endpoint, {
+        const { name, email, password, cpassword } = user;
+        const res = await fetch(baseURL + signUpEndPoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 name,
+                email,
+                password,
+                cpassword,
+            }),
+        });
+        const resJson = await res.json();
+        console.log("resJson:", resJson);
+        if (resJson.status === 200 || resJson) {
+            window.alert("Successful");
+        }
+    };
+    const handleSingInSubmit = async (e) => {
+        e.preventDefault();
+        const { email, password } = user;
+        const res = await fetch(baseURL + signnInEndPoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
                 email,
                 password,
             }),
@@ -46,7 +65,7 @@ const SignInForm = () => {
         const resJson = await res.json();
         console.log("resJson:", resJson);
         if (resJson.status === 200 || resJson) {
-            window.alert("Successful");
+            window.alert("Successful singin");
         }
     };
     return (
@@ -86,27 +105,46 @@ const SignInForm = () => {
                             value={user.password}
                             onChange={handleInput}
                         />
+                        <input
+                            type="password"
+                            placeholder="CPassword"
+                            name="cpassword"
+                            value={user.cpassword}
+                            onChange={handleInput}
+                        />
                         <button
                             className="btn btn-lg btn-dark btn-hover-dark"
                             type="submit"
-                            onClick={handleSubmit}
+                            onClick={handleSingUpSubmit}
                         >
                             Sign Up
                         </button>
                     </form>
                 </div>
                 <div className="form-container sign-in-container">
-                    <form action="#">
+                    <form method="POST">
                         <h1>Sign in</h1>
                         <div className="social-container"></div>
                         <span>or use your account</span>
-                        <input type="email" placeholder="Email" />
-                        <input type="password" placeholder="Password" />
+                        <input
+                            type="email"
+                            placeholder="Email"
+                            name="email"
+                            value={user.email}
+                            onChange={handleInput}
+                        />
+                        <input
+                            type="password"
+                            placeholder="Password"
+                            name="password"
+                            value={user.password}
+                            onChange={handleInput}
+                        />
                         Forgot your password?
                         {/* <a href="#">Forgot your password?</a> */}
                         <button
                             className="btn btn-lg btn-dark btn-hover-dark"
-                            onClick={""}
+                            onClick={handleSingInSubmit}
                         >
                             Sign In
                         </button>
