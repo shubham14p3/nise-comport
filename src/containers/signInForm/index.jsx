@@ -37,7 +37,13 @@ const SignInForm = () => {
         const { name, email, password, cpassword } = user;
         const res = await fetch(baseURL + signUpEndPoint, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "DELETE, POST, GET, OPTIONS",
+                "Access-Control-Allow-Headers":
+                    "Content-Type, Authorization, X-Requested-With",
+            },
             body: JSON.stringify({
                 name,
                 email,
@@ -56,7 +62,13 @@ const SignInForm = () => {
         const { email, password } = user;
         const res = await fetch(baseURL + signnInEndPoint, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "DELETE, POST, GET, OPTIONS",
+                "Access-Control-Allow-Headers":
+                    "Content-Type, Authorization, X-Requested-With",
+            },
             body: JSON.stringify({
                 email,
                 password,
