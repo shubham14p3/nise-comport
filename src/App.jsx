@@ -28,6 +28,7 @@ import OfferDate from "./templates/offer-date";
 import OfferTag from "./templates/offer-tag";
 import OfferCategory from "./templates/offer-category";
 import SignIn from "./pages/sigin";
+import UserProfile from "./pages/UserProfile";
 import "./assets/css/vendor/metropolis.css";
 import "./assets/css/vendor/icofont.min.css";
 import "./assets/css/vendor/font-awesome.css";
@@ -174,6 +175,10 @@ const App = () => {
                         <Route
                             path={`${process.env.PUBLIC_URL + "/login"}`}
                             element={<SignIn />}
+                        />
+                        <Route
+                            path={`${process.env.PUBLIC_URL + "/profile"}`}
+                            element={<UserProfile />}
                         />
                         <Route path="*" element={<PageNotFound />} />
                     </Routes>
