@@ -41,8 +41,8 @@ const UserProfilePage = () => {
     };
     const baseURL =
         process.env.NODE_ENV === "development"
-            ? "https://ns-db-2022.herokuapp.com"
-            : "https://ns-db-2022.herokuapp.com";
+            ? "https://www.nisecomport.xyz/.netlify/functions/api"
+            : "https://www.nisecomport.xyz/.netlify/functions/api";
     const callUserPage = async () => {
         try {
             const res = await fetch(baseURL + "/profile", {

@@ -26,8 +26,8 @@ const SignInForm = () => {
     };
     const baseURL =
         process.env.NODE_ENV === "development"
-            ? "https://ns-db-2022.herokuapp.com"
-            : "https://ns-db-2022.herokuapp.com";
+            ? "https://www.nisecomport.xyz/.netlify/functions/api"
+            : "https://www.nisecomport.xyz/.netlify/functions/api";
 
     const signUpEndPoint = "/register";
     const signnInEndPoint = "/signin";
