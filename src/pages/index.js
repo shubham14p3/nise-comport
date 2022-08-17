@@ -30,7 +30,7 @@ const HomePage = () => {
                     <ServiceListContainer />
                     <TestimonialContainer />
                     <FunFactContainer classOption="mt-10 mt-lg-0" />
-                    <TeamContainer classOption="section-pb" />
+                    {/* <TeamContainer classOption="section-pb" /> */}
                     <HomeBlog />
                     {/* <NewsletterArea /> */}
                     <Footer />

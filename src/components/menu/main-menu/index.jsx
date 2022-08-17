@@ -125,7 +125,7 @@ const MainMenu = () => {
                         </li>
                     </ul>
                 </li>
-                <li>
+                {/* <li>
                     <NavLink
                         // className="sub-menu-link"
                         to={process.env.PUBLIC_URL + "/login"}
@@ -142,7 +142,7 @@ const MainMenu = () => {
                             </NavLink>
                         </li>
                     </ul>
-                </li>
+                </li> */}
             </ul>
         </nav>
     );
