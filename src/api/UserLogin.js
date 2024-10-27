@@ -32,7 +32,7 @@ export const handleSingInSubmit = async (e) => {
     // "proxy": "https://ns-db-2022.herokuapp.com",
     const res = await fetch(baseURL + signnInEndPoint, {
         method: "POST",
-        mode: 'no-cors',
+        mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             email,

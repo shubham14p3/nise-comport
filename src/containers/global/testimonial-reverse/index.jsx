@@ -3,10 +3,11 @@ import SectionTitle from "../../../components/section-title";
 import { Swiper, SwiperSlide } from "swiper/react";
 import Testimonial from "../../../components/testimonial";
 import HomeData from "../../../data/home.json";
-import SwiperCore, { Navigation } from "swiper";
+// Update the import for Navigation
+import { Navigation } from "swiper/modules";
 import Parallax from "parallax-js";
 
-SwiperCore.use([Navigation]);
+// No need to use SwiperCore.use() anymore in the newer versions
 const TestimonialReverse = () => {
     const swiperOption = {
         loop: false,
@@ -17,6 +18,7 @@ const TestimonialReverse = () => {
             nextEl: ".testimonial-carousel .swiper-button-next",
             prevEl: ".testimonial-carousel .swiper-button-prev",
         },
+        modules: [Navigation], // Add modules property here
     };
 
     const sceneEl = useRef(null);
@@ -30,6 +32,7 @@ const TestimonialReverse = () => {
 
         return () => parallaxInstance.disable();
     }, []);
+
     return (
         <section className="testimonial-section section-py">
             <div className="container">
@@ -44,7 +47,7 @@ const TestimonialReverse = () => {
                             <h5 className="happy-customer">
                                 More over{" "}
                                 <span className="font-weight-bold">2500</span>{" "}
-                                happy customer
+                                happy customers
                             </h5>
                         </div>
                         <div className="testimonial-carousel position-relative">
