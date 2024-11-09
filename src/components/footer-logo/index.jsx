@@ -4,7 +4,7 @@ import { getImage } from "../../data/getImage"; // Import the getImage function
 
 const Logo = ({ image, classOption }) => {
     return (
-        <Link className={`${classOption}`} to="/">
+        <Link className={`${classOption}`} to="/home">
             <img
                 className="logo-main"
                 src={getImage(image)} // Use getImage to resolve the image path

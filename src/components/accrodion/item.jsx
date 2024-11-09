@@ -14,7 +14,6 @@ const AccordionItem = ({ children, id }) => {
     useEffect(() => {
         if (!setIdsOnInit) return;
         setIdsOnInit(id);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
     const childrenWithProps = Children.map(children, (child) => {

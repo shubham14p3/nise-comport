@@ -28,7 +28,6 @@ const Accordion = ({ children, classOption }) => {
 
     useEffect(() => {
         setActiveIdOnInit();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [ids.length]);
 
     return (

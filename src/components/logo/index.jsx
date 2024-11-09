@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 const Logo = ({ image, classOption }) => {
     return (
-        <Link className={`${classOption}`} to={"/"}>
+        <Link className={`${classOption}`} to={"/home"}>
             <img
                 className="logo-main"
                 src={image}

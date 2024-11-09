@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import "./PageNotFound.css"; // Make sure to import the CSS file
+import "./PageNotFound.css";
+import Footer from "../layouts/footer";
 
 const PageNotFound = () => {
     return (
@@ -9,29 +10,28 @@ const PageNotFound = () => {
                 <div className="intro-text-container">
                     <p className="intro-text">404 NOT FOUND</p>
                 </div>
-                <section className="container">
-                    <div className="Scarecrow">
+                <section className="content-container">
+                    <div className="scarecrow-container">
                         <img
                             src="https://raw.githubusercontent.com/Petsamuel/error-page/main/assets/images/Scarecrow.png"
-                            alt="404"
+                            alt="404 Scarecrow"
+                            className="scarecrow-image"
                         />
                     </div>
-                    <div className="error-message-container">
+                    <div className="message-container">
                         <p className="error-heading">I have bad news for you</p>
                         <p className="error-text">
                             The page you are looking for might be removed or is temporarily unavailable.
                         </p>
-                        <div className="button">
-                            <Link className="footer-link" to={process.env.PUBLIC_URL + "/"}>
+                        <div className="button-container">
+                            <Link className="back-button" to={process.env.PUBLIC_URL + "/home"}>
                                 Back to homepage
                             </Link>
                         </div>
                     </div>
                 </section>
             </main>
-            <footer className="footer">
-                <p className="footer-text">created by Bieefilled - devChallenges.io</p>
-            </footer>
+            <Footer/>
         </div>
     );
 };

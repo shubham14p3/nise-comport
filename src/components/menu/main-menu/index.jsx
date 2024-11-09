@@ -86,7 +86,7 @@ const MainMenu = () => {
                     </NavLink>
                 </li>
                 <li>
-                    <NavLink to="/" end>
+                    <NavLink to="/home" end>
                         Company
                     </NavLink>
                     <ul className="sub-menu">

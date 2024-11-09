@@ -153,7 +153,7 @@ const MobileMenu = ({ show, onClose }) => {
                                 </NavLink>
                             </li>
                             <li>
-                                <NavLink to="/" end>
+                                <NavLink to="/home" end>
                                     Company
                                 </NavLink>
                                 <span
