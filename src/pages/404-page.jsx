@@ -1,32 +1,37 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import "./PageNotFound.css"; // Make sure to import the CSS file
 
 const PageNotFound = () => {
     return (
-        <div className="404">
-            <div className="mail-div-404">
-                <aside className="mail-div-aside-404">
-                    <img
-                        src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/4424790/Mirror.png"
-                        alt="404"
-                    />
-                </aside>
-                <main className="main-div-404">
-                    <h1>Sorry!</h1>
-                    <p>
-                        Uh oh! Looks like you got lost.
-                        <em>
-                            . . . Go back to the homepage if you start fresh!
-                        </em>
-                    </p>
-                    <Link
-                        className="footer-link"
-                        to={process.env.PUBLIC_URL + "/"}
-                    >
-                        Go back now!
-                    </Link>
-                </main>
-            </div>
+        <div className="PageNotFound">
+            <main>
+                <div className="intro-text-container">
+                    <p className="intro-text">404 NOT FOUND</p>
+                </div>
+                <section className="container">
+                    <div className="Scarecrow">
+                        <img
+                            src="https://raw.githubusercontent.com/Petsamuel/error-page/main/assets/images/Scarecrow.png"
+                            alt="404"
+                        />
+                    </div>
+                    <div className="error-message-container">
+                        <p className="error-heading">I have bad news for you</p>
+                        <p className="error-text">
+                            The page you are looking for might be removed or is temporarily unavailable.
+                        </p>
+                        <div className="button">
+                            <Link className="footer-link" to={process.env.PUBLIC_URL + "/"}>
+                                Back to homepage
+                            </Link>
+                        </div>
+                    </div>
+                </section>
+            </main>
+            <footer className="footer">
+                <p className="footer-text">created by Bieefilled - devChallenges.io</p>
+            </footer>
         </div>
     );
 };

@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import NavScrollTop from "./components/nav-scroll-top";
+import WelcomePage from "./pages/welcomePage";
 import HomePage from "./pages/index";
 import AboutPage from "./pages/about";
 import ServicePage from "./pages/service";
@@ -45,6 +46,10 @@ const App = () => {
                     <Routes>
                         <Route
                             path={`${process.env.PUBLIC_URL + "/"}`}
+                            element={<WelcomePage />}
+                        />
+                        <Route
+                            path={`${process.env.PUBLIC_URL + "/home"}`}
                             element={<HomePage />}
                         />
                         <Route
@@ -60,40 +65,34 @@ const App = () => {
                             element={<OfferPage />}
                         />
                         <Route
-                            path={`${
-                                process.env.PUBLIC_URL +
+                            path={`${process.env.PUBLIC_URL +
                                 "/offer-details/:offerId"
-                            }`}
+                                }`}
                             element={<OfferDetailsPage />}
                         />
                         <Route
-                            path={`${
-                                process.env.PUBLIC_URL + "/offer-left-sidebar"
-                            }`}
+                            path={`${process.env.PUBLIC_URL + "/offer-left-sidebar"
+                                }`}
                             element={<OfferLeftSidebarPage />}
                         />
                         <Route
-                            path={`${
-                                process.env.PUBLIC_URL + "/offer-right-sidebar"
-                            }`}
+                            path={`${process.env.PUBLIC_URL + "/offer-right-sidebar"
+                                }`}
                             element={<OfferRightSidebarPage />}
                         />
                         <Route
-                            path={`${
-                                process.env.PUBLIC_URL + "/offer-category/:slug"
-                            }`}
+                            path={`${process.env.PUBLIC_URL + "/offer-category/:slug"
+                                }`}
                             element={<OfferCategory />}
                         />
                         <Route
-                            path={`${
-                                process.env.PUBLIC_URL + "/offer-date/:date"
-                            }`}
+                            path={`${process.env.PUBLIC_URL + "/offer-date/:date"
+                                }`}
                             element={<OfferDate />}
                         />
                         <Route
-                            path={`${
-                                process.env.PUBLIC_URL + "/offer-tag/:slug"
-                            }`}
+                            path={`${process.env.PUBLIC_URL + "/offer-tag/:slug"
+                                }`}
                             element={<OfferTag />}
                         />
                         {/* 
@@ -112,10 +111,9 @@ const App = () => {
                             element={<ServicePage />}
                         />
                         <Route
-                            path={`${
-                                process.env.PUBLIC_URL +
+                            path={`${process.env.PUBLIC_URL +
                                 "/service-details/:title"
-                            }`}
+                                }`}
                             element={<ServiceDetails />}
                         />
                         <Route
@@ -135,27 +133,23 @@ const App = () => {
                             element={<BlogPage />}
                         />
                         <Route
-                            path={`${
-                                process.env.PUBLIC_URL + "/blog-left-sidebar"
-                            }`}
+                            path={`${process.env.PUBLIC_URL + "/blog-left-sidebar"
+                                }`}
                             element={<BlogLeftSidebarPage />}
                         />
                         <Route
-                            path={`${
-                                process.env.PUBLIC_URL + "/blog-right-sidebar"
-                            }`}
+                            path={`${process.env.PUBLIC_URL + "/blog-right-sidebar"
+                                }`}
                             element={<BlogRightSidebarPage />}
                         />
                         <Route
-                            path={`${
-                                process.env.PUBLIC_URL + "/blog-details/:blogId"
-                            }`}
+                            path={`${process.env.PUBLIC_URL + "/blog-details/:blogId"
+                                }`}
                             element={<BlogDetailsPage />}
                         />
                         <Route
-                            path={`${
-                                process.env.PUBLIC_URL + "/author/:author"
-                            }`}
+                            path={`${process.env.PUBLIC_URL + "/author/:author"
+                                }`}
                             element={<BlogAuthor />}
                         />
                         <Route
@@ -167,9 +161,8 @@ const App = () => {
                             element={<BlogTag />}
                         />
                         <Route
-                            path={`${
-                                process.env.PUBLIC_URL + "/category/:slug"
-                            }`}
+                            path={`${process.env.PUBLIC_URL + "/category/:slug"
+                                }`}
                             element={<BlogCategory />}
                         />
                         <Route
