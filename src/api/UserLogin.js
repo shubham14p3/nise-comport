@@ -21,7 +21,6 @@ export const handleSingUpSubmit = async (e) => {
         }),
     });
     const resJson = await res.json();
-    console.log("resJson:", resJson);
     if (resJson.status === 200 || resJson) {
         window.alert("Successful");
     }
@@ -40,7 +39,6 @@ export const handleSingInSubmit = async (e) => {
         }),
     });
     const resJson = await res.json();
-    console.log("resJson:", resJson);
     if (resJson.status === 200 || resJson) {
         window.alert("Successful singin");
     }

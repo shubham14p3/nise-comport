@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import Button from "../../../components/button";
 import SectionTitle from "../../../components/section-title";
 import Parallax from "parallax-js";
+import { getImage } from "../../../data/getImage";
 
 const HomeAboutContainer = () => {
     const sceneEl = useRef(null);
@@ -54,7 +55,7 @@ const HomeAboutContainer = () => {
                         >
                             <div data-depth="0.2">
                                 <img
-                                    src={`${process.env.PUBLIC_URL}/images/about/1.png`}
+                                    src={getImage('about/1.png')}
                                     alt="about"
                                 />
                             </div>
@@ -64,7 +65,7 @@ const HomeAboutContainer = () => {
             </div>
             <img
                 className="about-shape"
-                src={`${process.env.PUBLIC_URL}/images/about/shape.png`}
+                src={getImage('about/shape.png')}
                 alt="bg-shape"
             />
         </div>

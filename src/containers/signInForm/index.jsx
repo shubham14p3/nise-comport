@@ -52,7 +52,6 @@ const SignInForm = () => {
             }),
         });
         const resJson = await res.json();
-        console.log("resJson:", resJson);
         if (resJson.status === 200 || resJson) {
             window.alert("Successful");
         }
@@ -75,7 +74,6 @@ const SignInForm = () => {
             }),
         });
         const resJson = await res.json();
-        console.log("resJson:", resJson);
         if (resJson.status === 200 || resJson) {
             window.alert("Successful singin");
         }

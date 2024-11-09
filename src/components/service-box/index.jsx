@@ -1,36 +1,30 @@
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import { slugify } from "../../utils";
+import { getImage } from "../../data/getImage";
 
 const ServiceBox = ({ data }) => {
     return (
         <div className="service-media">
             <Link
-                to={
-                    process.env.PUBLIC_URL +
-                    `/service-details/${slugify(data.title)}`
-                }
+                to={`/service-details/${slugify(data.title)}`}
             >
                 <img
                     className="logo"
-                    src={process.env.PUBLIC_URL + data.icon}
+                    src={getImage(data.icon)}
                     alt=" service logo"
                 />
             </Link>
             <div className="service-media-body">
                 <h4 className="title">
                     <Link
-                        to={
-                            process.env.PUBLIC_URL +
-                            `/service-details/${slugify(data.title)}`
-                        }
+                        to={`/service-details/${slugify(data.title)}`}
                     >
                         {data.title}
                     </Link>
                 </h4>
                 <Link
                     to={
-                        process.env.PUBLIC_URL +
                         `/service-details/${slugify(data.title)}`
                     }
                 >

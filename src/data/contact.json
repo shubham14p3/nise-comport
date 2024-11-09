@@ -15,14 +15,12 @@
         "id": 3,
         "classOption": "address-list mb-4 mb-xl-10 pb-2",
         "title": "Landline Number",
-        "info": "0657 2917622<br />0657 2280722"
+        "info": "0657 2917622"
     },
     {
         "id": 4,
         "classOption": "address-list",
         "title": "Web Address",
         "info": "nweb.hub@gmail.com<br/> support@nisecomport.com"
-        
     }
-
 ]

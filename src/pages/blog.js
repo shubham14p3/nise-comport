@@ -20,7 +20,7 @@ const BlogPage = () => {
                         title="Blog Post"
                         excerpt="We update our latest service <br />
                         details here regularly "
-                        image="./images/blog/banner.png"
+                        image="blog/banner.png"
                     />
                     <BlogItemContainer data={BlogData} />
                     {/* <NewsletterArea /> */}

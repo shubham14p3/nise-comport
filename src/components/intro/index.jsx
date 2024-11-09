@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import Button from "../button";
 import Parallax from "parallax-js";
 import SocialIcon from "../../components/social-icon";
+import { getImage } from "../../data/getImage";
 
 const Intro = ({ data }) => {
     const sceneEl = useRef(null);
@@ -53,7 +54,7 @@ const Intro = ({ data }) => {
                             <div data-depth="0.2">
                                 <img
                                     className="animated"
-                                    src={`${process.env.PUBLIC_URL}/${data.image}`}
+                                    src={getImage('data.image')}
                                     alt=""
                                 />
                             </div>

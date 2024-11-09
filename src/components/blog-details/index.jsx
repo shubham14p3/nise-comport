@@ -5,30 +5,28 @@ import { slugify } from "../../utils";
 import SidebarTag from "../sidebar/sidbar-tag";
 import BlogData from "../../data/blog.json";
 import SocialIcon from "../social-icon";
+import { getImage } from "../../data/getImage";
 
 const BlogDetailsWrap = ({ data }) => {
     return (
         <div className="blog-details-wrap">
             <div className="blog-details-thumb">
                 <img
-                    src={`${process.env.PUBLIC_URL}/${data.media.largeImage}`}
+                    src={getImage(data.media.largeImage)}
                     alt="img"
                 />
             </div>
             <p className="blog-details-meta">
                 <Link
                     className="author"
-                    to={
-                        process.env.PUBLIC_URL +
-                        `/author/${slugify(data.author)}`
-                    }
+                    to={`/author/${slugify(data.author)}`}
                 >
                     {data.author}
                 </Link>
                 <span className="separator">-</span>
                 <Link
                     className="date"
-                    to={process.env.PUBLIC_URL + `/date/${slugify(data.date)}`}
+                    to={`/date/${slugify(data.date)}`}
                 >
                     {data.date}
                 </Link>

@@ -2,13 +2,12 @@ import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import { getImage } from "../../data/getImage"; // Import the getImage function
 
-const Logo = ({ image, classOption, data }) => {
-    const imageData = (image === '' || image === undefined || image === null) ? data.icon : image
+const Logo = ({ image, classOption }) => {
     return (
         <Link className={`${classOption}`} to="/">
             <img
                 className="logo-main"
-                src={getImage(imageData)} // Use getImage to resolve the image path
+                src={getImage(image)} // Use getImage to resolve the image path
                 alt="Logo"
             />
         </Link>

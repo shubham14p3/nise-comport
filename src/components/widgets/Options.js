@@ -1,4 +1,3 @@
-/* eslint-disable jsx-a11y/no-static-element-interactions */
 const Options = (props) => {
     return (
         <div className="chatbotbox-options">

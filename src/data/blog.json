@@ -2,14 +2,16 @@
     {
         "id": 1,
         "media": {
-            "rcImage": "./images/blog/post/aadhaar-post.png",
-            "gridImage": "./images/blog/aadhaar.png",
-            "largeImage": "./images/blog-details/aadhaar-banner.png"
+            "rcImage": "blog/post/aadhaar-post.png",
+            "gridImage": "blog/aadhaar.png",
+            "largeImage": "blog-details/aadhaar-banner.png"
         },
         "title": "Aadhaar Demographic Update",
-        "author": "Shubham",
+        "author": "Sanjay Kumar",
         "date": "1 January, 2021",
-        "categories": ["Service"],
+        "categories": [
+            "Service"
+        ],
         "tags": [
             "Aadhaar",
             "Demographic Update",
@@ -25,20 +27,22 @@
             "<p class='pb-2'>We have happy to share that we have started Aadhaar Demographic update  service<br class='d-none d-xl-block' /> We currently provide the following mentioned service below  </p>",
             "<div class='blog-details-list'><p><i class='fa fa-angle-double-right'></i>Mobile Update / Correction</p><p><i class='fa fa-angle-double-right'></i>Email Id Update / Correction</p><p><i class='fa fa-angle-double-right'></i>Name Update / Correction</p><p><i class='fa fa-angle-double-right'></i>Address Update / Correction</p><p><i class='fa fa-angle-double-right'></i>DOB Update / Correction</p></div>",
             "<div class='blog-qutation'><p>Aadhaar - AAM ADMI KA ADHIKAR </p><i class='icofont-quote-right'>UIDAI</i></div>",
-            "<div class='blog-details-grid'><div class='row mb-n7'><div class='col mb-7'><p>To avail this service , user / candidate need to take an prior appointment as per Covid guideline, and shall maintain safety regulation at the premises. Note: Kindly provide the Original document as well as prescribed documentation as per provide by UIDAI Guideline. </p></div><div class='col mb-7 text-end'><img class='d-block mx-auto mx-lg-0' src='/images/blog-details/2.png' alt='img' /></div></p></div></div></div>"
+            "<div class='blog-details-grid'><div class='row mb-n7'><div class='col mb-7'><p>To avail this service , user / candidate need to take an prior appointment as per Covid guideline, and shall maintain safety regulation at the premises. Note: Kindly provide the Original document as well as prescribed documentation as per provide by UIDAI Guideline. </p></div><div class='col mb-7 text-end'><img class='d-block mx-auto mx-lg-0' src='blog-details/2.png' alt='img' /></div></p></div></div></div>"
         ]
     },
     {
         "id": 2,
         "media": {
-            "rcImage": "./images/blog/post/2.png",
-            "gridImage": "images/blog/pan.png",
-            "largeImage": "./images/blog-details/pan-banner.png"
+            "rcImage": "blog/post/2.png",
+            "gridImage": "blog/pan.png",
+            "largeImage": "blog-details/pan-banner.png"
         },
         "title": "Pan Card Service",
         "author": "Sanjay Kumar",
         "date": "20 September, 2018",
-        "categories": ["Service"],
+        "categories": [
+            "Service"
+        ],
         "tags": [
             "CSC",
             "Pragya Kendra",
@@ -61,15 +65,23 @@
     {
         "id": 3,
         "media": {
-            "rcImage": "./images/blog/post/3.png",
-            "gridImage": "images/blog/passport.png",
-            "largeImage": "./images/blog-details/1.png"
+            "rcImage": "blog/post/3.png",
+            "gridImage": "blog/passport.png",
+            "largeImage": "blog-details/1.png"
         },
         "title": "Indian Passport",
-        "author": "Shubham",
+        "author": "Sanjay Kumar",
         "date": "10 September, 2021",
-        "categories": ["Investment"],
-        "tags": ["Structure", "React", "Premium", "Clean", "WordPress"],
+        "categories": [
+            "Investment"
+        ],
+        "tags": [
+            "Structure",
+            "React",
+            "Premium",
+            "Clean",
+            "WordPress"
+        ],
         "body": [
             "<p class='pb-2'>Pleasure rationally encounter consequences that are extremely painful. Nor again there <br class='d-none d-xl-block' /> who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed <br class='d-none d-xl-block' /> consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro <br class='d-none d-xl-block' /> est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit </p>",
             "<div class='blog-details-list'><p><i class='fa fa-angle-double-right'></i>Quisquam est qui dolorem ipsum quia dolor sit amet consectetur</p><p><i class='fa fa-angle-double-right'></i>hese cases are perfectly simple and easy todistinguish</p></div>",
@@ -80,15 +92,23 @@
     {
         "id": 4,
         "media": {
-            "rcImage": "./images/blog/post/1.png",
-            "gridImage": "images/blog/voter.png",
-            "largeImage": "./images/blog-details/1.png"
+            "rcImage": "blog/post/1.png",
+            "gridImage": "blog/voter.png",
+            "largeImage": "blog-details/1.png"
         },
         "title": "Voter ID / EPIC",
-        "author": "Shubham",
+        "author": "Sanjay Kumar",
         "date": "25 September, 2021",
-        "categories": ["Consultancy"],
-        "tags": ["Structure", "React", "Premium", "Clean", "WordPress"],
+        "categories": [
+            "Consultancy"
+        ],
+        "tags": [
+            "Structure",
+            "React",
+            "Premium",
+            "Clean",
+            "WordPress"
+        ],
         "body": [
             "<p class='pb-2'>Pleasure rationally encounter consequences that are extremely painful. Nor again there <br class='d-none d-xl-block' /> who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed <br class='d-none d-xl-block' /> consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro <br class='d-none d-xl-block' /> est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit </p>",
             "<div class='blog-details-list'><p><i class='fa fa-angle-double-right'></i>Quisquam est qui dolorem ipsum quia dolor sit amet consectetur</p><p><i class='fa fa-angle-double-right'></i>hese cases are perfectly simple and easy todistinguish</p></div>",
@@ -99,15 +119,23 @@
     {
         "id": 5,
         "media": {
-            "rcImage": "./images/blog/post/2.png",
-            "gridImage": "images/blog/jeevanpraman.png",
-            "largeImage": "./images/blog-details/1.png"
+            "rcImage": "blog/post/2.png",
+            "gridImage": "blog/jeevanpraman.png",
+            "largeImage": "blog-details/1.png"
         },
         "title": "Life Certificate, Jeevan Praman Live",
-        "author": "Shubham",
+        "author": "Sanjay Kumar",
         "date": "20 July, 2021",
-        "categories": ["Marketing"],
-        "tags": ["Structure", "React", "Premium", "Clean", "WordPress"],
+        "categories": [
+            "Marketing"
+        ],
+        "tags": [
+            "Structure",
+            "React",
+            "Premium",
+            "Clean",
+            "WordPress"
+        ],
         "body": [
             "<p class='pb-2'>Pleasure rationally encounter consequences that are extremely painful. Nor again there <br class='d-none d-xl-block' /> who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed <br class='d-none d-xl-block' /> consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro <br class='d-none d-xl-block' /> est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit </p>",
             "<div class='blog-details-list'><p><i class='fa fa-angle-double-right'></i>Quisquam est qui dolorem ipsum quia dolor sit amet consectetur</p><p><i class='fa fa-angle-double-right'></i>hese cases are perfectly simple and easy todistinguish</p></div>",
@@ -118,15 +146,23 @@
     {
         "id": 6,
         "media": {
-            "rcImage": "./images/blog/post/3.png",
-            "gridImage": "images/blog/certificate.png",
-            "largeImage": "./images/blog-details/1.png"
+            "rcImage": "blog/post/3.png",
+            "gridImage": "blog/certificate.png",
+            "largeImage": "blog-details/1.png"
         },
         "title": "EWS Certificate",
         "author": "Luice",
         "date": "13 June, 2021",
-        "categories": ["Branding"],
-        "tags": ["Structure", "React", "Premium", "Clean", "WordPress"],
+        "categories": [
+            "Branding"
+        ],
+        "tags": [
+            "Structure",
+            "React",
+            "Premium",
+            "Clean",
+            "WordPress"
+        ],
         "body": [
             "<p class='pb-2'>Pleasure rationally encounter consequences that are extremely painful. Nor again there <br class='d-none d-xl-block' /> who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed <br class='d-none d-xl-block' /> consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro <br class='d-none d-xl-block' /> est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit </p>",
             "<div class='blog-details-list'><p><i class='fa fa-angle-double-right'></i>Quisquam est qui dolorem ipsum quia dolor sit amet consectetur</p><p><i class='fa fa-angle-double-right'></i>hese cases are perfectly simple and easy todistinguish</p></div>",
@@ -137,15 +173,23 @@
     {
         "id": 7,
         "media": {
-            "rcImage": "./images/blog/post/1.png",
-            "gridImage": "images/blog/insurance.png",
-            "largeImage": "./images/blog-details/1.png"
+            "rcImage": "blog/post/1.png",
+            "gridImage": "blog/insurance.png",
+            "largeImage": "blog-details/1.png"
         },
         "title": "Bike, Car Insurance",
         "author": "Jack",
         "date": "13 May, 2021",
-        "categories": ["Campaign & PR"],
-        "tags": ["Structure", "React", "Premium", "Clean", "WordPress"],
+        "categories": [
+            "Campaign & PR"
+        ],
+        "tags": [
+            "Structure",
+            "React",
+            "Premium",
+            "Clean",
+            "WordPress"
+        ],
         "body": [
             "<p class='pb-2'>Pleasure rationally encounter consequences that are extremely painful. Nor again there <br class='d-none d-xl-block' /> who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed <br class='d-none d-xl-block' /> consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro <br class='d-none d-xl-block' /> est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit </p>",
             "<div class='blog-details-list'><p><i class='fa fa-angle-double-right'></i>Quisquam est qui dolorem ipsum quia dolor sit amet consectetur</p><p><i class='fa fa-angle-double-right'></i>hese cases are perfectly simple and easy todistinguish</p></div>",
@@ -156,15 +200,23 @@
     {
         "id": 8,
         "media": {
-            "rcImage": "./images/blog/post/2.png",
-            "gridImage": "images/blog/7.png",
-            "largeImage": "./images/blog-details/1.png"
+            "rcImage": "blog/post/2.png",
+            "gridImage": "blog/7.png",
+            "largeImage": "blog-details/1.png"
         },
         "title": "Driving License only for Jharkhand",
-        "author": "Shubham",
+        "author": "Sanjay Kumar",
         "date": "13 May, 2021",
-        "categories": ["Marketing"],
-        "tags": ["Structure", "React", "Premium", "Clean", "WordPress"],
+        "categories": [
+            "Marketing"
+        ],
+        "tags": [
+            "Structure",
+            "React",
+            "Premium",
+            "Clean",
+            "WordPress"
+        ],
         "body": [
             "<p class='pb-2'>Pleasure rationally encounter consequences that are extremely painful. Nor again there <br class='d-none d-xl-block' /> who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed <br class='d-none d-xl-block' /> consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro <br class='d-none d-xl-block' /> est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit </p>",
             "<div class='blog-details-list'><p><i class='fa fa-angle-double-right'></i>Quisquam est qui dolorem ipsum quia dolor sit amet consectetur</p><p><i class='fa fa-angle-double-right'></i>hese cases are perfectly simple and easy todistinguish</p></div>",
@@ -175,15 +227,23 @@
     {
         "id": 9,
         "media": {
-            "rcImage": "./images/blog/post/3.png",
-            "gridImage": "images/blog/8.png",
-            "largeImage": "./images/blog-details/1.png"
+            "rcImage": "blog/post/3.png",
+            "gridImage": "blog/8.png",
+            "largeImage": "blog-details/1.png"
         },
         "title": "Voter New apply & Correction",
-        "author": "Shubham",
+        "author": "Sanjay Kumar",
         "date": "13 June, 2021",
-        "categories": ["Branding"],
-        "tags": ["Structure", "React", "Premium", "Clean", "WordPress"],
+        "categories": [
+            "Branding"
+        ],
+        "tags": [
+            "Structure",
+            "React",
+            "Premium",
+            "Clean",
+            "WordPress"
+        ],
         "body": [
             "<p class='pb-2'>Pleasure rationally encounter consequences that are extremely painful. Nor again there <br class='d-none d-xl-block' /> who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed <br class='d-none d-xl-block' /> consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro <br class='d-none d-xl-block' /> est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit </p>",
             "<div class='blog-details-list'><p><i class='fa fa-angle-double-right'></i>Quisquam est qui dolorem ipsum quia dolor sit amet consectetur</p><p><i class='fa fa-angle-double-right'></i>hese cases are perfectly simple and easy todistinguish</p></div>",
@@ -194,15 +254,23 @@
     {
         "id": 10,
         "media": {
-            "rcImage": "./images/blog/post/1.png",
-            "gridImage": "images/blog/11.png",
-            "largeImage": "./images/blog-details/1.png"
+            "rcImage": "blog/post/1.png",
+            "gridImage": "blog/11.png",
+            "largeImage": "blog-details/1.png"
         },
         "title": "PVC Print 2021",
-        "author": "Shubham",
+        "author": "Sanjay Kumar",
         "date": "10 September, 2021",
-        "categories": ["Business"],
-        "tags": ["Structure", "React", "Premium", "Clean", "WordPress"],
+        "categories": [
+            "Business"
+        ],
+        "tags": [
+            "Structure",
+            "React",
+            "Premium",
+            "Clean",
+            "WordPress"
+        ],
         "body": [
             "<p class='pb-2'>Pleasure rationally encounter consequences that are extremely painful. Nor again there <br class='d-none d-xl-block' /> who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed <br class='d-none d-xl-block' /> consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro <br class='d-none d-xl-block' /> est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit </p>",
             "<div class='blog-details-list'><p><i class='fa fa-angle-double-right'></i>Quisquam est qui dolorem ipsum quia dolor sit amet consectetur</p><p><i class='fa fa-angle-double-right'></i>hese cases are perfectly simple and easy todistinguish</p></div>",
@@ -213,15 +281,23 @@
     {
         "id": 11,
         "media": {
-            "rcImage": "./images/blog/post/2.png",
-            "gridImage": "images/blog/certificate.png",
-            "largeImage": "./images/blog-details/1.png"
+            "rcImage": "blog/post/2.png",
+            "gridImage": "blog/certificate.png",
+            "largeImage": "blog-details/1.png"
         },
         "title": "Income Certificate",
         "author": "Smith",
         "date": "08 September, 2021",
-        "categories": ["Campaign & PR"],
-        "tags": ["Structure", "React", "Premium", "Clean", "WordPress"],
+        "categories": [
+            "Campaign & PR"
+        ],
+        "tags": [
+            "Structure",
+            "React",
+            "Premium",
+            "Clean",
+            "WordPress"
+        ],
         "body": [
             "<p class='pb-2'>Pleasure rationally encounter consequences that are extremely painful. Nor again there <br class='d-none d-xl-block' /> who loves or pursues or desires to obtain voluptas sit aspernatur aut odit aut fugit, sed <br class='d-none d-xl-block' /> consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro <br class='d-none d-xl-block' /> est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit </p>",
             "<div class='blog-details-list'><p><i class='fa fa-angle-double-right'></i>Quisquam est qui dolorem ipsum quia dolor sit amet consectetur</p><p><i class='fa fa-angle-double-right'></i>hese cases are perfectly simple and easy todistinguish</p></div>",

@@ -7,7 +7,7 @@ const MainMenu = () => {
         <nav className="main-menu d-none d-lg-block">
             <ul className="d-flex">
                 <li>
-                    <NavLink to={process.env.PUBLIC_URL + "/Service"}>
+                    <NavLink to={"/Service"}>
                         Service
                     </NavLink>
 
@@ -18,7 +18,6 @@ const MainMenu = () => {
                                     <Link
                                         className="sub-menu-link"
                                         to={
-                                            process.env.PUBLIC_URL +
                                             `/service-details/${slugify(
                                                 id.title
                                             )}`
@@ -32,7 +31,7 @@ const MainMenu = () => {
                     </ul>
                 </li>
                 <li>
-                    <NavLink to={process.env.PUBLIC_URL + "/Blog"}>
+                    <NavLink to={"/Blog"}>
                         Blog
                     </NavLink>
                     {/* <ul className="sub-menu">
@@ -82,7 +81,7 @@ const MainMenu = () => {
                     </NavLink>
                 </li> */}
                 <li>
-                    <NavLink to={process.env.PUBLIC_URL + "/offer"}>
+                    <NavLink to={"/offer"}>
                         Offer
                     </NavLink>
                 </li>
@@ -94,7 +93,7 @@ const MainMenu = () => {
                         <li className="sub-menu-item">
                             <NavLink
                                 className="sub-menu-link"
-                                to={process.env.PUBLIC_URL + "/About"}
+                                to={"/About"}
                             >
                                 About
                             </NavLink>
@@ -102,7 +101,7 @@ const MainMenu = () => {
                         <li className="sub-menu-item">
                             <NavLink
                                 className="sub-menu-link"
-                                to={process.env.PUBLIC_URL + "/Faq"}
+                                to={"/Faq"}
                             >
                                 Faq
                             </NavLink>
@@ -110,7 +109,7 @@ const MainMenu = () => {
                         <li className="sub-menu-item">
                             <NavLink
                                 className="sub-menu-link"
-                                to={process.env.PUBLIC_URL + "/Team"}
+                                to={"/Team"}
                             >
                                 Team
                             </NavLink>
@@ -118,7 +117,7 @@ const MainMenu = () => {
                         <li className="sub-menu-item">
                             <NavLink
                                 className="sub-menu-link"
-                                to={process.env.PUBLIC_URL + "/Contact"}
+                                to={"/Contact"}
                             >
                                 Contact
                             </NavLink>
@@ -128,7 +127,7 @@ const MainMenu = () => {
                 {/* <li>
                     <NavLink
                         // className="sub-menu-link"
-                        to={process.env.PUBLIC_URL + "/login"}
+                        to={"/login"}
                     >
                         LogIn
                     </NavLink>

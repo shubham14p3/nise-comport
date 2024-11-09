@@ -1,4 +1,5 @@
 import PropTypes from "prop-types";
+import { getImage } from "../../data/getImage";
 
 const Testimonial = ({ data }) => {
     return (
@@ -8,7 +9,7 @@ const Testimonial = ({ data }) => {
             <div className="avater d-flex">
                 <div className="avater-profile">
                     <img
-                        src={process.env.PUBLIC_URL + data.authorThumb}
+                        src={getImage(data.authorThumb)}
                         alt="avater"
                     />
                 </div>

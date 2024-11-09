@@ -23,7 +23,7 @@ const AboutPage = () => {
                     <PageBanner
                         title="About us"
                         excerpt="We exist to provide a trusted source of online solution that one can get as an individual. We are honored to help forks at all the stages of they problem and make sure they get the solution they are seeking for."
-                        image="./images/banner/1.png"
+                        image="banner/1.png"
                     />
                     <IconBoxContainer classOption="section-pt" />
                     {/* <BrandContainer /> */}

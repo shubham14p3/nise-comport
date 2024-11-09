@@ -6,6 +6,7 @@ import HomeData from "../../../data/home.json";
 // Import Navigation from swiper/modules
 import { Navigation } from "swiper/modules";
 import Parallax from "parallax-js";
+import { getImage } from "../../../data/getImage";
 
 // No need to use SwiperCore.use() anymore for modern versions
 const TestimonialContainer = () => {
@@ -37,7 +38,7 @@ const TestimonialContainer = () => {
         <div className="testimonial-section section-py position-relative">
             <img
                 className="tetimonial-shape"
-                src={`${process.env.PUBLIC_URL}/images/testimonial/shape.png`}
+                src={getImage('testimonial/shape.png')}
                 alt=""
             />
             <div className="container">
@@ -50,7 +51,7 @@ const TestimonialContainer = () => {
                         >
                             <div data-depth="0.2">
                                 <img
-                                    src={`${process.env.PUBLIC_URL}/images/testimonial/1.png`}
+                                    src={getImage('testimonial/1.png')}
                                     alt="Nise-Comport"
                                 />
                             </div>

@@ -1,11 +1,11 @@
 import React from "react";
 import PropTypes from "prop-types";
-
+import { getImage } from "../../data/getImage";
 const ServiceDetails = ({ data }) => {
     return (
         <div className="service-wrap">
             <div className="service-thumb bg-light text-center">
-                <img src={`${process.env.PUBLIC_URL}/${data.image}`} alt="" />
+                <img src={getImage(data.image)} alt="" />
             </div>
             <div className="title-section">
                 <h3 className="title pb-2">{data.title}</h3>

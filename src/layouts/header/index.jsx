@@ -2,6 +2,7 @@ import { Fragment, useEffect, useState } from "react";
 import Logo from "../../components/logo";
 import MainMenu from "../../components/menu/main-menu";
 import MobileMenu from "../../components/menu/mobile-menu";
+import { getImage } from "../../data/getImage";
 
 const Header = () => {
     const [ofcanvasShow, setOffcanvasShow] = useState(false);
@@ -35,7 +36,7 @@ const Header = () => {
                             <div className="header-logo">
                                 <Logo
                                     classOption="d-block"
-                                    image={`${process.env.PUBLIC_URL}/images/logo/logo.png`}
+                                    image={getImage('logo/logo.png')}
                                 />
                             </div>
                         </div>

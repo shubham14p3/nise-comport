@@ -37,8 +37,6 @@ const BrandContainer = () => {
     };
     return (
         <div className="brand-section section-py">
-            {console.log("Hitting here", swiperOption)}
-            {console.log("HomeData here", HomeData)}
             <div className="container">
                 <div className="row">
                     <div className="col-12">

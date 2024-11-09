@@ -4,6 +4,7 @@ import { slugify } from "../../utils";
 import Logo from "../../components/logo";
 import SocialIcon from "../../components/social-icon";
 import service from "../../data/service.json";
+import { getImage } from "../../data/getImage";
 
 const Footer = () => {
     return (
@@ -11,7 +12,7 @@ const Footer = () => {
             <div className="footer-top position-relative">
                 <img
                     className="footer-shape"
-                    src={process.env.PUBLIC_URL + "/images/footer/1.png"}
+                    src={getImage('footer/1.png')}
                     alt="shape"
                 />
                 <div className="container">
@@ -20,7 +21,7 @@ const Footer = () => {
                             <div className="footer-widget">
                                 <Logo
                                     classOption="footer-logo mb-9"
-                                    image={`${process.env.PUBLIC_URL}/images/logo/logo-footer.png`}
+                                    image={getImage('logo/logo-footer.png')}
                                 />
                                 <p>
                                     One Stop Solution for any Online Service
@@ -66,7 +67,6 @@ const Footer = () => {
                                         <Link
                                             className="footer-link"
                                             to={
-                                                process.env.PUBLIC_URL +
                                                 "/about"
                                             }
                                         >
@@ -77,7 +77,6 @@ const Footer = () => {
                                         <Link
                                             className="footer-link"
                                             to={
-                                                process.env.PUBLIC_URL +
                                                 "/service"
                                             }
                                         >
@@ -88,7 +87,6 @@ const Footer = () => {
                                         <Link
                                             className="footer-link"
                                             to={
-                                                process.env.PUBLIC_URL +
                                                 "/about"
                                             }
                                         >
@@ -98,8 +96,7 @@ const Footer = () => {
                                     <li>
                                         <Link
                                             className="footer-link"
-                                            to={
-                                                process.env.PUBLIC_URL + "/blog"
+                                            to={"/blog"
                                             }
                                         >
                                             Blog Service
@@ -108,8 +105,7 @@ const Footer = () => {
                                     <li>
                                         <Link
                                             className="footer-link"
-                                            to={
-                                                process.env.PUBLIC_URL + "/team"
+                                            to={"/team"
                                             }
                                         >
                                             Our Partners
@@ -119,7 +115,6 @@ const Footer = () => {
                                         <Link
                                             className="footer-link"
                                             to={
-                                                process.env.PUBLIC_URL +
                                                 "/contact"
                                             }
                                         >
@@ -139,7 +134,6 @@ const Footer = () => {
                                                 <Link
                                                     className="footer-link"
                                                     to={
-                                                        process.env.PUBLIC_URL +
                                                         `/service-details/${slugify(
                                                             id.title
                                                         )}`
@@ -189,14 +183,6 @@ const Footer = () => {
                                     <li>
                                         <a
                                             className="address-link"
-                                            href="tel:+916572279322"
-                                        >
-                                            0657 2280722
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a
-                                            className="address-link"
                                             href="mailto:nweb.hub@gmail.com"
                                         >
                                             nweb.hub@gmail.com
@@ -222,9 +208,8 @@ const Footer = () => {
                         <div className="col-12">
                             <div className="copyright-info text-center">
                                 <p>
-                                    Copyright &copy;{Date().getFullYear} Made
-                                    with
-                                    <i className="icofont-heart-alt"> </i> By
+                                    Copyright &copy; {new Date().getFullYear()}, Made with
+                                   <> </> <i className="icofont-heart-alt"> </i> By 
                                     <a
                                         href="https://www.nisecomport.com"
                                         target="_blank"

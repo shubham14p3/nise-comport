@@ -2,13 +2,14 @@ import React from "react";
 import PropTypes from "prop-types";
 import PageBannerImage from "../../../components/page-banner-image";
 import PageTitle from "../../../components/page-title";
+import { getImage } from "../../../data/getImage";
 
 const PageBanner = ({ title, excerpt, image }) => {
     return (
         <div className="banner-section position-relative">
             <img
                 className="banner-shape"
-                src={process.env.PUBLIC_URL + "/images/banner/shape1.png"}
+                src={getImage('banner/shape1.png')}
                 alt="shape"
             />
             <div className="container">

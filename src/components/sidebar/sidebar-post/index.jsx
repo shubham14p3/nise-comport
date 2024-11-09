@@ -1,6 +1,7 @@
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import { slugify } from "../../../utils";
+import { getImage } from "../../../data/getImage";
 
 const SidebarPost = ({ data }) => {
     return (
@@ -16,7 +17,7 @@ const SidebarPost = ({ data }) => {
                             className="post-thumb"
                         >
                             <img
-                                src={`${process.env.PUBLIC_URL}/${single.media.rcImage}`}
+                                src={getImage(single.media.rcImage)}
                                 alt="img"
                             />
                         </Link>

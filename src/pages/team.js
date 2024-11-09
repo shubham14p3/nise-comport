@@ -18,7 +18,7 @@ const TeamPage = () => {
                     <PageBanner
                         title="Our Team"
                         excerpt="These the people that make the magic happen..."
-                        image="./images/team/5.png"
+                        image="team/5.png"
                     />
                     <TeampPageContainer />
                     {/* <NewsletterArea /> */}

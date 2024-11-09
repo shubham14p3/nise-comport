@@ -5,13 +5,14 @@ import IconBox from "../../../components/icon-box";
 import SectionTitle from "../../../components/section-title";
 import HomeData from "../../../data/home.json";
 import "../../../assets/css/custom.css";
+import { getImage } from "../../../data/getImage";
 
 const IconBoxContainer = ({ classOption }) => {
     return (
         <div className={`feature-section position-relative ${classOption}`}>
             <img
                 className="path-img"
-                src={`${process.env.PUBLIC_URL}/images/feature/shape.png`}
+                src={getImage('feature/shape.png')}
                 alt="images_not_found"
             />
             <div className="container custom-container">
@@ -32,15 +33,42 @@ const IconBoxContainer = ({ classOption }) => {
                             path="/service"
                         />
                     </div>
-
-                    <div className="col-12">
+                    {/* <div className="col-12">
                         <div id="grid" className="grid row mb-n7">
-                            {HomeData[2].iconBox &&
-                                HomeData[2].iconBox.map((single, key) => {
-                                    return <IconBox key={key} data={single} />;
-                                })}
+                            {HomeData[2].iconBox && HomeData[2].iconBox.map((single, key) => {
+                                return <IconBox data={single} />
+                            })}
                         </div>
-                    </div>
+                    </div> */}
+                    <div className="col-12">
+    <div 
+        id="grid" 
+        className="grid row mb-n7" 
+        style={{
+            display: 'flex', 
+            justifyContent: 'space-around', 
+            alignItems: 'center', 
+            flexWrap: 'wrap'
+        }}
+    >
+        {HomeData[2].iconBox && HomeData[2].iconBox.map((single, key) => {
+            return (
+                <div 
+                    key={key} 
+                    style={{
+                        flex: '1 0 30%', /* Adjust this value based on how many items per row you want */
+                        margin: '10px'   /* Add margin between the items */
+                    }}
+                >
+                    <IconBox data={single} />
+                </div>
+            );
+        })}
+    </div>
+</div>
+
+
+
                 </div>
             </div>
         </div>

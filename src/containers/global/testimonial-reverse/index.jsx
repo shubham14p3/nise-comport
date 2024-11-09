@@ -6,6 +6,7 @@ import HomeData from "../../../data/home.json";
 // Update the import for Navigation
 import { Navigation } from "swiper/modules";
 import Parallax from "parallax-js";
+import { getImage } from "../../../data/getImage";
 
 // No need to use SwiperCore.use() anymore in the newer versions
 const TestimonialReverse = () => {
@@ -86,7 +87,7 @@ const TestimonialReverse = () => {
                         >
                             <div data-depth="0.2">
                                 <img
-                                    src={`${process.env.PUBLIC_URL}/images/testimonial/1.png`}
+                                    src={getImage('testimonial/1.png')}
                                     alt="Nise-Comport"
                                 />
                             </div>

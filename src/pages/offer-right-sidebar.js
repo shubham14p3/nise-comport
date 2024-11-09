@@ -20,7 +20,7 @@ const OfferRightSidebarPage = () => {
                         title="Offer Post"
                         excerpt="We update our latest service <br />
                         details here regularly "
-                        image="./images/offer/banner.png"
+                        image="offer/banner.png"
                     />
                     <OfferItemRightContainer data={OfferData} />
                     {/* <NewsletterArea /> */}

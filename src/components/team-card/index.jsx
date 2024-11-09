@@ -1,10 +1,11 @@
 import PropTyps from "prop-types";
+import { getImage } from "../../data/getImage";
 
 const TeamCard = ({ data }) => {
     return (
         <div className="team-card">
             <div className="thumb">
-                <img src={process.env.PUBLIC_URL + data.thumb} alt="img" />
+                <img src={getImage(data.thumb)} alt="img" />
             </div>
             <div className="content">
                 <h3 className="title">{data.name}</h3>

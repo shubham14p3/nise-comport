@@ -23,7 +23,7 @@ const AllServices = () => {
                         title="Our All Services"
                         excerpt="We are here to help you. We can<br />
                         help you with all services mentione below"
-                        image="./images/service/2.png"
+                        image="service/2.png"
                     />
 
                     <ServiceListContainer />

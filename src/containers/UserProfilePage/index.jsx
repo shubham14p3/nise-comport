@@ -88,7 +88,7 @@ const UserProfilePage = () => {
 
                     <div className="col-md-6">
                         <div className="profile-head">
-                            <h5>Shubham</h5>
+                            <h5>Sanjay Kumar</h5>
                             <h6>web developer</h6>
                         </div>
                         <Box sx={{ width: "100%" }}>

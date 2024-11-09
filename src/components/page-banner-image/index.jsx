@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import Parallax from "parallax-js";
+import { getImage } from "../../data/getImage";
 
 const PageBannerImage = ({ image }) => {
     const sceneEl = useRef(null);
@@ -21,7 +22,7 @@ const PageBannerImage = ({ image }) => {
             ref={sceneEl}
         >
             <div data-depth="0.2">
-                <img src={process.env.PUBLIC_URL + image} alt="img" />
+                <img src={getImage(image)} alt="img" />
             </div>
         </div>
     );

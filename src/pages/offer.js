@@ -20,7 +20,7 @@ const Offer = () => {
                         title="Offer"
                         excerpt="We regularly bring best offer to our users, so they can
                         have the best service and get good returns."
-                        image="./images/blog/banner.png"
+                        image="blog/banner.png"
                     />
                     <OfferItemContainer data={OfferData} />
                     <NewsletterArea />

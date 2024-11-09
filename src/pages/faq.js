@@ -18,7 +18,7 @@ const FaqPage = () => {
                     <PageBanner
                         title="FAQ"
                         excerpt="You can find basic questions answered here"
-                        image="./images/faq/1.png"
+                        image="faq/1.png"
                     />
                     <AccordionContainer />
                     {/* <NewsletterArea /> */}

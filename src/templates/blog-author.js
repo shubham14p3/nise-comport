@@ -11,10 +11,11 @@ import { slugify } from "../utils";
 import ScrollToTop from "../components/scroll-to-top";
 import SEO from "../components/seo";
 import { useParams } from "react-router-dom";
+import { getImage } from "../data/getImage";
 const BlogAuthor = () => {
     const { author } = useParams();
     const data = BlogData.filter((blog) => slugify(blog.author) === author);
-    const authorTitle = data[0].author;
+    const authorTitle = data[0] ? data[0].author : "";
     return (
         <React.Fragment>
             <Layout>
@@ -25,7 +26,7 @@ const BlogAuthor = () => {
                         title={authorTitle}
                         excerpt="Pleasure rationally encounter consequences <br />
                         are extremely painful great oppurtunity"
-                        image="/images/blog/banner.png"
+                        image={getImage('blog/banner.png')}
                     />
                     <BlogItemContainer data={data} />
                     <NewsletterArea />

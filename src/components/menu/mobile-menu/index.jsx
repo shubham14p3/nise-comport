@@ -9,6 +9,7 @@ import {
 } from "../../../utils";
 import Logo from "../../logo";
 import service from "../../../data/service.json";
+import { getImage } from "../../../data/getImage";
 
 const MobileMenu = ({ show, onClose }) => {
     const onClickHandler = (e) => {
@@ -46,7 +47,7 @@ const MobileMenu = ({ show, onClose }) => {
                     <div className="offcanvas-header">
                         <Logo
                             classOption="offcanvas-logo d-inline-block"
-                            image={`${process.env.PUBLIC_URL}/images/logo/logo.png`}
+                            image={getImage('logo/logo.png')}
                         />
                         <button
                             type="button"
