@@ -38,7 +38,7 @@ const MainMenu = () => {
                         <li className="sub-menu-item">
                             <NavLink
                                 className="sub-menu-link"
-                                to={process.env.PUBLIC_URL + "/Blog"}
+                                to={import.meta.env.BASE_URL + "/Blog"}
                             >
                                 Blog
                             </NavLink>
@@ -47,7 +47,7 @@ const MainMenu = () => {
                             <NavLink
                                 className="sub-menu-link"
                                 to={
-                                    process.env.PUBLIC_URL +
+                                    import.meta.env.BASE_URL +
                                     "/Blog-left-sidebar"
                                 }
                             >
@@ -58,7 +58,7 @@ const MainMenu = () => {
                             <NavLink
                                 className="sub-menu-link"
                                 to={
-                                    process.env.PUBLIC_URL +
+                                    import.meta.env.BASE_URL +
                                     "/Blog-right-sidebar"
                                 }
                             >
@@ -68,7 +68,7 @@ const MainMenu = () => {
                         <li className="sub-menu-item">
                             <NavLink
                                 className="sub-menu-link"
-                                to={process.env.PUBLIC_URL + "/Blog-details/1"}
+                                to={import.meta.env.BASE_URL + "/Blog-details/1"}
                             >
                                 blog details
                             </NavLink>
@@ -76,7 +76,7 @@ const MainMenu = () => {
                     </ul> */}
                 </li>
                 {/* <li>
-                    <NavLink to={process.env.PUBLIC_URL + "/contact"}>
+                    <NavLink to={import.meta.env.BASE_URL + "/contact"}>
                         Contact
                     </NavLink>
                 </li> */}
@@ -124,7 +124,7 @@ const MainMenu = () => {
                         </li>
                     </ul>
                 </li>
-                {/* <li>
+                <li>
                     <NavLink
                         // className="sub-menu-link"
                         to={"/login"}
@@ -135,13 +135,13 @@ const MainMenu = () => {
                         <li className="sub-menu-item">
                             <NavLink
                                 className="sub-menu-link"
-                                to={process.env.PUBLIC_URL + "/profile"}
+                                to={"/profile"}
                             >
                                 Profile
                             </NavLink>
                         </li>
                     </ul>
-                </li> */}
+                </li>
             </ul>
         </nav>
     );

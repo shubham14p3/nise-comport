@@ -36,7 +36,7 @@ const SidebarArchive = ({ data }) => {
                             <Link
                                 className="d-flex justify-content-between align-items-center"
                                 to={
-                                    process.env.PUBLIC_URL +
+                                    import.meta.env.BASE_URL +
                                     `/date/${single.slug}`
                                 }
                             >

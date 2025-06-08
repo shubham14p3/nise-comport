@@ -11,7 +11,7 @@ const OfferSidebarPost = ({ data }) => {
                     <div key={i} className="widget-post-list">
                         <Link
                             to={
-                                process.env.PUBLIC_URL +
+                                import.meta.env.BASE_URL +
                                 `/offer-details/${slugify(single.title)}`
                             }
                             className="post-thumb"
@@ -25,7 +25,7 @@ const OfferSidebarPost = ({ data }) => {
                             <h3 className="widget-sub-title">
                                 <Link
                                     to={
-                                        process.env.PUBLIC_URL +
+                                        import.meta.env.BASE_URL +
                                         `/offer-details/${slugify(
                                             single.title
                                         )}`

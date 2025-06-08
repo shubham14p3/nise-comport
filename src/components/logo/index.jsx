@@ -1,9 +1,9 @@
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 
-const Logo = ({ image, classOption }) => {
+const Logo = ({ image, classOption = "text-center" }) => {
     return (
-        <Link className={`${classOption}`} to={"/home"}>
+        <Link className={classOption} to="/home">
             <img
                 className="logo-main"
                 src={image}
@@ -16,10 +16,6 @@ const Logo = ({ image, classOption }) => {
 Logo.propTypes = {
     image: PropTypes.string,
     classOption: PropTypes.string,
-};
-
-Logo.defaultProps = {
-    classOption: "text-center",
 };
 
 export default Logo;

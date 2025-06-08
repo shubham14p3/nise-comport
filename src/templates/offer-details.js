@@ -27,7 +27,7 @@ const OfferDetailsPage = () => {
                         title="Offer Details"
                         excerpt="Pleasure rationally encounter consequences <br />
                         are extremely painful great oppurtunity"
-                        image="/images/offer/banner.png"
+                        image="offer/banner.png"
                     />
                     <OfferDetailsContainer data={data[0]} />
                     <NewsletterArea />

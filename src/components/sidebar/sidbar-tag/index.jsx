@@ -30,7 +30,7 @@ const SidebarTag = ({ data }) => {
                     <Link
                         key={i}
                         className="widget-tag-link"
-                        to={process.env.PUBLIC_URL + `/tag/${single.slug}`}
+                        to={import.meta.env.BASE_URL + `/tag/${single.slug}`}
                     >
                         {single.title}
                     </Link>

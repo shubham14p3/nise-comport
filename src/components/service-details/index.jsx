@@ -1,6 +1,6 @@
 import React from "react";
 import PropTypes from "prop-types";
-import { getImage } from "../../data/getImage";
+import { fixHtmlImagePaths, getImage } from "../../data/getImage";
 const ServiceDetails = ({ data }) => {
     return (
         <div className="service-wrap">
@@ -10,15 +10,13 @@ const ServiceDetails = ({ data }) => {
             <div className="title-section">
                 <h3 className="title pb-2">{data.title}</h3>
                 <div className="service-content-wrap">
-                    {data.body.map((single, key) => {
-                        return (
-                            <div
-                                className="desc"
-                                key={key}
-                                dangerouslySetInnerHTML={{ __html: single }}
-                            ></div>
-                        );
-                    })}
+                    {data.body.map((single, key) => (
+                        <div
+                            className="desc"
+                            key={key}
+                            dangerouslySetInnerHTML={{ __html: fixHtmlImagePaths(single) }}
+                        ></div>
+                    ))}
                 </div>
             </div>
         </div>

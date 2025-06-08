@@ -42,7 +42,7 @@ const ServiceListContainer = () => {
                             <br />
                             <Button
                                 classOption="btn btn-lg btn-dark btn-hover-dark"
-                                text="View all services"
+                                text="View all services 1"
                                 path="/all-services"
                             />
                         </div>

@@ -40,7 +40,16 @@
     scroll-behavior: smooth;
   }
 }
+a,
+a:link,
+a:visited {
+  text-decoration: none !important;
+}
 
+a:hover,
+a:focus {
+  text-decoration: none !important; /* or `underline` if you want hover states */
+}
 body {
   margin: 0;
   font-family: "Metropolis Regular", sans-serif;

@@ -5,7 +5,7 @@ import { slugify } from "../../utils";
 import SidebarTag from "../sidebar/sidbar-tag";
 import BlogData from "../../data/blog.json";
 import SocialIcon from "../social-icon";
-import { getImage } from "../../data/getImage";
+import { fixHtmlImagePaths, getImage } from "../../data/getImage";
 
 const BlogDetailsWrap = ({ data }) => {
     return (
@@ -32,15 +32,13 @@ const BlogDetailsWrap = ({ data }) => {
                 </Link>
             </p>
             <h3 className="blog-details-title">{data.title}</h3>
-            {data.body.map((single, key) => {
-                return (
-                    <div
-                        className="desc"
-                        key={key}
-                        dangerouslySetInnerHTML={{ __html: single }}
-                    ></div>
-                );
-            })}
+            {data.body.map((single, key) => (
+                <div
+                    className="desc"
+                    key={key}
+                    dangerouslySetInnerHTML={{ __html: fixHtmlImagePaths(single) }}
+                ></div>
+            ))}
             <div className="social-tags d-sm-flex justify-content-between align-items-center">
                 <p className="mb-4 mb-sm-0 d-flex align-items-center">
                     <i className="fa fa-tags"></i>

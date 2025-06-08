@@ -7,6 +7,7 @@ import { getImage } from "../../data/getImage";
 
 const Intro = ({ data }) => {
     const sceneEl = useRef(null);
+    const img = data.image;
 
     useEffect(() => {
         const parallaxInstance = new Parallax(sceneEl.current, {
@@ -28,21 +29,25 @@ const Intro = ({ data }) => {
                                 className="title animated"
                                 dangerouslySetInnerHTML={{ __html: data.title }}
                             ></h2>
-                            <Button
-                                classOption="btn btn-lg animated delay2 btn-secondary btn-hover-secondary mb-3 mb-sm-0"
-                                text="About Us"
-                                path="/about"
-                            />
-                            <Button
-                                classOption="btn btn-lg animated delay1 btn-dark btn-hover-dark me-4 mb-3 mb-sm-0"
-                                text="Contact Us"
-                                path="/contact"
-                            />
-                            <SocialIcon
-                                classOption="btn btn-lg animated delay2 btn-secondary btn-hover-secondary mb-3 mb-sm-0 "
-                                path="https://wa.me/919771219893"
-                                icon="icofont-whatsapp"
-                            />
+
+                            {/* Spaced & outlined buttons */}
+                            <div className="d-flex flex-wrap gap-3 mt-4">
+                                <Button
+                                    classOption="btn btn-lg btn-outline-secondary"
+                                    text="About Us"
+                                    path="/about"
+                                />
+                                <Button
+                                    classOption="btn btn-lg btn-outline-dark"
+                                    text="Contact Us"
+                                    path="/contact"
+                                />
+                                <SocialIcon
+                                    classOption="btn btn-lg btn-outline-success"
+                                    path="https://wa.me/919771219893"
+                                    icon="icofont-whatsapp"
+                                />
+                            </div>
                         </div>
                     </div>
                     <div className="col-lg-6">
@@ -54,8 +59,8 @@ const Intro = ({ data }) => {
                             <div data-depth="0.2">
                                 <img
                                     className="animated"
-                                    src={getImage('data.image')}
-                                    alt=""
+                                    src={getImage(img)}
+                                    alt="Hero"
                                 />
                             </div>
                         </div>

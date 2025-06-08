@@ -80,7 +80,7 @@ const UserProfilePage = () => {
                 <div className="row-user-profile-upper">
                     <div className="col-md-4">
                         <img
-                            src={`${process.env.PUBLIC_URL}/images/users/12.png`}
+                            src={`${import.meta.env.BASE_URL}/images/users/12.png`}
                             alt="UserPhoto"
                             className="user-profile-img"
                         />

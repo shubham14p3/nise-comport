@@ -60,7 +60,7 @@ const MobileMenu = ({ show, onClose }) => {
                         <ul>
                             <li>
                                 <NavLink
-                                    to={process.env.PUBLIC_URL + "/service"}
+                                    to="/service"
                                 >
                                     Service
                                 </NavLink>
@@ -75,7 +75,6 @@ const MobileMenu = ({ show, onClose }) => {
                                             <li key={i}>
                                                 <Link
                                                     to={
-                                                        process.env.PUBLIC_URL +
                                                         `/service-details/${slugify(
                                                             id.title
                                                         )}`
@@ -90,7 +89,7 @@ const MobileMenu = ({ show, onClose }) => {
                             </li>
 
                             <li>
-                                <NavLink to={process.env.PUBLIC_URL + "/blog"}>
+                                <NavLink to="/blog">
                                     Blog
                                 </NavLink>
                                 {/* <span
@@ -102,7 +101,7 @@ const MobileMenu = ({ show, onClose }) => {
                                     <li>
                                         <NavLink
                                             to={
-                                                process.env.PUBLIC_URL + "/blog"
+                                                import.meta.env.BASE_URL + "/blog"
                                             }
                                         >
                                             blog
@@ -111,7 +110,7 @@ const MobileMenu = ({ show, onClose }) => {
                                     <li>
                                         <NavLink
                                             to={
-                                                process.env.PUBLIC_URL +
+                                                import.meta.env.BASE_URL +
                                                 "/blog-left-sidebar"
                                             }
                                         >
@@ -121,7 +120,7 @@ const MobileMenu = ({ show, onClose }) => {
                                     <li>
                                         <NavLink
                                             to={
-                                                process.env.PUBLIC_URL +
+                                                import.meta.env.BASE_URL +
                                                 "/blog-right-sidebar"
                                             }
                                         >
@@ -131,7 +130,7 @@ const MobileMenu = ({ show, onClose }) => {
                                     <li>
                                         <NavLink
                                             to={
-                                                process.env.PUBLIC_URL +
+                                                import.meta.env.BASE_URL +
                                                 "/blog-details/1"
                                             }
                                         >
@@ -142,13 +141,13 @@ const MobileMenu = ({ show, onClose }) => {
                             </li>
                             {/* <li>
                                 <NavLink
-                                    to={process.env.PUBLIC_URL + "/contact"}
+                                    to={import.meta.env.BASE_URL + "/contact"}
                                 >
                                     Contact
                                 </NavLink>
                             </li> */}
                             <li>
-                                <NavLink to={process.env.PUBLIC_URL + "/offer"}>
+                                <NavLink to="/offer">
                                     Offer
                                 </NavLink>
                             </li>
@@ -164,36 +163,28 @@ const MobileMenu = ({ show, onClose }) => {
                                 <ul>
                                     <li>
                                         <NavLink
-                                            to={
-                                                process.env.PUBLIC_URL +
-                                                "/About"
-                                            }
+                                            to="/About"
                                         >
                                             About
                                         </NavLink>
                                     </li>
                                     <li>
                                         <NavLink
-                                            to={process.env.PUBLIC_URL + "/faq"}
+                                            to="/faq"
                                         >
                                             Faq
                                         </NavLink>
                                     </li>
                                     <li>
                                         <NavLink
-                                            to={
-                                                process.env.PUBLIC_URL + "/team"
-                                            }
+                                            to="/team"
                                         >
                                             Team
                                         </NavLink>
                                     </li>
                                     <li>
                                         <NavLink
-                                            to={
-                                                process.env.PUBLIC_URL +
-                                                "/Contact"
-                                            }
+                                            to="/Contact"
                                         >
                                             Contact
                                         </NavLink>

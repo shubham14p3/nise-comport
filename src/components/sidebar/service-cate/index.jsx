@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import PropTypes from "prop-types";
 import { flatDeep, slugify, containsObject } from "../../../utils";
+import { getImage } from "../../../data/getImage";
 
 const ServiceCate = ({ data }) => {
     const cats = data.map((item) => {
@@ -34,12 +35,9 @@ const ServiceCate = ({ data }) => {
                         <li key={i}>
                             <NavLink
                                 activeClassName="active"
-                                to={
-                                    process.env.PUBLIC_URL +
-                                    `/service-details/${slugify(single.title)}`
-                                }
+                                to={`/service-details/${slugify(single.title)}`}
                             >
-                                <img src={single.smallIcon} alt="logo" />
+                                <img src={getImage(single.smallIcon)} alt="logo" />
                                 {single.title}
                             </NavLink>
                         </li>

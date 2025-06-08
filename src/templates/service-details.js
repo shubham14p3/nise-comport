@@ -27,7 +27,7 @@ const ServiceDetails = () => {
                     <PageBanner
                         title={data[0]?.title}
                         excerpt={data[0]?.subtitle}
-                        image="/images/service/2.png"
+                        image="service/2.png"
                     />
                     <ServiceDetailsContainer data={data[0]} />
                     <NewsletterArea />

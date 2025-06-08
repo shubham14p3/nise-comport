@@ -1,5 +1,6 @@
 import React from "react";
 import Download from "@axetroy/react-download";
+import { getImage } from "../../../data/getImage";
 
 const element = document.createElement("div");
 document.body.appendChild(element);
@@ -17,8 +18,8 @@ const Brochure = () => {
                         <button>
                             <img
                                 src={
-                                    process.env.PUBLIC_URL +
-                                    "/images/service/icon/small/9.png"
+                                    getImage(
+                                        "service/icon/small/9.png")
                                 }
                                 alt="logo"
                             />
@@ -34,8 +35,8 @@ const Brochure = () => {
                         <button className="border-0">
                             <img
                                 src={
-                                    process.env.PUBLIC_URL +
-                                    "/images/service/icon/small/10.png"
+                                    getImage(
+                                        "service/icon/small/10.png")
                                 }
                                 alt="logo"
                             />

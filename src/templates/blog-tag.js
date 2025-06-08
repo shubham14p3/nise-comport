@@ -30,7 +30,7 @@ const BlogTag = () => {
                         title={tagTitle}
                         excerpt="Pleasure rationally encounter consequences <br />
                         are extremely painful great oppurtunity"
-                        image="/images/blog/banner.png"
+                        image="/banner.png"
                     />
                     <BlogItemContainer data={data} />
                     <NewsletterArea />

@@ -24,7 +24,7 @@ const PageNotFound = () => {
                             The page you are looking for might be removed or is temporarily unavailable.
                         </p>
                         <div className="button-container">
-                            <Link className="back-button" to={process.env.PUBLIC_URL + "/home"}>
+                            <Link className="back-button" to={import.meta.env.BASE_URL + "/home"}>
                                 Back to homepage
                             </Link>
                         </div>

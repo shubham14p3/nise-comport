@@ -25,7 +25,7 @@ const BlogDate = () => {
                         title={dateTitle}
                         excerpt="Pleasure rationally encounter consequences <br />
                         are extremely painful great oppurtunity"
-                        image="/images/blog/banner.png"
+                        image="blog/banner.png"
                     />
                     <BlogItemContainer data={data} />
                     <NewsletterArea />

@@ -4,7 +4,7 @@ const SocialIcon = ({ path, icon, classOption }) => {
     return (
         <a
             className={`${classOption}`}
-            href={process.env.PUBLIC_URL + path}
+            href={import.meta.env.BASE_URL + path}
             target="_blank"
             rel="noopener noreferrer"
         >

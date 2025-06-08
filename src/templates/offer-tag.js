@@ -30,7 +30,7 @@ const OfferTag = () => {
                         title={tagTitle}
                         excerpt="Pleasure rationally encounter consequences <br />
                         are extremely painful great oppurtunity"
-                        image="/images/offer/banner.png"
+                        image="offer/banner.png"
                     />
                     <OfferItemContainer data={data} />
                     <NewsletterArea />

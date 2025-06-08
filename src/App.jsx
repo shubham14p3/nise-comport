@@ -45,53 +45,53 @@ const App = () => {
                 <NavScrollTop>
                     <Routes>
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/"}`}
+                            path={`${import.meta.env.BASE_URL + "/"}`}
                             element={<WelcomePage />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/home"}`}
+                            path={`${import.meta.env.BASE_URL + "/home"}`}
                             element={<HomePage />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/about"}`}
+                            path={`${import.meta.env.BASE_URL + "/about"}`}
                             element={<AboutPage />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/all-services"}`}
+                            path={`${import.meta.env.BASE_URL + "/all-services"}`}
                             element={<AllServices />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/offer"}`}
+                            path={`${import.meta.env.BASE_URL + "/offer"}`}
                             element={<OfferPage />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL +
+                            path={`${import.meta.env.BASE_URL +
                                 "/offer-details/:offerId"
                                 }`}
                             element={<OfferDetailsPage />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/offer-left-sidebar"
+                            path={`${import.meta.env.BASE_URL + "/offer-left-sidebar"
                                 }`}
                             element={<OfferLeftSidebarPage />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/offer-right-sidebar"
+                            path={`${import.meta.env.BASE_URL + "/offer-right-sidebar"
                                 }`}
                             element={<OfferRightSidebarPage />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/offer-category/:slug"
+                            path={`${import.meta.env.BASE_URL + "/offer-category/:slug"
                                 }`}
                             element={<OfferCategory />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/offer-date/:date"
+                            path={`${import.meta.env.BASE_URL + "/offer-date/:date"
                                 }`}
                             element={<OfferDate />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/offer-tag/:slug"
+                            path={`${import.meta.env.BASE_URL + "/offer-tag/:slug"
                                 }`}
                             element={<OfferTag />}
                         />
@@ -99,7 +99,7 @@ const App = () => {
                         
                         <Route
                             path={`${
-                                process.env.PUBLIC_URL + "/author/:author"
+                                import.meta.env.BASE_URL + "/author/:author"
                             }`}
                             element={<OfferAuthor />}
                         />
@@ -107,70 +107,70 @@ const App = () => {
                        
                         */}
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/service"}`}
+                            path={`${import.meta.env.BASE_URL + "/service"}`}
                             element={<ServicePage />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL +
+                            path={`${import.meta.env.BASE_URL +
                                 "/service-details/:title"
                                 }`}
                             element={<ServiceDetails />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/team"}`}
+                            path={`${import.meta.env.BASE_URL + "/team"}`}
                             element={<TeamPage />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/faq"}`}
+                            path={`${import.meta.env.BASE_URL + "/faq"}`}
                             element={<FaqPage />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/contact"}`}
+                            path={`${import.meta.env.BASE_URL + "/contact"}`}
                             element={<ContactPage />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/blog"}`}
+                            path={`${import.meta.env.BASE_URL + "/blog"}`}
                             element={<BlogPage />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/blog-left-sidebar"
+                            path={`${import.meta.env.BASE_URL + "/blog-left-sidebar"
                                 }`}
                             element={<BlogLeftSidebarPage />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/blog-right-sidebar"
+                            path={`${import.meta.env.BASE_URL + "/blog-right-sidebar"
                                 }`}
                             element={<BlogRightSidebarPage />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/blog-details/:blogId"
+                            path={`${import.meta.env.BASE_URL + "/blog-details/:blogId"
                                 }`}
                             element={<BlogDetailsPage />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/author/:author"
+                            path={`${import.meta.env.BASE_URL + "/author/:author"
                                 }`}
                             element={<BlogAuthor />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/date/:date"}`}
+                            path={`${import.meta.env.BASE_URL + "/date/:date"}`}
                             element={<BlogDate />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/tag/:slug"}`}
+                            path={`${import.meta.env.BASE_URL + "/tag/:slug"}`}
                             element={<BlogTag />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/category/:slug"
+                            path={`${import.meta.env.BASE_URL + "/category/:slug"
                                 }`}
                             element={<BlogCategory />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/login"}`}
+                            path={`${import.meta.env.BASE_URL + "/login"}`}
                             element={<SignIn />}
                         />
                         <Route
-                            path={`${process.env.PUBLIC_URL + "/profile"}`}
+                            path={`${import.meta.env.BASE_URL + "/profile"}`}
                             element={<UserProfile />}
                         />
                         <Route path="*" element={<PageNotFound />} />

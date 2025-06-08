@@ -6,7 +6,7 @@ const Button = ({ classOption, text, path }) => {
     return (
         <React.Fragment>
             <Link
-                to={process.env.PUBLIC_URL + path}
+                to={import.meta.env.BASE_URL + path}
                 className={`${classOption}`}
             >
                 {text}
