@@ -3,6 +3,7 @@ import Button from "../../components/button";
 import SectionTitle from "../../components/section-title";
 import Parallax from "parallax-js";
 import { Link } from "react-router-dom";
+import { baseURL } from "../../config";
 const SignInForm = () => {
     const [swapPanel, setSwapPanel] = useState(false);
 
@@ -24,10 +25,6 @@ const SignInForm = () => {
         value = e.target.value;
         setUser({ ...user, [name]: value });
     };
-    const baseURL =
-        process.env.NODE_ENV === "development"
-            ? "https://www.nisecomport.xyz/.netlify/functions/api"
-            : "https://www.nisecomport.xyz/.netlify/functions/api";
 
     const signUpEndPoint = "/register";
     const signnInEndPoint = "/signin";

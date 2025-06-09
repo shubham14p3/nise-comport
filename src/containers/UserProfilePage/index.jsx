@@ -5,6 +5,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { useNavigate } from "react-router-dom";
 import { HistoryEduTwoTone } from "@mui/icons-material";
+import { baseURL } from "../../config";
 const TabPanel = (props) => {
     const { children, value, index, ...other } = props;
 
@@ -39,32 +40,25 @@ const UserProfilePage = () => {
     const handleChange = (event, newValue) => {
         setValue(newValue);
     };
-    const baseURL =
-        process.env.NODE_ENV === "development"
-            ? "https://www.nisecomport.xyz/.netlify/functions/api"
-            : "https://www.nisecomport.xyz/.netlify/functions/api";
     const callUserPage = async () => {
         try {
             const res = await fetch(baseURL + "/profile", {
                 method: "GET",
                 headers: {
-                    Accept: "appllication/json",
+                    Accept: "application/json",
                     "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods":
-                        "DELETE, POST, GET, OPTIONS",
-                    "Access-Control-Allow-Headers":
-                        "Content-Type, Authorization, X-Requested-With",
                 },
                 credentials: "include",
             });
+
+            if (res.status !== 200) {
+                throw new Error("Unauthorized");
+            }
+
             const data = await res.json();
             setUserData(data);
-            if (!res.status === 200) {
-                const error = new Error(res.error);
-                throw error;
-            }
         } catch (error) {
+            console.error("Profile fetch error:", error);
             navigate("/login");
         }
     };

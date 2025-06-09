@@ -1,7 +1,4 @@
-const baseURL =
-    process.env.NODE_ENV === "development"
-        ? "https://www.nisecomport.xyz/.netlify/functions/api"
-        : "https://www.nisecomport.xyz/.netlify/functions/api";
+import { baseURL } from "../config";
 
 const signUpEndPoint = "/register";
 const signnInEndPoint = "/signin";
