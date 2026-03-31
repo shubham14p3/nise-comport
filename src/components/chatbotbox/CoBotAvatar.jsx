@@ -1,5 +1,3 @@
-import React from "react";
-
 import BotAvatar from "../../assets/icons/bot.svg";
 
 const CoBotAvatar = () => {
@@ -9,7 +7,7 @@ const CoBotAvatar = () => {
                 className="react-chatbot-kit-chat-bot-avatar-container"
                 style={{ background: "none" }}
             >
-                <img alt="BotAvatar" src={BotAvatar} />
+                <img src={BotAvatar} alt="BotAvatar" />
             </div>
         </div>
     );

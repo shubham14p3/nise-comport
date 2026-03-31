@@ -4,7 +4,7 @@ const SectionTitle = ({
     subTitle,
     title,
     excerpt,
-    classOption,
+    classOption = "section-title",
     excerptClassOption,
 }) => {
     return (
@@ -15,7 +15,7 @@ const SectionTitle = ({
                 dangerouslySetInnerHTML={{ __html: title }}
             ></h3>
             <p
-                className={`${excerptClassOption}`}
+                className={excerptClassOption}
                 dangerouslySetInnerHTML={{ __html: excerpt }}
             ></p>
         </div>
@@ -28,9 +28,6 @@ SectionTitle.propTypes = {
     excerpt: PropTypes.string,
     classOption: PropTypes.string,
     excerptClassOption: PropTypes.string,
-};
-SectionTitle.defaultProps = {
-    classOption: "section-title",
 };
 
 export default SectionTitle;

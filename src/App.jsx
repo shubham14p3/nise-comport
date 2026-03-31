@@ -30,6 +30,7 @@ import OfferTag from "./templates/offer-tag";
 import OfferCategory from "./templates/offer-category";
 import SignIn from "./pages/sigin";
 import UserProfile from "./pages/UserProfile";
+
 import "./assets/css/vendor/metropolis.css";
 import "./assets/css/vendor/icofont.min.css";
 import "./assets/css/vendor/font-awesome.css";
@@ -39,145 +40,46 @@ import "./assets/scss/style.scss";
 
 const App = () => {
     return (
-        <React.Fragment>
-            <BrowserRouter>
-                <Chatbotbox />
-                <NavScrollTop>
-                    <Routes>
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/"}`}
-                            element={<WelcomePage />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/home"}`}
-                            element={<HomePage />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/about"}`}
-                            element={<AboutPage />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/all-services"}`}
-                            element={<AllServices />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/offer"}`}
-                            element={<OfferPage />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL +
-                                "/offer-details/:offerId"
-                                }`}
-                            element={<OfferDetailsPage />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/offer-left-sidebar"
-                                }`}
-                            element={<OfferLeftSidebarPage />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/offer-right-sidebar"
-                                }`}
-                            element={<OfferRightSidebarPage />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/offer-category/:slug"
-                                }`}
-                            element={<OfferCategory />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/offer-date/:date"
-                                }`}
-                            element={<OfferDate />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/offer-tag/:slug"
-                                }`}
-                            element={<OfferTag />}
-                        />
-                        {/* 
-                        
-                        <Route
-                            path={`${
-                                import.meta.env.BASE_URL + "/author/:author"
-                            }`}
-                            element={<OfferAuthor />}
-                        />
-                        
-                       
-                        */}
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/service"}`}
-                            element={<ServicePage />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL +
-                                "/service-details/:title"
-                                }`}
-                            element={<ServiceDetails />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/team"}`}
-                            element={<TeamPage />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/faq"}`}
-                            element={<FaqPage />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/contact"}`}
-                            element={<ContactPage />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/blog"}`}
-                            element={<BlogPage />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/blog-left-sidebar"
-                                }`}
-                            element={<BlogLeftSidebarPage />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/blog-right-sidebar"
-                                }`}
-                            element={<BlogRightSidebarPage />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/blog-details/:blogId"
-                                }`}
-                            element={<BlogDetailsPage />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/author/:author"
-                                }`}
-                            element={<BlogAuthor />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/date/:date"}`}
-                            element={<BlogDate />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/tag/:slug"}`}
-                            element={<BlogTag />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/category/:slug"
-                                }`}
-                            element={<BlogCategory />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/login"}`}
-                            element={<SignIn />}
-                        />
-                        <Route
-                            path={`${import.meta.env.BASE_URL + "/profile"}`}
-                            element={<UserProfile />}
-                        />
-                        <Route path="*" element={<PageNotFound />} />
-                    </Routes>
-                </NavScrollTop>
-            </BrowserRouter>
-        </React.Fragment>
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
+            <Chatbotbox />
+            <NavScrollTop>
+                <Routes>
+                    <Route path="/" element={<WelcomePage />} />
+                    <Route path="/home" element={<HomePage />} />
+                    <Route path="/about" element={<AboutPage />} />
+                    <Route path="/all-services" element={<AllServices />} />
+
+                    <Route path="/offer" element={<OfferPage />} />
+                    <Route path="/offer-details/:offerId" element={<OfferDetailsPage />} />
+                    <Route path="/offer-left-sidebar" element={<OfferLeftSidebarPage />} />
+                    <Route path="/offer-right-sidebar" element={<OfferRightSidebarPage />} />
+                    <Route path="/offer-category/:slug" element={<OfferCategory />} />
+                    <Route path="/offer-date/:date" element={<OfferDate />} />
+                    <Route path="/offer-tag/:slug" element={<OfferTag />} />
+
+                    <Route path="/service" element={<ServicePage />} />
+                    <Route path="/service-details/:title" element={<ServiceDetails />} />
+
+                    <Route path="/team" element={<TeamPage />} />
+                    <Route path="/faq" element={<FaqPage />} />
+                    <Route path="/contact" element={<ContactPage />} />
+
+                    <Route path="/blog" element={<BlogPage />} />
+                    <Route path="/blog-left-sidebar" element={<BlogLeftSidebarPage />} />
+                    <Route path="/blog-right-sidebar" element={<BlogRightSidebarPage />} />
+                    <Route path="/blog-details/:blogId" element={<BlogDetailsPage />} />
+                    <Route path="/author/:author" element={<BlogAuthor />} />
+                    <Route path="/date/:date" element={<BlogDate />} />
+                    <Route path="/tag/:slug" element={<BlogTag />} />
+                    <Route path="/category/:slug" element={<BlogCategory />} />
+
+                    <Route path="/login" element={<SignIn />} />
+                    <Route path="/profile" element={<UserProfile />} />
+
+                    <Route path="*" element={<PageNotFound />} />
+                </Routes>
+            </NavScrollTop>
+        </BrowserRouter>
     );
 };
 

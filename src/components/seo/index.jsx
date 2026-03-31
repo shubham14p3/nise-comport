@@ -1,24 +1,33 @@
-import PropTypes from "prop-types";
-import React from "react";
-import { Helmet } from "react-helmet";
+// import PropTypes from "prop-types";
+// import React from "react";
+// import { Helmet } from "react-helmet";
 
-const SEO = ({ title }) => {
-    return (
-        <Helmet>
-            <meta charSet="utf-8" />
-            <title>{title}</title>
-            <meta name="robots" content="noindex, follow" />
-            <meta
-                name="description"
-                content="Nise – Comport &amp; New ways to Interact with Digital Technologies"
-            />
-            <meta
-                name="viewport"
-                content="width=device-width, initial-scale=1, shrink-to-fit=no"
-            />
-        </Helmet>
-    );
-};
+// const SEO = ({ title }) => {
+//     return (
+//         <Helmet>
+//             <meta charSet="utf-8" />
+//             <title>{title}</title>
+//             <meta name="robots" content="noindex, follow" />
+//             <meta
+//                 name="description"
+//                 content="Nise – Comport &amp; New ways to Interact with Digital Technologies"
+//             />
+//             <meta
+//                 name="viewport"
+//                 content="width=device-width, initial-scale=1, shrink-to-fit=no"
+//             />
+//         </Helmet>
+//     );
+// };
+
+// SEO.propTypes = {
+//     title: PropTypes.string,
+// };
+
+// export default SEO;
+import PropTypes from "prop-types";
+
+const SEO = () => null;
 
 SEO.propTypes = {
     title: PropTypes.string,

@@ -1,10 +1,10 @@
 import PropTypes from "prop-types";
 
-const SocialIcon = ({ path, icon, classOption }) => {
+const SocialIcon = ({ path = "#", icon, classOption = "footer-social-link" }) => {
     return (
         <a
-            className={`${classOption}`}
-            href={import.meta.env.BASE_URL + path}
+            className={classOption}
+            href={path}
             target="_blank"
             rel="noopener noreferrer"
         >
@@ -17,9 +17,6 @@ SocialIcon.propTypes = {
     path: PropTypes.string,
     icon: PropTypes.string,
     classOption: PropTypes.string,
-};
-SocialIcon.defaultProps = {
-    classOption: "footer-social-link",
 };
 
 export default SocialIcon;

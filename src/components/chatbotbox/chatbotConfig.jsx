@@ -7,10 +7,10 @@ import Pan from "../widgets/Pan";
 import Voter from "../widgets/Voter";
 import Dl from "../widgets/Dl";
 import Passport from "../widgets/Passport";
-import CoBotAvatar from "./CoBotAvatar";
+import CoBotAvatar from "./CoBotAvatar.jsx";
 
 const config = {
-    lang: "no",
+    lang: "en",
     botName: "CoBot",
     customStyles: {
         botMessageBox: {
@@ -21,7 +21,7 @@ const config = {
         },
     },
     initialMessages: [
-        createChatBotMessage(`Hi, I'm Help Bot! here to help you`),
+        createChatBotMessage("Hi, I'm Help Bot! Here to help you."),
         createChatBotMessage(
             "Here's a quick overview of what I can help you with. You can also type in.",
             {
@@ -32,7 +32,9 @@ const config = {
         ),
     ],
     state: {},
-    customComponents: { botAvatar: (props) => <CoBotAvatar {...props} /> },
+    customComponents: {
+        botAvatar: (props) => <CoBotAvatar {...props} />,
+    },
     widgets: [
         {
             widgetName: "overview",
@@ -41,31 +43,31 @@ const config = {
         },
         {
             widgetName: "globalStatistics",
-            widgetFunc: (props) => <GlobalStatistics />,
+            widgetFunc: () => <GlobalStatistics />,
         },
         {
             widgetName: "localStatistics",
-            widgetFunc: (props) => <LocalStatistics />,
+            widgetFunc: () => <LocalStatistics />,
         },
         {
             widgetName: "emergencyContact",
-            widgetFunc: (props) => <Contact />,
+            widgetFunc: () => <Contact />,
         },
         {
             widgetName: "Pan",
-            widgetFunc: (props) => <Pan />,
+            widgetFunc: () => <Pan />,
         },
         {
             widgetName: "Dl",
-            widgetFunc: (props) => <Dl />,
+            widgetFunc: () => <Dl />,
         },
         {
             widgetName: "Passport",
-            widgetFunc: (props) => <Passport />,
+            widgetFunc: () => <Passport />,
         },
         {
             widgetName: "Voter",
-            widgetFunc: (props) => <Voter />,
+            widgetFunc: () => <Voter />,
         },
     ],
 };

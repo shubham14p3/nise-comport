@@ -1,17 +1,12 @@
-import { Link } from "react-router-dom";
-import PropTypes from "prop-types";
 import React from "react";
+import PropTypes from "prop-types";
+import { Link } from "react-router-dom";
 
-const Button = ({ classOption, text, path }) => {
+const Button = ({ classOption = "btn", text, path = "/" }) => {
     return (
-        <React.Fragment>
-            <Link
-                to={import.meta.env.BASE_URL + path}
-                className={`${classOption}`}
-            >
-                {text}
-            </Link>
-        </React.Fragment>
+        <Link to={path} className={classOption}>
+            {text}
+        </Link>
     );
 };
 
@@ -20,8 +15,5 @@ Button.propTypes = {
     text: PropTypes.string,
     path: PropTypes.string,
 };
-Button.defaultProps = {
-    classOption: "btn",
-};
 
-export default Button;
+export default Button

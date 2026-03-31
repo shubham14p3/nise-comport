@@ -4,22 +4,27 @@ import Funfact from "../../../components/funfact";
 import HomeData from "../../../data/home.json";
 
 const FunFactContainer = ({ classOption }) => {
+    const funfactSection = HomeData.find((item) => item.funfact);
+    const funfacts = funfactSection?.funfact || [];
+
+    if (!funfacts.length) {
+        return null;
+    }
+
     return (
         <div
             className={`funfact-section section-pb position-relative ${classOption}`}
         >
             <div className="container">
                 <div className="row mb-n7">
-                    {HomeData[4].funfact &&
-                        HomeData[4].funfact.map((single, key) => {
-                            return (
-                                <div key={key} className="col-md-3 col-6 mb-7">
-                                    <Funfact data={single} key={key} />
-                                </div>
-                            );
-                        })}
+                    {funfacts.map((single) => (
+                        <div key={single.id} className="col-md-3 col-6 mb-7">
+                            <Funfact data={single} />
+                        </div>
+                    ))}
                 </div>
             </div>
+
             <svg
                 className="funfact-svg"
                 id="funfact"

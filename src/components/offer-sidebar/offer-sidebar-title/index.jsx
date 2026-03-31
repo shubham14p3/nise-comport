@@ -3,9 +3,9 @@ import PropTypes from "prop-types";
 
 const OfferSidebarTitle = ({ title }) => {
     return (
-        <React.Fragment>
+        <>
             <h3 className="widget-title">{title}</h3>
-        </React.Fragment>
+        </>
     );
 };
 

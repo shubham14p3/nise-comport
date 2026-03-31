@@ -5,95 +5,84 @@ class MessageParser {
     }
 
     parse(message) {
-        message = message.toLowerCase();
+        const normalizedMessage = message.toLowerCase();
+
         if (
-            message.includes("options") ||
-            message.includes("help") ||
-            message.includes("do for me")
+            normalizedMessage.includes("options") ||
+            normalizedMessage.includes("help") ||
+            normalizedMessage.includes("do for me")
         ) {
             return this.actionProvider.handleOptions({ withAvatar: true });
         }
 
         if (
-            message.includes("talk") ||
-            message.includes("speak") ||
-            message.includes("real person") ||
-            message.includes("call") ||
-            message.includes("emergency") ||
-            message.includes("contact")
+            normalizedMessage.includes("talk") ||
+            normalizedMessage.includes("speak") ||
+            normalizedMessage.includes("real person") ||
+            normalizedMessage.includes("call") ||
+            normalizedMessage.includes("emergency") ||
+            normalizedMessage.includes("contact")
         ) {
             return this.actionProvider.handleContact();
         }
 
-        // if (
-        //     message.includes("stats") ||
-        //     message.includes("statistics") ||
-        //     message.includes("deaths")
-        // ) {
-        //     return [
-        //         this.actionProvider.handleGlobalStats(),
-        //         this.actionProvider.handleLocalStats(),
-        //     ];
-        // }
-
-        // if (message.includes("medicine") || message.includes("delivery")) {
-        //     return this.actionProvider.handleMedicine();
-        // }
-
         if (
-            message.includes("joke") ||
-            message.includes("jokes") ||
-            message.includes("funny")
+            normalizedMessage.includes("joke") ||
+            normalizedMessage.includes("jokes") ||
+            normalizedMessage.includes("funny")
         ) {
             return this.actionProvider.handleJoke();
         }
-        // Pan
+
         if (
-            message.includes("PAN") ||
-            message.includes("pan") ||
-            message.includes("Pan") ||
-            message.includes("UTI") ||
-            message.includes("NSDL") ||
-            message.includes("Pan CENTER") ||
-            message.includes("pan Center") ||
-            message.includes("PAN CENTER") ||
-            message.includes("Permanent Account Number") ||
-            message.includes("PAN")
+            normalizedMessage.includes("pan") ||
+            normalizedMessage.includes("uti") ||
+            normalizedMessage.includes("nsdl") ||
+            normalizedMessage.includes("pan center") ||
+            normalizedMessage.includes("permanent account number")
         ) {
             return this.actionProvider.handlePan();
         }
-        // Voter
+
         if (
-            message.includes("Voter") ||
-            message.includes("voter") ||
-            message.includes("NVSP") ||
-            message.includes("nvsp") ||
-            message.includes("VOTER") ||
-            message.includes("Election") ||
-            message.includes("Enrol") ||
-            message.includes("New Voter Apply") ||
-            message.includes("Voter Correction") ||
-            message.includes("Voter Photo Change")
+            normalizedMessage.includes("voter") ||
+            normalizedMessage.includes("nvsp") ||
+            normalizedMessage.includes("election") ||
+            normalizedMessage.includes("enrol") ||
+            normalizedMessage.includes("new voter apply") ||
+            normalizedMessage.includes("voter correction") ||
+            normalizedMessage.includes("voter photo change")
         ) {
             return this.actionProvider.handleVoter();
         }
-        // DL
+
         if (
-            message.includes("DL") ||
-            message.includes("driving Lincese") ||
-            message.includes("two wheeler license") ||
-            message.includes("four wheeler license") ||
-            message.includes("License") ||
-            message.includes("Jharkhand License") ||
-            message.includes("Learner License") ||
-            message.includes("Renewal Driving Lincese") ||
-            message.includes("Heavy License") ||
-            message.includes("DRIVING LICENSE")
+            normalizedMessage.includes("dl") ||
+            normalizedMessage.includes("driving lincese") ||
+            normalizedMessage.includes("driving license") ||
+            normalizedMessage.includes("two wheeler license") ||
+            normalizedMessage.includes("four wheeler license") ||
+            normalizedMessage.includes("license") ||
+            normalizedMessage.includes("jharkhand license") ||
+            normalizedMessage.includes("learner license") ||
+            normalizedMessage.includes("renewal driving lincese") ||
+            normalizedMessage.includes("heavy license")
         ) {
             return this.actionProvider.handleDl();
         }
 
-        if (message.includes("thanks") || message.includes("thank you")) {
+        if (
+            normalizedMessage.includes("passport") ||
+            normalizedMessage.includes("passport apply") ||
+            normalizedMessage.includes("passport renewal")
+        ) {
+            return this.actionProvider.handlePassport();
+        }
+
+        if (
+            normalizedMessage.includes("thanks") ||
+            normalizedMessage.includes("thank you")
+        ) {
             return this.actionProvider.handleThanks();
         }
 
