@@ -1,0 +1,230 @@
+body,
+body.boxed-wrapper .page-wrapper,
+.main-menu__wrapper,
+.team-one__arrow::before {
+    background-color: var(--itzone-black);
+}
+
+
+.main-menu__wrapper:before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background-color: rgba(var(--itzone-white-rgb), .10);
+}
+
+
+
+
+.service-one__single-wrap,
+.why-choose-one,
+.process-one__single,
+.counter-one,
+.team-one__content,
+.testimonial-one__single,
+.contact-one__right,
+.pricing-one__single,
+.blog-one__single,
+.blog-one__single-two {
+    background-color: #060b16;
+}
+
+
+
+
+
+.main-menu .main-menu__list>li>a,
+.stricky-header .main-menu__list>li>a,
+.main-menu .main-menu__list>li.dropdown>a:after,
+.main-menu__call-number a,
+.main-menu__search,
+.main-menu__cart,
+.banner-one__title,
+.section-title__title,
+.about-one__points li .content h4,
+.service-one__title a,
+.why-choose-one__progress-title,
+.why-choose-one__progress .count-text,
+.why-choose-one__call-content h5 a,
+.process-one__title,
+.process-one__text,
+.team-one__name a,
+.testimonial-one__client-name a,
+.contact-one__call-box .content h3 a,
+.pricing-one__price-points li .icon>span,
+.pricing-one__price-points li p,
+.faq-one__left .faq-one-accrodion .accrodion-title h4,
+.faq-one__left .faq-one-accrodion .accrodion.active .accrodion-title h4::before,
+.blog-one__user-title,
+.blog-one__title a,
+.blog-one__user-two-title,
+.blog-one__title-two a {
+    color: var(--itzone-white);
+}
+
+
+
+
+.about-one__text,
+.main-menu__call-sub-title,
+.banner-one__text,
+.about-one__points li .content p,
+.service-one__text,
+.why-choose-one__text,
+.why-choose-one__call-content p,
+.team-one__sub-title,
+.testimonial-one__text,
+.testimonial-one__sub-title,
+.contact-one__text,
+.contact-one__call-box .content p,
+.contact-one__input-icon span,
+.faq-one__left .faq-one-accrodion .accrodion-content p,
+.blog-one__meta li a,
+.blog-one__text,
+.blog-one__meta-two li a,
+.blog-one__text-two {
+    color: #afafaf;
+}
+
+
+
+
+.main-menu .main-menu__list>li.current>a,
+.main-menu .main-menu__list>li:hover>a,
+.stricky-header .main-menu__list>li.current>a,
+.stricky-header .main-menu__list>li:hover>a {
+    color: var(--itzone-base);
+}
+
+.main-menu .main-menu__list>li.current>a::before,
+.main-menu .main-menu__list>li:hover>a::before,
+.stricky-header .main-menu__list>li.current>a::before,
+.stricky-header .main-menu__list>li:hover>a::before {
+    transform: scale(1, 1);
+    transform-origin: right center;
+}
+
+.main-menu .main-menu__list>li.current>a::after,
+.main-menu .main-menu__list>li:hover>a::after,
+.stricky-header .main-menu__list>li.current>a::after,
+.stricky-header .main-menu__list>li:hover>a::after {
+    color: var(--itzone-base);
+}
+
+
+.thm-btn:hover {
+    color: var(--itzone-base);
+}
+
+.thm-btn::before {
+    background-color: var(--itzone-white);
+}
+
+.thm-btn::after {
+    background-color: rgba(var(--itzone-white-rgb), .30);
+}
+
+.banner-one {
+    background: linear-gradient(0deg, rgba(7, 13, 26, 0.78) 0%, rgba(7, 13, 26, 0) 100%);
+}
+
+.banner-one__shape-3,
+.banner-one__shape-1,
+.banner-one__shape-2 {
+    background-color: rgba(var(--itzone-white-rgb), .01);
+}
+
+.banner-one__img-shape-1 {
+    background-color: rgba(var(--itzone-white-rgb), 0.02);
+}
+
+.banner-one__shape-4 {
+    mix-blend-mode: luminosity;
+    opacity: .50;
+}
+
+.service-one__single-shape-1 {
+    border: 1px solid rgba(var(--itzone-white-rgb), 0.05);
+    background-color: var(--itzone-black);
+}
+
+.services-one__shape-1 {
+    background: rgba(110, 84, 243, 0.10);
+}
+
+.why-choose-one__progress .bar {
+    background-color: rgba(var(--itzone-white-rgb), .10);
+}
+
+.why-choose-one__call-icon:hover {
+    background-color: var(--itzone-white);
+}
+
+.why-choose-one__call-icon:hover span {
+    color: var(--itzone-base);
+}
+
+.process-one__single::before {
+    border: 1px solid rgba(var(--itzone-white-rgb), .05);
+}
+
+.process-one__count::before {
+    border: 10px solid #03050a;
+}
+
+.testimonial-one__bg {
+    opacity: 0.05;
+}
+
+.testimonial-one__single-shape-1 {
+    background-color: rgba(var(--itzone-white-rgb), 0.02);
+}
+
+.testimonial-one__quote span {
+    color: rgba(var(--itzone-white-rgb), .20);
+}
+
+.contact-one__input-box input[type="text"],
+.contact-one__input-box input[type="email"],
+.contact-one__input-box textarea {
+    border: 1px solid rgba(var(--itzone-white-rgb), .10);
+    color: #afafaf;
+}
+
+.contact-one__shape-1 img,
+.faq-one__shape-1 img {
+    filter: invert(1);
+}
+
+
+.pricing-one__btn-box .thm-btn::before {
+    background-color: var(--itzone-white);
+}
+
+.pricing-one__btn-box .thm-btn::after {
+    background-color: rgba(var(--itzone-white-rgb), .30);
+}
+
+.faq-one {
+    background: linear-gradient(0deg, rgba(34, 193, 195, 0) 0%, rgba(6, 11, 8, .40) 100%);
+}
+
+.faq-one__left .faq-one-accrodion .accrodion {
+    background-color: rgba(var(--itzone-white-rgb), .01);
+    box-shadow: none;
+}
+
+.faq-one__shape-3 img {
+    filter: grayscale(1);
+}
+
+
+
+
+
+
+
+/* End */

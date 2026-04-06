@@ -1,0 +1,226 @@
+/*==============================================
+    Brand One  
+===============================================*/
+.brand-one {
+    position: relative;
+    display: block;
+    padding: 90px 0 0px;
+    z-index: 1;
+}
+
+.brand-one::before {
+    content: "";
+    position: absolute;
+    top: 90px;
+    right: 0;
+    bottom: 0;
+    width: 50%;
+    background-color: var(--itzone-base);
+    z-index: -1;
+}
+
+.brand-one__inner {
+    position: relative;
+    display: block;
+    background-color: var(--itzone-base);
+    padding: 50px 50px 50px;
+    clip-path: polygon(8% 0%, 100% 0%, 100% 100%, 0% 100%);
+    z-index: 1;
+}
+
+.brand-one__carousel {
+    position: relative;
+    display: block;
+}
+
+.brand-one__single {
+    position: relative;
+    display: block;
+}
+
+.brand-one__img {
+    position: relative;
+    display: block;
+}
+
+.brand-one__img img {
+    width: auto !important;
+    margin: 0 auto;
+    opacity: 1;
+    -webkit-transition: all 500ms ease;
+    transition: all 500ms ease;
+}
+
+.brand-one__single:hover .brand-one__img img {
+    opacity: .60;
+}
+
+/*==============================================
+    Brand One  
+===============================================*/
+.brand-two {
+    position: relative;
+    display: block;
+    padding: 120px 0 0;
+    z-index: 1;
+}
+
+.brand-two__wrapper {
+    position: relative;
+    display: block;
+    background-color: var(--itzone-black);
+}
+
+.brand-two__inner {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 30px 0 30px;
+}
+
+.brand-two__left {
+    position: relative;
+    display: block;
+}
+
+.brand-two__left:before {
+    content: "";
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    right: -50px;
+    width: 1px;
+    background-color: rgba(var(--itzone-white-rgb), .20);
+}
+
+.brand-two__trustpilot-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.brand-two__trustpilot-img-list {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.brand-two__trustpilot-img-list li {
+    position: relative;
+    display: block;
+}
+
+.brand-two__trustpilot-img-list li+li {
+    margin-left: -10px;
+}
+
+.brand-two__trustpilot-img {
+    position: relative;
+    display: block;
+    width: 44px;
+    overflow: hidden;
+    border-radius: 50%;
+}
+
+.brand-two__trustpilot-img img {
+    width: 100%;
+    border-radius: 50%;
+    border: 1px solid var(--itzone-white);
+}
+
+.brand-two__trustpilot-content-box {
+    position: relative;
+    display: block;
+}
+
+.brand-two__trustpilot-logo {
+    position: relative;
+    display: block;
+}
+
+.brand-two__trustpilot-logo img {
+    width: auto;
+}
+
+.brand-two__trustpilot-rating-review {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+
+.brand-two__trustpilot-rating {
+    font-size: 14px;
+    color: var(--itzone-base);
+}
+
+.brand-two__trustpilot-review {
+    font-size: 14px;
+    color: var(--itzone-white);
+    position: relative;
+    display: block;
+    margin-left: 12px;
+}
+
+.brand-two__trustpilot-review:before {
+    content: "";
+    position: absolute;
+    top: 7px;
+    bottom: 7px;
+    left: -6px;
+    width: 1px;
+    background-color: var(--itzone-white);
+}
+
+.brand-two__right {
+    position: relative;
+    display: block;
+    max-width: 955px;
+    width: 100%;
+}
+
+.brand-two__carousel {
+    position: relative;
+    display: block;
+}
+
+.brand-two__single {
+    position: relative;
+    display: block;
+}
+
+.brand-two__img {
+    position: relative;
+    display: block;
+}
+
+.brand-two__img img {
+    width: auto !important;
+    margin: 0 auto;
+    opacity: 1;
+    -webkit-transition: all 500ms ease;
+    transition: all 500ms ease;
+}
+
+.brand-two__single:hover .brand-two__img img {
+    opacity: .50;
+}
+
+
+
+
+
+
+
+
+
+
+
+/*==============================================
+    End 
+===============================================*/

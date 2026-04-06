@@ -1,0 +1,45 @@
+/*--------------------------------------------------------------
+# fonts
+--------------------------------------------------------------*/
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+
+
+/*--------------------------------------------------------------
+# template styles
+--------------------------------------------------------------*/
+@import '../css/bootstrap.min.css';
+@import '../css/animate.min.css';
+@import '../css/custom-animate.css';
+@import '../css/swiper.min.css';
+@import '../css/font-awesome-all.css';
+@import '../css/jarallax.css';
+@import '../css/jquery.magnific-popup.css';
+@import '../css/odometer.min.css';
+@import '../css/flaticon.css';
+@import '../css/owl.carousel.min.css';
+@import '../css/owl.theme.default.min.css';
+@import '../css/nice-select.css';
+@import '../css/jquery-ui.css';
+@import '../css/twentytwenty.css';
+@import '../css/aos.css';
+@import '../css/module-css/slider.css';
+@import '../css/module-css/footer.css';
+@import '../css/module-css/banner.css';
+@import '../css/module-css/about.css';
+@import '../css/module-css/services.css';
+@import '../css/module-css/why-choose.css';
+@import '../css/module-css/process.css';
+@import '../css/module-css/sliding-text.css';
+@import '../css/module-css/project.css';
+@import '../css/module-css/counter.css';
+@import '../css/module-css/team.css';
+@import '../css/module-css/brand.css';
+@import '../css/module-css/testimonial.css';
+@import '../css/module-css/contact.css';
+@import '../css/module-css/pricing.css';
+@import '../css/module-css/faq.css';
+@import '../css/module-css/blog.css';
+@import '../css/module-css/newsletter.css';
+@import '../css/style.css';
+@import '../css/responsive.css';

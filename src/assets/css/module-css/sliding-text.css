@@ -1,0 +1,66 @@
+/*--------------------------------------------------------------
+# Sliding Text One
+--------------------------------------------------------------*/
+.sliding-text-one {
+    position: relative;
+    display: block;
+    background-color: var(--itzone-base);
+    padding: 16px 0 16px;
+    z-index: 2;
+}
+
+.sliding-text-one__wrap {
+    position: relative;
+    display: block;
+}
+
+.sliding-text-one__list {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    width: fit-content;
+}
+
+.sliding-text-one__list li {
+    position: relative;
+    display: flex;
+    float: left;
+}
+
+.sliding-text-one__title {
+    position: relative;
+    display: flex;
+    align-items: center;
+    color: var(--itzone-white);
+    font-size: 24px;
+    line-height: 24px;
+    font-weight: 400;
+    font-family: var(--itzone-font-two);
+    font-style: normal;
+    text-transform: uppercase;
+    margin-left: 25px;
+    margin-right: 25px;
+}
+
+.sliding-text-one__list li span {
+    position: relative;
+    display: inline-block;
+    font-size: 24px;
+    color: var(--itzone-white);
+}
+
+
+
+
+
+
+
+
+
+
+
+/*==============================================
+    End 
+===============================================*/
