@@ -220,7 +220,7 @@ export default function Menu() {
                                 </span>
                             </Link>
                         </div>
-                        <div className="main-menu-two__user">
+                        {/* <div className="main-menu-two__user">
                             <Link to="/sign-up">
                                 <span className="far fa-users"></span>
                             </Link>
@@ -230,7 +230,7 @@ export default function Menu() {
                                 Discover More
                                 <span className="fas fa-arrow-right"></span>
                             </Link>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </div>

@@ -13,28 +13,28 @@ export default function SlidingTextOne() {
                         >
                             <li className="sliding-text-one__item">
                                 <h2
-                                    data-hover="UI/UX Design"
+                                    data-hover="Banking"
                                     className="sliding-text-one__title"
                                 >
-                                    UI/UX Design
+                                    Banking
                                 </h2>
                                 <span className="icon-star"></span>
                             </li>
                             <li className="sliding-text-one__item">
                                 <h2
-                                    data-hover="Product Design"
+                                    data-hover="Insurance"
                                     className="sliding-text-one__title"
                                 >
-                                    Product Design
+                                    Insurance
                                 </h2>
                                 <span className="icon-star"></span>
                             </li>
                             <li className="sliding-text-one__item">
                                 <h2
-                                    data-hover="Web Development"
+                                    data-hover="Education"
                                     className="sliding-text-one__title"
                                 >
-                                    Web Development
+                                    Education
                                 </h2>
                                 <span className="icon-star"></span>
                             </li>
@@ -67,10 +67,10 @@ export default function SlidingTextOne() {
                             </li>
                             <li className="sliding-text-one__item">
                                 <h2
-                                    data-hover="Digital Marketing"
+                                    data-hover="Form Filing"
                                     className="sliding-text-one__title"
                                 >
-                                    Digital Marketing
+                                    Form Filing
                                 </h2>
                                 <span className="icon-star"></span>
                             </li>

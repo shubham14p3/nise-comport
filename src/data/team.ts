@@ -22,109 +22,76 @@ export interface TeamMember {
     socialLinks: SocialLink[];
 }
 
+const defaultSocialLinks: SocialLink[] = [
+    { platform: "facebook", icon: "icon-facebook-app-symbol", url: "#" },
+    { platform: "twitter", icon: "icon-twitter-1", url: "#" },
+    { platform: "pinterest", icon: "icon-pinterest", url: "#" },
+    { platform: "linkedin", icon: "icon-linkedin", url: "#" }
+];
+
 export const teamData: TeamMember[] = [
     {
         id: 1,
-        image: Team21,
-        name: "Alisha Martin",
-        position: "Cheif Expert",
+        image: Team22,
+        name: "Sanjay Kumar",
+        position: "Head of Firm",
         detailsLink: "/team-details",
-        socialLinks: [
-            { platform: "facebook", icon: "icon-facebook-app-symbol", url: "#" },
-            { platform: "twitter", icon: "icon-twitter-1", url: "#" },
-            { platform: "pinterest", icon: "icon-pinterest", url: "#" },
-            { platform: "linkedin", icon: "icon-linkedin", url: "#" }
-        ]
+        socialLinks: defaultSocialLinks
     },
     {
         id: 2,
-        image: Team22,
-        name: "Devid Coper",
-        position: "Product Designer",
+        image: Team21,
+        name: "Chandrakala Devi",
+        position: "Head of Finance",
         detailsLink: "/team-details",
-        socialLinks: [
-            { platform: "facebook", icon: "icon-facebook-app-symbol", url: "#" },
-            { platform: "twitter", icon: "icon-twitter-1", url: "#" },
-            { platform: "pinterest", icon: "icon-pinterest", url: "#" },
-            { platform: "linkedin", icon: "icon-linkedin", url: "#" }
-        ]
+        socialLinks: defaultSocialLinks
     },
     {
         id: 3,
-        image: Team23,
-        name: "Naila Dev",
-        position: "UI/UX Designer",
+        image: Team21,
+        name: "Sanjana Shree",
+        position: "Employee",
         detailsLink: "/team-details",
-        socialLinks: [
-            { platform: "facebook", icon: "icon-facebook-app-symbol", url: "#" },
-            { platform: "twitter", icon: "icon-twitter-1", url: "#" },
-            { platform: "pinterest", icon: "icon-pinterest", url: "#" },
-            { platform: "linkedin", icon: "icon-linkedin", url: "#" }
-        ]
+        socialLinks: defaultSocialLinks
     },
     {
         id: 4,
         image: Team24,
-        name: "Robert Martin",
-        position: "CEO & Founder",
+        name: "Gourav",
+        position: "Employee",
         detailsLink: "/team-details",
-        socialLinks: [
-            { platform: "facebook", icon: "icon-facebook-app-symbol", url: "#" },
-            { platform: "twitter", icon: "icon-twitter-1", url: "#" },
-            { platform: "pinterest", icon: "icon-pinterest", url: "#" },
-            { platform: "linkedin", icon: "icon-linkedin", url: "#" }
-        ]
-    },
-    {
-        id: 5,
-        image: Team25,
-        name: "Kevin Martis",
-        position: "Chief Officer",
-        detailsLink: "/team-details",
-        socialLinks: [
-            { platform: "facebook", icon: "icon-facebook-app-symbol", url: "#" },
-            { platform: "twitter", icon: "icon-twitter-1", url: "#" },
-            { platform: "pinterest", icon: "icon-pinterest", url: "#" },
-            { platform: "linkedin", icon: "icon-linkedin", url: "#" }
-        ]
+        socialLinks: defaultSocialLinks
     },
     {
         id: 6,
         image: Team26,
-        name: "Anila Koper",
-        position: "Software Engineer",
+        name: "Jyoti Verma",
+        position: "Employee",
         detailsLink: "/team-details",
-        socialLinks: [
-            { platform: "facebook", icon: "icon-facebook-app-symbol", url: "#" },
-            { platform: "twitter", icon: "icon-twitter-1", url: "#" },
-            { platform: "pinterest", icon: "icon-pinterest", url: "#" },
-            { platform: "linkedin", icon: "icon-linkedin", url: "#" }
-        ]
+        socialLinks: defaultSocialLinks
     },
     {
         id: 7,
         image: Team27,
-        name: "Haris Rouf",
-        position: "Software Engineer",
+        name: "Amarjeet Kumar",
+        position: "Business Partner",
         detailsLink: "/team-details",
-        socialLinks: [
-            { platform: "facebook", icon: "icon-facebook-app-symbol", url: "#" },
-            { platform: "twitter", icon: "icon-twitter-1", url: "#" },
-            { platform: "pinterest", icon: "icon-pinterest", url: "#" },
-            { platform: "linkedin", icon: "icon-linkedin", url: "#" }
-        ]
+        socialLinks: defaultSocialLinks
     },
     {
         id: 8,
-        image: Team28,
-        name: "Amil Karties",
-        position: "Software Engineer",
+        image: Team25,
+        name: "Rani",
+        position: "Employee",
         detailsLink: "/team-details",
-        socialLinks: [
-            { platform: "facebook", icon: "icon-facebook-app-symbol", url: "#" },
-            { platform: "twitter", icon: "icon-twitter-1", url: "#" },
-            { platform: "pinterest", icon: "icon-pinterest", url: "#" },
-            { platform: "linkedin", icon: "icon-linkedin", url: "#" }
-        ]
+        socialLinks: defaultSocialLinks
+    },
+    {
+        id: 9,
+        image: Team21,
+        name: "Pooja",
+        position: "Employee",
+        detailsLink: "/team-details",
+        socialLinks: defaultSocialLinks
     }
 ];

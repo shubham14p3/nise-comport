@@ -354,13 +354,13 @@ export default function BlogDetailsContent() {
                                         </li>
                                         <li>
                                             <Link to="#">
-                                                Web Development
+                                                Education
                                                 <span>(08)</span>
                                             </Link>
                                         </li>
                                         <li>
                                             <Link to="#">
-                                                UI/UX Design
+                                                Banking
                                                 <span>(20)</span>
                                             </Link>
                                         </li>

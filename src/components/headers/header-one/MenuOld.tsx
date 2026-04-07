@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { useContext } from 'react';
-import Logo2 from "@/assets/images/resources/logo-2.png";
+import Logo1 from "@/assets/images/resources/logo-1.png";
 import MenuList from "@/components/MenuList";
+import { useContext } from 'react';
 import FinrisContext from '@/components/context/FinrisContext';
 
 export default function Menu() {
@@ -15,7 +15,7 @@ export default function Menu() {
                     <div className="main-menu__left">
                         <div className="main-menu__logo">
                             <Link to="/">
-                                <img src={Logo2} />
+                                <img src={Logo1} />
                             </Link>
                         </div>
                     </div>
@@ -62,14 +62,16 @@ export default function Menu() {
                                 </div>
                             </div>
                         </div>
-                        {/* <div className="main-menu__nav-sidebar-icon">
+
+                        {/* Chnage here Home */}
+                         <div className="main-menu__nav-sidebar-icon">
                             <Link className="navSidebar-button" to="#"  onClick={() => setIsSidebar(pre => !pre)} >
                                 <span className="icon-dots-menu-one"></span>
                                 <span className="icon-dots-menu-two"></span>
                                 <span className="icon-dots-menu-three"></span>
                             </Link>
                         </div>
-                        <div className="main-menu__btn-box">
+                        {/* <div className="main-menu__btn-box">
                             <Link to="/about" className="thm-btn">
                                 Discover More
                                 <span className="fas fa-arrow-right"></span>

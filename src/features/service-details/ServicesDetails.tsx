@@ -64,7 +64,7 @@ export default function ServicesDetails() {
                                             </div>
                                             <p>
                                                 <a href="tel:585858575084">
-                                                    +58 585 857 5084
+                                                    +91 9771219893
                                                 </a>
                                             </p>
                                         </li>
@@ -73,8 +73,8 @@ export default function ServicesDetails() {
                                                 <span className="icon-email"></span>
                                             </div>
                                             <p>
-                                                <a href="mailto:example@gmail.com">
-                                                    example@gmail.com
+                                                <a href="mailto:info@nisecomport.com">
+                                                    info@nisecomport.com
                                                 </a>
                                             </p>
                                         </li>
@@ -83,8 +83,8 @@ export default function ServicesDetails() {
                                                 <span className="icon-pin"></span>
                                             </div>
                                             <p>
-                                                4517 Washington Ave. Manchester,
-                                                <br /> Kentucky 39495
+                                                Shop No 3, Kharangajhar, Telco,
+                                                <br /> Jharkhand, IN, 831004
                                             </p>
                                         </li>
                                     </ul>

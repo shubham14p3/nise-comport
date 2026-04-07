@@ -38,7 +38,7 @@ export default function Header() {
                                 <div className="text">
                                     <p>
                                         <a href="mailto:info@Itzone24.com">
-                                            info@Itzone25.com
+                                            info@nisecomport.com
                                         </a>
                                     </p>
                                 </div>
@@ -48,12 +48,12 @@ export default function Header() {
                                     <i className="icon-pin"></i>
                                 </div>
                                 <div className="text">
-                                    <p>4124 Cimmaron Road, CA 92806</p>
+                                    <p>Shop No 3, Kharangajhar, Telco,</p>
                                 </div>
                             </li>
                         </ul>
                         <p className="main-menu__top-welcome-text">
-                            Welcome to Itzone our Best Technology HTML5 Template
+                            Welcome to NISE COMPORT आपका अपना प्रज्ञा केंद्र
                         </p>
                         <div className="main-menu__top-right">
                             <p className="main-menu__social-title">

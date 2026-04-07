@@ -4,48 +4,31 @@ import Swal from "sweetalert2";
 export default function ContactPage() {
     const handleSubmitChat = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-
         const form = e.currentTarget;
         const formData = new FormData(form);
 
-        const name = (formData.get("name") as string)?.trim();
-        const email = (formData.get("email") as string)?.trim();
-        const phone = (formData.get("phone") as string)?.trim();
-        const subject = (formData.get("subject") as string)?.trim();
-        const message = (formData.get("message") as string)?.trim();
+        // Extract form values
+        const Name = formData.get("name") as string;
+        const Email = formData.get("email") as string;
+        const Phone = formData.get("phone") as string;
+        const Message = formData.get("message") as string;
 
-        if (!name || !email || !phone || !message) {
+        // Validate all fields are filled
+        if (Name && Email && Message && Phone) {
             Swal.fire({
-                icon: "warning",
-                title: "Please fill all required fields",
-                text: "Name, email, phone, and message are required.",
-                confirmButtonColor: "#6e54f3",
+                position: "center",
+                icon: "success",
+                title: "Your message sent successfully!",
+                showConfirmButton: false,
+                timer: 1500
             });
-            return;
+            form.reset();
         }
-
-        Swal.fire({
-            position: "center",
-            icon: "success",
-            title: "Your message was sent successfully!",
-            text: "Thank you for contacting NISE COMPORT.",
-            showConfirmButton: false,
-            timer: 1800,
-        });
-
-        console.log({
-            name,
-            email,
-            phone,
-            subject,
-            message,
-        });
-
-        form.reset();
     };
-
     return (
+
         <>
+            {/*Contact Page Start*/}
             <section className="contact-page">
                 <div className="container">
                     <div className="contact-page__inner">
@@ -55,56 +38,21 @@ export default function ContactPage() {
                                 backgroundImage: `url(${ContactPageBgShape})`,
                             }}
                         ></div>
-
                         <div className="row">
                             <div className="col-xl-6">
                                 <div className="contact-page__left">
                                     <iframe
-                                        title="NISE COMPORT Location"
-                                        src="https://www.google.com/maps?q=Shop%20No%203,%20Singh%20Building,%20H%20M%20Rd,%20Kharangajhar%20Telco,%20Jamshedpur,%20Jharkhand%20831004&z=16&output=embed"
+                                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4562.753041141002!2d-118.80123790098536!3d34.152323469614075!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x80e82469c2162619%3A0xba03efb7998eef6d!2sCostco+Wholesale!5e0!3m2!1sbn!2sbd!4v1562518641290!5m2!1sbn!2sbd"
                                         className="google-map__one"
-                                        loading="lazy"
-                                        referrerPolicy="no-referrer-when-downgrade"
                                     ></iframe>
-
-                                    <div className="contact-page__map-links">
-                                        <a
-                                            href="https://share.google/utkezJhtuHDReOwNg"
-                                            target="_blank"
-                                            rel="noreferrer"
-                                        >
-                                            <span className="fas fa-map-marker-alt"></span>
-                                            Open in Google Maps
-                                        </a>
-
-                                        <a
-                                            href="https://g.page/r/Ce3e83XKf9SZEBM/review"
-                                            target="_blank"
-                                            rel="noreferrer"
-                                        >
-                                            <span className="fas fa-star"></span>
-                                            Leave a Review
-                                        </a>
-                                    </div>
                                 </div>
                             </div>
-
                             <div className="col-xl-6">
                                 <div className="contact-page__right">
-                                    <div className="contact-page__content-top">
-                                        <span className="contact-page__mini-title">
-                                            Let’s Talk
-                                        </span>
-                                        <h3 className="contact-page__form-title">
-                                            Need help with banking, documents, insurance, or digital services?
-                                        </h3>
-                                        <p className="contact-page__form-text">
-                                            Send us your details and our team will get back to you.
-                                        </p>
-                                    </div>
-
-                                    <form
-                                        onSubmit={handleSubmitChat}
+                                    <h3 className="contact-page__form-title">
+                                        Get A Free Quote
+                                    </h3>
+                                    <form onSubmit={handleSubmitChat}
                                         id="contact-form"
                                         className="contact-form-validated contact-page__form"
                                     >
@@ -114,31 +62,28 @@ export default function ContactPage() {
                                                     <input
                                                         type="text"
                                                         name="name"
-                                                        placeholder="Your full name *"
+                                                        placeholder="Your name"
                                                     />
                                                 </div>
                                             </div>
-
                                             <div className="col-xl-6 col-lg-6 col-md-6">
                                                 <div className="contact-page__input-box">
                                                     <input
                                                         type="email"
                                                         name="email"
-                                                        placeholder="Your email address *"
+                                                        placeholder="Your Email"
                                                     />
                                                 </div>
                                             </div>
-
                                             <div className="col-xl-6 col-lg-6 col-md-6">
                                                 <div className="contact-page__input-box">
                                                     <input
                                                         type="text"
-                                                        placeholder="Mobile number *"
+                                                        placeholder="Mobile"
                                                         name="phone"
                                                     />
                                                 </div>
                                             </div>
-
                                             <div className="col-xl-6 col-lg-6 col-md-6">
                                                 <div className="contact-page__input-box">
                                                     <input
@@ -148,48 +93,34 @@ export default function ContactPage() {
                                                     />
                                                 </div>
                                             </div>
-
                                             <div className="col-xl-12">
                                                 <div className="contact-page__input-box text-message-box">
                                                     <textarea
                                                         name="message"
-                                                        placeholder="Tell us how we can help you *"
+                                                        placeholder="Messege"
                                                     ></textarea>
                                                 </div>
-
                                                 <div className="contact-page__btn-box">
                                                     <button
                                                         type="submit"
                                                         className="thm-btn contact-page__btn"
                                                         data-loading-text="Please wait..."
                                                     >
-                                                        Send Message
+                                                        Send A Message
                                                         <span className="fas fa-arrow-right"></span>
                                                     </button>
                                                 </div>
                                             </div>
                                         </div>
-
                                         <div className="result"></div>
                                     </form>
-
-                                    <div className="contact-page__quick-contact">
-                                        <a href="tel:+919771219893">
-                                            <span className="icon-call"></span>
-                                            (+91) 9771219893
-                                        </a>
-
-                                        <a href="mailto:info@nisecomport.com">
-                                            <span className="icon-email"></span>
-                                            info@nisecomport.com
-                                        </a>
-                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </section>
+            {/*Contact Page End*/}
         </>
     );
 }

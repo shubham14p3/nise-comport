@@ -251,7 +251,7 @@ export default function TeamOne() {
                                             </Link>
                                         </h3>
                                         <p className="team-one__sub-title">
-                                            UI/UX Designer
+                                            Bankinger
                                         </p>
                                     </div>
                                 </div>

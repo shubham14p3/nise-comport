@@ -101,28 +101,28 @@ export default function Footer() {
                                             </h4>
                                             <ul className="footer-widget__links-list list-unstyled">
                                                 <li>
-                                                    <Link to="/web-development">
-                                                        Web Development
+                                                    <Link to="/education">
+                                                        Education
                                                     </Link>
                                                 </li>
                                                 <li>
-                                                    <Link to="/business-analysis">
+                                                    <Link to="/fee-payment">
                                                         Business Development
                                                     </Link>
                                                 </li>
                                                 <li>
-                                                    <Link to="/software-development">
+                                                    <Link to="/government-services">
                                                         Cloud services
                                                     </Link>
                                                 </li>
                                                 <li>
-                                                    <Link to="/product-design">
+                                                    <Link to="/insurance">
                                                         Product Management
                                                     </Link>
                                                 </li>
                                                 <li>
-                                                    <Link to="/ui-ux-design">
-                                                        UI/UX Design
+                                                    <Link to="/banking">
+                                                        Banking
                                                     </Link>
                                                 </li>
                                             </ul>
@@ -144,9 +144,9 @@ export default function Footer() {
                                                         <span className="icon-pin"></span>
                                                     </div>
                                                     <p>
-                                                        4140 Parker Rd.
-                                                        Allentown, New
-                                                        <br /> Mexico 31134
+                                                        Shop No 3, Singh Building, H M Rd, Kharangajhar
+                                                        Telco, Jamshedpur
+                                                        <br /> Jharkhand, IN, 831004
                                                     </p>
                                                 </li>
                                                 <li>
@@ -154,8 +154,8 @@ export default function Footer() {
                                                         <span className="icon-call"></span>
                                                     </div>
                                                     <p>
-                                                        <a href="tel:2195550114">
-                                                            (219) 555-0114
+                                                        <a href="tel:+919771219893">
+                                                            (+91) 9771219893
                                                         </a>
                                                     </p>
                                                 </li>
@@ -164,8 +164,8 @@ export default function Footer() {
                                                         <span className="icon-email"></span>
                                                     </div>
                                                     <p>
-                                                        <a href="mailto:Itzone@gmail.com">
-                                                            Itzone@gmail.com
+                                                        <a href="mailto:info@nisecomport.com">
+                                                            info@nisecomport.com
                                                         </a>
                                                     </p>
                                                 </li>
@@ -184,9 +184,9 @@ export default function Footer() {
                                 <div className="site-footer__bottom-inner">
                                     <div className="site-footer__copyright">
                                         <p className="site-footer__copyright-text">
-                                            © 2026 Itzone By
-                                            <a href="https://themeforest.net/user/dreamlayout">
-                                                Dreamlayout.
+                                            © 2026 By -
+                                            <a href="https://nisecomport.com">
+                                                NISE COMPORT.
                                             </a>
                                             All Rights Reserved.
                                         </p>
@@ -194,7 +194,7 @@ export default function Footer() {
                                     <div className="site-footer__bottom-menu-box">
                                         <ul className="list-unstyled site-footer__bottom-menu">
                                             <li>
-                                                <Link to="/about">
+                                                <Link to="/term-conditions">
                                                     Terms of Service
                                                 </Link>
                                             </li>

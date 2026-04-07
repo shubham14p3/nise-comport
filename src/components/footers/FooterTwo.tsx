@@ -142,7 +142,7 @@ export default function FooterTwo() {
                                                             </Link>
                                                         </h3>
                                                         <p className="footer-widget__post-date">
-                                                            
+
                                                             <span className="fas fa-calendar-alt"></span>
                                                             Feb 17, 2025
                                                         </p>
@@ -167,9 +167,9 @@ export default function FooterTwo() {
                                                         <span className="icon-pin"></span>
                                                     </div>
                                                     <p>
-                                                        4140 Parker Rd.
-                                                        Allentown, New
-                                                        <br /> Mexico 31134
+                                                        Shop No 3, Singh Building, H M Rd, Kharangajhar
+                                                        Telco, Jamshedpur
+                                                        <br /> Jharkhand, IN, 831004
                                                     </p>
                                                 </li>
                                                 <li>
@@ -177,8 +177,8 @@ export default function FooterTwo() {
                                                         <span className="icon-call"></span>
                                                     </div>
                                                     <p>
-                                                        <a href="tel:2195550114">
-                                                            (219) 555-0114
+                                                        <a href="tel:+919771219893">
+                                                            (+91) 9771219893
                                                         </a>
                                                     </p>
                                                 </li>
@@ -187,8 +187,8 @@ export default function FooterTwo() {
                                                         <span className="icon-email"></span>
                                                     </div>
                                                     <p>
-                                                        <a href="mailto:Itzone@gmail.com">
-                                                            Itzone@gmail.com
+                                                        <a href="mailto:info@nisecomport.com">
+                                                            info@nisecomport.com
                                                         </a>
                                                     </p>
                                                 </li>
@@ -207,9 +207,9 @@ export default function FooterTwo() {
                                 <div className="site-footer__bottom-inner">
                                     <div className="site-footer__copyright">
                                         <p className="site-footer__copyright-text">
-                                            © 2026 Itzone By
-                                            <a href="https://themeforest.net/user/dreamlayout">
-                                                Dreamlayout.
+                                            © 2026 By -
+                                            <a href="https://www.nisecomport.com">
+                                                NISE COMPORT.
                                             </a>
                                             All Rights Reserved.
                                         </p>
@@ -217,7 +217,7 @@ export default function FooterTwo() {
                                     <div className="site-footer__bottom-menu-box">
                                         <ul className="list-unstyled site-footer__bottom-menu">
                                             <li>
-                                                <Link to="/about">
+                                                <Link to="/term-conditions">
                                                     Terms of Service
                                                 </Link>
                                             </li>

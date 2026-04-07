@@ -24,7 +24,7 @@ export default function TeamDetailsContent() {
                                             Amaina Anne
                                         </h3>
                                         <span className="team-details__client-sub-title">
-                                            Professional UI/UX Design
+                                            Professional Banking
                                         </span>
                                         <div className="team-details__social">
                                             <Link to="#">
@@ -56,8 +56,8 @@ export default function TeamDetailsContent() {
                                                     Address
                                                 </p>
                                                 <h5>
-                                                    4140 Parker Rd. Allentown,
-                                                    New Mexico 31134
+                                                    Shop No 3,Singh Building, Kharangajhar, Telco, JSR, 
+                                                    Jharkhand, IN, 831004
                                                 </h5>
                                             </li>
                                             <li>
@@ -66,8 +66,8 @@ export default function TeamDetailsContent() {
                                                     Phone Number
                                                 </p>
                                                 <h5>
-                                                    <a href="tel:2085550112">
-                                                        (208) 555-0112
+                                                    <a href="tel:+919771219893">
+                                                        (+91) 9771219893
                                                     </a>
                                                 </h5>
                                             </li>
@@ -112,7 +112,7 @@ export default function TeamDetailsContent() {
                                                 <li>
                                                     <div className="icon"></div>
                                                     <div className="text">
-                                                        <p>UI/UX Design</p>
+                                                        <p>Banking</p>
                                                     </div>
                                                 </li>
                                                 <li>
@@ -124,7 +124,7 @@ export default function TeamDetailsContent() {
                                                 <li>
                                                     <div className="icon"></div>
                                                     <div className="text">
-                                                        <p>Product Design</p>
+                                                        <p>Insurance</p>
                                                     </div>
                                                 </li>
                                             </ul>
@@ -138,7 +138,7 @@ export default function TeamDetailsContent() {
                                                 <li>
                                                     <div className="icon"></div>
                                                     <div className="text">
-                                                        <p>Business Analysis</p>
+                                                        <p>Fee Payment</p>
                                                     </div>
                                                 </li>
                                                 <li>

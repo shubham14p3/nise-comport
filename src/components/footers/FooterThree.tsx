@@ -135,27 +135,27 @@ export default function FooterThree() {
                                         </div>
                                         <ul className="footer-widget-three__link list-unstyled">
                                             <li>
-                                                <Link to="/web-development">
-                                                    Web Development
+                                                <Link to="/education">
+                                                    Education
                                                 </Link>
                                             </li>
                                             <li>
-                                                <Link to="/ui-ux-design">
+                                                <Link to="/banking">
                                                     Cloud services
                                                 </Link>
                                             </li>
                                             <li>
-                                                <Link to="/product-design">
+                                                <Link to="/insurance">
                                                     Product Management
                                                 </Link>
                                             </li>
                                             <li>
-                                                <Link to="/ui-ux-design">
-                                                    UI/UX Design
+                                                <Link to="/banking">
+                                                    Banking
                                                 </Link>
                                             </li>
                                             <li>
-                                                <Link to="/business-analysis">
+                                                <Link to="/fee-payment">
                                                     Business Development
                                                 </Link>
                                             </li>
@@ -198,13 +198,13 @@ export default function FooterThree() {
                                                 </div>
                                                 <div className="content">
                                                     <p>
-                                                        <a href="mailto:example@gmail.com">
-                                                            example@gmail.com
+                                                        <a href="mailto:info@nisecomport.com">
+                                                            info@nisecomport.com
                                                         </a>
                                                     </p>
                                                     <p>
-                                                        <a href="mailto:example@gmail.com">
-                                                            example@gmail.com
+                                                        <a href="mailto:info@nisecomport.com">
+                                                            info@nisecomport.com
                                                         </a>
                                                     </p>
                                                 </div>
@@ -231,9 +231,10 @@ export default function FooterThree() {
                     <div className="container">
                         <div className="site-footer-three__bottom-inner">
                             <p className="site-footer-three__bottom-text">
-                                © Copywright 2025 by
-                                <a href="https://themeforest.net/user/dreamlayout">
-                                    Itzone.com
+                                © Copywright 2026 by -
+
+                                <a href="https://nisecomport.com">
+                                    NISE COMPORT.
                                 </a>
                                 All Rights Reserved.
                             </p>

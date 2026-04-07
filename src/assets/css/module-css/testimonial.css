@@ -108,7 +108,7 @@
     flex-wrap: wrap;
     gap: 20px;
     bottom: 30px;
-    left: -30px;
+    /* left: -30px; */
     z-index: 1;
 }
 

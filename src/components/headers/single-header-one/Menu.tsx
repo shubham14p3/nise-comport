@@ -245,7 +245,7 @@ export default function Menu() {
                                 </div>
                             </div>
                         </div>
-                        <div className="main-menu__nav-sidebar-icon">
+                        {/* <div className="main-menu__nav-sidebar-icon">
                             <Link  onClick={() => setIsSidebar(pre => !pre)} className="navSidebar-button" to="#">
                                 <span className="icon-dots-menu-one"></span>
                                 <span className="icon-dots-menu-two"></span>
@@ -257,7 +257,7 @@ export default function Menu() {
                                 Discover More
                                 <span className="fas fa-arrow-right"></span>
                             </Link>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </div>

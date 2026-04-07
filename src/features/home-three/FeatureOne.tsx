@@ -25,7 +25,7 @@ export default function FeatureOne() {
                                         <img src={FeatureOneImg11} />
                                     </div>
                                     <h3 className="feature-one__title">
-                                        <Link to="/business-analysis">
+                                        <Link to="/fee-payment">
                                             Security Services
                                         </Link>
                                     </h3>
@@ -46,7 +46,7 @@ export default function FeatureOne() {
                                         <img src={FeatureOneImg12} />
                                     </div>
                                     <h3 className="feature-one__title">
-                                        <Link to="/digital-marketing">
+                                        <Link to="/form-filing">
                                             Data Privacy
                                         </Link>
                                     </h3>
@@ -67,7 +67,7 @@ export default function FeatureOne() {
                                         <img src={FeatureOneImg13} />
                                     </div>
                                     <h3 className="feature-one__title">
-                                        <Link to="/product-design">
+                                        <Link to="/insurance">
                                             Industry Certified
                                         </Link>
                                     </h3>

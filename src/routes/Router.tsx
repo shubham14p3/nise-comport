@@ -45,6 +45,8 @@ import BlogRightSidebar from "@/pages/BlogRightSidebar";
 import BlogDetails from "@/pages/BlogDetails";
 import Contact from "@/pages/Contact";
 import DefaultLayout from "@/layouts/DefaultLayout";
+import TermAndConditionInfo from "@/features/TermAndCondition/TermAndConditionInfo";
+import TermAndCondition from "@/pages/TermAndCondition";
 
 const ROUTER = createBrowserRouter([
     {
@@ -142,6 +144,10 @@ const ROUTER = createBrowserRouter([
                         element: <Testimonials />,
                     },
                     {
+                        path: "/term-conditions",
+                        element: <TermAndCondition />,
+                    },
+                    {
                         path: "/pricing",
                         element: <Pricing />,
                     },
@@ -158,27 +164,27 @@ const ROUTER = createBrowserRouter([
                         element: <Services />,
                     },
                     {
-                        path: "/ui-ux-design",
+                        path: "/banking",
                         element: <UiUxDesign />,
                     },
                     {
-                        path: "/web-development",
+                        path: "/education",
                         element: <WebDevelopment />,
                     },
                     {
-                        path: "/digital-marketing",
+                        path: "/form-filing",
                         element: <DigitalMarketing />,
                     },
                     {
-                        path: "/business-analysis",
+                        path: "/fee-payment",
                         element: <BusinessAnalysis />,
                     },
                     {
-                        path: "/software-development",
+                        path: "/government-services",
                         element: <SoftwareDevelopment />,
                     },
                     {
-                        path: "/product-design",
+                        path: "/insurance",
                         element: <ProductDesign />,
                     },
                     {

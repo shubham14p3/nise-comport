@@ -31,7 +31,7 @@ export const projectsData: Project[] = [
         id: 2,
         image: Project22,
         imageUrl: "assets/images/project/project-2-2.jpg",
-        title: "Business Analysis",
+        title: "Fee Payment",
         subtitle: "Technology",
         link: "/project-details",
         delay: 200
@@ -58,7 +58,7 @@ export const projectsData: Project[] = [
         id: 5,
         image: Project25,
         imageUrl: "assets/images/project/project-2-5.jpg",
-        title: "Digital Marketing",
+        title: "Form Filing",
         subtitle: "Technology",
         link: "/project-details",
         delay: 500

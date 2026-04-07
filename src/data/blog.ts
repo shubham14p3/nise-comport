@@ -224,8 +224,8 @@ export const sidebarWidgetsData = {
     categories: [
         { name: "IT Solution", count: 12 },
         { name: "SEO Marketing", count: 15, active: true },
-        { name: "Web Development", count: 8 },
-        { name: "UI/UX Design", count: 20 },
+        { name: "Education", count: 8 },
+        { name: "Banking", count: 20 },
         { name: "Cloud Solution", count: 14 },
         { name: "Products Design", count: 5 },
     ],
@@ -233,7 +233,7 @@ export const sidebarWidgetsData = {
         {
             image: BlogLp1,
             date: "March 18, 2025",
-            title: "Adapting to Digital Marketing Trends: Staying Ahead",
+            title: "Adapting to Form Filing Trends: Staying Ahead",
         },
         {
             image: BlogLp2,
