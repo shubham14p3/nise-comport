@@ -1,0 +1,92 @@
+name: NISE Print Platform CI
+
+on:
+  push:
+    branches:
+      - feat/nise-print-platform
+  pull_request:
+    branches:
+      - dev
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: nise_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d nise_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      PORT: 3000
+      APP_ORIGIN: http://localhost:5173
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nise_test
+      DATABASE_SSL: "false"
+      JWT_SECRET: ci-only-long-secret-for-nise-platform-tests
+      PRIVATE_UPLOAD_DIR: ./private_uploads
+      SEED_OWNER_NAME: CI Owner
+      SEED_OWNER_EMAIL: owner@example.test
+      SEED_OWNER_PASSWORD: change-me-ci-123
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm install
+
+      - name: Check server syntax
+        run: |
+          node --check server/index.js
+          node --check server/db.js
+          node --check server/auth.js
+          node --check server/storage.js
+          node --check server/pricing.js
+          node --check server/payments.js
+          node --check server/notifications.js
+          node --check server/scripts/init-db.js
+          node --check server/scripts/maintenance.js
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Initialize database
+        run: npm run db:init
+
+      - name: Start API
+        run: |
+          node server/index.js > /tmp/nise-server.log 2>&1 &
+          echo $! > /tmp/nise-server.pid
+          for i in {1..20}; do
+            if curl -fsS http://localhost:3000/api/health > /tmp/health.json; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/nise-server.log
+          exit 1
+
+      - name: Smoke test account and config
+        run: |
+          curl -fsS -c /tmp/cookies.txt             -H 'Content-Type: application/json'             -d '{"name":"Test Customer","email":"customer@example.test","password":"customer-pass-123","whatsappConsent":true}'             http://localhost:3000/api/auth/register > /tmp/register.json
+          curl -fsS -b /tmp/cookies.txt http://localhost:3000/api/me > /tmp/me.json
+          curl -fsS http://localhost:3000/api/config/print > /tmp/config.json
+          curl -fsS http://localhost:3000/api/print/pickup-slots > /tmp/slots.json
+          cat /tmp/health.json
+          cat /tmp/me.json
+
+      - name: Server log
+        if: always()
+        run: cat /tmp/nise-server.log || true
