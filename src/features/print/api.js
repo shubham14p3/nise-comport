@@ -70,6 +70,9 @@ export const staffApi = {
 
 export const adminApi = {
   analytics: () => request("/api/admin/analytics"),
+  staff: () => request("/api/admin/staff"),
+  createStaff: (payload) => request("/api/admin/staff", { method: "POST", body: JSON.stringify(payload) }),
+  demoteStaff: (id) => request(`/api/admin/staff/${encodeURIComponent(id)}/demote`, { method: "POST" }),
   config: () => request("/api/admin/config"),
   updateConfig: (key, value) => request(`/api/admin/config/${encodeURIComponent(key)}`, { method: "PUT", body: JSON.stringify({ value }) }),
   createCoupon: (payload) => request("/api/admin/coupons", { method: "POST", body: JSON.stringify(payload) }),
