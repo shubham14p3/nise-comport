@@ -1,0 +1,9 @@
+{
+  "name": "NISE COMPORT",
+  "short_name": "NISE",
+  "description": "Everyday digital services and online print ordering in Telco, Jamshedpur.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f8fb",
+  "theme_color": "#172033"
+}
