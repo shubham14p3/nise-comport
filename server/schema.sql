@@ -110,6 +110,8 @@ CREATE TABLE IF NOT EXISTS print_files (
   original_name TEXT NOT NULL,
   storage_key TEXT NOT NULL,
   prepared_storage_key TEXT,
+  prepared_bw_key TEXT,
+  prepared_color_key TEXT,
   mime_type TEXT NOT NULL,
   size_bytes BIGINT NOT NULL,
   total_pages INTEGER,
