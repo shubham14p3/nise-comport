@@ -3,20 +3,22 @@ import { useNavigate } from "react-router-dom";
 import Header from "../layouts/header";
 import Footer from "../layouts/footer";
 import Layout from "../layouts";
-import { adminApi } from "../features/print/api";
+import { adminApi, printApi } from "../features/print/api";
 import "../assets/css/nise-platform.css";
 
 export default function AdminPlatformPage() {
   const navigate = useNavigate();
   const [config, setConfig] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
   const [editors, setEditors] = useState({});
   const [coupon, setCoupon] = useState({ code: "", kind: "flat", value: 1000, minOrderPaise: 0, maxDiscountPaise: "" });
   const [state, setState] = useState({ loading: true, message: "", error: "" });
 
   const load = async () => {
     try {
-      const data = await adminApi.config();
+      const [data, analyticsData] = await Promise.all([adminApi.config(), adminApi.analytics()]);
       setConfig(data.config);
+      setAnalytics(analyticsData);
       setEditors(Object.fromEntries(Object.entries(data.config).map(([key,value]) => [key, JSON.stringify(value,null,2)])));
       setState({ loading: false, message: "", error: "" });
     } catch (error) {
@@ -55,7 +57,14 @@ export default function AdminPlatformPage() {
     <div className="ops-hero"><div><span className="platform-kicker">NISE Owner</span><h1>Platform controls</h1><p>Change pricing and operational rules without touching code.</p></div></div>
     {state.error && <div className="form-error">{state.error}</div>}
     {state.message && <div className="loading-panel" style={{marginBottom:16}}>{state.message}</div>}
-    {state.loading ? <div className="loading-panel">Loading platform settings…</div> : <div className="admin-grid">
+    {state.loading ? <div className="loading-panel">Loading platform settings…</div> : <>
+      <div className="analytics-strip">
+        <div><small>Customers</small><strong>{analytics?.summary?.customers || 0}</strong></div>
+        <div><small>Orders · 30 days</small><strong>{analytics?.summary?.orders_30d || 0}</strong></div>
+        <div><small>Paid value</small><strong>₹{((Number(analytics?.summary?.paid_value_paise || 0))/100).toFixed(0)}</strong></div>
+        <div><small>Repeat customers</small><strong>{analytics?.summary?.repeat_customers || 0}</strong></div>
+      </div>
+      <div className="admin-grid">
       {Object.keys(config || {}).map((key) => <section className="dashboard-card" key={key}>
         <div className="section-title-row"><h2>{key.replaceAll("_"," ")}</h2><button className="primary-action" onClick={() => save(key)}>Save</button></div>
         <textarea className="json-editor" value={editors[key]} onChange={(e) => setEditors((x) => ({...x,[key]:e.target.value}))} />
@@ -71,6 +80,17 @@ export default function AdminPlatformPage() {
           <button className="primary-action">Create coupon</button>
         </form>
       </section>
-    </div>}
+      <section className="dashboard-card">
+        <div className="section-title-row"><h2>Shop QR</h2></div>
+        <p>Print this at the counter: “Skip the queue — upload & pay online. Collect when ready.”</p>
+        <img src={printApi.shopQrUrl()} alt="QR code to start a NISE print order" style={{width:220,maxWidth:"100%",background:"#fff"}}/>
+        <div className="ops-actions"><a href={printApi.shopQrUrl()} download="nise-print-qr.svg">Download QR</a></div>
+      </section>
+
+      <section className="dashboard-card">
+        <div className="section-title-row"><h2>Acquisition</h2></div>
+        {(analytics?.sources || []).map((item)=><div className="ledger-row" key={item.source}><span>{item.source}</span><strong>{item.count}</strong></div>)}
+      </section>
+    </div></>}
   </main><Footer/></div></Layout>;
 }
