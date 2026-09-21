@@ -9,6 +9,26 @@ import { parsePageSelection } from "../features/print/pageSelection";
 import "../assets/css/print-service.css";
 import "../assets/css/nise-platform.css";
 
+const printStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "Service",
+  name: "Online Printout and Xerox Service",
+  serviceType: "Printing and document printout service",
+  areaServed: { "@type": "City", name: "Jamshedpur" },
+  provider: {
+    "@type": "LocalBusiness",
+    name: "NISE COMPORT",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "Shop No 3, Ground Floor, Singh Building, Hanuman Mandir Road, Kharangajhar, Telco",
+      addressLocality: "Jamshedpur",
+      addressRegion: "Jharkhand",
+      addressCountry: "IN"
+    }
+  },
+  url: "https://nisecomport.com/print"
+};
+
 const money = (paise = 0) => `₹${(Number(paise) / 100).toFixed(Number(paise) % 100 ? 2 : 0)}`;
 
 function loadRazorpay() {
@@ -194,7 +214,7 @@ const PrintPage = () => {
     }
   };
 
-  return <Layout><SEO title="Online Printout in Telco, Jamshedpur | NISE COMPORT"/><div className="wrapper nise-print"><Header/><main>
+  return <Layout><SEO title="Online Printout & Xerox in Telco, Jamshedpur | NISE COMPORT" description="Upload PDF, Word or image files, choose pages, colour or B&W, pickup or local delivery, and track your print order with NISE COMPORT in Telco, Jamshedpur." canonical="https://nisecomport.com/print" structuredData={printStructuredData}/><div className="wrapper nise-print"><Header/><main>
     <section className="print-hero"><div className="container print-hero-grid">
       <div><span className="print-kicker">NISE Print Online · Telco, Jamshedpur</span><h1>Upload once. Choose exactly what to print. Collect when it is ready.</h1><p>PDF, Word and images. Mixed colour/B&W pages, copies, duplex, pickup slots, delivery, payment and NISE Credit in one order.</p><div className="print-trust"><span>Private files</span><span>Clear pricing</span><span>Skip the queue</span><span>Files auto-expire</span></div></div>
       <div className="print-price-card"><span>Black & white from</span><strong>₹2/page</strong><small>Pricing is calculated by the server from your actual selected pages.</small></div>
