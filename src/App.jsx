@@ -48,7 +48,8 @@ const App = () => {
             <Chatbotbox />
             <NavScrollTop>
                 <Routes>
-                    <Route path="/" element={<WelcomePage />} />
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/welcome" element={<WelcomePage />} />
                     <Route path="/home" element={<HomePage />} />
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/all-services" element={<AllServices />} />
