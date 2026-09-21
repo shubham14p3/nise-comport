@@ -6,6 +6,7 @@ const MainMenu = () => {
     return (
         <nav className="main-menu d-none d-lg-block">
             <ul className="d-flex">
+                <li><NavLink to={"/print"}>Print Online</NavLink></li>
                 <li>
                     <NavLink to={"/Service"}>
                         Service
@@ -129,7 +130,7 @@ const MainMenu = () => {
                         // className="sub-menu-link"
                         to={"/login"}
                     >
-                        LogIn
+                        My NISE
                     </NavLink>
                     <ul className="sub-menu">
                         <li className="sub-menu-item">
