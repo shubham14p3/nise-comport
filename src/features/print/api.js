@@ -72,3 +72,9 @@ export const adminApi = {
   updateConfig: (key, value) => request(`/api/admin/config/${encodeURIComponent(key)}`, { method: "PUT", body: JSON.stringify({ value }) }),
   createCoupon: (payload) => request("/api/admin/coupons", { method: "POST", body: JSON.stringify(payload) }),
 };
+
+export const addressApi = {
+  list: () => request("/api/addresses"),
+  create: (payload) => request("/api/addresses", { method: "POST", body: JSON.stringify(payload) }),
+  remove: (id) => request(`/api/addresses/${encodeURIComponent(id)}`, { method: "DELETE" }),
+};
