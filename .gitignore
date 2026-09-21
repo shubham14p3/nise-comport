@@ -23,3 +23,7 @@ build
 *.njsproj
 *.sln
 *.sw?
+
+# NISE private runtime data
+private_uploads/
+.env
