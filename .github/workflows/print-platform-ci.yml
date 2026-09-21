@@ -64,6 +64,7 @@ jobs:
           node --check server/notifications.js
           node --check server/scripts/init-db.js
           node --check server/scripts/maintenance.js
+          node --check server/scripts/smoke-flow.js
 
       - name: Build web app
         run: npm run build
@@ -90,6 +91,9 @@ jobs:
           curl -fsS http://localhost:3000/api/print/pickup-slots > /tmp/slots.json
           cat /tmp/health.json
           cat /tmp/me.json
+
+      - name: End-to-end print workflow
+        run: node server/scripts/smoke-flow.js
 
       - name: Server log
         if: always()
