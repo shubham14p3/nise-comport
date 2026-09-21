@@ -195,3 +195,15 @@ ALTER TABLE print_files ADD COLUMN IF NOT EXISTS prepared_storage_key TEXT;
 ALTER TABLE print_files ADD COLUMN IF NOT EXISTS prepared_bw_key TEXT;
 ALTER TABLE print_files ADD COLUMN IF NOT EXISTS prepared_color_key TEXT;
 ALTER TABLE print_files ADD COLUMN IF NOT EXISTS conversion_status TEXT NOT NULL DEFAULT 'ready';
+
+ALTER TABLE print_orders ADD COLUMN IF NOT EXISTS pickup_slot_id UUID;
+ALTER TABLE print_orders ADD COLUMN IF NOT EXISTS delivery_address JSONB;
+ALTER TABLE print_orders ADD COLUMN IF NOT EXISTS delivery_fee_paise INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE print_orders ADD COLUMN IF NOT EXISTS wallet_redeemed_paise INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE print_orders ADD COLUMN IF NOT EXISTS discount_paise INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE print_orders ADD COLUMN IF NOT EXISTS total_paise INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE print_orders ADD COLUMN IF NOT EXISTS payment_status TEXT NOT NULL DEFAULT 'pending';
+ALTER TABLE print_orders ADD COLUMN IF NOT EXISTS payment_provider TEXT;
+ALTER TABLE print_orders ADD COLUMN IF NOT EXISTS payment_reference TEXT;
+ALTER TABLE print_orders ADD COLUMN IF NOT EXISTS acquisition_source TEXT;
+ALTER TABLE print_orders ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
