@@ -5,6 +5,7 @@ import cookieParser from "cookie-parser";
 import path from "node:path";
 import fs from "node:fs";
 import crypto from "node:crypto";
+import QRCode from "qrcode";
 import { query, transaction, healthcheck } from "./db.js";
 import {
   authOptional, requireAuth, requireRole, hashPassword, normalizeEmail, normalizeMobile,
@@ -251,6 +252,14 @@ app.post("/api/auth/logout", (_req, res) => {
 app.get("/api/me", requireAuth, async (req, res) => {
   const walletBalancePaise = await getWalletBalance(req.user.id);
   res.json({ user: req.user, walletBalancePaise });
+});
+
+app.get("/api/print/shop-qr.svg", async (_req, res, next) => {
+  try {
+    const url = `${process.env.APP_ORIGIN || "https://nisecomport.com"}/print?src=shop-qr`;
+    const svg = await QRCode.toString(url, { type: "svg", width: 640, margin: 2, errorCorrectionLevel: "M" });
+    res.type("image/svg+xml").set("Cache-Control", "public, max-age=3600").send(svg);
+  } catch (error) { next(error); }
 });
 
 app.get("/api/config/print", async (_req, res, next) => {
@@ -771,6 +780,25 @@ app.get("/api/staff/print/files/:fileId/download", requireRole("OWNER","STAFF"),
     const filePath = resolveStorageKey(key);
     res.set("Cache-Control", "private, no-store");
     res.download(filePath, `${file.order_number}-${mode}-${file.original_name.replace(/\.(docx?|pdf)$/i, "")}.pdf`);
+  } catch (error) { next(error); }
+});
+
+app.get("/api/admin/analytics", requireRole("OWNER"), async (_req, res, next) => {
+  try {
+    const [summary, statuses, sources, daily] = await Promise.all([
+      query(`SELECT
+        (SELECT COUNT(*)::int FROM users WHERE role='CUSTOMER') customers,
+        (SELECT COUNT(*)::int FROM print_orders) total_orders,
+        (SELECT COUNT(*)::int FROM print_orders WHERE created_at >= NOW()-INTERVAL '30 days') orders_30d,
+        (SELECT COALESCE(SUM(total_paise),0)::bigint FROM print_orders WHERE payment_status='paid') paid_value_paise,
+        (SELECT COUNT(*)::int FROM (SELECT customer_id FROM print_orders GROUP BY customer_id HAVING COUNT(*)>1) r) repeat_customers`),
+      query("SELECT status,COUNT(*)::int count FROM print_orders GROUP BY status ORDER BY count DESC"),
+      query("SELECT COALESCE(acquisition_source,'unknown') source,COUNT(*)::int count FROM print_orders GROUP BY acquisition_source ORDER BY count DESC"),
+      query(`SELECT to_char(date_trunc('day',created_at),'YYYY-MM-DD') day,COUNT(*)::int orders,COALESCE(SUM(total_paise),0)::bigint value_paise
+             FROM print_orders WHERE created_at >= NOW()-INTERVAL '30 days'
+             GROUP BY date_trunc('day',created_at) ORDER BY date_trunc('day',created_at)`)
+    ]);
+    res.json({ summary: summary.rows[0], statuses: statuses.rows, sources: sources.rows, daily: daily.rows });
   } catch (error) { next(error); }
 });
 
