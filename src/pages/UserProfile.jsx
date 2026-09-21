@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Header from "../layouts/header";
 import Footer from "../layouts/footer";
 import Layout from "../layouts";
-import { authApi, notificationApi, printApi, walletApi } from "../features/print/api";
+import { addressApi, authApi, notificationApi, printApi, walletApi } from "../features/print/api";
 import "../assets/css/nise-platform.css";
 
 const money = (paise = 0) => `₹${(Number(paise) / 100).toFixed(Number(paise) % 100 ? 2 : 0)}`;
@@ -11,14 +11,15 @@ const label = (status = "") => status.replaceAll("_", " ").toLowerCase().replace
 
 export default function UserProfile() {
   const navigate = useNavigate();
-  const [data, setData] = useState({ me: null, orders: [], wallet: null, ledger: [], notifications: [] });
+  const [data, setData] = useState({ me: null, orders: [], wallet: null, ledger: [], notifications: [], addresses: [] });
+  const [addressForm, setAddressForm] = useState({ label: "Home", line1: "", landmark: "", postalCode: "", isDefault: true });
   const [state, setState] = useState({ loading: true, error: "" });
 
   useEffect(() => {
     (async () => {
       try {
-        const [me, orders, wallet, ledger, notifications] = await Promise.all([
-          authApi.me(), printApi.getMyOrders(), walletApi.get(), walletApi.ledger(), notificationApi.list(),
+        const [me, orders, wallet, ledger, notifications, addresses] = await Promise.all([
+          authApi.me(), printApi.getMyOrders(), walletApi.get(), walletApi.ledger(), notificationApi.list(), addressApi.list(),
         ]);
         setData({
           me,
@@ -26,6 +27,7 @@ export default function UserProfile() {
           wallet,
           ledger: ledger.entries || [],
           notifications: notifications.notifications || [],
+          addresses: addresses.addresses || [],
         });
         setState({ loading: false, error: "" });
       } catch (error) {
@@ -38,6 +40,23 @@ export default function UserProfile() {
   const recentOrders = useMemo(() => data.orders.slice(0, 5), [data.orders]);
   const recentNotifications = useMemo(() => data.notifications.slice(0, 5), [data.notifications]);
   const recentLedger = useMemo(() => data.ledger.slice(0, 5), [data.ledger]);
+
+  const saveAddress = async (event) => {
+    event.preventDefault();
+    try {
+      await addressApi.create(addressForm);
+      const refreshed = await addressApi.list();
+      setData((current) => ({ ...current, addresses: refreshed.addresses || [] }));
+      setAddressForm({ label: "Home", line1: "", landmark: "", postalCode: "", isDefault: false });
+    } catch (error) { setState((s) => ({ ...s, error: error.message })); }
+  };
+
+  const removeAddress = async (id) => {
+    try {
+      await addressApi.remove(id);
+      setData((current) => ({ ...current, addresses: current.addresses.filter((item) => item.id !== id) }));
+    } catch (error) { setState((s) => ({ ...s, error: error.message })); }
+  };
 
   const logout = async () => {
     await authApi.logout();
@@ -79,6 +98,26 @@ export default function UserProfile() {
           <div><strong>{entry.reason}</strong><br/><small>{new Date(entry.created_at).toLocaleDateString()}</small></div>
           <strong>{Number(entry.amount_paise) >= 0 ? "+" : ""}{money(entry.amount_paise)}</strong>
         </div>)}
+      </section>
+
+      <section className="dashboard-card">
+        <div className="section-title-row"><h2>Saved addresses</h2></div>
+        {data.addresses.map((address) => <div className="notification-row" key={address.id}>
+          <div><strong>{address.label}{address.is_default ? " · Default" : ""}</strong><br/><span>{address.line1}{address.landmark ? `, ${address.landmark}` : ""} · {address.postal_code}</span></div>
+          <button className="danger-link" style={{border:0,background:"transparent"}} onClick={() => removeAddress(address.id)}>Remove</button>
+        </div>)}
+        <form onSubmit={saveAddress} style={{display:"grid",gap:9,marginTop:12}}>
+          <input required placeholder="House / flat / street" value={addressForm.line1} onChange={(e)=>setAddressForm({...addressForm,line1:e.target.value})}/>
+          <div className="auth-two"><input placeholder="Landmark / area" value={addressForm.landmark} onChange={(e)=>setAddressForm({...addressForm,landmark:e.target.value})}/><input required placeholder="PIN code" value={addressForm.postalCode} onChange={(e)=>setAddressForm({...addressForm,postalCode:e.target.value})}/></div>
+          <button className="primary-action">Save address</button>
+        </form>
+      </section>
+
+      <section className="dashboard-card">
+        <div className="section-title-row"><h2>Account</h2></div>
+        <p><strong>{data.me?.user?.email || data.me?.user?.mobile}</strong></p>
+        <p>WhatsApp order updates: {data.me?.user?.whatsapp_consent ? "On" : "Off"}</p>
+        <p>Marketing offers: {data.me?.user?.marketing_consent ? "On" : "Off"}</p>
       </section>
 
       <section className="dashboard-card" style={{gridColumn:"1 / -1"}}>
