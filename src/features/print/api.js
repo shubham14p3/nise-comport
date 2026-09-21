@@ -33,6 +33,7 @@ export const authApi = {
 };
 
 export const printApi = {
+  shopQrUrl: () => `${API_BASE}/api/print/shop-qr.svg`,
   config: () => request("/api/config/print"),
   pickupSlots: () => request("/api/print/pickup-slots"),
   upload: async (files) => {
@@ -68,6 +69,7 @@ export const staffApi = {
 };
 
 export const adminApi = {
+  analytics: () => request("/api/admin/analytics"),
   config: () => request("/api/admin/config"),
   updateConfig: (key, value) => request(`/api/admin/config/${encodeURIComponent(key)}`, { method: "PUT", body: JSON.stringify({ value }) }),
   createCoupon: (payload) => request("/api/admin/coupons", { method: "POST", body: JSON.stringify(payload) }),
