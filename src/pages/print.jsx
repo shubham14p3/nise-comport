@@ -4,7 +4,7 @@ import SEO from "../components/seo";
 import Header from "../layouts/header";
 import Footer from "../layouts/footer";
 import Layout from "../layouts";
-import { authApi, printApi } from "../features/print/api";
+import { addressApi, authApi, printApi } from "../features/print/api";
 import { parsePageSelection } from "../features/print/pageSelection";
 import "../assets/css/print-service.css";
 import "../assets/css/nise-platform.css";
@@ -31,6 +31,8 @@ const PrintPage = () => {
   const [fulfilment, setFulfilment] = useState("pickup");
   const [pickupSlotId, setPickupSlotId] = useState("");
   const [deliveryAddress, setDeliveryAddress] = useState({ line1: "", line2: "", landmark: "", city: "Jamshedpur", state: "Jharkhand", postalCode: "" });
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState("new");
   const [couponCode, setCouponCode] = useState("");
   const [walletRupees, setWalletRupees] = useState(0);
   const [customerNote, setCustomerNote] = useState("");
@@ -45,7 +47,17 @@ const PrintPage = () => {
         setConfig(configData);
         setSlots(slotsData.slots || []);
         setPickupSlotId(slotsData.slots?.[0]?.id || "");
-        try { setMe(await authApi.me()); } catch {}
+        try {
+          const account = await authApi.me();
+          setMe(account);
+          const saved = await addressApi.list();
+          setSavedAddresses(saved.addresses || []);
+          const preferred = (saved.addresses || []).find((item) => item.is_default) || saved.addresses?.[0];
+          if (preferred) {
+            setSelectedAddressId(preferred.id);
+            setDeliveryAddress({ line1: preferred.line1, line2: preferred.line2 || "", landmark: preferred.landmark || "", city: preferred.city, state: preferred.state, postalCode: preferred.postal_code });
+          }
+        } catch {}
         setState((s) => ({ ...s, loading: false }));
       } catch (error) { setState((s) => ({ ...s, loading: false, error: error.message })); }
     })();
@@ -216,7 +228,17 @@ const PrintPage = () => {
         <div className="fulfilment-grid"><button type="button" className={fulfilment==="pickup"?"selected":""} onClick={()=>setFulfilment("pickup")}><strong>Shop pickup</strong><span>Choose an available time</span></button><button type="button" className={fulfilment==="delivery"?"selected":""} onClick={()=>setFulfilment("delivery")}><strong>Home delivery</strong><span>Local delivery charge shown before payment</span></button></div>
 
         {fulfilment === "pickup" ? <label className="pickup-slot">Pickup time<select value={pickupSlotId} onChange={(e)=>setPickupSlotId(e.target.value)}>{slots.map((slot)=><option value={slot.id} key={slot.id}>{new Date(slot.starts_at).toLocaleString([], {weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})} · {slot.capacity-slot.booked_count} left</option>)}</select></label> :
-        <div className="delivery-form"><label>Address<input value={deliveryAddress.line1} onChange={(e)=>setDeliveryAddress({...deliveryAddress,line1:e.target.value})} placeholder="House / flat / street"/></label><label>Area / landmark<input value={deliveryAddress.landmark} onChange={(e)=>setDeliveryAddress({...deliveryAddress,landmark:e.target.value})} placeholder="Area or landmark"/></label><label>Postal code<input inputMode="numeric" value={deliveryAddress.postalCode} onChange={(e)=>setDeliveryAddress({...deliveryAddress,postalCode:e.target.value})} placeholder="PIN code"/></label></div>}
+        <div className="delivery-form">
+          {savedAddresses.length > 0 && <label style={{gridColumn:"1 / -1"}}>Saved address<select value={selectedAddressId} onChange={(e)=>{
+            const id=e.target.value; setSelectedAddressId(id);
+            const selected=savedAddresses.find((item)=>item.id===id);
+            if(selected) setDeliveryAddress({line1:selected.line1,line2:selected.line2||"",landmark:selected.landmark||"",city:selected.city,state:selected.state,postalCode:selected.postal_code});
+            if(id==="new") setDeliveryAddress({line1:"",line2:"",landmark:"",city:"Jamshedpur",state:"Jharkhand",postalCode:""});
+          }}><option value="new">Use a new address</option>{savedAddresses.map((item)=><option value={item.id} key={item.id}>{item.label} · {item.line1} · {item.postal_code}</option>)}</select></label>}
+          <label>Address<input value={deliveryAddress.line1} onChange={(e)=>{setSelectedAddressId("new");setDeliveryAddress({...deliveryAddress,line1:e.target.value});}} placeholder="House / flat / street"/></label>
+          <label>Area / landmark<input value={deliveryAddress.landmark} onChange={(e)=>{setSelectedAddressId("new");setDeliveryAddress({...deliveryAddress,landmark:e.target.value});}} placeholder="Area or landmark"/></label>
+          <label>Postal code<input inputMode="numeric" value={deliveryAddress.postalCode} onChange={(e)=>{setSelectedAddressId("new");setDeliveryAddress({...deliveryAddress,postalCode:e.target.value});}} placeholder="PIN code"/></label>
+        </div>}
 
         <div className="step-title section-gap"><span>3</span><div><h2>Offers, credit & payment</h2><p>Coupon and wallet rules are verified again by the server before the order is accepted.</p></div></div>
         <div className="checkout-options"><label>Coupon<input value={couponCode} onChange={(e)=>setCouponCode(e.target.value.toUpperCase())} placeholder="Optional"/></label><label>Use NISE Credit (₹)<input type="number" min="0" step="1" value={walletRupees} onChange={(e)=>setWalletRupees(e.target.value)}/><small>Available: {money(quote?.walletBalancePaise || me?.walletBalancePaise || 0)}</small></label></div>
