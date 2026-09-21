@@ -716,7 +716,10 @@ app.post("/api/staff/print/orders/:orderNumber/status", requireRole("OWNER","STA
 
     await transaction(async (client) => {
       await client.query(
-        `UPDATE print_orders SET status=$2,updated_at=NOW(),completed_at=CASE WHEN $2='COMPLETED' THEN NOW() ELSE completed_at END
+        `UPDATE print_orders
+         SET status=$2::print_order_status,
+             updated_at=NOW(),
+             completed_at=CASE WHEN $2::text='COMPLETED' THEN NOW() ELSE completed_at END
          WHERE id=$1`,
         [order.id, nextStatus]
       );
