@@ -31,6 +31,8 @@ import OfferCategory from "./templates/offer-category";
 import SignIn from "./pages/sigin";
 import UserProfile from "./pages/UserProfile";
 import PrintPage from "./pages/print";
+import PrintOrdersPage from "./pages/print-orders";
+import StaffPrintPage from "./pages/staff-print";
 
 import "./assets/css/vendor/metropolis.css";
 import "./assets/css/vendor/icofont.min.css";
@@ -77,6 +79,8 @@ const App = () => {
                     <Route path="/login" element={<SignIn />} />
                     <Route path="/profile" element={<UserProfile />} />
                     <Route path="/print" element={<PrintPage />} />
+                    <Route path="/print/orders" element={<PrintOrdersPage />} />
+                    <Route path="/staff/print" element={<StaffPrintPage />} />
 
                     <Route path="*" element={<PageNotFound />} />
                 </Routes>
