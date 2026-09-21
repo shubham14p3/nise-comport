@@ -42,7 +42,7 @@ app.post("/api/payments/razorpay/webhook", express.raw({ type: "application/json
     if (event.event === "payment.captured") {
       const payment = event.payload?.payment?.entity;
       if (payment?.order_id) {
-        const { rows } = await query("SELECT * FROM print_orders WHERE payment_reference=$1 LIMIT 1", [payment.order_id]);
+        const { rows } = await query("SELECT * FROM print_orders WHERE payment_order_reference=$1 LIMIT 1", [payment.order_id]);
         if (rows[0]) await markOrderPaid(rows[0].id, "razorpay", payment.id);
       }
     }
@@ -190,6 +190,9 @@ async function markOrderPaid(orderId, provider, paymentReference) {
        WHERE id=$1`,
       [order.id, provider, paymentReference || null]
     );
+    if (order.coupon_code) {
+      await client.query("UPDATE coupons SET used_count=used_count+1 WHERE upper(code)=upper($1)", [order.coupon_code]);
+    }
     await addStatus(client, order.id, "PAID", null, "Payment confirmed");
     return { ...order, status: "PAID", payment_status: "paid" };
   });
@@ -473,12 +476,17 @@ app.post("/api/print/orders", requireAuth, async (req, res, next) => {
       return order;
     });
 
+    const requestedPaymentMethod = req.body.paymentMethod === "pay_at_shop" ? "pay_at_shop" : "online";
     const payment = quote.totalPaise === 0
       ? { provider: "wallet", orderId: null, amountPaise: 0 }
-      : await createPaymentOrder({ amountPaise: quote.totalPaise, receipt: number, notes: { niseOrder: number } });
+      : requestedPaymentMethod === "pay_at_shop"
+        ? { provider: "pay_at_shop", orderId: null, amountPaise: quote.totalPaise }
+        : await createPaymentOrder({ amountPaise: quote.totalPaise, receipt: number, notes: { niseOrder: number } });
 
     if (payment.provider === "razorpay") {
-      await query("UPDATE print_orders SET payment_provider='razorpay',payment_reference=$2 WHERE id=$1", [created.id, payment.orderId]);
+      await query("UPDATE print_orders SET payment_provider='razorpay',payment_order_reference=$2 WHERE id=$1", [created.id, payment.orderId]);
+    } else if (payment.provider === "pay_at_shop") {
+      await query("UPDATE print_orders SET payment_provider='pay_at_shop' WHERE id=$1", [created.id]);
     } else if (quote.totalPaise === 0) {
       await markOrderPaid(created.id, "wallet", null);
     }
@@ -521,7 +529,7 @@ app.post("/api/print/orders/:orderNumber/payment/create", requireAuth, async (re
       notes: { niseOrder: order.order_number },
     });
     if (payment.provider === "razorpay") {
-      await query("UPDATE print_orders SET payment_provider='razorpay',payment_reference=$2 WHERE id=$1", [order.id, payment.orderId]);
+      await query("UPDATE print_orders SET payment_provider='razorpay',payment_order_reference=$2 WHERE id=$1", [order.id, payment.orderId]);
     }
     res.json({ payment, payAtShopAvailable: true });
   } catch (error) { next(error); }
@@ -534,9 +542,9 @@ app.post("/api/print/orders/:orderNumber/payment/confirm", requireAuth, async (r
       await query("UPDATE print_orders SET payment_provider='pay_at_shop' WHERE id=$1", [order.id]);
       return res.json({ order: await fetchOrder(order.order_number, req.user) });
     }
-    if (order.payment_provider !== "razorpay") throw Object.assign(new Error("No online payment is active for this order"), { status: 400 });
+    if (order.payment_provider !== "razorpay" || !order.payment_order_reference) throw Object.assign(new Error("No online payment is active for this order"), { status: 400 });
     if (!verifyRazorpayCheckout({
-      orderId: order.payment_reference,
+      orderId: order.payment_order_reference,
       paymentId: req.body.razorpayPaymentId,
       signature: req.body.razorpaySignature,
     })) throw Object.assign(new Error("Payment verification failed"), { status: 400 });
@@ -656,6 +664,21 @@ app.post("/api/staff/print/orders/:orderNumber/status", requireRole("OWNER","STA
         [order.id, nextStatus]
       );
       await addStatus(client, order.id, nextStatus, req.user.id, String(req.body.note || "").slice(0, 500) || null);
+
+      if (nextStatus === "REFUNDED") {
+        if (order.wallet_redeemed_paise > 0) {
+          const reversal = await client.query("SELECT 1 FROM wallet_ledger WHERE order_id=$1 AND entry_type='reversal'", [order.id]);
+          if (!reversal.rows[0]) {
+            await client.query(
+              "INSERT INTO wallet_ledger(user_id,order_id,amount_paise,entry_type,reason) VALUES($1,$2,$3,'reversal',$4)",
+              [order.customer_id, order.id, order.wallet_redeemed_paise, `Wallet reversal for ${order.order_number}`]
+            );
+          }
+        }
+        if (order.coupon_code && order.payment_status === "paid") {
+          await client.query("UPDATE coupons SET used_count=GREATEST(0,used_count-1) WHERE upper(code)=upper($1)", [order.coupon_code]);
+        }
+      }
 
       if (nextStatus === "COMPLETED" && order.cashback_paise > 0) {
         const existing = await client.query(
