@@ -33,6 +33,7 @@ import UserProfile from "./pages/UserProfile";
 import PrintPage from "./pages/print";
 import PrintOrdersPage from "./pages/print-orders";
 import StaffPrintPage from "./pages/staff-print";
+import AdminPlatformPage from "./pages/admin-platform";
 
 import "./assets/css/vendor/metropolis.css";
 import "./assets/css/vendor/icofont.min.css";
@@ -81,6 +82,7 @@ const App = () => {
                     <Route path="/print" element={<PrintPage />} />
                     <Route path="/print/orders" element={<PrintOrdersPage />} />
                     <Route path="/staff/print" element={<StaffPrintPage />} />
+                    <Route path="/admin/platform" element={<AdminPlatformPage />} />
 
                     <Route path="*" element={<PageNotFound />} />
                 </Routes>
