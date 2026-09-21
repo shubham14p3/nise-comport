@@ -1,5 +1,9 @@
 name: NISE Print Platform CI
 
+concurrency:
+  group: nise-print-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
