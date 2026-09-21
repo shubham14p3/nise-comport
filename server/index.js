@@ -593,6 +593,41 @@ app.post("/api/print/orders/:orderNumber/cancel", requireAuth, async (req, res, 
   } catch (error) { next(error); }
 });
 
+app.get("/api/addresses", requireAuth, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      "SELECT id,label,line1,line2,landmark,city,state,postal_code,is_default FROM addresses WHERE user_id=$1 ORDER BY is_default DESC,created_at DESC",
+      [req.user.id]
+    );
+    res.json({ addresses: rows });
+  } catch (error) { next(error); }
+});
+
+app.post("/api/addresses", requireAuth, async (req, res, next) => {
+  try {
+    const line1 = requiredString(req.body.line1, "Address", 200);
+    const postalCode = requiredString(req.body.postalCode, "Postal code", 12);
+    const makeDefault = Boolean(req.body.isDefault);
+    const address = await transaction(async (client) => {
+      if (makeDefault) await client.query("UPDATE addresses SET is_default=false WHERE user_id=$1", [req.user.id]);
+      const { rows } = await client.query(
+        `INSERT INTO addresses(user_id,label,line1,line2,landmark,city,state,postal_code,is_default)
+         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+        [req.user.id, String(req.body.label || "Home").slice(0,40), line1, req.body.line2 || null, req.body.landmark || null, req.body.city || "Jamshedpur", req.body.state || "Jharkhand", postalCode, makeDefault]
+      );
+      return rows[0];
+    });
+    res.status(201).json({ address });
+  } catch (error) { next(error); }
+});
+
+app.delete("/api/addresses/:id", requireAuth, async (req, res, next) => {
+  try {
+    await query("DELETE FROM addresses WHERE id=$1 AND user_id=$2", [req.params.id, req.user.id]);
+    res.status(204).end();
+  } catch (error) { next(error); }
+});
+
 app.get("/api/wallet", requireAuth, async (req, res, next) => {
   try { res.json({ balancePaise: await getWalletBalance(req.user.id) }); } catch (error) { next(error); }
 });
