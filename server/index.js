@@ -190,9 +190,6 @@ async function markOrderPaid(orderId, provider, paymentReference) {
        WHERE id=$1`,
       [order.id, provider, paymentReference || null]
     );
-    if (order.coupon_code) {
-      await client.query("UPDATE coupons SET used_count=used_count+1 WHERE upper(code)=upper($1)", [order.coupon_code]);
-    }
     await addStatus(client, order.id, "PAID", null, "Payment confirmed");
     return { ...order, status: "PAID", payment_status: "paid" };
   });
@@ -413,6 +410,19 @@ app.post("/api/print/orders", requireAuth, async (req, res, next) => {
       );
       const order = inserted.rows[0];
 
+      if (quote.couponCode) {
+        const reservedCoupon = await client.query(
+          `UPDATE coupons SET used_count=used_count+1
+           WHERE upper(code)=upper($1) AND active=true
+             AND (starts_at IS NULL OR starts_at <= NOW())
+             AND (ends_at IS NULL OR ends_at >= NOW())
+             AND (max_uses IS NULL OR used_count < max_uses)
+           RETURNING id`,
+          [quote.couponCode]
+        );
+        if (!reservedCoupon.rows[0]) throw Object.assign(new Error("That coupon is no longer available"), { status: 409 });
+      }
+
       if (quote.walletAppliedPaise > 0) {
         await client.query(
           `INSERT INTO wallet_ledger(user_id,order_id,amount_paise,entry_type,reason)
@@ -558,12 +568,15 @@ app.post("/api/print/orders/:orderNumber/payment/confirm", requireAuth, async (r
 app.post("/api/print/orders/:orderNumber/cancel", requireAuth, async (req, res, next) => {
   try {
     const order = await fetchOrder(req.params.orderNumber, req.user);
-    if (!["DRAFT","AWAITING_PAYMENT","PAID","QUEUED"].includes(order.status)) {
+    if (!["DRAFT","AWAITING_PAYMENT"].includes(order.status)) {
       throw Object.assign(new Error("This order can no longer be cancelled online"), { status: 409 });
     }
     await transaction(async (client) => {
       await client.query("UPDATE print_orders SET status='CANCELLED',updated_at=NOW() WHERE id=$1", [order.id]);
       if (order.pickup_slot_id) await client.query("UPDATE pickup_slots SET booked_count=GREATEST(0,booked_count-1) WHERE id=$1", [order.pickup_slot_id]);
+      if (order.coupon_code) {
+        await client.query("UPDATE coupons SET used_count=GREATEST(0,used_count-1) WHERE upper(code)=upper($1)", [order.coupon_code]);
+      }
       if (order.wallet_redeemed_paise > 0) {
         const existing = await client.query("SELECT 1 FROM wallet_ledger WHERE order_id=$1 AND entry_type='reversal'", [order.id]);
         if (!existing.rows[0]) {
@@ -675,7 +688,7 @@ app.post("/api/staff/print/orders/:orderNumber/status", requireRole("OWNER","STA
             );
           }
         }
-        if (order.coupon_code && order.payment_status === "paid") {
+        if (order.coupon_code) {
           await client.query("UPDATE coupons SET used_count=GREATEST(0,used_count-1) WHERE upper(code)=upper($1)", [order.coupon_code]);
         }
       }
