@@ -5,6 +5,8 @@ import Footer from "../layouts/footer";
 import Layout from "../layouts";
 import { calculatePrintPrice, printPricing } from "../data/printService";
 import { parsePageSelection } from "../features/print/pageSelection";
+import { createPrintOrderNumber, savePrintOrder } from "../features/print/orderStore";
+import { useNavigate } from "react-router-dom";
 import "../assets/css/print-service.css";
 
 const makePrintFile = (file) => ({
@@ -19,6 +21,7 @@ const makePrintFile = (file) => ({
 });
 
 const PrintPage = () => {
+  const navigate = useNavigate();
   const [files, setFiles] = useState([]);
   const [fulfilment, setFulfilment] = useState("pickup");
   const [pickupSlot, setPickupSlot] = useState("today-evening");
@@ -50,6 +53,24 @@ const PrintPage = () => {
   };
 
   const removeFile = (id) => setFiles((items) => items.filter((item) => item.id !== id));
+
+  const createOrder = () => {
+    if (!files.length) return;
+    const order = {
+      orderNumber: createPrintOrderNumber(),
+      createdAt: new Date().toISOString(),
+      status: "awaiting_payment",
+      paymentStatus: "pending",
+      fulfilment,
+      pickupSlot: fulfilment === "pickup" ? pickupSlot : null,
+      total: pricing.subtotal,
+      cashback: pricing.cashback,
+      files: files.map((item) => ({ name: item.file.name, size: item.file.size, totalPages: item.totalPages, selection: item.selection, colourSelection: item.colourSelection, copies: item.copies, sides: item.sides, paperSize: item.paperSize })),
+      statusHistory: [{ status: "awaiting_payment", at: new Date().toISOString() }],
+    };
+    savePrintOrder(order);
+    navigate("/print/orders");
+  };
 
   return (
     <Layout>
@@ -110,7 +131,7 @@ const PrintPage = () => {
               <div><span>Colour ({totals.colour} sides × ₹{printPricing.colourPricePerPage})</span><strong>₹{totals.colour * printPricing.colourPricePerPage}</strong></div>
               <div className="summary-total"><span>Printing total</span><strong>₹{pricing.subtotal}</strong></div>
               <div className="wallet-preview"><span>You could earn</span><strong>₹{pricing.cashback} NISE Credit</strong><small>Added after completed pickup/delivery.</small></div>
-              <button className="continue-print" disabled={!files.length}>Continue to login & checkout</button>
+              <button className="continue-print" disabled={!files.length} onClick={createOrder}>Save order & continue</button>
               <small className="summary-note">Final page detection, validation and payment will be server verified before ordering.</small>
             </aside>
           </section>
