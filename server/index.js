@@ -468,7 +468,7 @@ app.post("/api/print/orders", requireAuth, async (req, res, next) => {
           `INSERT INTO print_files(
             order_id,original_name,storage_key,prepared_storage_key,prepared_bw_key,prepared_color_key,
             mime_type,size_bytes,total_pages,conversion_status,delete_after
-          ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'ready',NOW()+($10 || ' days')::interval)
+          ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'ready',NOW()+($10::text || ' days')::interval)
           RETURNING id`,
           [
             order.id, finalized.originalName, finalized.storageKey, finalized.preparedStorageKey,
@@ -780,6 +780,47 @@ app.get("/api/staff/print/files/:fileId/download", requireRole("OWNER","STAFF"),
     const filePath = resolveStorageKey(key);
     res.set("Cache-Control", "private, no-store");
     res.download(filePath, `${file.order_number}-${mode}-${file.original_name.replace(/\.(docx?|pdf)$/i, "")}.pdf`);
+  } catch (error) { next(error); }
+});
+
+app.get("/api/admin/staff", requireRole("OWNER"), async (_req, res, next) => {
+  try {
+    const { rows } = await query(
+      "SELECT id,name,email,mobile,role,created_at FROM users WHERE role IN ('OWNER','STAFF') ORDER BY role,name"
+    );
+    res.json({ staff: rows });
+  } catch (error) { next(error); }
+});
+
+app.post("/api/admin/staff", requireRole("OWNER"), async (req, res, next) => {
+  try {
+    const name = requiredString(req.body.name, "Name", 100);
+    const email = normalizeEmail(req.body.email);
+    const mobile = normalizeMobile(req.body.mobile);
+    if (!email && !mobile) throw Object.assign(new Error("Email or mobile is required"), { status: 400 });
+    const passwordHash = await hashPassword(req.body.password);
+    const { rows } = await query(
+      `INSERT INTO users(role,name,email,mobile,password_hash)
+       VALUES('STAFF',$1,$2,$3,$4)
+       RETURNING id,name,email,mobile,role,created_at`,
+      [name,email,mobile,passwordHash]
+    );
+    res.status(201).json({ staff: rows[0] });
+  } catch (error) {
+    if (error.code === "23505") error = Object.assign(new Error("A user already exists with that email or mobile"), { status: 409 });
+    next(error);
+  }
+});
+
+app.post("/api/admin/staff/:id/demote", requireRole("OWNER"), async (req, res, next) => {
+  try {
+    if (req.params.id === req.user.id) throw Object.assign(new Error("You cannot demote your own owner account"), { status: 400 });
+    const { rows } = await query(
+      "UPDATE users SET role='CUSTOMER',updated_at=NOW() WHERE id=$1 AND role='STAFF' RETURNING id,name,email,mobile,role",
+      [req.params.id]
+    );
+    if (!rows[0]) throw Object.assign(new Error("Staff account not found"), { status: 404 });
+    res.json({ user: rows[0] });
   } catch (error) { next(error); }
 });
 
