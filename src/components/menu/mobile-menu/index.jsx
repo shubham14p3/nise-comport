@@ -58,6 +58,8 @@ const MobileMenu = ({ show, onClose }) => {
 
                     <nav id="offcanvasNav" className="offcanvas-menu">
                         <ul>
+                            <li><NavLink to="/print">Print Online</NavLink></li>
+                            <li><NavLink to="/profile">My NISE</NavLink></li>
                             <li>
                                 <NavLink
                                     to="/service"
