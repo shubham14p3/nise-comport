@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS print_orders (
   cashback_paise INTEGER NOT NULL DEFAULT 0,
   payment_status TEXT NOT NULL DEFAULT 'pending',
   payment_provider TEXT,
+  payment_order_reference TEXT,
   payment_reference TEXT,
   coupon_code TEXT,
   acquisition_source TEXT,
@@ -181,3 +182,16 @@ CREATE INDEX IF NOT EXISTS idx_print_files_delete_after ON print_files(delete_af
 CREATE INDEX IF NOT EXISTS idx_wallet_user ON wallet_ledger(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_pickup_slots_starts ON pickup_slots(starts_at);
+
+-- Safe upgrades for databases initialized from an earlier NISE Print draft.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS whatsapp_consent BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE print_orders ADD COLUMN IF NOT EXISTS cashback_paise INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE print_orders ADD COLUMN IF NOT EXISTS payment_order_reference TEXT;
+ALTER TABLE print_orders ADD COLUMN IF NOT EXISTS coupon_code TEXT;
+ALTER TABLE print_orders ADD COLUMN IF NOT EXISTS customer_note TEXT;
+ALTER TABLE print_orders ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE print_files ADD COLUMN IF NOT EXISTS prepared_storage_key TEXT;
+ALTER TABLE print_files ADD COLUMN IF NOT EXISTS prepared_bw_key TEXT;
+ALTER TABLE print_files ADD COLUMN IF NOT EXISTS prepared_color_key TEXT;
+ALTER TABLE print_files ADD COLUMN IF NOT EXISTS conversion_status TEXT NOT NULL DEFAULT 'ready';
