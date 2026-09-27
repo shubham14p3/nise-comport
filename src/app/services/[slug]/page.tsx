@@ -1,3 +1,4 @@
+import SiteHeader from "@/components/site-header";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -5,7 +6,6 @@ import { ArrowLeft, ArrowRight, Check, MapPin, ShieldCheck } from "lucide-react"
 import { serviceCatalog, serviceDetails, findService, servicesInCategory } from "@/lib/services";
 import { pageMetadata } from "@/lib/seo";
 import RequestServiceForm from "@/components/request-service-form";
-import BrandWordmark from "@/components/brand-wordmark";
 
 export function generateStaticParams() { return [...serviceCatalog, ...serviceDetails].map((service) => ({ slug: service.slug })); }
 
@@ -26,7 +26,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
   const faqs = detail?.faqs ?? [{ question: "How do I get started?", answer: "Contact us or submit a service request. We will confirm availability, documents and service charges before proceeding." }, { question: "Who makes the final decision?", answer: "The relevant government authority, bank, insurer, institution or service provider controls eligibility, processing and final decisions." }];
   const structuredData = { "@context": "https://schema.org", "@type": "Service", name: title, serviceType: title, description: service.description, areaServed: ["Kharangajhar", "Telco", "Jamshedpur", "Jharkhand"], provider: { "@type": "LocalBusiness", name: "NISE COMPORT", url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://nisecomport.com", telephone: "+91-97712-19893" } };
 
-  return <main className="content-page"><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}/><header className="content-nav"><div className="container content-nav-inner"><Link className="brand" href="/"><BrandWordmark/></Link><Link className="button button-dark" href="/services">All services <ArrowRight size={14}/></Link></div></header>
+  return <main className="content-page"><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}/><SiteHeader/>
     <section className="content-hero detail-hero"><div className="container"><Link href="/services" className="back-small"><ArrowLeft size={14}/> All services</Link><span className="eyebrow eyebrow-muted">LOCAL HELP · KHARANGAJHAR, JAMSHEDPUR</span><h1>{title}<br/><em>with clear local guidance.</em></h1><p>{service.description}</p><div className="content-location"><MapPin size={15}/> Shop No 3, Singh Building, Kharangajhar, Telco</div></div></section>
     {detail ? <>
       <section className="container detail-body"><div><h2>How we can help</h2><p>We provide practical application and document assistance. We explain the steps and any service charge before you decide to proceed.</p><ul>{detail.highlights.map(item=><li key={item}><Check size={15}/>{item}</li>)}</ul><h2 className="service-content-heading">What to prepare</h2><ul>{detail.documents.map(item=><li key={item}><Check size={15}/>{item}</li>)}</ul></div><aside><span><MapPin size={17}/></span><h3>Start with a quick enquiry</h3><p>Tell us what you need. Our team will check availability and explain your next step.</p><a href={`https://wa.me/919771219893?text=${encodeURIComponent(`Hi NISE COMPORT, I need help with ${title}.`)}`} target="_blank" rel="noreferrer">Ask on WhatsApp <ArrowRight size={14}/></a></aside></section>

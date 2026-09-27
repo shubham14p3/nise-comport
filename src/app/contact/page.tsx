@@ -1,4 +1,4 @@
-import BrandWordmark from "@/components/brand-wordmark";
+import SiteHeader from "@/components/site-header";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, ArrowUpRight, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
@@ -6,7 +6,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata("Contact NISE COMPORT in Jamshedpur", "Contact NISE COMPORT for CSC, PAN, Aadhaar, printing and digital service help at Kharangajhar, Telco, Jamshedpur.", "/contact");
 const primaryPhone = process.env.NEXT_PUBLIC_WHATSAPP_PRIMARY ?? "919771219893";
 export default function ContactPage() {
-  return <main className="content-page"><header className="content-nav"><div className="container content-nav-inner"><Link className="brand" href="/"><BrandWordmark/></Link><Link href="/services">Services</Link></div></header>
+  return <main className="content-page"><SiteHeader/>
     <section className="content-hero"><div className="container"><Link href="/" className="back-small"><ArrowLeft size={14}/> Home</Link><span className="eyebrow eyebrow-muted">LET’S TALK</span><h1>Need a hand?<br/><em>We’re easy to reach.</em></h1><p>Contact the NISE COMPORT team in Kharangajhar for service requests, document help and print orders.</p></div></section>
     <section className="container contact-grid">
       <a className="contact-card" href={`tel:+${primaryPhone}`}><span><Phone size={20}/></span><small>CALL OUR TEAM</small><h2>+91 97712 19893</h2><p>Primary contact</p><ArrowUpRight className="contact-arrow" size={17}/></a>

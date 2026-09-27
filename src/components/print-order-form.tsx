@@ -1,4 +1,5 @@
 "use client";
+import SiteHeader from "@/components/site-header";
 
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -102,7 +103,7 @@ export default function PrintOrderForm() {
     finally { setBusy(false); }
   }
 
-  return <main className="print-page"><div className="container print-container">
+  return <main className="print-page"><SiteHeader/><div className="container print-container">
     <Link href="/" className="print-back"><ArrowLeft size={15}/> Back to home</Link>
     <div className="print-page-heading"><div><span className="eyebrow eyebrow-muted">PRINT &amp; SCAN · SIMPLE, YOUR WAY</span><h1>Make it <em>print-ready.</em></h1><p>Choose exactly what you need. Send a request for an estimate; our team confirms the final quote before printing.</p></div><div className="secure-files"><ShieldCheck size={17}/><span>Private file handling<small>Files are removed after the retention period.</small></span></div></div>
     <form className="print-order-layout" onSubmit={submitOrder}>

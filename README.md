@@ -1,58 +1,102 @@
 # NISE COMPORT
 
-Mobile-first Next.js application for the independent CSC / Pragya Kendra service centre in Kharangajhar, Jamshedpur.
+Next.js application for NISE COMPORT, the independent CSC / Pragya Kendra service centre in Kharangajhar, Telco, Jamshedpur.
 
-## Stack
+## Start the website locally
 
-- Next.js App Router, React and TypeScript
-- PostgreSQL with Drizzle ORM
-- Custom SMTP email OTP verification, Argon2 password hashes and hashed HTTP-only sessions
-- Private file storage with PDF page inspection and Word-to-PDF conversion through LibreOffice
-- Search metadata, canonical URLs, LocalBusiness structured data, sitemap and robots rules
-
-## Customer journeys
-
-1. Browse the service catalogue and location pages.
-2. Create an account with a six-digit email verification code; sign in with email and password.
-3. Send a service request and optional supporting document; follow the reference and status in the profile.
-4. For printing, upload a PDF, Word file or image. PDF and Word files are page-counted, Word files are converted to PDF when LibreOffice is installed, and the private file can be previewed before ordering.
-5. Select page numbers or ranges, copies, B&W/colour mix, paper size, orientation and sides. The server validates the page selection and recalculates prices/coupons.
-6. Select pickup or a saved delivery address and a preferred future time. The service team confirms availability and final delivery cost.
-7. Follow service and print status from the profile. Staff status updates queue an email notification.
-
-NISE COMPORT is an independent service provider, not a government office. Service charges are separate from government/third-party fees. Customers are responsible for accurate information; approvals and processing times are determined by the relevant authority.
-
-## Local setup
-
-Requires Node.js 22.13+, PostgreSQL 14+, and LibreOffice for Word conversion. The current Next.js lint integration requires ESLint 9 and its TypeScript parser supports TypeScript 6; ESLint 10 and TypeScript 7 currently fail in those plugins.
+Use Node.js 22.13 or newer. From the repository root:
 
 ```bash
 npm ci
+npm run dev
+```
+
+Open **http://localhost:3000**. You do not need PostgreSQL or SMTP to explore the local demo pages.
+
+### Local demo sign-in
+
+1. Click **Sign in** in the top navigation.
+2. In **Local preview login**, use **Fill demo details** (or enter the credentials below).
+3. Click **Sign in**. The app takes you to `/profile`.
+
+```text
+Email:    demo@nisecomport.test
+Password: LocalDemo#2026
+```
+
+The demo profile includes clearly labelled sample PAN assistance, request details, sample request history, and a temporary ₹250 wallet balance. **Add ₹100 sample credit** changes only the current preview; it does not save a transaction. Demo uploads and service requests are disabled. The demo login is enabled only in local development and can be turned off with `DEMO_AUTH_ENABLED=false`.
+
+## Pages to check
+
+- `/` home page and links to the main sections
+- `/services` service categories and individual service pages
+- `/gallery`, `/offers`, `/social`, `/team`
+- `/blog` and individual local service guides
+- `/print` document upload and estimate request flow
+- `/login`, `/signup`, `/profile`
+- `/admin` staff request queue (requires a database account with staff/admin role)
+
+The global header links to Services, Gallery, Offers, Guides, Social, Contact, Sign in and My profile. On smaller screens, use **Menu**.
+
+## Real account and backend setup
+
+The preview credentials are not a real database user. For persistent accounts, requests, uploads, and wallet history, configure PostgreSQL and SMTP:
+
+```bash
 cp .env.example .env.local
-# Set DATABASE_URL and SMTP settings in .env.local
+```
+
+Edit `.env.local` and set at least:
+
+```env
+DATABASE_URL=postgres://USER:PASSWORD@localhost:5432/nise_comport
+SMTP_HOST=your-mail-host
+SMTP_PORT=465
+SMTP_USER=your-mailbox@nisecomport.com
+SMTP_PASSWORD=your-mailbox-password
+SMTP_FROM="NISE COMPORT <your-mailbox@nisecomport.com>"
+OTP_SECRET=use-a-long-random-secret
+PRIVATE_UPLOAD_DIR=/absolute/path/outside-the-repo/private-uploads
+```
+
+Then create the database and apply migrations:
+
+```bash
 npm run db:generate
 npm run db:migrate
 npm run dev
 ```
 
-Set `PRIVATE_UPLOAD_DIR` to persistent storage outside the public web root. In production, keep `.env.local` out of Git and use strong, persistent `OTP_SECRET`, `CRON_SECRET`, SMTP and database credentials. Rotating the OTP secret invalidates codes that have not expired. Configure `PAN_ENCRYPTION_KEY` as 32 random bytes encoded in base64 if PAN import is enabled; back it up separately from the database.
+Sign up using a real email address. The app sends a six-digit verification code via your SMTP mailbox. After verification, sign in to see persistent service request and print-job history. Store real uploaded files outside `public/`; do not commit `.env.local` or customer documents.
 
-## Staff access and notifications
+## Staff access
 
-Create a user through email verification, then promote the first administrator in PostgreSQL:
+Create an account through the signup page, then promote it from PostgreSQL as the first administrator:
 
 ```sql
-UPDATE users SET role = 'admin' WHERE email = 'operator@example.com';
+UPDATE users SET role = 'admin' WHERE email = 'owner@example.com';
 ```
 
-Staff and admins can use `/admin` to review service/print queues and update statuses. Status emails are queued and delivered by the cleanup route. Call it daily with `POST /api/cron/cleanup` and `Authorization: Bearer <CRON_SECRET>`; this also removes expired private uploads after linked work is closed.
+Open `/admin` after signing in. Staff can review requests and update statuses. Administrators can record an approved promotional wallet credit against a customer email. This writes to the wallet ledger; it does not take payment. Customers can view their balance and entries under **My profile → Wallet**. Online top-up/payment processing is not enabled.
 
-Coupons are managed in the `coupons` table (`discount_type` is `percent` or `fixed`). Print prices: up to 10 B&W pages ₹5/page, 11–50 pages ₹3/page, above 50 pages ₹2/page; colour ₹10/page. No payment is captured online; the team confirms the order and any delivery charge.
+## What a customer flow does
 
-## Deployment
+1. Browse a service page to read steps and document requirements.
+2. Send a request with a description and optional supporting file.
+3. Check its reference, submitted details and status in the customer profile.
+4. For printing, upload a document, inspect the page count/preview, choose pages and pickup/delivery, then **send a request**.
+5. The service team checks availability and confirms the final quote. Print submission is not a checkout and no online payment is taken.
+6. Use WhatsApp click-to-chat for direct questions. Automatic WhatsApp notifications need Meta Business Platform credentials and are not configured in this repo.
 
-- Apply Drizzle migrations before deploying the matching app version.
-- Build with `npm run build`; serve with `npm run start` in the hosting Node.js application.
-- Make LibreOffice available as `soffice` or set `LIBREOFFICE_BIN` to its executable path. Customers can still upload PDFs if Word conversion is not installed.
-- Back up PostgreSQL and the private upload directory in line with the retention policy.
-- Confirm the WhatsApp numbers, SMTP sender and canonical domain before publishing.
+Government, bank, insurer and partner portals make their own eligibility and approval decisions. NISE COMPORT provides assistance and does not guarantee an outcome. Official or third-party charges are separate from NISE COMPORT's service charge.
+
+## Verification and production
+
+```bash
+npm run lint
+npm run test
+npm run build
+npm run start
+```
+
+Set a production `NEXT_PUBLIC_SITE_URL`, persistent PostgreSQL database, SMTP credentials, stable secrets, and private upload directory before deployment. `NEXT_PUBLIC_WHATSAPP_PRIMARY` and `NEXT_PUBLIC_WHATSAPP_SECONDARY` configure the click-to-chat numbers. Configure `LIBREOFFICE_BIN` if Word document conversion is required. Back up the database and private upload store according to the retention policy.

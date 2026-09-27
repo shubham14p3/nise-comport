@@ -1,8 +1,9 @@
 import BrandWordmark from "@/components/brand-wordmark";
+import SiteHeader from "@/components/site-header";
 import Link from "next/link";
 import Image from "next/image";
 import { galleryItems, socialPosts, articles } from "@/lib/content";
-import { ArrowRight, ArrowUpRight, BadgeCheck, Banknote, BookOpenCheck, Check, ChevronRight, Clock3, FileText, Fingerprint, HeartHandshake, Landmark, MapPin, Menu, Printer, ShieldCheck, Sparkles, WalletCards } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BadgeCheck, Banknote, BookOpenCheck, Check, ChevronRight, Clock3, FileText, Fingerprint, HeartHandshake, Landmark, MapPin, Printer, ShieldCheck, Sparkles, WalletCards } from "lucide-react";
 
 const services = [
   { icon: Fingerprint, title: "PAN & Aadhaar", text: "New applications, corrections and selected update assistance.", tag: "Identity" },
@@ -18,7 +19,7 @@ const primaryWhatsApp = process.env.NEXT_PUBLIC_WHATSAPP_PRIMARY ?? "91977121989
 
 export default function HomePage() {
   return <>
-    <header className="site-header"><div className="container nav-wrap"><Link className="brand" href="/" aria-label="NISE COMPORT home"><BrandWordmark/></Link><nav className="desktop-nav"><Link href="/services">Services</Link><Link href="/gallery">Gallery</Link><Link href="/offers">Offers</Link><Link href="/blog">Guides</Link><Link href="/contact">Contact</Link></nav><div className="nav-actions"><Link className="login-link" href="/login">Sign in</Link><Link className="button button-dark nav-cta" href="/services">Explore services <ArrowUpRight size={16}/></Link><details className="mobile-nav-menu"><summary className="mobile-menu" aria-label="Open menu"><Menu size={21}/><span>Menu</span></summary><nav><Link href="/services">Services</Link><Link href="/gallery">Gallery</Link><Link href="/offers">Offers & vouchers</Link><Link href="/social">Social updates</Link><Link href="/blog">Local guides</Link><Link href="/team">Our team</Link><Link href="/contact">Contact</Link><Link href="/faq">FAQs</Link></nav></details></div></div></header>
+    <SiteHeader/>
     <main>
       <section className="hero"><div className="container hero-grid"><div className="hero-copy"><div className="eyebrow"><span className="eyebrow-dot"/> YOUR LOCAL DIGITAL SERVICE DESK <span className="eyebrow-line"/></div><h1>Less paperwork.<br/><em>More progress.</em></h1><p className="hero-lead">Everyday digital services, made easier. Get thoughtful, in-person help with applications, documents, payments and more.</p><div className="hero-buttons"><Link href="/services" className="button button-green">Explore our services <ArrowRight size={17}/></Link><a href="#how-it-works" className="text-link">How it works <ChevronRight size={16}/></a></div><div className="hero-proof"><div className="avatar-stack"><span>NC</span><span>IN</span><span>✓</span></div><div><strong>Here when you need us</strong><small>Local support in Kharangajhar, Jamshedpur</small></div><div className="proof-divider"/><div className="proof-stars">★★★★★<small>People-first service</small></div></div></div>
         <div className="hero-visual"><div className="visual-orbit orbit-one"/><div className="visual-orbit orbit-two"/><div className="hero-photo"><div className="photo-caption"><span className="caption-icon"><MapPin size={16}/></span><div><strong>Your neighbourhood service desk</strong><small>Kharangajhar · Jamshedpur</small></div></div></div><div className="floating-card status-card"><span className="status-icon"><Check size={18}/></span><div><strong>Request received</strong><small>We’ll take it from here</small></div><span className="status-pulse"/></div><div className="floating-card trust-card"><div className="trust-icon"><ShieldCheck size={19}/></div><div><strong>Your details, respected</strong><small>Handled with care at every step</small></div></div><div className="hero-stamp"><Sparkles size={16}/><span>HERE TO<br/>HELP</span></div></div>
