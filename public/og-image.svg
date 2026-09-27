@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#f7f5ed"/>
+  <circle cx="1000" cy="90" r="290" fill="#e9ede3"/>
+  <circle cx="1000" cy="90" r="220" fill="none" stroke="#d9e0d3" stroke-width="2"/>
+  <rect x="86" y="76" width="68" height="68" rx="22" fill="#24533c"/>
+  <path d="M105 124V96h8l14 17 14-17h8v28h-8v-16l-14 16-14-16v16z" fill="#fffefa"/>
+  <text x="86" y="235" fill="#202923" font-family="Arial,sans-serif" font-weight="700" font-size="72" letter-spacing="-3">NISE COMPORT</text>
+  <text x="90" y="300" fill="#24533c" font-family="Arial,sans-serif" font-weight="600" font-size="27">YOUR DIGITAL SERVICE DESK</text>
+  <text x="90" y="384" fill="#697269" font-family="Arial,sans-serif" font-size="25">CSC • PAN • Aadhaar • Banking • Insurance</text>
+  <text x="90" y="425" fill="#697269" font-family="Arial,sans-serif" font-size="25">Forms • Bill payments • Print &amp; scan</text>
+  <rect x="90" y="492" width="10" height="10" rx="5" fill="#d1aa5b"/>
+  <text x="116" y="503" fill="#53634f" font-family="Arial,sans-serif" font-size="20">Kharangajhar, Jamshedpur, Jharkhand</text>
+</svg>

@@ -23,3 +23,17 @@ build
 *.njsproj
 *.sln
 *.sw?
+
+# Next.js and private customer uploads
+.next/
+.private-uploads/
+coverage/
+*.tsbuildinfo
+# Only app-referenced legacy images are copied into Next public assets.
+/public/csc/
+/public/images/*
+!/public/images/about/
+/public/images/about/*
+!/public/images/about/1.png
+!/public/images/about/2.png
+/public/nise-logo.png
