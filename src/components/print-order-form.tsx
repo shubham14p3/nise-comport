@@ -50,6 +50,7 @@ export default function PrintOrderForm() {
       const sessionResponse = await fetch("/api/auth/session");
       const session = await sessionResponse.json();
       if (!session.user) { router.push("/login?next=/print"); return; }
+      if (session.user.role === "demo") { setNotice("You’re signed in with the local demo account. Configure PostgreSQL and private file storage to test document uploads and print requests."); return; }
       const form = new FormData(); form.set("file", selected);
       const response = await fetch("/api/uploads", { method: "POST", body: form });
       const result = await response.json();
@@ -97,18 +98,18 @@ export default function PrintOrderForm() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
       router.push(`/profile?print=${result.job.reference}`); router.refresh();
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not submit your print order."); }
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not submit your print request."); }
     finally { setBusy(false); }
   }
 
   return <main className="print-page"><div className="container print-container">
     <Link href="/" className="print-back"><ArrowLeft size={15}/> Back to home</Link>
-    <div className="print-page-heading"><div><span className="eyebrow eyebrow-muted">PRINT &amp; SCAN · SIMPLE, YOUR WAY</span><h1>Make it <em>print-ready.</em></h1><p>Choose exactly what you need. We calculate your quote before you place the order.</p></div><div className="secure-files"><ShieldCheck size={17}/><span>Private file handling<small>Files are removed after the retention period.</small></span></div></div>
+    <div className="print-page-heading"><div><span className="eyebrow eyebrow-muted">PRINT &amp; SCAN · SIMPLE, YOUR WAY</span><h1>Make it <em>print-ready.</em></h1><p>Choose exactly what you need. Send a request for an estimate; our team confirms the final quote before printing.</p></div><div className="secure-files"><ShieldCheck size={17}/><span>Private file handling<small>Files are removed after the retention period.</small></span></div></div>
     <form className="print-order-layout" onSubmit={submitOrder}>
       <div className="print-form-column">
         <section className="print-step-card"><div className="print-step-title"><span>01</span><div><h2>Add your document</h2><p>PDF, Word, JPG, PNG or WEBP · Up to 20 MB</p></div></div>
           {file ? <div className="uploaded-file"><span className="upload-file-icon"><FileText size={19}/></span><div><b>{file.name}</b><small>{file.pages} {file.pages === 1 ? "page" : "pages"} · {(file.size / 1024 / 1024).toFixed(1)} MB</small></div><button type="button" aria-label="Remove file" onClick={() => { setFile(null); setPageText(""); setNotice(""); }}><X size={16}/></button></div> : <label className="upload-zone"><input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,application/pdf" onChange={onFileChange} disabled={busy}/><span className="upload-icon"><Upload size={19}/></span><b>{busy ? "Checking and preparing your file…" : "Tap to upload a file"}</b><small>Sign in is required. Word files are converted to PDF for preview and printing.</small></label>}
-          {file && <><div className="preview-tip"><Info size={14}/> Preview the converted or uploaded document before ordering.</div><div className="document-preview"><iframe src={`/api/uploads?id=${encodeURIComponent(file.id)}`} title="Private document preview"/></div></>}
+          {file && <><div className="preview-tip"><Info size={14}/> Preview the file before sending a request.</div><div className="document-preview"><iframe src={`/api/uploads?id=${encodeURIComponent(file.id)}`} title="Private document preview"/></div></>}
         </section>
         <section className="print-step-card"><div className="print-step-title"><span>02</span><div><h2>Choose your pages &amp; finish</h2><p>Select a range, copies and paper options.</p></div></div>
           <label className="form-label">Pages to print <span>Leave blank for all {file?.pages ?? "pages"}</span><input disabled={!file} value={pageText} onChange={event => { const selection = event.target.value; setPageText(selection); setCouponBase(null); try { setColorPagesPerCopy(Math.min(colorPagesPerCopy, countSelectedPages(selection, file?.pages ?? 0))); } catch { setColorPagesPerCopy(0); } }} placeholder="e.g. 1-3, 5"/></label>
@@ -125,13 +126,13 @@ export default function PrintOrderForm() {
           <label className="form-label schedule-label">Preferred pickup or delivery time <span>We’ll confirm availability</span><div className="date-input"><Clock3 size={15}/><input type="datetime-local" value={scheduledAt} onChange={event => setScheduledAt(event.target.value)}/></div></label>
         </section>
       </div>
-      <aside className="print-summary"><div className="summary-head"><span>ORDER SUMMARY</span><Printer size={19}/></div><h2>Your live quote.</h2><p>Final delivery cost and availability are confirmed by our team.</p><div className="summary-file"><FileText size={16}/><span>{file?.name ?? "Your document"}<small>{selectedPerCopy} selected × {copies} {copies === 1 ? "copy" : "copies"} = {printedCount} printed pages</small></span></div>
+      <aside className="print-summary"><div className="summary-head"><span>ESTIMATE PREVIEW</span><Printer size={19}/></div><h2>Your estimate.</h2><p>This is an estimate only. Our team checks the file and confirms the final quote before printing.</p><div className="summary-file"><FileText size={16}/><span>{file?.name ?? "Your document"}<small>{selectedPerCopy} selected × {copies} {copies === 1 ? "copy" : "copies"} = {printedCount} printed pages</small></span></div>
         <div className="summary-line"><span>Black &amp; white ({bwCount})</span><b>{money(blackWhiteCost(bwCount))}</b></div><div className="summary-line"><span>Colour ({colorCount})</span><b>{money(colorCount * COLOR_PAGE_RATE)}</b></div><div className="summary-line"><span>{sides === "double" ? "Double-sided" : "Single-sided"} · {paperSize} · {orientation}</span><b>Selected</b></div>
         <label className="coupon-label">Coupon code<div><input value={coupon} onChange={event => { setCoupon(event.target.value.toUpperCase()); setCouponBase(null); }} placeholder="Enter code"/><button type="button" onClick={() => void applyCoupon()} disabled={!coupon.trim() || !subtotal}>Apply</button></div></label>{couponBase === subtotal && discount > 0 && <div className="coupon-success"><Check size={12}/> Discount {money(discount)} applied</div>}
-        <div className="summary-total"><span>Estimated total</span><b>{money(total)}</b></div><small className="summary-disclaimer">No online payment is taken. Service fees are separate from government or third-party charges.</small>
+        <div className="summary-total"><span>Estimated service cost</span><b>{money(total)}</b></div><small className="summary-disclaimer">No online payment is taken. Service fees are separate from government or third-party charges.</small>
         {error && <div className="form-alert error-alert" role="alert">{error}</div>}{notice && <div className="form-alert success-alert" role="status">{notice}</div>}
-        <button className="button button-green submit-print" disabled={busy || !file}>{busy ? "Submitting…" : "Place print order"}<ArrowRight size={16}/></button><div className="summary-reassurance"><ShieldCheck size={14}/> Your document stays private.</div>
+        <button className="button button-green submit-print" disabled={busy || !file}>{busy ? "Submitting…" : "Send print request"}<ArrowRight size={16}/></button><div className="summary-reassurance"><ShieldCheck size={14}/> Your document stays private.</div>
       </aside>
-    </form><div className="print-disclaimer"><Info size={14}/><p>Pricing is calculated securely when you place your order. We’ll confirm your final quote and delivery charges before proceeding.</p></div>
+    </form><div className="print-disclaimer"><Info size={14}/><p>Submitting sends a request to our service desk. This is not checkout and no online payment is taken. We will confirm availability, the final quote and any delivery charge before printing.</p></div>
   </div></main>;
 }

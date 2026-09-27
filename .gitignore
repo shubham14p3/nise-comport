@@ -29,11 +29,6 @@ build
 .private-uploads/
 coverage/
 *.tsbuildinfo
-# Only app-referenced legacy images are copied into Next public assets.
+# Keep curated legacy brand and gallery assets available to Next.js.
 /public/csc/
-/public/images/*
-!/public/images/about/
-/public/images/about/*
-!/public/images/about/1.png
-!/public/images/about/2.png
 /public/nise-logo.png

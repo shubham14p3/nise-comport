@@ -5,7 +5,7 @@ import { serviceRequests, storedFiles } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { apiError, makeReference } from "@/lib/http";
-import { serviceCatalog } from "@/lib/services";
+import { findService } from "@/lib/services";
 
 const schema = z.object({ serviceSlug: z.string().min(2).max(80), description: z.string().trim().min(8).max(1500), fileId: z.uuid().optional() });
 export async function POST(request: NextRequest) {
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Please sign in to submit a request." }, { status: 401 });
   try {
     const input = schema.parse(await request.json());
-    const service = serviceCatalog.find((item) => item.slug === input.serviceSlug);
+    const service = findService(input.serviceSlug);
     if (!service) return NextResponse.json({ error: "Choose one of the listed services." }, { status: 400 });
     if (input.fileId) {
       const [file] = await db.select({ id: storedFiles.id, requestId: storedFiles.requestId }).from(storedFiles).where(and(eq(storedFiles.id, input.fileId), eq(storedFiles.userId, user.id))).limit(1);

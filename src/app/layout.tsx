@@ -24,7 +24,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   const localBusiness = {
     "@context": "https://schema.org", "@type": "ProfessionalService", name: "NISE COMPORT", url: siteUrl,
     description: "Independent CSC and Pragya Kendra assistance for digital and government-related services.",
-    telephone: "+91-97712-19893", email: "support@nisecomport.com", priceRange: "₹",
+    telephone: "+91-97712-19893", email: "info@nisecomport.com", priceRange: "₹",
     address: { "@type": "PostalAddress", streetAddress: "Shop No 3, Ground Floor, Singh Building, Hanuman Mandir Road, Kharangajhar, Telco", addressLocality: "Jamshedpur", addressRegion: "Jharkhand", postalCode: "831004", addressCountry: "IN" },
     areaServed: ["Kharangajhar", "Jamshedpur", "Jharkhand"],
   };

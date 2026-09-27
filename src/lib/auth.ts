@@ -7,9 +7,20 @@ import { emailOtps, sessions, users } from "@/db/schema";
 import { sendOtpEmail } from "@/lib/email";
 
 const SESSION_COOKIE = "nise_session";
+const DEMO_COOKIE = "nise_demo_session";
 const SESSION_DAYS = 14;
+export const DEMO_LOGIN = { email: "demo@nisecomport.test", password: "LocalDemo#2026" } as const;
+const demoUser = { id: "00000000-0000-4000-8000-000000000001", name: "Demo Customer", email: DEMO_LOGIN.email, phone: null, passwordHash: "", emailVerifiedAt: new Date(0), role: "demo", createdAt: new Date(0) };
 const hashToken = (value: string) => createHash("sha256").update(value).digest("hex");
 const hashOtp = (email: string, purpose: string, code: string) => createHmac("sha256", process.env.OTP_SECRET ?? process.env.SMTP_PASSWORD ?? "development-only").update(`${email}:${purpose}:${code}`).digest("hex");
+
+export function isDemoAuthEnabled() { return process.env.NODE_ENV === "development" && process.env.DEMO_AUTH_ENABLED !== "false"; }
+
+export async function createDemoSession() {
+  if (!isDemoAuthEnabled()) throw new Error("Demo sign-in is available only in local development.");
+  (await cookies()).set(DEMO_COOKIE, "preview", { httpOnly: true, secure: false, sameSite: "lax", path: "/", maxAge: 8 * 60 * 60 });
+  return { id: demoUser.id, name: demoUser.name, email: demoUser.email };
+}
 
 export async function requestEmailOtp(emailInput: string, purpose: "signup" | "signin") {
   const email = emailInput.trim().toLowerCase();
@@ -68,7 +79,9 @@ export async function signInWithPassword(emailInput: string, password: string) {
 }
 
 export async function getCurrentUser() {
-  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  const cookieStore = await cookies();
+  if (isDemoAuthEnabled() && cookieStore.get(DEMO_COOKIE)?.value === "preview") return demoUser;
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
   const [session] = await db.select({ user: users }).from(sessions).innerJoin(users, eq(sessions.userId, users.id)).where(and(eq(sessions.tokenHash, hashToken(token)), gt(sessions.expiresAt, new Date()))).limit(1);
   return session?.user ?? null;
@@ -76,6 +89,7 @@ export async function getCurrentUser() {
 
 export async function destroySession() {
   const cookieStore = await cookies();
+  if (cookieStore.get(DEMO_COOKIE)) { cookieStore.delete(DEMO_COOKIE); return; }
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (token) await db.delete(sessions).where(eq(sessions.tokenHash, hashToken(token)));
   cookieStore.delete(SESSION_COOKIE);
