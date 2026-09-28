@@ -1,0 +1,7 @@
+import { randomUUID } from "node:crypto";
+import { NextResponse } from "next/server";
+import { getCurrentUser } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { serviceRequests } from "@/db/schema";
+import { panIntakeSchema,panServiceLabels } from "@/lib/pan-validation";
+export async function POST(request:Request){const user=await getCurrentUser();if(!user||user.role==="demo")return NextResponse.json({error:"Sign in with a real account to submit."},{status:401});if(!user.emailVerifiedAt)return NextResponse.json({error:"Verify your email first."},{status:403});let body;try{body=await request.json();}catch{return NextResponse.json({error:"Invalid request body."},{status:400});}const input=panIntakeSchema.safeParse(body);if(!input.success)return NextResponse.json({error:input.error.issues[0].message,fields:input.error.flatten().fieldErrors},{status:400});const {fileId,...pan}=input.data;if(fileId)return NextResponse.json({error:"Document attachments are arranged after review."},{status:400});try{const reference=`PAN-${randomUUID().toUpperCase()}`;await db.insert(serviceRequests).values({reference,userId:user.id,serviceSlug:"pan-card-jamshedpur",serviceName:panServiceLabels[pan.service],details:{kind:"pan",description:pan.notes||panServiceLabels[pan.service],pan},serviceFee:"0.00",externalFee:"0.00"});return NextResponse.json({reference},{status:201});}catch{return NextResponse.json({error:"We could not save your request. Please try again."},{status:500});}}
