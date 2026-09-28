@@ -36,7 +36,9 @@ The demo profile includes clearly labelled sample PAN assistance, request detail
 - `/login`, `/signup`, `/profile`
 - `/admin` staff request queue (requires a database account with staff/admin role)
 
-The global header links to Services, Gallery, Offers, Guides, Social, Contact, Sign in and My profile. On smaller screens, use **Menu**.
+The global header links to Services, Gallery, Offers, Guides, Social and Contact. It shows **Sign in** when signed out; for a signed-in customer it shows **My profile** and **Sign out**. On smaller screens, use **Menu** for navigation.
+
+The customer profile uses a section menu for Overview, My requests, Request history, Print orders, Wallet, Vouchers & offers, Saved addresses, Profile details, Sign-in & privacy and Get help. Selecting a section updates the content panel rather than extending one long page. New request references open a private request-detail page.
 
 ## Real account and backend setup
 
@@ -59,7 +61,7 @@ OTP_SECRET=use-a-long-random-secret
 PRIVATE_UPLOAD_DIR=/absolute/path/outside-the-repo/private-uploads
 ```
 
-Then create the database and apply migrations:
+Then create the database and apply migrations (including the profile city, state, PIN code, contact preference and optional note fields):
 
 ```bash
 npm run db:generate

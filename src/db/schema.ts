@@ -3,6 +3,7 @@ import { pgTable, text, timestamp, uuid, integer, boolean, jsonb, numeric, uniqu
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(), name: text("name").notNull(), email: text("email").notNull(),
   phone: text("phone"), passwordHash: text("password_hash").notNull(), emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+  city: text("city"), state: text("state"), postalCode: text("postal_code"), profileSummary: text("profile_summary"), preferredContact: text("preferred_contact").notNull().default("email"),
   role: text("role").notNull().default("customer"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [uniqueIndex("users_email_unique").on(table.email)]);
 
