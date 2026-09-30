@@ -51,7 +51,39 @@ Set `GOOGLE_MAPS_API_KEY` (server key with **Places API (New)** and **Geocoding 
 
 ## Offers
 
-Edit `src/lib/offers.ts`: turn offers on or off, set an end date, choose the categories where they blink. "First time only" offers are checked on the server when a request is sent; the request is always created and the customer is told if the offer didn't apply. Keep insurance offers on your service charge only (a rebate on an insurer's premium is not allowed).
+Standing offers (first insurance ₹100 off, free document check, the ₹50 welcome coupon advert) live in `src/lib/offers.ts`: turn them on or off, set an end date, choose the categories where they blink. "First time only" offers are checked on the server when a request is sent; the request is always created and the customer is told if the offer didn't apply. Keep insurance offers on your service charge only (a rebate on an insurer's premium is not allowed).
+
+### Festival and Team India promo codes
+
+Every festival and every big event where India plays gets its own **₹50 code** (orders of ₹150 or more, one use per customer), stored in the `coupons` table:
+
+- **Festivals** (`src/lib/festivals.ts`): Hindu, Bengali, Punjabi & Sikh, Christian, Muslim, Jharkhand & tribal, Jain & Buddhist, other regions and national days (Navratri, Durga Puja, Dussehra, Diwali, Kali Puja, Chhath, Sohrai, Karma, Sarhul, Tusu, Christmas, Eid, Baisakhi, Poila Boishakh, Onam, Pongal…). The code (e.g. `DIWALI26`) goes live **30 days before** the festival and ends on the day.
+- **Sports** (`src/lib/sports-events.ts`): Asian Games, Asian Para Games, India's tours, Border–Gavaskar Trophy, WPL, IPL, Asia Cup, the Cricket World Cup, hockey, SAFF football, the World Chess Championship, Pro Kabaddi and LA 2028. Codes run from 30 days before the first match until the final. Events without confirmed dates are marked "dates to be confirmed". Codes avoid tournament trademarks (`T20FEVER27`, not "IPL27").
+- **Dates** come from Google's public *Holidays in India* calendar, read once a day by the offers job. A checked fallback list covers Oct 2026 – Dec 2028, and a Google date only replaces a fallback date when it is within a week of it.
+- **Welcome coupon:** every customer account that verifies its email gets one personal `WELCOME-XXXXXX` code (₹50 off ₹150+, valid 90 days). Existing verified customers get theirs from the migration.
+
+Where customers see them: the LIVE ticker, the home page, service pages, the offer rail in every step flow, the chat ("Offers & codes"), `/offers` (live codes, a calendar to December 2028 with community filters, Google exports) and **Profile → Vouchers**. All banner text follows the chosen language (English, हिन्दी, বাংলা). Codes are typed (or tapped) at the last step of a request or print order. Print orders get the discount straight away; service requests carry the code and staff take it off the service charge when billing. A cancelled request gives its code back.
+
+Exports:
+
+- `/offers/calendar.ics` (add `?lang=hi` or `?lang=bn`): a calendar feed. `/offers` has a **Subscribe in Google Calendar** button and a per-code "Google Calendar" button.
+- `/offers/offers.csv`: in Google Sheets use `=IMPORTDATA("https://www.nisecomport.com/offers/offers.csv")`; `?download=1` saves a file that opens in Excel with Hindi/Bengali intact.
+
+Setup and upkeep:
+
+```bash
+npm run db:migrate        # adds the columns, the coupon_redemptions table and all codes to Dec 2028
+npm run offers:sync       # refreshes dates from Google now (also part of npm run db:setup)
+npm run offers:sync -- --dry   # print the code list without touching the database
+```
+
+Schedule the daily job (e.g. 05:00 IST) with the same `CRON_SECRET` as the cleanup job:
+
+```bash
+curl -X POST -H "Authorization: Bearer $CRON_SECRET" https://www.nisecomport.com/api/cron/offers
+```
+
+In **Admin → Promotions** staff see every code with its dates and how often it was used; the owner can switch a code off (takes effect at checkout immediately), correct tentative dates (the row is then locked so the daily job leaves it alone) or run the Google sync now. To change the amount, minimum or lead time for all codes, edit `FESTIVAL_PROMO` in `src/lib/festivals.ts` and run `npm run offers:sync`.
 
 ## Real account and backend setup
 
@@ -171,7 +203,7 @@ Set the new environment values (see `.env.example`). The important ones:
 
 - `OTP_SECRET` – **required in production**, 32+ random characters (`openssl rand -base64 48`). Email codes are refused without it.
 - `NEXT_PUBLIC_SITE_URL` – the one canonical host. The live site redirects to `www`, so the default is `https://www.nisecomport.com`; the other host is 308-redirected.
-- `CRON_SECRET` – then call `/api/cron/cleanup` every 10–15 minutes (GET or POST with `Authorization: Bearer …`). It sends queued emails with retries and removes expired codes, sessions, rate-limit rows and files.
+- `CRON_SECRET` – then call `/api/cron/cleanup` every 10–15 minutes (GET or POST with `Authorization: Bearer …`). It sends queued emails with retries and removes expired codes, sessions, rate-limit rows and files. Call `/api/cron/offers` once a day with the same header to refresh festival and sports promo codes.
 - `STAFF_ALERT_EMAIL` – receives new-request and cancellation alerts.
 - `NEXT_PUBLIC_OPENING_HOURS`, `NEXT_PUBLIC_GEO_LAT/LNG`, `NEXT_PUBLIC_GOOGLE_MAPS_URL`, `NEXT_PUBLIC_GOOGLE_REVIEW_URL`, `NEXT_PUBLIC_SAME_AS` – shown on the site and in structured data only when set. They must match the Google Business Profile.
 - `GOOGLE_SITE_VERIFICATION`, `BING_SITE_VERIFICATION`, `INDEXNOW_KEY` – search-engine verification and instant indexing.

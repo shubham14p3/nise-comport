@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, eq, gt, isNull, or } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { addresses, coupons, printJobs, storedFiles } from "@/db/schema";
+import { addresses, printJobs, storedFiles } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { apiError, readJson } from "@/lib/http";
 import { PublicError } from "@/lib/errors";
 import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
 import { isIdempotencyConflict, notifyNewRequest, recordEvent, withUniqueReference } from "@/lib/requests";
-import { blackWhiteCost, COLOR_PAGE_RATE, countSelectedPages, couponDiscount } from "@/lib/print-pricing";
+import { blackWhiteCost, COLOR_PAGE_RATE, countSelectedPages } from "@/lib/print-pricing";
+import { recordRedemption, resolveCoupon } from "@/lib/promotions";
 import { privateStoragePath } from "@/lib/storage";
 import { readFile } from "node:fs/promises";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
@@ -60,14 +61,14 @@ export async function POST(request: NextRequest) {
     const subtotal = blackWhiteCost(blackWhitePages) + colorPages * COLOR_PAGE_RATE;
 
     let couponCode: string | null = null;
+    let couponId: string | null = null;
     let discount = 0;
     if (data.coupon) {
-      const code = data.coupon.toUpperCase();
-      const [coupon] = await db.select().from(coupons).where(and(eq(coupons.code, code), eq(coupons.active, true), or(isNull(coupons.expiresAt), gt(coupons.expiresAt, new Date())))).limit(1);
-      if (!coupon || subtotal < Number(coupon.minimumAmount)) return NextResponse.json({ error: "This coupon is no longer valid for the current order." }, { status: 400 });
-      couponCode = coupon.code;
-      discount = couponDiscount(coupon.discountType, Number(coupon.discountValue), subtotal);
-      if (!discount) return NextResponse.json({ error: "This coupon is no longer valid for the current order." }, { status: 400 });
+      // Festival, sports, welcome and hand-made codes: live window, one use per customer, minimum order.
+      const resolved = await resolveCoupon({ code: data.coupon, userId: user.id, amount: subtotal });
+      couponCode = resolved.coupon.code;
+      couponId = resolved.coupon.id;
+      discount = resolved.discount ?? 0;
     }
 
     const scheduledAt = data.scheduledAt ? new Date(data.scheduledAt) : null;
@@ -93,8 +94,9 @@ export async function POST(request: NextRequest) {
       }
       throw error;
     }
+    if (couponId) await recordRedemption(couponId, user.id, "print", job.id, discount);
     await recordEvent("print", job.id, user.id, null, "submitted", "Created online");
-    await notifyNewRequest(user, job.reference, "print order", [`File: ${file.originalName}`, `Pages: ${printedPageCount} (${colorPages} colour)`, `Fulfilment: ${data.fulfillment}`, `Estimate: ₹${total.toFixed(2)}`]);
+    await notifyNewRequest(user, job.reference, "print order", [`File: ${file.originalName}`, `Pages: ${printedPageCount} (${colorPages} colour)`, `Fulfilment: ${data.fulfillment}`, `Estimate: ₹${total.toFixed(2)}`, ...(couponCode ? [`Coupon: ${couponCode} (−₹${discount.toFixed(2)})`] : [])]);
     return NextResponse.json({ ok: true, job }, { status: 201 });
   } catch (error) { return apiError(error); }
 }

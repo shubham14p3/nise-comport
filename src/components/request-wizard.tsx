@@ -6,12 +6,15 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Check, FileText, Headphones, House, Laptop, MapPin, PartyPopper, Search, Store, Upload, X } from "lucide-react";
 import AddressPicker, { addressProblem, EMPTY_ADDRESS, formatAddress, type AddressValue } from "@/components/address-picker";
 import { CategoryIcon, WhatsAppIcon } from "@/components/icons";
+import { useLiveCodes } from "@/components/offers-provider";
+import PromoCodeField, { type AppliedCode, type CodeSuggestion } from "@/components/promo-code-field";
 import { OfferRail, OfferStrip, WizardActions, WizardFrame } from "@/components/wizard";
 import { categoryMeta, categoryMetaFor } from "@/lib/categories";
 import { newIdempotencyKey } from "@/lib/client-id";
 import type { OpeningHoursRule } from "@/lib/hours";
-import { dict, type Locale } from "@/lib/i18n";
+import { dict, fill, type Locale } from "@/lib/i18n";
 import { findOffer, isOfferLive, offerAppliesTo, offersFor } from "@/lib/offers";
+import { promoDict } from "@/lib/promo-i18n";
 import { secureApi, secureUpload, SecureApiError } from "@/lib/secure-api-client";
 import { useLocale } from "@/lib/use-locale";
 import { whatsappHref } from "@/lib/public-contact";
@@ -26,8 +29,9 @@ type Draft = {
   step: number; serviceSlug: string; category: string; query: string;
   name: string; phone: string; contact: Contact; description: string;
   mode: Mode | ""; day: string; slot: Slot | ""; addressId: string; address: AddressValue;
-  offerId: string; consent: boolean;
+  offerId: string; consent: boolean; coupon: string;
 };
+type Voucher = { code: string; emoji: string; names: Record<Locale, string>; used: boolean; live: boolean; personal: boolean };
 type SessionUser = { name: string; role: string } | null;
 
 const DRAFT_KEY = "nise-request-wizard";
@@ -75,28 +79,35 @@ function validPhone(value: string) {
 
 const noop = () => () => undefined;
 
+type Initial = { service?: string; category?: string; offer?: string; note?: string; coupon?: string; resume?: boolean };
+
 /** Four-step request: service → details → visit → review. Renders only in the browser (it restores a saved draft). */
-export default function RequestWizard(props: { services: WizardService[]; initial: { service?: string; category?: string; offer?: string; note?: string; resume?: boolean }; hours: OpeningHoursRule[] }) {
+export default function RequestWizard(props: { services: WizardService[]; initial: Initial; hours: OpeningHoursRule[] }) {
   const mounted = useSyncExternalStore(noop, () => true, () => false);
   const locale = useLocale();
   if (!mounted) return <div className="wizard-skeleton" aria-busy="true"><div className="container"><div className="skeleton skeleton--title"/><div className="skeleton skeleton--card"/></div></div>;
   return <Wizard {...props} locale={locale}/>;
 }
 
-function initialDraft(services: WizardService[], initial: { service?: string; category?: string; offer?: string; note?: string; resume?: boolean }): Draft {
-  const blank: Draft = { step: 0, serviceSlug: "", category: "all", query: "", name: "", phone: "", contact: "whatsapp", description: "", mode: "", day: "", slot: "", addressId: "", address: EMPTY_ADDRESS, offerId: "", consent: false };
+function initialDraft(services: WizardService[], initial: Initial): Draft {
+  const blank: Draft = { step: 0, serviceSlug: "", category: "all", query: "", name: "", phone: "", contact: "whatsapp", description: "", mode: "", day: "", slot: "", addressId: "", address: EMPTY_ADDRESS, offerId: "", consent: false, coupon: "" };
   const saved = readDraft();
+  const coupon = (initial.coupon ?? "").toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 40);
   const hasUrlChoice = Boolean(initial.service || initial.category || initial.offer || initial.note);
-  if (saved && (initial.resume || !hasUrlChoice)) return { ...blank, ...saved, address: { ...EMPTY_ADDRESS, ...(saved.address ?? {}) } };
+  if (saved && (initial.resume || !hasUrlChoice)) return { ...blank, ...saved, coupon: coupon || saved.coupon || "", address: { ...EMPTY_ADDRESS, ...(saved.address ?? {}) } };
   const service = services.find((item) => item.slug === initial.service);
   const category = service?.category ?? (categoryMeta.some((item) => item.slug === initial.category) ? initial.category! : "all");
   const offer = findOffer(initial.offer);
-  return { ...blank, serviceSlug: service?.slug ?? "", category, description: initial.note?.slice(0, 300) ?? "", offerId: offer && isOfferLive(offer) ? offer.id : "", step: service ? 1 : 0 };
+  return { ...blank, serviceSlug: service?.slug ?? "", category, description: initial.note?.slice(0, 300) ?? "", offerId: offer && isOfferLive(offer) ? offer.id : "", coupon, step: service ? 1 : 0 };
 }
 
-function Wizard({ services, initial, hours, locale }: { services: WizardService[]; initial: { service?: string; category?: string; offer?: string; note?: string; resume?: boolean }; hours: OpeningHoursRule[]; locale: Locale }) {
+function Wizard({ services, initial, hours, locale }: { services: WizardService[]; initial: Initial; hours: OpeningHoursRule[]; locale: Locale }) {
   const router = useRouter();
   const t = dict(locale).wizard;
+  const p = promoDict(locale);
+  const liveCodes = useLiveCodes();
+  const [applied, setApplied] = useState<AppliedCode | null>(null);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [draft, setDraft] = useState<Draft>(() => initialDraft(services, initial));
   const [days] = useState(() => upcomingDays(hours));
   const [user, setUser] = useState<SessionUser | undefined>(undefined);
@@ -104,7 +115,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<{ reference: string; offerNote?: string } | null>(null);
+  const [done, setDone] = useState<{ reference: string; offerNote?: string; couponNote?: string; couponOk?: boolean } | null>(null);
   const idempotencyKey = useRef<string | null>(null);
   const cardTop = useRef<HTMLDivElement>(null);
 
@@ -125,10 +136,11 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       setUser(session.user);
       if (!session.user || session.user.role === "demo") return;
       const [profile, saved] = await Promise.all([
-        secureApi<{ user: { name: string; phone: string | null; preferredContact: Contact } }>("P8a2N5dK1vR7").catch(() => null),
+        secureApi<{ user: { name: string; phone: string | null; preferredContact: Contact }; coupons?: Voucher[] }>("P8a2N5dK1vR7").catch(() => null),
         secureApi<{ addresses: SavedAddress[] }>("P3v8F1qL6sM4").catch(() => null),
       ]);
       if (!active) return;
+      if (profile?.coupons) setVouchers(profile.coupons);
       if (profile) setDraft((current) => ({ ...current, name: current.name || profile.user.name, phone: current.phone || (profile.user.phone ?? "").replace(/^\+91/, ""), contact: current.contact || profile.user.preferredContact }));
       if (saved) {
         setAddresses(saved.addresses);
@@ -183,7 +195,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       let fileId: string | undefined;
       if (file) fileId = (await secureUpload<{ file: { id: string } }>("U7b3R8mQ4zL1", file)).file.id;
       const saved = addresses.find((item) => item.id === draft.addressId);
-      const result = await secureApi<{ request: { reference: string }; offer?: { applied: boolean; reason?: string } }>("S5w2J9nF3kL7", {
+      const result = await secureApi<{ request: { reference: string }; offer?: { applied: boolean; reason?: string }; coupon?: { applied: boolean; code?: string; reason?: string } }>("S5w2J9nF3kL7", {
         serviceSlug: draft.serviceSlug,
         description: draft.description.trim(),
         preferredContact: draft.contact,
@@ -196,11 +208,16 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         },
         ...(draft.serviceSlug === "other" && draft.category !== "all" ? { category: draft.category } : {}),
         ...(offer ? { offerId: offer.id } : {}),
+        ...(draft.coupon ? { couponCode: draft.coupon } : {}),
         fileId,
         idempotencyKey: idempotencyKey.current,
       });
       clearDraft();
-      setDone({ reference: result.request.reference, offerNote: result.offer && !result.offer.applied ? result.offer.reason : undefined });
+      setDone({
+        reference: result.request.reference, offerNote: result.offer && !result.offer.applied ? result.offer.reason : undefined,
+        couponOk: Boolean(result.coupon?.applied), couponNote: result.coupon ? result.coupon.applied ? fill(p.promoAppliedDone, { code: result.coupon.code ?? draft.coupon }) : `${p.promoNotApplied} ${result.coupon.reason ?? ""}` : undefined,
+      });
+      setApplied(null);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (reason) {
       if (reason instanceof SecureApiError && reason.status === 401) { saveDraft({ ...draft, step: 3 }); rememberReturn("/request?resume=1"); router.push("/login"); return; }
@@ -221,6 +238,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         <strong className="success-card__ref">{done.reference}</strong>
         <p>{t.successNext}</p>
         {done.offerNote && <p className="alert alert--info">{t.offerNotApplied} {done.offerNote}</p>}
+        {done.couponNote && <p className={done.couponOk ? "alert alert--success" : "alert alert--info"}>{done.couponNote}</p>}
         <div className="success-card__actions">
           <Link className="btn btn--primary btn--lg" href="/profile#requests">{t.track}<ArrowRight size={18}/></Link>
           <a className="btn btn--wa btn--lg" href={whatsappHref(share)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/>{t.shareWa}</a>
@@ -245,6 +263,12 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const slotLabel = (slot: Slot | "") => slot ? t[slot] : "";
   const dayLabel = (iso: string) => { const day = days.find((item) => item.iso === iso); return day ? day.offset === 0 ? t.today : day.offset === 1 ? t.tomorrow : `${day.weekday}, ${day.date}` : iso; };
   const visitSummary = draft.mode === "walkin" ? `${t.walkin} · ${dayLabel(draft.day)}${draft.slot ? ` · ${slotLabel(draft.slot)}` : ""}` : draft.mode === "doorstep" ? `${t.doorstep} · ${savedAddress ? `${savedAddress.line1}, ${savedAddress.city}` : formatAddress(draft.address)}` : draft.mode === "callback" ? t.callback : draft.mode === "online" ? t.online : "";
+  const suggestions: CodeSuggestion[] = [
+    ...vouchers.filter((item) => item.personal && item.live && !item.used).map((item) => ({ code: item.code, emoji: item.emoji, label: item.names[locale] ?? item.code, personal: true })),
+    ...[...liveCodes].sort((a, b) => Number(Boolean(activeCategory && b.categories !== "all" && b.categories.includes(activeCategory))) - Number(Boolean(activeCategory && a.categories !== "all" && a.categories.includes(activeCategory))))
+      .filter((item) => item.code && !vouchers.some((voucher) => voucher.code === item.code && voucher.used))
+      .map((item) => ({ code: item.code!, emoji: item.emoji, label: item.title[locale] })),
+  ];
   const picks = QUICK_PICKS[service?.category ?? (draft.serviceSlug === "other" ? "other" : draft.category)] ?? QUICK_PICKS.other;
 
   return <WizardFrame
@@ -253,7 +277,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     lead="Tell us what you need. We confirm documents, fees and timing before any work begins."
     steps={t.steps} current={draft.step} onJump={goTo} locale={locale}
     strip={<OfferStrip category={activeCategory} locale={locale}/>}
-    rail={<OfferRail category={activeCategory} locale={locale} whatsappText={whatsappText} appliedOfferId={offer?.id}/>}
+    rail={<OfferRail category={activeCategory} locale={locale} whatsappText={whatsappText} appliedOfferId={offer?.id} appliedCode={applied?.code ?? (draft.coupon || null)}/>}
   >
     <div ref={cardTop} className="wizard__anchor"/>
     <form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (draft.step === 3) void submit(); else next(); }}>
@@ -327,6 +351,8 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
           <div><dt>{t.summaryVisit}</dt><dd>{visitSummary}</dd><button type="button" onClick={() => goTo(2)}>{t.edit}</button></div>
         </dl>
         {offer && <div className={`applied-offer tone-${offer.tone}`}><span className="badge badge--live"><i/>{dict(locale).ticker.live}</span><div><b>{offer.highlight[locale]} · {offer.title[locale]}</b><small>{t.offerApplied}. {offer.firstTimeOnly ? t.offerCheck : ""}</small></div></div>}
+        <PromoCodeField locale={locale} value={draft.coupon} applied={applied} signedIn={Boolean(user && user.role !== "demo")} suggestions={suggestions}
+          onChange={(coupon) => update({ coupon })} onApplied={setApplied}/>
         <label className="check"><input type="checkbox" checked={draft.consent} onChange={(event) => update({ consent: event.target.checked })}/><span>{t.consent}</span></label>
         {user === null && <p className="alert alert--info">{t.signInNote}</p>}
       </section>}

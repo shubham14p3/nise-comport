@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { and, desc, eq, gt, isNull, or } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { requireUser, activeSessionCount, openWorkCount } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { coupons, printJobs, serviceRequests, walletEntries } from "@/db/schema";
+import { printJobs, serviceRequests, walletEntries } from "@/db/schema";
 import { apiError } from "@/lib/http";
+import { customerVouchers } from "@/lib/promotions";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export async function GET() {
         .from(printJobs).where(eq(printJobs.userId, user.id)).orderBy(desc(printJobs.createdAt)).limit(50),
       db.select({ amount: walletEntries.amount, kind: walletEntries.kind, description: walletEntries.description, reference: walletEntries.reference, createdAt: walletEntries.createdAt })
         .from(walletEntries).where(eq(walletEntries.userId, user.id)).orderBy(desc(walletEntries.createdAt)),
-      db.select().from(coupons).where(and(eq(coupons.active, true), or(isNull(coupons.expiresAt), gt(coupons.expiresAt, new Date())))),
+      customerVouchers(user.id),
       activeSessionCount(user.id),
       openWorkCount(user.id),
     ]);
@@ -35,10 +36,7 @@ export async function GET() {
       })),
       jobs: jobs.map((job) => ({ ...job, createdAt: job.createdAt.toISOString() })),
       wallet: wallet.map((entry) => ({ ...entry, createdAt: entry.createdAt.toISOString() })),
-      coupons: activeCoupons.map((coupon) => ({
-        code: coupon.code, discountType: coupon.discountType, discountValue: coupon.discountValue,
-        minimumAmount: coupon.minimumAmount, expiresAt: coupon.expiresAt?.toISOString() ?? null,
-      })),
+      coupons: activeCoupons,
       activeSessions,
       openWork,
     }, { headers: { "cache-control": "private, no-store" } });

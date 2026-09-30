@@ -6,6 +6,7 @@ import AccountSecurityPanel from "@/components/account-security-panel";
 import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
 import CancelRequestButton from "@/components/cancel-request-button";
+import VoucherBoard from "@/components/voucher-board";
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import {
@@ -15,6 +16,7 @@ import {
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi } from "@/lib/secure-api-client";
 import { whatsappHref } from "@/lib/public-contact";
+import type { CustomerVoucher } from "@/lib/promo-view";
 
 type RequestItem = { reference: string; serviceSlug: string; serviceName: string; status: string; description: string; createdAt: string };
 type WalletItem = { amount: string; kind: string; description: string; reference: string | null; createdAt: string };
@@ -25,7 +27,7 @@ type ProfileUser = {
   preferredContact: "email" | "phone" | "whatsapp";
   updatedAt?: string;
 };
-type Coupon = { code: string; discountType: string; discountValue: string; minimumAmount: string; expiresAt: string | null };
+type Coupon = CustomerVoucher;
 type Snapshot = {
   user: ProfileUser; requests: RequestItem[]; jobs: PrintItem[]; wallet: WalletItem[];
   coupons: Coupon[]; activeSessions: number; openWork: number;
@@ -196,6 +198,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
           <Metric icon={<FileText size={20}/>} number={activeRequests.length} label="Open requests" tone="blue" onClick={() => openSection("requests")}/>
           <Metric icon={<Printer size={20}/>} number={jobs.length} label="Print orders" tone="violet" onClick={() => openSection("prints")}/>
           <Metric icon={<WalletCards size={20}/>} number={rupees(balance)} label="Wallet balance" tone="green" onClick={() => openSection("wallet")}/>
+          <Metric icon={<Gift size={20}/>} number={coupons.filter((coupon) => coupon.live && !coupon.used).length} label="Codes you can use" tone="pink" onClick={() => openSection("vouchers")}/>
         </div>
         <div className="panel"><SectionHeading eyebrow="RECENT ACTIVITY" title="Your latest requests" text="Open any request to see what you sent and its current status."/><RequestRows rows={requests.slice(0, 3)}/></div>
         <div className="quick-grid">
@@ -221,7 +224,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
       case "history": return <div className="panel"><SectionHeading eyebrow="COMPLETED & CLOSED" title="Request history" text="Completed, cancelled and otherwise closed requests."/><RequestRows rows={historyRequests}/>{!historyRequests.length && requests.length > 0 && <p className="muted">Your requests are still in progress. They move here once the team closes them.</p>}</div>;
       case "prints": return <div className="panel"><SectionHeading eyebrow="DOCUMENT SERVICES" title="Print orders" text="Your print requests, pickup or delivery choice, the estimate and the latest status." />{jobs.length ? <div className="record-list">{jobs.map((job) => <article className="record" key={job.reference}><span className="record__icon"><Printer size={20}/></span><div className="record__body"><b>Print order · {job.fulfillment}</b><small>{job.reference} · {dateLabel(job.createdAt)}</small><p>Estimate: {rupees(Number(job.total))}</p></div><span className={statusClass(job.status)}>{job.status.replaceAll("_", " ")}</span></article>)}</div> : <EmptyState icon={<Printer size={22}/>} title="No print orders yet" text="Upload a document, choose options and request an estimate. The team confirms the final cost before printing." action={<Link href="/print" className="btn btn--primary">Start a print request <ArrowRight size={16}/></Link>}/>}</div>;
       case "wallet": return <div className="panel"><SectionHeading eyebrow="CUSTOMER REWARDS" title="Wallet & credits" text="Credits and adjustments posted by the team, with date and reference."/><div className="wallet-hero"><span>AVAILABLE BALANCE</span><strong>{rupees(balance)}</strong><small>Top-up and online wallet payment are not enabled.</small></div>{wallet.length ? <div className="ledger">{wallet.map((entry, index) => <article key={`${entry.createdAt}-${index}`}><div><b>{entry.description}</b><small>{dateLabel(entry.createdAt)}{entry.reference ? ` · ${entry.reference}` : ""}</small></div><strong className={entry.kind.toLowerCase() === "debit" ? "is-debit" : "is-credit"}>{entry.kind.toLowerCase() === "debit" ? "−" : "+"}{rupees(Number(entry.amount))}</strong></article>)}</div> : <EmptyState icon={<WalletCards size={22}/>} title="No wallet activity yet" text="Eligible promotional credits or adjustments will appear here."/>}</div>;
-      case "vouchers": return <div className="panel"><SectionHeading eyebrow="SAVINGS" title="Vouchers & offers" text="Active coupon codes. Eligibility is checked again when you use one." />{coupons.length ? <div className="voucher-grid">{coupons.map((coupon) => <article className="voucher" key={coupon.code}><span className="badge badge--live"><i/>LIVE</span><h3>{coupon.code}</h3><p>{coupon.discountType === "percent" ? `${coupon.discountValue}%` : rupees(Number(coupon.discountValue))} off · min. {rupees(Number(coupon.minimumAmount))}</p><small>{coupon.expiresAt ? `Expires ${dateLabel(coupon.expiresAt)}` : "No expiry set"}</small><Link className="text-link" href="/print">Use with a print request <ArrowRight size={15}/></Link></article>)}</div> : <EmptyState icon={<Gift size={22}/>} title="No voucher codes right now" text="Live offers are applied inside the request steps automatically." action={<Link className="btn btn--primary" href="/offers">See live offers <ArrowRight size={16}/></Link>}/>}</div>;
+      case "vouchers": return <div className="panel"><SectionHeading eyebrow="SAVINGS" title="Vouchers & offers" text="Your ₹50 welcome coupon and the festival and Team India codes live today. Each code can be used once." /><VoucherBoard vouchers={coupons}/></div>;
       case "addresses": return <div className="panel"><SectionHeading eyebrow="DELIVERY & CONTACT" title="Saved addresses" text="Search with Google, use your current location or type it. Used for print delivery and doorstep help."/>{demoMode ? <EmptyState icon={<MapPin size={22}/>} title="Demo preview" text="Saved addresses are available after creating a real account."/> : <AddressManager/>}</div>;
       case "profile": return <div className="panel"><SectionHeading eyebrow="PERSONAL INFORMATION" title="Your profile details" text="Keep your contact details current. They prefill your request forms."/>
         <div className="progress-card"><div><b>Profile {Math.round((completion / 5) * 100)}% complete</b><small>{completion}/5 details added</small></div><span className="progress"><i style={{ width: `${(completion / 5) * 100}%` }}/></span></div>

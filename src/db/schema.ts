@@ -1,4 +1,8 @@
-import { pgTable, text, timestamp, uuid, integer, boolean, jsonb, numeric, uniqueIndex, index, doublePrecision } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+import { pgTable, text, timestamp, uuid, integer, boolean, jsonb, numeric, uniqueIndex, index, doublePrecision, date } from "drizzle-orm/pg-core";
+
+/** Text in the three interface languages. */
+type Text3 = { en: string; hi: string; bn: string };
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(), name: text("name").notNull(), email: text("email").notNull(),
@@ -67,11 +71,48 @@ export const printJobs = pgTable("print_jobs", {
   uniqueIndex("print_jobs_user_idempotency_idx").on(table.userId, table.idempotencyKey),
 ]);
 
+/**
+ * Coupon codes. `kind`:
+ * - public   — a code the owner created by hand; anyone can type it in.
+ * - festival — generated for a festival (DIWALI26), live 30 days before the day.
+ * - sport    — generated for a sporting event where India plays (T20FEVER27), live until the final.
+ * - welcome  — one customer's ₹50 sign-up coupon (user_id set), issued when the email is verified.
+ * The daily offers sync (/api/cron/offers) creates and updates festival/sport rows by `event_key`;
+ * it never changes `active`, and skips rows the owner edited (`locked`).
+ */
 export const coupons = pgTable("coupons", {
   id: uuid("id").defaultRandom().primaryKey(), code: text("code").notNull().unique(), discountType: text("discount_type").notNull(),
   discountValue: numeric("discount_value", { precision: 10, scale: 2 }).notNull(), minimumAmount: numeric("minimum_amount", { precision: 10, scale: 2 }).notNull().default("0"),
   active: boolean("active").notNull().default(true), expiresAt: timestamp("expires_at", { withTimezone: true }),
-});
+  kind: text("kind").notNull().default("public"),
+  title: jsonb("title").$type<Text3>(), description: jsonb("description").$type<Text3>(),
+  startsAt: timestamp("starts_at", { withTimezone: true }),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+  eventKey: text("event_key"), eventStarts: date("event_starts"), eventEnds: date("event_ends"),
+  theme: text("theme"), emoji: text("emoji"),
+  communities: jsonb("communities").$type<string[]>(), categories: jsonb("categories").$type<string[]>(),
+  /** Uses allowed per customer (null = unlimited) and in total (null = unlimited). */
+  perUserLimit: integer("per_user_limit"), maxRedemptions: integer("max_redemptions"),
+  source: text("source"), tentative: boolean("tentative").notNull().default(false), locked: boolean("locked").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("coupons_event_key_unique").on(table.eventKey).where(sql`${table.eventKey} is not null`),
+  uniqueIndex("coupons_welcome_user_unique").on(table.userId).where(sql`${table.kind} = 'welcome'`),
+  index("coupons_kind_window_idx").on(table.kind, table.startsAt, table.expiresAt),
+]);
+
+/** Each use of a coupon on a print job or service request (for per-customer limits and reporting). */
+export const couponRedemptions = pgTable("coupon_redemptions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  couponId: uuid("coupon_id").notNull().references(() => coupons.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  requestKind: text("request_kind").notNull(), requestId: uuid("request_id").notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull().default("0"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("coupon_redemptions_coupon_user_idx").on(table.couponId, table.userId),
+  uniqueIndex("coupon_redemptions_request_unique").on(table.requestKind, table.requestId, table.couponId),
+]);
 
 export const walletEntries = pgTable("wallet_entries", {
   id: uuid("id").defaultRandom().primaryKey(), userId: uuid("user_id").notNull().references(() => users.id), amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),

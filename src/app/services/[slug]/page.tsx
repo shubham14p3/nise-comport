@@ -14,6 +14,8 @@ import { categoryMetaFor } from "@/lib/categories";
 import { posterFor } from "@/lib/gallery";
 import { findHindiService } from "@/lib/hindi";
 import { offersFor } from "@/lib/offers";
+import { getLivePromos } from "@/lib/promotions";
+import { liveOfferCodes } from "@/lib/promo-view";
 import { translatedSlugs } from "@/lib/translated-slugs";
 import { SITE_CONTENT_DATE } from "@/lib/routes";
 import { pageMetadata } from "@/lib/seo";
@@ -67,7 +69,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
   const categorySlug = detail ? detail.categorySlug : service.slug;
   const meta = categoryMetaFor(categorySlug);
   const startHref = requestHrefFor(service.slug);
-  const offers = offersFor(categorySlug).slice(0, 2);
+  const offers = offersFor(categorySlug, new Date(), liveOfferCodes(await getLivePromos())).slice(0, 2);
   const bengali = translatedSlugs.bn.includes(service.slug);
   const reviewed = new Date(`${SITE_CONTENT_DATE}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 

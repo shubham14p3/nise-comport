@@ -9,6 +9,7 @@ import { apiError, readJson } from "@/lib/http";
 import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
 import { isIdempotencyConflict, notifyNewRequest, recordEvent, withUniqueReference } from "@/lib/requests";
 import { findOffer, isOfferLive, offerAppliesTo } from "@/lib/offers";
+import { recordRedemption, resolveCoupon } from "@/lib/promotions";
 import { findService, isServiceDetail, serviceCatalog, servicesInCategory } from "@/lib/services";
 import { normalizePhone } from "@/lib/validation";
 
@@ -22,6 +23,8 @@ const schema = z.object({
   contactPhone: z.string().trim().max(20).optional(),
   category: z.string().max(60).optional(),
   offerId: z.string().max(60).optional(),
+  /** Festival / sports / welcome code; staff take it off the service charge when they bill. */
+  couponCode: z.string().trim().max(40).optional(),
   visit: z.object({
     mode: z.enum(["walkin", "callback", "doorstep", "online"]),
     day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -84,6 +87,7 @@ export async function POST(request: NextRequest) {
     await enforceRate(RATE_RULES.requestsPerUserDay, userKey, "You’ve reached today’s online request limit. Please call or WhatsApp us.");
 
     const offer = await checkOffer(input.offerId, category, user.id);
+    const coupon = await checkCoupon(input.couponCode, user.id);
 
     if (input.fileId) {
       const [file] = await db.select({ id: storedFiles.id, requestId: storedFiles.requestId }).from(storedFiles).where(and(eq(storedFiles.id, input.fileId), eq(storedFiles.userId, user.id))).limit(1);
@@ -103,6 +107,7 @@ export async function POST(request: NextRequest) {
             ...(category ? { category } : {}),
             ...(visit ? { visit } : {}),
             ...(offer.applied ? { offer: { id: offer.id, title: offer.title } } : {}),
+            ...(coupon.applied ? { coupon: { code: coupon.code, value: coupon.value, minimum: coupon.minimum, title: coupon.title } } : {}),
           },
           serviceFee: "0.00", externalFee: "0.00", idempotencyKey: input.idempotencyKey ?? null,
         }).returning(selectFields);
@@ -119,15 +124,35 @@ export async function POST(request: NextRequest) {
     if (input.fileId) {
       await db.update(storedFiles).set({ requestId: created.id }).where(and(eq(storedFiles.id, input.fileId), eq(storedFiles.userId, user.id), isNull(storedFiles.requestId)));
     }
+    if (coupon.applied) await recordRedemption(coupon.id, user.id, "service", created.id, coupon.value);
     await recordEvent("service", created.id, user.id, null, "submitted", "Created online");
     await notifyNewRequest(user, created.reference, service.title, [
       `Note: ${input.description.slice(0, 300)}`,
       ...(contactPhone ? [`Phone: ${contactPhone}${input.preferredContact ? ` (prefers ${input.preferredContact})` : ""}`] : []),
       ...(visit ? [`Visit: ${[visit.mode, visit.day, visit.slot, visit.address].filter(Boolean).join(" · ")}`] : []),
       ...(offer.applied ? [`Offer claimed: ${offer.title}`] : []),
+      ...(coupon.applied ? [`Coupon: ${coupon.code} (₹${coupon.value} off the service charge if it is ₹${coupon.minimum} or more)`] : []),
     ]);
-    return NextResponse.json({ ok: true, request: created, ...(input.offerId ? { offer: { applied: offer.applied, ...(offer.reason ? { reason: offer.reason } : {}) } } : {}) }, { status: 201 });
+    return NextResponse.json({
+      ok: true, request: created,
+      ...(input.offerId ? { offer: { applied: offer.applied, ...(offer.reason ? { reason: offer.reason } : {}) } } : {}),
+      ...(input.couponCode ? { coupon: { applied: coupon.applied, ...(coupon.applied ? { code: coupon.code } : { reason: coupon.reason }) } } : {}),
+    }, { status: 201 });
   } catch (error) { return apiError(error); }
+}
+
+type CouponCheck = { applied: true; id: string; code: string; value: number; minimum: number; title: string } | { applied: false; reason?: string };
+
+/** Like offers, a code that can't be used doesn't stop the request; the customer is told why. */
+async function checkCoupon(code: string | undefined, userId: string): Promise<CouponCheck> {
+  if (!code) return { applied: false };
+  try {
+    const { coupon, view } = await resolveCoupon({ code, userId });
+    return { applied: true, id: coupon.id, code: coupon.code, value: view.discount, minimum: view.minimum, title: `${view.emoji} ${view.names.en}` };
+  } catch (error) {
+    if (error instanceof PublicError) return { applied: false, reason: error.message };
+    throw error;
+  }
 }
 
 type OfferCheck = { applied: boolean; id?: string; title?: string; reason?: string };

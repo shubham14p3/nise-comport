@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Check, ShieldCheck, Sparkles } from "lucide-react";
 import OfferCard from "@/components/offer-card";
+import { useLiveCodes } from "@/components/offers-provider";
 import { WhatsAppIcon } from "@/components/icons";
 import { dict, fill, type Locale } from "@/lib/i18n";
 import { offerAppliesTo, offersFor } from "@/lib/offers";
@@ -27,14 +28,15 @@ export function WizardSteps({ steps, current, onJump, locale }: { steps: string[
 }
 
 /** Side rail with blinking live offers for the chosen category, a help card and trust points. */
-export function OfferRail({ category, locale, whatsappText, appliedOfferId, before }: { category?: string | null; locale: Locale; whatsappText: string; appliedOfferId?: string | null; before?: ReactNode }) {
+export function OfferRail({ category, locale, whatsappText, appliedOfferId, appliedCode, before }: { category?: string | null; locale: Locale; whatsappText: string; appliedOfferId?: string | null; appliedCode?: string | null; before?: ReactNode }) {
   const t = dict(locale).rail;
-  const offers = offersFor(category).slice(0, 3);
+  const codes = useLiveCodes();
+  const offers = offersFor(category, undefined, codes).slice(0, 3);
   return <aside className="rail" aria-label={t.live}>
     {before}
     {offers.length > 0 && <div className="rail__offers">
       <div className="rail__title"><span className="badge badge--live"><i/>{dict(locale).ticker.live}</span><b>{t.live}</b></div>
-      {offers.map((offer) => <OfferCard key={offer.id} offer={offer} locale={locale} variant="rail" applies={offer.id === appliedOfferId || Boolean(category && offer.categories !== "all" && offerAppliesTo(offer, category))}/>)}
+      {offers.map((offer) => <OfferCard key={offer.id} offer={offer} locale={locale} variant="rail" applies={offer.id === appliedOfferId || Boolean(offer.code && offer.code === appliedCode) || Boolean(!offer.code && category && offer.categories !== "all" && offerAppliesTo(offer, category))}/>)}
     </div>}
     <div className="rail__help">
       <Sparkles size={20}/>
@@ -48,10 +50,11 @@ export function OfferRail({ category, locale, whatsappText, appliedOfferId, befo
 
 /** Compact, horizontally scrolling offer strip shown above the form on phones. */
 export function OfferStrip({ category, locale }: { category?: string | null; locale: Locale }) {
-  const offers = offersFor(category).slice(0, 3);
+  const codes = useLiveCodes();
+  const offers = offersFor(category, undefined, codes).slice(0, 3);
   if (!offers.length) return null;
   return <div className="offer-strip" aria-label={dict(locale).rail.live}>
-    {offers.map((offer) => <Link key={offer.id} href={offer.href} className={`offer-strip__item tone-${offer.tone}`}><span className="badge badge--live"><i/>{offer.badge === "LIVE" ? dict(locale).ticker.live : offer.badge}</span><b>{offer.highlight[locale]}</b><span>{offer.title[locale]}</span></Link>)}
+    {offers.map((offer) => <Link key={offer.id} href={offer.href} className={`offer-strip__item tone-${offer.tone}`}><span className="badge badge--live"><i/>{offer.badge === "LIVE" ? dict(locale).ticker.live : offer.badge}</span><b>{offer.emoji ? `${offer.emoji} ` : ""}{offer.highlight[locale]}</b><span>{offer.code ? `${offer.title[locale]} · ${offer.code}` : offer.title[locale]}</span></Link>)}
   </div>;
 }
 

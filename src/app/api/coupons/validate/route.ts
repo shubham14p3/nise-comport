@@ -1,20 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, eq, gt, isNull, or } from "drizzle-orm";
 import { z } from "zod";
-import { coupons } from "@/db/schema";
-import { getCurrentUser } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { couponDiscount } from "@/lib/print-pricing";
+import { requireUser } from "@/lib/auth";
+import { apiError, readJson } from "@/lib/http";
+import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
+import { resolveCoupon } from "@/lib/promotions";
 
-const schema = z.object({ code: z.string().trim().min(2).max(40), amount: z.number().nonnegative().max(1_000_000) });
+const schema = z.object({
+  code: z.string().trim().min(2).max(40),
+  /** Print order total; leave out for a service request (billed later). */
+  amount: z.number().nonnegative().max(1_000_000).optional(),
+});
+
+/** Checks a coupon for the signed-in customer and returns what it's worth. */
 export async function POST(request: NextRequest) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Sign in before applying a coupon." }, { status: 401 });
-  const parsed = schema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "Enter a valid coupon code." }, { status: 400 });
-  const [coupon] = await db.select().from(coupons).where(and(eq(coupons.code, parsed.data.code.toUpperCase()), eq(coupons.active, true), or(isNull(coupons.expiresAt), gt(coupons.expiresAt, new Date())))).limit(1);
-  if (!coupon || parsed.data.amount < Number(coupon.minimumAmount)) return NextResponse.json({ error: "This coupon isn’t valid for the current order." }, { status: 400 });
-  const discount = couponDiscount(coupon.discountType, Number(coupon.discountValue), parsed.data.amount);
-  if (!discount) return NextResponse.json({ error: "This coupon doesn’t reduce the order total." }, { status: 400 });
-  return NextResponse.json({ ok: true, code: coupon.code, discount });
+  try {
+    const user = await requireUser();
+    await enforceRate(RATE_RULES.couponChecksPerUserHour, identity("user", user.id), "Too many coupon attempts. Please try again in a little while.");
+    const input = schema.parse(await readJson(request));
+    const { coupon, view, discount } = await resolveCoupon({ code: input.code, userId: user.id, amount: input.amount });
+    return NextResponse.json({
+      ok: true, code: coupon.code, discount: discount ?? Number(coupon.discountValue), exact: discount !== null,
+      discountType: view.discountType, value: view.discount, minimum: view.minimum, names: view.names, emoji: view.emoji, endsOn: view.endsOn,
+    });
+  } catch (error) { return apiError(error); }
 }

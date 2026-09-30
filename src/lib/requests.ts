@@ -6,6 +6,7 @@ import type { User } from "@/lib/auth";
 import { isUniqueViolation, postgresCode, PublicError } from "@/lib/errors";
 import { makeReference } from "@/lib/http";
 import { deliverNotifications, queueNotification, staffAlertEmail } from "@/lib/notifications";
+import { releaseRedemptions } from "@/lib/promotions";
 
 export const REQUEST_STATUSES = ["submitted", "reviewing", "waiting_for_customer", "ready_for_pickup", "out_for_delivery", "completed", "cancelled"] as const;
 export type RequestStatus = (typeof REQUEST_STATUSES)[number];
@@ -77,6 +78,7 @@ export async function cancelServiceRequest(user: User, reference: string, reason
     .where(and(eq(serviceRequests.id, request.id), inArray(serviceRequests.status, CUSTOMER_CANCELLABLE))).returning({ id: serviceRequests.id });
   if (!updated) throw new PublicError("The status of this request just changed. Reload the page and try again.", 409, { code: "stale_status" });
   await recordEvent("service", request.id, user.id, request.status, "cancelled", reason ? `Customer: ${reason}` : "Cancelled by customer");
+  await releaseRedemptions("service", request.id);
   try {
     const id = await queueNotification(user.id, "staff_alert", { email: staffAlertEmail(), subject: `Request ${reference} cancelled by customer`, lines: [`Customer: ${user.name} <${user.email}>`, `Service: ${request.serviceName}`, reason ? `Reason: ${reason}` : "No reason given."] });
     after(async () => { try { await deliverNotifications([id]); } catch (error) { console.error("[requests] cancel alert failed", error); } });

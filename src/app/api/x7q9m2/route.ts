@@ -39,6 +39,9 @@ const OPS = {
   "W3k8P1zN6qT2": { method: "POST", path: "/api/places/autocomplete" },
   "Q9v4H2mX7rB5": { method: "POST", path: "/api/places/details" },
   "E7t2Y9cK4nM1": { method: "POST", path: "/api/places/reverse" },
+  "U4n8K2rP6wD1": { method: "GET", path: "/api/admin/promotions" },
+  "M7x3Q9vB2kF5": { method: "PATCH", path: "/api/admin/promotions" },
+  "Z9p4L6tH1cN8": { method: "POST", path: "/api/admin/promotions/sync" },
 } as const;
 
 function stringValue(input: Record<string, unknown>, key: string, max = 200) {

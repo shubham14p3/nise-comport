@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { apiError, readJson } from "@/lib/http";
 import { deliverNotifications, queueNotification } from "@/lib/notifications";
+import { releaseRedemptions } from "@/lib/promotions";
 import { recordEvent, REQUEST_STATUSES, statusLabel } from "@/lib/requests";
 
 const schema = z.object({
@@ -39,6 +40,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       : await db.update(serviceRequests).set({ status: input.status, updatedAt: now }).where(and(eq(serviceRequests.id, id), eq(serviceRequests.status, current.status))).returning({ id: serviceRequests.id });
     if (!updated) throw new PublicError("This item changed while you were updating it. Refresh and try again.", 409, { code: "stale_status" });
     await recordEvent(input.kind, id, staff.id, current.status, input.status, input.note);
+    // A cancelled order gives its coupon back so the customer can use it again.
+    if (input.status === "cancelled") await releaseRedemptions(input.kind, id);
 
     if (input.notifyCustomer && current.status !== input.status) {
       const [customer] = await db.select({ name: users.name, email: users.email, deletedAt: users.deletedAt }).from(users).where(eq(users.id, current.userId)).limit(1);

@@ -8,6 +8,7 @@ import { WhatsAppIcon } from "@/components/icons";
 import OpenStatus from "@/components/open-status";
 import type { OpeningHoursRule } from "@/lib/hours";
 import { dict, type Dictionary, type Locale } from "@/lib/i18n";
+import { useLiveCodes } from "@/components/offers-provider";
 import { liveOffers } from "@/lib/offers";
 import { useLocale } from "@/lib/use-locale";
 
@@ -22,6 +23,7 @@ const TOPIC_LINKS: Record<TopicId, { details?: string; request?: string }> = {
   aadhaar: { details: "/services/aadhaar-assistance-jamshedpur", request: "/request?service=aadhaar-assistance-jamshedpur" },
   certificates: { details: "/services/jharkhand-certificates-jamshedpur", request: "/request?service=jharkhand-certificates-jamshedpur" },
   banking: { details: "/services/banking", request: "/request?category=banking" },
+  offers: { details: "/offers" },
   insurance: { details: "/services/insurance", request: "/request?category=insurance" },
   print: { details: "/services/printing-scanning-jamshedpur", request: "/print" },
   bills: { details: "/services/fee-bill-recharge-jamshedpur", request: "/request?service=fee-bill-recharge-jamshedpur" },
@@ -37,6 +39,7 @@ const TOPIC_WORDS: Record<TopicId, string[]> = {
   aadhaar: ["aadhaar", "aadhar", "adhar", "uidai", "आधार", "আধার"],
   certificates: ["certificate", "income", "caste", "residence", "ews", "domicile", "birth", "death", "प्रमाण", "जाति", "आय", "निवास", "সার্টিফিকেট", "শংসাপত্র", "জাতি", "আয়"],
   banking: ["bank", "aeps", "withdraw", "cash", "transfer", "money", "account", "बैंक", "पैसा", "ব্যাংক", "টাকা"],
+  offers: ["offer", "offers", "coupon", "promo", "discount", "deal", "festival", "diwali", "ऑफ़र", "ऑफर", "छूट", "कूपन", "অফার", "ছাড়", "কুপন"],
   insurance: ["insurance", "bima", "policy", "bike", "car", "health", "life", "lic", "बीमा", "বিমা"],
   print: ["print", "xerox", "photocopy", "scan", "प्रिंट", "फोटोकॉपी", "প্রিন্ট", "জেরক্স"],
   bills: ["bill", "recharge", "electricity", "dth", "fee", "बिल", "रिचार्ज", "বিল", "রিচার্জ"],
@@ -136,6 +139,7 @@ function greeting(t: Dictionary["chat"]): Message[] {
 /** The conversation. Keyed by language, so switching language restarts it in that language. */
 function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose }: PanelProps) {
   const t = dict(locale).chat;
+  const codes = useLiveCodes();
   const [typing, setTyping] = useState(false);
   const [input, setInput] = useState("");
   const [context, setContext] = useState("");
@@ -173,8 +177,11 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
     actions.push({ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${userText ?? info.label}`), kind: "wa" });
     let text = info.answer;
     if (topic === "insurance") {
-      const offer = liveOffers().find((item) => item.categories !== "all" && item.categories.includes("insurance"));
+      const offer = liveOffers(undefined, codes).find((item) => item.categories !== "all" && item.categories.includes("insurance"));
       if (offer) text += ` 🎉 ${offer.highlight[locale]}: ${offer.ticker[locale]}.`;
+    }
+    if (topic === "offers") {
+      text += codes.length ? `\n${codes.slice(0, 5).map((item) => `${item.emoji ?? "🎉"} ${item.code} · ${item.title[locale]}`).join("\n")}` : " —";
     }
     botSay({ text, actions, visit: topic === "visit" });
   }

@@ -11,6 +11,9 @@
  * - Keep terms honest: an offer on OUR service charge must never be described as a discount on
  *   government fees or on an insurer's premium.
  *
+ * Festival and sports promo codes come from the database (see promotions.ts / promo-view.ts) and
+ * are merged in by passing them as `extra` to the helpers below.
+ *
  * This file has no imports so it can be unit-tested with plain Node.
  */
 export type Locale = "en" | "hi" | "bn";
@@ -36,6 +39,14 @@ export type Offer = {
   endsAt?: string;
   /** Where "Claim" goes. */
   href: string;
+  /** Festival / sports / welcome promotions: the code to type in, plus how to decorate the card. */
+  code?: string;
+  emoji?: string;
+  theme?: string;
+  kind?: "festival" | "sport" | "welcome" | "public";
+  /** Festival day or first match (YYYY-MM-DD), for "Diwali is on 8 Nov" style labels. */
+  eventDate?: string;
+  tentative?: boolean;
 };
 
 export const offers: Offer[] = [
@@ -82,6 +93,28 @@ export const offers: Offer[] = [
     tone: "green",
     categories: "all",
     href: "/request",
+  },
+  {
+    id: "welcome-50",
+    active: true,
+    highlight: { en: "₹50 WELCOME", hi: "₹50 वेलकम", bn: "₹50 ওয়েলকাম" },
+    title: { en: "Coupon when you verify your account", hi: "खाता वेरिफ़ाई करने पर कूपन", bn: "অ্যাকাউন্ট ভেরিফাই করলেই কুপন" },
+    ticker: { en: "Sign up & verify your email: ₹50 welcome coupon in your account", hi: "साइन अप करके ईमेल वेरिफ़ाई करें: खाते में ₹50 का वेलकम कूपन", bn: "সাইন আপ করে ইমেল ভেরিফাই করুন: অ্যাকাউন্টে ₹50-এর ওয়েলকাম কুপন" },
+    detail: {
+      en: "Create your free account and confirm the 6-digit email code. A personal ₹50 coupon appears under Profile → Vouchers straight away.",
+      hi: "मुफ़्त खाता बनाएँ और ईमेल पर आया 6 अंकों का कोड डालें। ₹50 का निजी कूपन तुरंत प्रोफ़ाइल → वाउचर में दिखेगा।",
+      bn: "বিনামূল্যে অ্যাকাউন্ট খুলে ইমেলের 6 সংখ্যার কোড দিন। ₹50-এর ব্যক্তিগত কুপন সঙ্গে সঙ্গে প্রোফাইল → ভাউচারে দেখা যাবে।",
+    },
+    terms: {
+      en: "One per verified account. ₹50 off orders of ₹150 or more, valid 90 days. Applies to our service charge or print total only.",
+      hi: "प्रति वेरिफ़ाइड खाता एक। ₹150 या अधिक के ऑर्डर पर ₹50 की छूट, 90 दिन तक मान्य। केवल हमारे सेवा शुल्क या प्रिंट बिल पर।",
+      bn: "প্রতি ভেরিফায়েড অ্যাকাউন্টে একটি। ₹150 বা বেশি অর্ডারে ₹50 ছাড়, 90 দিন বৈধ। শুধু আমাদের সার্ভিস চার্জ বা প্রিন্টের বিলে।",
+    },
+    badge: "NEW",
+    tone: "violet",
+    categories: "all",
+    kind: "welcome",
+    href: "/signup",
   },
   {
     // EXAMPLE — confirm with the shop, then set active: true.
@@ -134,17 +167,21 @@ export function isOfferLive(offer: Offer, now = new Date()) {
   return true;
 }
 
-export function liveOffers(now = new Date()) {
-  return offers.filter((offer) => isOfferLive(offer, now));
+export function liveOffers(now = new Date(), extra: Offer[] = []) {
+  return [...offers, ...extra].filter((offer) => isOfferLive(offer, now));
 }
 
-/** Offers for a step flow: category-specific first, then the ones that apply everywhere. */
-export function offersFor(category: string | null | undefined, now = new Date()) {
-  const live = liveOffers(now);
+/**
+ * Offers for a step flow: category-specific first, then the ones that apply everywhere.
+ * `extra` adds live festival/sports promo codes (already sorted, soonest-ending first).
+ */
+export function offersFor(category: string | null | undefined, now = new Date(), extra: Offer[] = []) {
+  const live = liveOffers(now, extra);
   const specific = category ? live.filter((offer) => offer.categories !== "all" && offer.categories.includes(category)) : [];
-  const general = live.filter((offer) => offer.categories === "all");
-  const rest = category ? [] : live.filter((offer) => offer.categories !== "all");
-  return [...specific, ...rest, ...general];
+  const codes = live.filter((offer) => offer.code && offer.categories === "all");
+  const general = live.filter((offer) => !offer.code && offer.categories === "all");
+  const rest = category ? [] : live.filter((offer) => offer.categories !== "all" && !specific.includes(offer));
+  return [...specific, ...rest, ...codes, ...general];
 }
 
 export function findOffer(id: string | null | undefined) {

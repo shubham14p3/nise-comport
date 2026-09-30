@@ -16,6 +16,8 @@ import { localGallery } from "@/lib/gallery";
 import { getPlaceSummary } from "@/lib/google-places";
 import { summarizeHours } from "@/lib/hours";
 import { liveOffers } from "@/lib/offers";
+import { getLivePromos } from "@/lib/promotions";
+import { liveOfferCodes } from "@/lib/promo-view";
 import { pageMetadata } from "@/lib/seo";
 import { publishedServiceDetails } from "@/lib/services";
 import { site, whatsappLink } from "@/lib/site";
@@ -57,7 +59,8 @@ const homeFaqs = [
 
 export default async function HomePage() {
   const hours = summarizeHours(site.openingHours);
-  const offers = liveOffers();
+  // Three festival / match codes ending soonest, then the standing offers.
+  const offers = [...liveOfferCodes(await getLivePromos()).slice(0, 3), ...liveOffers()];
   const place = await getPlaceSummary();
   const galleryPreview = [
     ...(place?.photos.slice(0, 3).map((photo) => ({ key: `g${photo.index}`, src: `/api/gallery/photo/${photo.index}`, alt: `Photo of NISE COMPORT by ${photo.author}`, title: `Photo · ${photo.author}`, google: true })) ?? []),

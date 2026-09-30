@@ -8,6 +8,7 @@ import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
 import { ClipboardList, FileText, RefreshCw, Search, ShieldCheck } from "lucide-react";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
+import PromotionsPanel from "@/components/promotions-panel";
 
 type Row = { id: string; reference: string; name: string; email: string; phone: string | null; status: string; createdAt: string };
 type Job = Row & { fileName: string; pageCount: number; total: string; fulfillment: string; scheduledAt: string | null };
@@ -147,6 +148,7 @@ export default function AdminDashboard() {
       </div>}
     </section>}
 
+    {loaded && <PromotionsPanel canEdit={canImport}/>}
     {canImport && <><PanImportPanel/><WalletCreditForm/></>}
     <p className="admin-note"><RefreshCw size={13}/> Status changes are recorded with your name and email the customer. If someone else changed an item first, refresh the encrypted queue.</p>
   </section></main>;

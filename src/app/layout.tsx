@@ -4,7 +4,9 @@ import { Hind_Siliguri, Poppins } from "next/font/google";
 import ChatWidget from "@/components/chat-widget";
 import JsonLd from "@/components/json-ld";
 import MobileDock from "@/components/mobile-dock";
+import OffersProvider from "@/components/offers-provider";
 import SiteFooter from "@/components/site-footer";
+import { getLivePromos } from "@/lib/promotions";
 import { site } from "@/lib/site";
 import { graph, localBusinessLd, organizationLd, websiteLd } from "@/lib/structured-data";
 import { publishedServiceDetails, serviceSeoTitle } from "@/lib/services";
@@ -42,6 +44,9 @@ export const metadata: Metadata = {
   },
 };
 
+/** Festival and sports codes change daily, so every page is refreshed at least hourly. */
+export const revalidate = 3600;
+
 export const viewport: Viewport = { themeColor: "#070b1f", width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 const siteGraph = graph(
@@ -50,14 +55,18 @@ const siteGraph = graph(
   websiteLd(),
 );
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // Live festival / sports codes for the ticker, offer rails and chat (cached; falls back to the checked dates).
+  const promos = await getLivePromos();
   return <html lang="en-IN">
     <body className={`${poppins.variable} ${hindSiliguri.variable}`}>
-      <a className="skip-link" href="#main-content">Skip to content</a>
-      <div id="main-content">{children}</div>
-      <SiteFooter/>
-      <MobileDock/>
-      <ChatWidget whatsapp={site.whatsapp.primary} phone={site.phones.primary.e164} mapsUrl={site.mapsUrl} hours={site.openingHours} services={chatServices}/>
+      <OffersProvider promos={promos}>
+        <a className="skip-link" href="#main-content">Skip to content</a>
+        <div id="main-content">{children}</div>
+        <SiteFooter/>
+        <MobileDock/>
+        <ChatWidget whatsapp={site.whatsapp.primary} phone={site.phones.primary.e164} mapsUrl={site.mapsUrl} hours={site.openingHours} services={chatServices}/>
+      </OffersProvider>
       <JsonLd data={siteGraph["@graph"]}/>
     </body>
   </html>;

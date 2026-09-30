@@ -12,6 +12,8 @@ import { posterFor } from "@/lib/gallery";
 import { summarizeHours } from "@/lib/hours";
 import { dict } from "@/lib/i18n";
 import { liveOffers, offersFor } from "@/lib/offers";
+import { getLivePromos } from "@/lib/promotions";
+import { liveOfferCodes } from "@/lib/promo-view";
 import { findService, isServiceDetail, requestHrefFor } from "@/lib/services";
 import { site, whatsappLink } from "@/lib/site";
 
@@ -49,11 +51,12 @@ const L = {
 } as const;
 
 /** Home page for /hi and /bn with the same look as the English home. */
-export function LocalizedHome({ lang, home, services }: { lang: Lang; home: Home; services: Service[] }) {
+export async function LocalizedHome({ lang, home, services }: { lang: Lang; home: Home; services: Service[] }) {
   const l = L[lang];
   const t = dict(lang);
   const hours = summarizeHours(site.openingHours, lang);
-  const offers = liveOffers();
+  // Three festival / match codes ending soonest, then the standing offers (all translated).
+  const offers = [...liveOfferCodes(await getLivePromos()).slice(0, 3), ...liveOffers()];
   return <main className="page home" lang={l.htmlLang}><SiteHeader/>
     <section className="hero hero--compact">
       <div className="hero__bg" aria-hidden="true"><span className="blob blob--1"/><span className="blob blob--2"/><span className="blob blob--3"/><span className="hero__grid"/></div>
@@ -124,14 +127,14 @@ function VisitCard({ lang, hours }: { lang: Lang; hours: string[] }) {
 }
 
 /** Translated service page for /hi/services/[slug] and /bn/services/[slug]. */
-export function LocalizedService({ lang, service }: { lang: Lang; service: Service }) {
+export async function LocalizedService({ lang, service }: { lang: Lang; service: Service }) {
   const l = L[lang];
   const t = dict(lang);
   const english = findService(service.slug);
   const category = english && isServiceDetail(english) ? english.categorySlug : undefined;
   const path = `/${lang}/services/${service.slug}`;
   const enquiry = whatsappLink(l.wa(service.title));
-  const offers = offersFor(category).slice(0, 2);
+  const offers = offersFor(category, new Date(), liveOfferCodes(await getLivePromos())).slice(0, 2);
   return <main className="page" lang={l.htmlLang}><SiteHeader/>
     <section className="page-hero page-hero--service">
       <div className="page-hero__bg" aria-hidden="true"><span className="blob blob--1"/><span className="blob blob--2"/></div>

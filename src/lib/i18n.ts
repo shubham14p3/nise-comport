@@ -18,8 +18,8 @@ export const LOCALE_META: Record<Locale, { label: string; short: string; htmlLan
 
 export const LANG_COOKIE = "nc_lang";
 
-/** App screens follow the visitor's chosen language; content pages follow their URL (/, /hi, /bn). */
-export const APP_PATHS = ["/login", "/signup", "/forgot-password", "/profile", "/request", "/print", "/pan/request", "/admin"];
+/** App screens (and /offers) follow the visitor's chosen language; content pages follow their URL (/, /hi, /bn). */
+export const APP_PATHS = ["/login", "/signup", "/forgot-password", "/profile", "/request", "/print", "/pan/request", "/admin", "/offers"];
 
 export function isLocale(value: unknown): value is Locale {
   return value === "en" || value === "hi" || value === "bn";
@@ -86,6 +86,7 @@ const en = {
       aadhaar: { label: "Aadhaar help", answer: "We guide you to the right Aadhaar update route, appointment and documents. Biometric updates happen at authorised Aadhaar centres." },
       certificates: { label: "Certificates", answer: "Income, caste, residence, EWS, birth and death certificates through the official Jharkhand process. Approval is by the department." },
       banking: { label: "Banking & AEPS", answer: "AEPS cash withdrawal, money transfer, balance enquiry and account-opening help at our banking point." },
+      offers: { label: "Offers & codes", answer: "Every festival and big Team India match has a ₹50 code, and new accounts get a ₹50 welcome coupon. Codes live today:" },
       insurance: { label: "Insurance", answer: "Bike, car, health and life insurance enquiries through participating insurers. Compare, renew or buy with local help." },
       print: { label: "Print & scan", answer: "Upload from your phone, choose pages, colour and copies, then pick up at the counter or ask for delivery." },
       bills: { label: "Bills & recharge", answer: "Electricity, mobile, DTH, fees and other supported payments with a receipt." },
@@ -202,6 +203,7 @@ const hi: Dictionary = {
       aadhaar: { label: "आधार सहायता", answer: "आधार अपडेट का सही तरीका, अपॉइंटमेंट और दस्तावेज़ हम बताते हैं। बायोमेट्रिक अपडेट अधिकृत आधार केंद्र पर होते हैं।" },
       certificates: { label: "प्रमाण पत्र", answer: "आय, जाति, निवास, EWS, जन्म और मृत्यु प्रमाण पत्र – झारखंड की आधिकारिक प्रक्रिया से। मंज़ूरी विभाग देता है।" },
       banking: { label: "बैंकिंग व AEPS", answer: "AEPS नकद निकासी, मनी ट्रांसफ़र, बैलेंस जानकारी और खाता खोलने में मदद।" },
+      offers: { label: "ऑफ़र व कोड", answer: "हर त्योहार और टीम इंडिया के हर बड़े मैच पर ₹50 का कोड, और नए खाते पर ₹50 का वेलकम कूपन। आज के लाइव कोड:" },
       insurance: { label: "बीमा", answer: "बाइक, कार, हेल्थ और लाइफ़ बीमा – सहभागी कंपनियों के ज़रिए। तुलना, रिन्यूअल या नई पॉलिसी में मदद।" },
       print: { label: "प्रिंट व स्कैन", answer: "फ़ोन से अपलोड करें, पेज, रंग और कॉपी चुनें, फिर काउंटर से लें या डिलीवरी कहें।" },
       bills: { label: "बिल व रिचार्ज", answer: "बिजली, मोबाइल, DTH, फ़ीस और अन्य भुगतान – रसीद के साथ।" },
@@ -316,6 +318,7 @@ const bn: Dictionary = {
       aadhaar: { label: "আধার সাহায্য", answer: "আধার আপডেটের সঠিক পথ, অ্যাপয়েন্টমেন্ট ও কাগজপত্র আমরা বুঝিয়ে দিই। বায়োমেট্রিক আপডেট অনুমোদিত আধার কেন্দ্রে হয়।" },
       certificates: { label: "সার্টিফিকেট", answer: "আয়, জাতি, বাসস্থান, EWS, জন্ম ও মৃত্যু সার্টিফিকেট – ঝাড়খণ্ডের সরকারি প্রক্রিয়ায়। অনুমোদন দেয় দপ্তর।" },
       banking: { label: "ব্যাংকিং ও AEPS", answer: "AEPS নগদ তোলা, টাকা পাঠানো, ব্যালান্স জানা ও অ্যাকাউন্ট খোলায় সাহায্য।" },
+      offers: { label: "অফার ও কোড", answer: "প্রতিটি উৎসব ও টিম ইন্ডিয়ার প্রতিটি বড় ম্যাচে ₹50-এর কোড, আর নতুন অ্যাকাউন্টে ₹50-এর ওয়েলকাম কুপন। আজকের লাইভ কোড:" },
       insurance: { label: "বিমা", answer: "বাইক, গাড়ি, হেলথ ও লাইফ বিমা – অংশীদার বিমা কোম্পানির মাধ্যমে। তুলনা, রিনিউ বা নতুন পলিসিতে সাহায্য।" },
       print: { label: "প্রিন্ট ও স্ক্যান", answer: "ফোন থেকে আপলোড করুন, পাতা, রং ও কপি বাছুন, তারপর কাউন্টার থেকে নিন বা ডেলিভারি চান।" },
       bills: { label: "বিল ও রিচার্জ", answer: "বিদ্যুৎ, মোবাইল, DTH, ফি ও অন্যান্য পেমেন্ট – রসিদ সহ।" },

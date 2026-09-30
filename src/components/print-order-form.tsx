@@ -6,7 +6,9 @@ import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Clock3, FileText, Info, LockKeyhole, MapPin, Minus, Plus, Printer, ShieldCheck, Store, TicketPercent, Upload, X } from "lucide-react";
 import AddressPicker, { addressProblem, EMPTY_ADDRESS, type AddressValue } from "@/components/address-picker";
+import { useLiveCodes } from "@/components/offers-provider";
 import { OfferRail, OfferStrip, WizardActions, WizardFrame } from "@/components/wizard";
+import { promoDict } from "@/lib/promo-i18n";
 import { newIdempotencyKey } from "@/lib/client-id";
 import { blackWhiteCost, COLOR_PAGE_RATE, countSelectedPages } from "@/lib/print-pricing";
 import { secureApi, secureFile, secureUpload } from "@/lib/secure-api-client";
@@ -14,6 +16,7 @@ import { useLocale } from "@/lib/use-locale";
 import { rememberReturn } from "@/lib/after-login";
 
 type FileDetails = { id: string; name: string; pages: number; size: number; mimeType: string };
+type Voucher = { code: string; emoji: string; used: boolean; live: boolean; personal: boolean };
 type DeliveryAddress = { id: string; label: string; line1: string; line2: string | null; city: string; postalCode: string; isDefault: boolean };
 const money = (amount: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(amount);
 const STEPS = ["Upload", "Pages & finish", "Pickup or delivery", "Review & send"];
@@ -22,6 +25,9 @@ const STEPS = ["Upload", "Pages & finish", "Pickup or delivery", "Review & send"
 export default function PrintOrderForm() {
   const router = useRouter();
   const locale = useLocale();
+  const p = promoDict(locale);
+  const liveCodes = useLiveCodes();
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [step, setStep] = useState(0);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [file, setFile] = useState<FileDetails | null>(null);
@@ -57,10 +63,21 @@ export default function PrintOrderForm() {
   const subtotal = blackWhiteCost(bwCount) + colorCount * COLOR_PAGE_RATE;
   const activeDiscount = couponBase === subtotal ? discount : 0;
   const total = subtotal - activeDiscount;
+  const suggestions = [
+    ...vouchers.filter((item) => item.personal && item.live && !item.used).map((item) => ({ code: item.code, emoji: item.emoji, personal: true })),
+    ...liveCodes.filter((item) => item.code && !vouchers.some((voucher) => voucher.code === item.code && voucher.used)).map((item) => ({ code: item.code!, emoji: item.emoji, personal: false })),
+  ].slice(0, 5);
 
   useEffect(() => {
     let active = true;
-    secureApi<{ user: { role: string } | null }>("C4w7G2hN6kP9").then((session) => { if (active) setSignedIn(Boolean(session.user)); }).catch(() => { if (active) setSignedIn(false); });
+    secureApi<{ user: { role: string } | null }>("C4w7G2hN6kP9").then(async (session) => {
+      if (!active) return;
+      setSignedIn(Boolean(session.user));
+      if (!session.user || session.user.role === "demo") return;
+      // Personal coupons (the ₹50 welcome coupon) for the code suggestions.
+      const snapshot = await secureApi<{ coupons?: Voucher[] }>("P8a2N5dK1vR7").catch(() => null);
+      if (active && snapshot?.coupons) setVouchers(snapshot.coupons);
+    }).catch(() => { if (active) setSignedIn(false); });
     return () => { active = false; };
   }, []);
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
@@ -84,10 +101,10 @@ export default function PrintOrderForm() {
     finally { setBusy(false); event.target.value = ""; }
   }
 
-  async function applyCoupon() {
-    setError(""); setNotice("");
+  async function applyCoupon(code = coupon) {
+    setError(""); setNotice(""); setCoupon(code);
     try {
-      const result = await secureApi<{ discount: number; code: string }>("K2p9D5xN1hW7", { code: coupon, amount: subtotal });
+      const result = await secureApi<{ discount: number; code: string }>("K2p9D5xN1hW7", { code, amount: subtotal });
       setDiscount(result.discount); setCouponBase(subtotal); setNotice(`Coupon ${result.code} applied.`);
     } catch (reason) { setDiscount(0); setCouponBase(null); setError(reason instanceof Error ? reason.message : "Could not validate the coupon."); }
   }
@@ -214,6 +231,9 @@ export default function PrintOrderForm() {
           </dl>
           <div className="coupon"><TicketPercent size={20}/><input value={coupon} onChange={(event) => { setCoupon(event.target.value.toUpperCase()); setCouponBase(null); }} placeholder="Coupon code" aria-label="Coupon code"/><button type="button" className="btn btn--ghost btn--sm" onClick={() => void applyCoupon()} disabled={!coupon.trim() || !subtotal}>Apply</button></div>
           {couponBase === subtotal && discount > 0 && <p className="alert alert--success"><Check size={16}/> Discount {money(discount)} applied</p>}
+          {couponBase !== subtotal && suggestions.length > 0 && <div className="promo-field__chips"><span>{p.promoSuggest}</span>{suggestions.map((item) => <button key={item.code} type="button" className={`code-chip${item.personal ? " code-chip--personal" : ""}`} onClick={() => void applyCoupon(item.code)} disabled={!subtotal}>
+            {item.emoji && <span aria-hidden="true">{item.emoji}</span>}<b>{item.code}</b>{item.personal && <small>{p.yourCoupon}</small>}
+          </button>)}</div>}
           <div className="total-row"><span>Estimated service cost</span><strong>{money(total)}</strong></div>
           <p className="fine"><ShieldCheck size={15}/> Your document stays private. Service fees are separate from government or third-party charges.</p>
         </section>}
