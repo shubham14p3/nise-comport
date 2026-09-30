@@ -169,31 +169,37 @@ async function handleJson(request: NextRequest, context: SecureApiContext<Payloa
 async function handleBinary(request: NextRequest) {
   const context = await openSecureBinaryRequest<Payload>(request, ROUTE);
   if (!context) return emptySecureFailure();
-  const operation = typeof context.payload?.o === "string" ? context.payload.o : "";
-  if (operation !== "U7b3R8mQ4zL1") return secureJson(context, { error: "Unsupported request." }, { status: 400 });
+  try {
+    const operation = typeof context.payload?.o === "string" ? context.payload.o : "";
+    if (operation !== "U7b3R8mQ4zL1") return secureJson(context, { error: "Unsupported request." }, { status: 400 });
 
-  const input = context.payload?.i && typeof context.payload.i === "object" ? context.payload.i : {};
-  const name = stringValue(input, "n", 255);
-  const type = stringValue(input, "t", 160) || "application/octet-stream";
-  if (!name || !context.bytes.byteLength) return secureJson(context, { error: "Choose a file to upload." }, { status: 400 });
+    const input = context.payload?.i && typeof context.payload.i === "object" ? context.payload.i : {};
+    const name = stringValue(input, "n", 255);
+    const type = stringValue(input, "t", 160) || "application/octet-stream";
+    if (!name || !context.bytes.byteLength) return secureJson(context, { error: "Choose a file to upload." }, { status: 400 });
 
-  const form = new FormData();
-  form.set("file", new Blob([context.bytes], { type }), name);
-  const response = await internalFetch(request, { method: "POST", path: "/api/uploads" }, form);
-  return secureJson(context, await jsonFromInternal(response), { status: response.status, headers: passThroughHeaders(response) });
+    const form = new FormData();
+    const fileBytes = context.bytes.slice();
+    form.set("file", new Blob([fileBytes.buffer as ArrayBuffer], { type }), name);
+    const response = await internalFetch(request, { method: "POST", path: "/api/uploads" }, form);
+    return secureJson(context, await jsonFromInternal(response), { status: response.status, headers: passThroughHeaders(response) });
+  } catch (error) {
+    console.error("[opaque-api] encrypted upload failed", error instanceof Error ? error.message : "Unknown error");
+    return secureJson(context, { error: "Request failed." }, { status: 503 });
+  }
 }
 
 export async function POST(request: NextRequest) {
+  if ((request.headers.get("content-type") || "").toLowerCase().includes("application/octet-stream")) {
+    return handleBinary(request);
+  }
+  const context = await openSecureRequest<Payload>(request, ROUTE);
+  if (!context) return emptySecureFailure();
   try {
-    if ((request.headers.get("content-type") || "").toLowerCase().includes("application/octet-stream")) {
-      return await handleBinary(request);
-    }
-    const context = await openSecureRequest<Payload>(request, ROUTE);
-    if (!context) return emptySecureFailure();
     return await handleJson(request, context);
   } catch (error) {
-    console.error("[opaque-api] request failed", error instanceof Error ? error.message : "Unknown error");
-    return emptySecureFailure(503);
+    console.error("[opaque-api] encrypted request failed", error instanceof Error ? error.message : "Unknown error");
+    return secureJson(context, { error: "Request failed." }, { status: 503 });
   }
 }
 
