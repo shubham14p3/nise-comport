@@ -13,7 +13,9 @@
     "db:studio": "drizzle-kit studio",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/*.test.mts",
     "seo:indexnow": "node scripts/indexnow.mjs",
-    "seo:check": "node scripts/seo-check.mjs"
+    "seo:check": "node scripts/seo-check.mjs",
+    "db:check": "node scripts/db-check.mjs",
+    "db:setup": "npm run db:check && npm run db:migrate && npm run db:check"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",
