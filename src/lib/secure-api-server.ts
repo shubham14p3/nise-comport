@@ -45,7 +45,8 @@ export type SecureBinaryContext<T = unknown> = SecureApiContext<T> & {
   bytes: Uint8Array;
 };
 
-let privateKeyPromise: Promise<CryptoKey> | null = null;
+type NodeCryptoKey = Awaited<ReturnType<typeof subtle.importKey>>;
+let privateKeyPromise: Promise<NodeCryptoKey> | undefined;
 
 function b64urlToBytes(value: string) {
   const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
@@ -73,15 +74,13 @@ async function rememberNonce(nonce: string) {
   return inserted.length === 1;
 }
 
-async function getServerPrivateKey() {
+function getServerPrivateKey(): Promise<NodeCryptoKey> {
   if (!privateKeyPromise) {
-    privateKeyPromise = (async () => {
-      const raw = process.env.API_ENVELOPE_PRIVATE_JWK;
-      if (!raw) throw new Error("API_ENVELOPE_PRIVATE_JWK is not configured");
-      let jwk: JsonWebKey;
-      try { jwk = JSON.parse(raw); } catch { throw new Error("API_ENVELOPE_PRIVATE_JWK is invalid JSON"); }
-      return subtle.importKey("jwk", jwk, { name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"]);
-    })();
+    const raw = process.env.API_ENVELOPE_PRIVATE_JWK;
+    if (!raw) throw new Error("API_ENVELOPE_PRIVATE_JWK is not configured");
+    let jwk: JsonWebKey;
+    try { jwk = JSON.parse(raw); } catch { throw new Error("API_ENVELOPE_PRIVATE_JWK is invalid JSON"); }
+    privateKeyPromise = subtle.importKey("jwk", jwk, { name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"]);
   }
   return privateKeyPromise;
 }
