@@ -71,15 +71,35 @@ async function deriveAesKey(sharedSecret: ArrayBuffer, salt: Uint8Array, info: s
   );
 }
 
-function getServerPublicJwk() {
-  const raw = process.env.NEXT_PUBLIC_API_ENVELOPE_PUBLIC_JWK;
-  if (!raw) throw new Error("Secure connection is not configured.");
-  try { return JSON.parse(raw) as JsonWebKey; } catch { throw new Error("Secure connection is not configured."); }
+let serverPublicJwkPromise: Promise<JsonWebKey> | null = null;
+
+async function getServerPublicJwk() {
+  serverPublicJwkPromise ??= (async () => {
+    const response = await fetch(ROUTE, {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+      headers: { "x-nx": "k1" },
+    });
+    if (!response.ok) throw new Error("Secure transport bootstrap failed.");
+    const body = await response.json() as { v?: number; a?: string; p?: JsonWebKey };
+    if (
+      body.v !== 1 || body.a !== ALG || !body.p ||
+      body.p.kty !== "EC" || body.p.crv !== "P-256" || !body.p.x || !body.p.y
+    ) throw new Error("Secure transport bootstrap returned an invalid key.");
+    return body.p;
+  })();
+  try {
+    return await serverPublicJwkPromise;
+  } catch (error) {
+    serverPublicJwkPromise = null;
+    throw error;
+  }
 }
 
 async function prepare() {
   if (!globalThis.crypto?.subtle) throw new Error("This browser does not support the secure connection.");
-  const serverPublic = await crypto.subtle.importKey("jwk", getServerPublicJwk(), { name: "ECDH", namedCurve: "P-256" }, false, []);
+  const serverPublic = await crypto.subtle.importKey("jwk", await getServerPublicJwk(), { name: "ECDH", namedCurve: "P-256" }, false, []);
   const clientKeys = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"]) as CryptoKeyPair;
   const clientPub = await crypto.subtle.exportKey("jwk", clientKeys.publicKey);
   const sharedSecret = await crypto.subtle.deriveBits({ name: "ECDH", public: serverPublic }, clientKeys.privateKey, 256);
@@ -134,7 +154,9 @@ export async function secureResult<T>(operation: string, input: unknown = {}) {
     return { ok: true as const, status: 200, result: await secureApi<T>(operation, input) };
   } catch (error) {
     if (error instanceof SecureApiError) return { ok: false as const, status: error.status, result: error.body as T };
-    return { ok: false as const, status: 0, result: { error: "You appear to be offline. Check your connection and try again." } as T };
+    if (process.env.NODE_ENV !== "production") console.error("[secure-api] transport failure", error);
+    const message = error instanceof Error ? error.message : "Secure connection failed.";
+    return { ok: false as const, status: 0, result: { error: message } as T };
   }
 }
 
