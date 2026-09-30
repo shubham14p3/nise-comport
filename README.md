@@ -177,3 +177,35 @@ npm run seo:check      # after `npm run build && npm start`: checks every sitema
 npm run seo:indexnow   # after a production deploy (needs INDEXNOW_KEY on the server and locally)
 python3 scripts/generate-og-images.py   # after adding a service or guide (needs Pillow)
 ```
+
+## Opaque private browser transport
+
+Private customer/staff operations do not use readable business API endpoints from the browser. Public SEO pages remain normal readable URLs, while authenticated data and actions use one opaque endpoint: `/api/x7q9m2`.
+
+For each browser request the client generates an ephemeral P-256 ECDH key, derives independent request/response AES-256-GCM keys with HKDF-SHA-256, and uses a fresh salt, IV, nonce and timestamp. The server accepts only a short clock window and records authenticated nonces in PostgreSQL to reject replays. Application status codes and response bodies are encrypted; valid encrypted exchanges use a constant outer HTTP status.
+
+Private uploads and downloads use the same authenticated encryption as binary envelopes. Document names, file IDs, request IDs and file contents are not sent in readable URL query parameters or request bodies. Private request/admin detail pages no longer put database IDs or request references in the URL, and Profile/Admin record data is loaded after page render through the encrypted channel rather than serialized into the initial RSC payload.
+
+The previous private `/api/auth/*`, `/api/profile`, `/api/requests*`, `/api/uploads`, `/api/admin/*` and related handlers remain server-internal so their proven validation/business logic can be reused; direct browser access receives an empty 404 unless the request carries the server-only internal dispatch token.
+
+Generate a fresh transport keypair and internal token for each environment:
+
+```bash
+npm run api:keygen
+```
+
+Set all three printed values in the deployment environment. Keep `API_ENVELOPE_PRIVATE_JWK` and `INTERNAL_API_TOKEN` server-only. `NEXT_PUBLIC_API_ENVELOPE_PUBLIC_JWK` is intentionally public.
+
+Run the transport regression check before deployment:
+
+```bash
+npm run security:check
+```
+
+For the full verification sequence:
+
+```bash
+npm run verify
+```
+
+Application-layer encryption supplements HTTPS; it does not replace TLS. A browser owner can always inspect data after their own browser decrypts it for display, but private values are not readable in the Network request/response payloads or private record URLs.
