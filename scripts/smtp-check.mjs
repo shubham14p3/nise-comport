@@ -32,13 +32,14 @@ const transport = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port,
   secure: port === 465,
+  requireTLS: port === 587,
   auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
   connectionTimeout: 10_000,
   greetingTimeout: 10_000,
   socketTimeout: 20_000,
 });
 
-console.log(`Checking SMTP at ${process.env.SMTP_HOST}:${port} as ${process.env.SMTP_USER}…`);
+console.log(`Checking SMTP at ${process.env.SMTP_HOST}:${port} as ${process.env.SMTP_USER} (${port === 587 ? "STARTTLS required" : port === 465 ? "implicit TLS" : "TLS per server"})…`);
 try {
   await transport.verify();
   console.log("✓ SMTP connection and authentication successful");
