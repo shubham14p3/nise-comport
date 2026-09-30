@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 function clean(value: string | null, fallback: string) {
   return (value ?? fallback).replace(/[<>]/g, "").slice(0, 110);
