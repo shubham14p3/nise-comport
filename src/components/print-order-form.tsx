@@ -1,12 +1,13 @@
 "use client";
 import SiteHeader from "@/components/site-header";
 
-import { ChangeEvent, FormEvent, useMemo, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { newIdempotencyKey } from "@/lib/client-id";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, Clock3, FileText, Info, MapPin, Minus, Plus, Printer, ShieldCheck, Upload, X } from "lucide-react";
 import { blackWhiteCost, COLOR_PAGE_RATE, countSelectedPages } from "@/lib/print-pricing";
+import { secureApi, secureFile, secureUpload } from "@/lib/secure-api-client";
 
 type FileDetails = { id: string; name: string; pages: number; size: number; mimeType: string };
 type DeliveryAddress = { id: string; label: string; line1: string; line2: string | null; city: string; postalCode: string; isDefault: boolean };
@@ -15,6 +16,7 @@ const money = (amount: number) => new Intl.NumberFormat("en-IN", { style: "curre
 export default function PrintOrderForm() {
   const router = useRouter();
   const [file, setFile] = useState<FileDetails | null>(null);
+  const [previewUrl, setPreviewUrl] = useState("");
   const [pageText, setPageText] = useState("");
   const [copies, setCopies] = useState(1);
   const [sides, setSides] = useState<"single" | "double">("single");
@@ -46,20 +48,20 @@ export default function PrintOrderForm() {
   const activeDiscount = couponBase === subtotal ? discount : 0;
   const total = subtotal - activeDiscount;
 
+  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+
   async function onFileChange(event: ChangeEvent<HTMLInputElement>) {
     const selected = event.target.files?.[0];
     if (!selected) return;
     setError(""); setNotice(""); setFile(null); setBusy(true); idempotencyKey.current = null;
     try {
-      const sessionResponse = await fetch("/api/auth/session");
-      const session = await sessionResponse.json();
-      if (!session.user) { router.push("/login?next=/print"); return; }
+      const session = await secureApi<{ user: { role: string } | null }>("C4w7G2hN6kP9");
+      if (!session.user) { router.push("/login"); return; }
       if (session.user.role === "demo") { setNotice("You’re signed in with the local demo account. Configure PostgreSQL and private file storage to test document uploads and print requests."); return; }
-      const form = new FormData(); form.set("file", selected);
-      const response = await fetch("/api/uploads", { method: "POST", body: form });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error);
+      const result = await secureUpload<{ file: { id: string; originalName: string; pageCount: number; sizeBytes: number; mimeType: string } }>("U7b3R8mQ4zL1", selected);
       setFile({ id: result.file.id, name: result.file.originalName, pages: result.file.pageCount, size: result.file.sizeBytes, mimeType: result.file.mimeType });
+      const preview = await secureFile("E1n6V2kP9cF5", { id: result.file.id });
+      setPreviewUrl(URL.createObjectURL(preview.blob));
       setPageText(""); setColorPagesPerCopy(0); setNotice("Document checked and ready. Select pages and print options below.");
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not prepare this document."); }
     finally { setBusy(false); event.target.value = ""; }
@@ -68,9 +70,7 @@ export default function PrintOrderForm() {
   async function applyCoupon() {
     setError(""); setNotice("");
     try {
-      const response = await fetch("/api/coupons/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: coupon, amount: subtotal }) });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error);
+      const result = await secureApi<{ discount: number; code: string }>("K2p9D5xN1hW7", { code: coupon, amount: subtotal });
       setDiscount(result.discount); setCouponBase(subtotal); setNotice(`Coupon ${result.code} applied.`);
     } catch (reason) { setDiscount(0); setCouponBase(null); setError(reason instanceof Error ? reason.message : "Could not validate the coupon."); }
   }
@@ -79,8 +79,7 @@ export default function PrintOrderForm() {
     setFulfillment(next); setError("");
     if (next !== "delivery" || addresses.length) return;
     try {
-      const response = await fetch("/api/addresses"); const result = await response.json();
-      if (!response.ok) throw new Error(result.error);
+      const result = await secureApi<{ addresses: DeliveryAddress[] }>("P3v8F1qL6sM4");
       setAddresses(result.addresses);
       setAddressId(result.addresses.find((address: DeliveryAddress) => address.isDefault)?.id ?? result.addresses[0]?.id ?? "");
     } catch { setAddresses([]); }
@@ -95,14 +94,12 @@ export default function PrintOrderForm() {
     setBusy(true);
     idempotencyKey.current ??= newIdempotencyKey();
     try {
-      const response = await fetch("/api/print-jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
+      await secureApi("A4x8L1rN5vK3", {
         fileId: file.id, fileName: file.name, pageSelection: pageText.trim() || "all", copies, colorPagesPerCopy,
         sides, paperSize, orientation, fulfillment, addressId: fulfillment === "delivery" ? addressId : null,
         scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null, coupon: couponBase === subtotal ? coupon : null, idempotencyKey: idempotencyKey.current,
-      }) });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error);
-      router.push(`/profile?section=prints&print=${encodeURIComponent(result.job.reference)}`); router.refresh();
+      });
+      router.push("/profile"); router.refresh();
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not submit your print request."); }
     finally { setBusy(false); }
   }
@@ -113,8 +110,8 @@ export default function PrintOrderForm() {
     <form className="print-order-layout" onSubmit={submitOrder}>
       <div className="print-form-column">
         <section className="print-step-card"><div className="print-step-title"><span>01</span><div><h2>Add your document</h2><p>PDF, Word, JPG, PNG or WEBP · Up to 20 MB</p></div></div>
-          {file ? <div className="uploaded-file"><span className="upload-file-icon"><FileText size={19}/></span><div><b>{file.name}</b><small>{file.pages} {file.pages === 1 ? "page" : "pages"} · {(file.size / 1024 / 1024).toFixed(1)} MB</small></div><button type="button" aria-label="Remove file" onClick={() => { setFile(null); setPageText(""); setNotice(""); }}><X size={16}/></button></div> : <label className="upload-zone"><input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,application/pdf" onChange={onFileChange} disabled={busy}/><span className="upload-icon"><Upload size={19}/></span><b>{busy ? "Checking and preparing your file…" : "Tap to upload a file"}</b><small>Sign in is required. Word files are converted to PDF for preview and printing.</small></label>}
-          {file && <><div className="preview-tip"><Info size={14}/> Preview the file before sending a request.</div><div className="document-preview"><iframe src={`/api/uploads?id=${encodeURIComponent(file.id)}`} title="Private document preview"/></div></>}
+          {file ? <div className="uploaded-file"><span className="upload-file-icon"><FileText size={19}/></span><div><b>{file.name}</b><small>{file.pages} {file.pages === 1 ? "page" : "pages"} · {(file.size / 1024 / 1024).toFixed(1)} MB</small></div><button type="button" aria-label="Remove file" onClick={() => { setFile(null); setPreviewUrl(""); setPageText(""); setNotice(""); }}><X size={16}/></button></div> : <label className="upload-zone"><input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,application/pdf" onChange={onFileChange} disabled={busy}/><span className="upload-icon"><Upload size={19}/></span><b>{busy ? "Checking and preparing your file…" : "Tap to upload a file"}</b><small>Sign in is required. Word files are converted to PDF for preview and printing.</small></label>}
+          {file && <><div className="preview-tip"><Info size={14}/> Preview the file before sending a request.</div><div className="document-preview"><iframe src={previewUrl || "about:blank"} title="Private document preview"/></div></>}
         </section>
         <section className="print-step-card"><div className="print-step-title"><span>02</span><div><h2>Choose your pages &amp; finish</h2><p>Select a range, copies and paper options.</p></div></div>
           <label className="form-label">Pages to print <span>Leave blank for all {file?.pages ?? "pages"}</span><input disabled={!file} value={pageText} onChange={event => { const selection = event.target.value; setPageText(selection); setCouponBase(null); try { setColorPagesPerCopy(Math.min(colorPagesPerCopy, countSelectedPages(selection, file?.pages ?? 0))); } catch { setColorPagesPerCopy(0); } }} placeholder="e.g. 1-3, 5"/></label>
