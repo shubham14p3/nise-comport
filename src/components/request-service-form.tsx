@@ -40,7 +40,7 @@ export default function RequestServiceForm({ slug, title }: { slug: string; titl
       const session = await secureApi<{ user: { role: string } | null }>("C4w7G2hN6kP9");
       if (!session.user) {
         writeDraft(slug, text);
-        router.push(`/login?next=${encodeURIComponent(`/services/${slug}#request-form`)}`);
+        router.push("/login");
         return;
       }
       if (session.user.role === "demo") { setError("The local demo account can’t send requests. Create a real account to continue."); return; }
