@@ -1,13 +1,14 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { newIdempotencyKey } from "@/lib/client-id";
 import { useRouter } from "next/navigation";
 import { panIntakeSchema,panServiceLabels,panServices,type PanIntake } from "@/lib/pan-validation";
 import { secureApi } from "@/lib/secure-api-client";
-export default function PanRequestForm({prefill,service,demo=false}:{prefill:Partial<PanIntake>;service:PanIntake["service"];demo?:boolean}){
- const router=useRouter();const [data,setData]=useState<PanIntake>({service,citizenship:"indian",applicant:service==="business"?"entity":"individual",residency:"india",existingPan:["new","minor","business"].includes(service)?"no":"yes",fullName:"",birthDate:"",contactName:"",email:"",phone:"",address:"",city:"",state:"",country:"India",postalCode:"",representative:"",entityType:"",corrections:[],documentPlan:[],notes:"",consent:false,...prefill});
+export default function PanRequestForm({service,demo=false}:{service:PanIntake["service"];demo?:boolean}){
+ const router=useRouter();const [data,setData]=useState<PanIntake>({service,citizenship:"indian",applicant:service==="business"?"entity":"individual",residency:"india",existingPan:["new","minor","business"].includes(service)?"no":"yes",fullName:"",birthDate:"",contactName:"",email:"",phone:"",address:"",city:"",state:"",country:"India",postalCode:"",representative:"",entityType:"",corrections:[],documentPlan:[],notes:"",consent:false});
  const [errors,setErrors]=useState<Record<string,string>>({}),[review,setReview]=useState(false),[busy,setBusy]=useState(false),[message,setMessage]=useState("");
  const idempotencyKey=useRef<string|null>(null);
+ useEffect(()=>{if(demo)return;let active=true;secureApi<{user:{name:string;email:string;phone:string|null;city:string;state:string;postalCode:string}}>("P8a2N5dK1vR7").then(({user})=>{if(!active)return;setData(current=>({...current,contactName:current.contactName||user.name,email:current.email||user.email,phone:current.phone||user.phone||"",city:current.city||user.city,state:current.state||user.state,postalCode:current.postalCode||user.postalCode}));}).catch(()=>undefined);return()=>{active=false;};},[demo]);
  function update<K extends keyof PanIntake>(key:K,value:PanIntake[K]){setData(d=>({...d,[key]:value}));setReview(false);}
  function field(key:keyof PanIntake,label:string,type="text"){return <label key={key}>{label}<input type={type} value={String(data[key]??"")} onChange={e=>update(key,e.target.value as never)} aria-invalid={!!errors[key]} aria-describedby={errors[key]?`error-${key}`:undefined}/>{errors[key]&&<small id={`error-${key}`} role="alert">{errors[key]}</small>}</label>;}
  function select(key:keyof PanIntake,label:string,options:[string,string][]){return <label>{label}<select value={String(data[key])} onChange={e=>update(key,e.target.value as never)}>{options.map(([v,t])=><option key={v} value={v}>{t}</option>)}</select>{errors[key]&&<small role="alert">{errors[key]}</small>}</label>;}
