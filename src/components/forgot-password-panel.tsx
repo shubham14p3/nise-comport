@@ -5,16 +5,12 @@ import { ArrowLeft, ArrowRight, Eye, EyeOff, KeyRound, Mail } from "lucide-react
 import { FormEvent, useEffect, useState } from "react";
 import SiteHeader from "@/components/site-header";
 import { passwordProblem, PASSWORD_MIN } from "@/lib/validation";
+import { secureResult } from "@/lib/secure-api-client";
 
 type ApiResult = { error?: string; fields?: Record<string, string>; retryAfter?: number; message?: string; resendAfter?: number };
 
-async function post(url: string, body: unknown) {
-  try {
-    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    return { ok: response.ok, result: (await response.json().catch(() => ({}))) as ApiResult };
-  } catch {
-    return { ok: false, result: { error: "You appear to be offline. Check your connection and try again." } as ApiResult };
-  }
+async function post(operation: string, body: unknown) {
+  return secureResult<ApiResult>(operation, body);
 }
 
 /** Forgot password: email → 6-digit code + new password. All devices are signed out afterwards. */
@@ -43,7 +39,7 @@ export default function ForgotPasswordPanel({ initialEmail = "" }: { initialEmai
     event?.preventDefault();
     setBusy(true); setError(""); setNotice("");
     try {
-      const { ok, result } = await post("/api/auth/password-reset/request", { email, website });
+      const { ok, result } = await post("V3p6J0nS8yC1", { email, website });
       if (!ok) { setError(result.error ?? "We couldn’t send a code. Please try again."); if (result.retryAfter && result.retryAfter <= 120) setResendIn(result.retryAfter); return; }
       setStage("reset"); setResendIn(result.resendAfter ?? 60); setNotice(result.message ?? "Check your inbox for a 6-digit code.");
     } finally { setBusy(false); }
@@ -55,7 +51,7 @@ export default function ForgotPasswordPanel({ initialEmail = "" }: { initialEmai
     if (password !== confirm) { setError("The two passwords don’t match."); return; }
     setBusy(true);
     try {
-      const { ok, result } = await post("/api/auth/password-reset/confirm", { email, code: code.trim(), password });
+      const { ok, result } = await post("L8t1B5rX9mQ4", { email, code: code.trim(), password });
       if (!ok) { setError(result.error ?? "We couldn’t reset your password."); return; }
       router.push("/profile?section=security"); router.refresh();
     } finally { setBusy(false); }
