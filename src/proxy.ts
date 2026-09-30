@@ -1,13 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-/**
- * Next.js 16 "proxy" (formerly middleware). Runs before every matched request.
- * 1. Canonical host: sends www ↔ non-www to the one host in NEXT_PUBLIC_SITE_URL with a
- *    permanent redirect, so Google indexes one version of every page. (Preview domains are left alone.)
- * 2. Cross-site protection for the API: state-changing requests from another website are refused
- *    (defence in depth on top of SameSite=Lax cookies).
- */
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+const OPAQUE_API = "/api/x7q9m2";
+const PRIVATE_API_PREFIXES = [
+  "/api/auth/", "/api/account/", "/api/profile", "/api/addresses", "/api/requests",
+  "/api/pan/requests", "/api/print-jobs", "/api/uploads", "/api/coupons/validate",
+  "/api/admin/", "/api/internal/",
+];
 
 function canonicalHost() {
   try { return new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.nisecomport.com").host; } catch { return "www.nisecomport.com"; }
@@ -15,6 +14,10 @@ function canonicalHost() {
 
 function isLocal(host: string) {
   return /^(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?$/.test(host) || /^(10|192\.168|172\.(1[6-9]|2\d|3[01]))\./.test(host) || host.endsWith(".local");
+}
+
+function privateApi(pathname: string) {
+  return PRIVATE_API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
 }
 
 export function proxy(request: NextRequest) {
@@ -28,6 +31,18 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(target, 308);
   }
 
+  // Private business APIs are server-internal only. Browsers use the encrypted opaque endpoint.
+  if (pathname.startsWith("/api/") && pathname !== OPAQUE_API && privateApi(pathname)) {
+    const expected = process.env.INTERNAL_API_TOKEN;
+    const supplied = request.headers.get("x-nise-internal");
+    if (!expected || expected.length < 32 || supplied !== expected) {
+      return new NextResponse(null, {
+        status: 404,
+        headers: { "cache-control": "no-store, max-age=0", "x-content-type-options": "nosniff" },
+      });
+    }
+  }
+
   if (pathname.startsWith("/api/") && !SAFE_METHODS.has(request.method) && !pathname.startsWith("/api/cron/")) {
     const origin = request.headers.get("origin");
     const fetchSite = request.headers.get("sec-fetch-site");
@@ -38,7 +53,10 @@ export function proxy(request: NextRequest) {
         crossSite = originHost !== host && originHost !== canonical;
       } catch { crossSite = true; }
     }
-    if (crossSite) return NextResponse.json({ error: "This request came from another website and was blocked.", code: "cross_site" }, { status: 403 });
+    if (crossSite) {
+      if (pathname === OPAQUE_API) return new NextResponse(null, { status: 404, headers: { "cache-control": "no-store" } });
+      return NextResponse.json({ error: "This request came from another website and was blocked.", code: "cross_site" }, { status: 403 });
+    }
   }
 
   return NextResponse.next();
