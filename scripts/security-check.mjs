@@ -16,7 +16,7 @@ const forbiddenPrivateApis = [
   "/api/pan/requests", "/api/print-jobs", "/api/uploads", "/api/coupons/validate",
   "/api/admin/", "/api/internal/",
 ];
-const forbiddenPrivateUrls = ["/profile/requests/", "/admin/requests/", "?next=", "?email=", "?section="];
+const forbiddenPrivateUrls = ["/profile/requests/", "/admin/requests/", "?next=", "?email=", "?section=", "?account=", "/pan/request?type="];
 
 function filesUnder(dir) {
   const out = [];
@@ -57,6 +57,14 @@ for (const prefix of forbiddenPrivateApis) {
   if (!proxy.includes(prefix)) failures.push(`src/proxy.ts: missing private API guard for ${prefix}`);
 }
 if (!proxy.includes("/api/x7q9m2")) failures.push("src/proxy.ts: opaque endpoint is not configured");
+
+const serverTransport = readFileSync("src/lib/secure-api-server.ts", "utf8");
+if (!serverTransport.includes("onConflictDoNothing()")) failures.push("secure-api-server: persistent anti-replay insert is missing");
+if (!serverTransport.includes("MAX_CLOCK_SKEW_MS = 90_000")) failures.push("secure-api-server: request clock window changed unexpectedly");
+if (!serverTransport.includes('AES-GCM') || !serverTransport.includes('HKDF') || !serverTransport.includes('ECDH')) failures.push("secure-api-server: expected authenticated transport primitives are missing");
+
+const gateway = readFileSync("src/app/api/x7q9m2/route.ts", "utf8");
+if (!gateway.includes("x-nise-internal")) failures.push("opaque gateway: server-only internal dispatch token is missing");
 
 const privateRaw = process.env.API_ENVELOPE_PRIVATE_JWK;
 const publicRaw = process.env.NEXT_PUBLIC_API_ENVELOPE_PUBLIC_JWK;
