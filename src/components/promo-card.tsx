@@ -5,6 +5,7 @@ import { daysBetween } from "@/lib/festivals";
 import type { Locale } from "@/lib/i18n";
 import { fill } from "@/lib/i18n";
 import { promoDict, shortDate } from "@/lib/promo-i18n";
+import { posterFor } from "@/lib/poster-library";
 import { googleCalendarLink, promoText, THEME_TONE, type PromoView } from "@/lib/promo-view";
 
 /** "3 days left", "Last day today!" or "Unlocks 9 Oct". */
@@ -35,12 +36,17 @@ export default function PromoCard({ view, locale, today, siteUrl, variant = "ful
   const text = promoText(view, locale);
   const timing = promoTiming(view, today, locale);
   const when = promoWhen(view, locale);
+  const poster = posterFor(view.posters, locale);
   return <article className={`promo-card promo-card--${variant} theme-${view.theme} tone-${THEME_TONE[view.theme] ?? "pink"}${timing.live ? " is-live" : ""}`} id={view.code}>
-    <div className="promo-card__art" aria-hidden="true">
+    {poster ? <a className="promo-card__poster" href={poster} target="_blank" rel="noopener noreferrer" aria-label={`${text.name}: poster`}>
+      {/* eslint-disable-next-line @next/next/no-img-element -- owner-uploaded poster, shown as-is */}
+      <img src={poster} alt="" loading="lazy"/>
+      <span className="promo-card__amount">{text.highlight}</span>
+    </a> : <div className="promo-card__art" aria-hidden="true">
       <span className="promo-card__emoji">{view.emoji}</span>
       <i className="promo-card__orb promo-card__orb--1"/><i className="promo-card__orb promo-card__orb--2"/>
       <span className="promo-card__amount">{text.highlight}</span>
-    </div>
+    </div>}
     <div className="promo-card__body">
       <div className="promo-card__top">
         {timing.live ? <span className="badge badge--live"><i/>{t.live}</span> : <span className="badge badge--soft">{timing.label}</span>}

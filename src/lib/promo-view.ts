@@ -27,6 +27,8 @@ export type PromoView = {
   eventStarts: string | null;
   eventEnds: string | null;
   tentative: boolean;
+  /** Poster image per language (/promos/… or /media/…), if the owner added one. */
+  posters?: Partial<Text3> | null;
 };
 
 /** A coupon on the customer's Vouchers page. */
@@ -73,7 +75,8 @@ export function promoText(view: PromoView, locale: Locale) {
   const min = rupees(view.minimum);
   const title = view.kind === "welcome"
     ? { en: "Your welcome coupon", hi: "आपका वेलकम कूपन", bn: "আপনার ওয়েলকাম কুপন" }[locale]
-    : { en: `${name} offer`, hi: `${name} ऑफ़र`, bn: `${name} অফার` }[locale];
+    : view.kind === "public" ? name
+      : { en: `${name} offer`, hi: `${name} ऑफ़र`, bn: `${name} অফার` }[locale];
   // The ticker shows `highlight` (₹50 OFF) in bold just before this text.
   const ticker = {
     en: `${name} · code ${view.code}`,

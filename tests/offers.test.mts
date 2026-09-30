@@ -164,7 +164,7 @@ test("the migration seeds every code once and adds the redemptions table", () =>
   assert.match(sql, /"coupons_welcome_user_unique"/);
   assert.match(sql, /'welcome'/);
   const journal = JSON.parse(readFileSync(new URL("../drizzle/meta/_journal.json", import.meta.url), "utf8")) as { entries: { tag: string }[] };
-  assert.equal(journal.entries.at(-1)?.tag, "0006_festival_offers");
+  assert.ok(journal.entries.some((entry) => entry.tag === "0006_festival_offers"));
 });
 
 test("sync upserts every promo and reports code conflicts", async () => {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, desc, eq, ilike, or, type SQL } from "drizzle-orm";
-import { requireStaff } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 import { db } from "@/lib/db";
 import { printJobs, serviceRequests, storedFiles, users } from "@/db/schema";
 import { REQUEST_STATUSES } from "@/lib/requests";
@@ -8,7 +9,7 @@ import { apiError } from "@/lib/http";
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireStaff();
+    const user = await requirePermission("requests");
     const statusRaw = (request.nextUrl.searchParams.get("status") ?? "").slice(0, 40);
     const status = REQUEST_STATUSES.includes(statusRaw as never) ? statusRaw : "";
     const q = (request.nextUrl.searchParams.get("q") ?? "").trim().slice(0, 80);
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       jobs: jobs.map((item) => ({ ...item, createdAt: item.createdAt.toISOString(), scheduledAt: item.scheduledAt?.toISOString() ?? null })),
       requests: requests.map((item) => ({ ...item, createdAt: item.createdAt.toISOString() })),
-      canImport: user.role === "admin",
+      canImport: hasPermission(user, "pan"),
       filters: { status, q },
     }, { headers: { "cache-control": "private, no-store" } });
   } catch (error) { return apiError(error); }

@@ -13,6 +13,8 @@ export const users = pgTable("users", {
   passwordChangedAt: timestamp("password_changed_at", { withTimezone: true }),
   disabledAt: timestamp("disabled_at", { withTimezone: true }),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  /** What a staff member may do in the admin area (see src/lib/permissions.ts). Admins can do everything. */
+  permissions: jsonb("permissions").$type<string[]>().notNull().default([]),
 }, (table) => [uniqueIndex("users_email_unique").on(table.email)]);
 
 export const emailOtps = pgTable("email_otps", {
@@ -94,6 +96,9 @@ export const coupons = pgTable("coupons", {
   /** Uses allowed per customer (null = unlimited) and in total (null = unlimited). */
   perUserLimit: integer("per_user_limit"), maxRedemptions: integer("max_redemptions"),
   source: text("source"), tentative: boolean("tentative").notNull().default(false), locked: boolean("locked").notNull().default(false),
+  /** Poster image URL per language ({ en, hi, bn }); shown on /offers and sent with WhatsApp campaigns. */
+  posters: jsonb("posters").$type<Partial<Text3>>(),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex("coupons_event_key_unique").on(table.eventKey).where(sql`${table.eventKey} is not null`),
@@ -156,3 +161,64 @@ export const requestEvents = pgTable("request_events", {
   actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }), fromStatus: text("from_status"), toStatus: text("to_status").notNull(),
   note: text("note"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("request_events_request_idx").on(table.requestKind, table.requestId, table.createdAt)]);
+
+/** Poster images uploaded in the admin area. Public by design: served at /media/<id>. */
+export const media = pgTable("media", {
+  id: uuid("id").defaultRandom().primaryKey(), objectKey: text("object_key").notNull(), originalName: text("original_name").notNull(),
+  mimeType: text("mime_type").notNull(), sizeBytes: integer("size_bytes").notNull(), title: text("title").notNull(),
+  locale: text("locale"), category: text("category"), uploadedBy: uuid("uploaded_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("media_created_idx").on(table.createdAt)]);
+
+/**
+ * People the shop may message on WhatsApp (imported lists, walk-in customers). `consent`:
+ * unknown (never asked) | opted_in (replied YES) | opted_out (replied STOP; never messaged again).
+ */
+export const contacts = pgTable("contacts", {
+  id: uuid("id").defaultRandom().primaryKey(), name: text("name").notNull(), phone: text("phone").notNull(),
+  locale: text("locale").notNull().default("en"), area: text("area"),
+  /** [{ service: "insurance", renewalOn: "2026-11-02", note }] */
+  services: jsonb("services").$type<{ service: string; renewalOn?: string | null; note?: string | null }[]>().notNull().default([]),
+  consent: text("consent").notNull().default("unknown"), consentAt: timestamp("consent_at", { withTimezone: true }),
+  source: text("source"), notes: text("notes"), lastMessagedAt: timestamp("last_messaged_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [uniqueIndex("contacts_phone_unique").on(table.phone), index("contacts_consent_idx").on(table.consent)]);
+
+/** WhatsApp campaigns: who gets what, and how fast (see src/lib/campaign-pacing.ts). */
+export const campaigns = pgTable("campaigns", {
+  id: uuid("id").defaultRandom().primaryKey(), name: text("name").notNull(),
+  /** renewal | offer | optin */
+  kind: text("kind").notNull(), service: text("service"),
+  /** draft | test | running | paused | done */
+  status: text("status").notNull().default("draft"),
+  message: jsonb("message").$type<Text3>().notNull(), posters: jsonb("posters").$type<Partial<Text3>>(), couponCode: text("coupon_code"),
+  audience: jsonb("audience").$type<{ renewalWithinDays?: number | null; locales?: string[] | null }>().notNull().default({}),
+  testNumbers: jsonb("test_numbers").$type<string[]>().notNull().default([]),
+  batchSize: integer("batch_size").notNull().default(10), gapMinMinutes: integer("gap_min_minutes").notNull().default(10), gapMaxMinutes: integer("gap_max_minutes").notNull().default(30),
+  dailyLimit: integer("daily_limit").notNull().default(10), windowStart: integer("window_start").notNull().default(9), windowEnd: integer("window_end").notNull().default(20),
+  /** manual (one-tap from the admin queue) | cloud (WhatsApp Business Cloud API) */
+  provider: text("provider").notNull().default("manual"), templateName: text("template_name"),
+  nextRoundAt: timestamp("next_round_at", { withTimezone: true }), round: integer("round").notNull().default(0),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  startedAt: timestamp("started_at", { withTimezone: true }), finishedAt: timestamp("finished_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("campaigns_status_next_idx").on(table.status, table.nextRoundAt)]);
+
+/** One WhatsApp message of a campaign. queued → scheduled → (ready →) sent | failed | skipped | opted_out */
+export const campaignMessages = pgTable("campaign_messages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  campaignId: uuid("campaign_id").notNull().references(() => campaigns.id, { onDelete: "cascade" }),
+  contactId: uuid("contact_id").references(() => contacts.id, { onDelete: "set null" }),
+  phone: text("phone").notNull(), name: text("name").notNull(), locale: text("locale").notNull().default("en"),
+  body: text("body").notNull(), posterUrl: text("poster_url"), test: boolean("test").notNull().default(false),
+  status: text("status").notNull().default("queued"), round: integer("round"),
+  scheduledAt: timestamp("scheduled_at", { withTimezone: true }), sentAt: timestamp("sent_at", { withTimezone: true }),
+  providerMessageId: text("provider_message_id"), error: text("error"), attempts: integer("attempts").notNull().default(0),
+  sentBy: uuid("sent_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  // A live campaign messages each number once; test sends can repeat.
+  uniqueIndex("campaign_messages_campaign_phone_unique").on(table.campaignId, table.phone).where(sql`${table.test} = false`),
+  index("campaign_messages_status_scheduled_idx").on(table.status, table.scheduledAt),
+  index("campaign_messages_provider_idx").on(table.providerMessageId),
+]);

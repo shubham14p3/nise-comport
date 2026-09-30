@@ -56,7 +56,7 @@ function waLink(number: string, text: string) {
 }
 
 function normalise(text: string) {
-  return text.toLowerCase().normalize("NFC").replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
+  return text.toLowerCase().normalize("NFC").replace(/[^\p{L}\p{M}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
 }
 
 function matchTopic(text: string): TopicId | null {

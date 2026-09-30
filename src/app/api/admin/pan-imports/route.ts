@@ -6,6 +6,7 @@ import ExcelJS from "exceljs";
 import { z } from "zod";
 import { panImports, panRecords, storedFiles } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 import { db } from "@/lib/db";
 import { apiError } from "@/lib/http";
 import { privateStoragePath } from "@/lib/storage";
@@ -32,11 +33,12 @@ function cellText(value: ExcelJS.CellValue | undefined) {
   return String(value).trim();
 }
 function normalizeHeader(value: string) { return value.toLowerCase().replace(/[^a-z0-9]/g, ""); }
-async function isAdmin() { const user = await getCurrentUser(); return user?.role === "admin" ? user : null; }
+/** The owner, or staff with the PAN permission. */
+async function isAdmin() { const user = await getCurrentUser(); return hasPermission(user, "pan") ? user : null; }
 
 export async function POST(request: NextRequest) {
   const user = await isAdmin();
-  if (!user) return NextResponse.json({ error: "Administrator access is required." }, { status: 403 });
+  if (!user) return NextResponse.json({ error: "PAN data access is required." }, { status: 403 });
   try {
     const { fileId } = z.object({ fileId: z.uuid() }).parse(await request.json());
     const [file] = await db.select().from(storedFiles).where(and(eq(storedFiles.id, fileId), eq(storedFiles.userId, user.id))).limit(1);
@@ -78,7 +80,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   const user = await isAdmin();
-  if (!user) return NextResponse.json({ error: "Administrator access is required." }, { status: 403 });
+  if (!user) return NextResponse.json({ error: "PAN data access is required." }, { status: 403 });
   const query = (request.nextUrl.searchParams.get("q") ?? "").trim();
   const imports = await db.select({ id: panImports.id, rowCount: panImports.rowCount, acceptedRows: panImports.acceptedRows, rejectedRows: panImports.rejectedRows, createdAt: panImports.createdAt }).from(panImports).orderBy(desc(panImports.createdAt)).limit(25);
   if (!query) return NextResponse.json({ imports, records: [] });

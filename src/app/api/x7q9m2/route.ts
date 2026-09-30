@@ -42,6 +42,24 @@ const OPS = {
   "U4n8K2rP6wD1": { method: "GET", path: "/api/admin/promotions" },
   "M7x3Q9vB2kF5": { method: "PATCH", path: "/api/admin/promotions" },
   "Z9p4L6tH1cN8": { method: "POST", path: "/api/admin/promotions/sync" },
+  "N4v8Q1cR6tY3": { method: "POST", path: "/api/admin/promotions" },
+  "K8d3N6wQ1zT4": { method: "GET", path: "/api/admin/staff" },
+  "H5r9C2mV7pX1": { method: "POST", path: "/api/admin/staff" },
+  "B2x7T4kL9qW6": { method: "PATCH", path: "/api/admin/staff" },
+  "G7m2W5xK8dP4": { method: "GET", path: "/api/admin/media" },
+  "S3k9V6nD2hQ8": { method: "GET", path: "/api/admin/campaigns" },
+  "R8w4Y1pM5cJ2": { method: "POST", path: "/api/admin/campaigns" },
+  "T6h2F9qB3xN7": { method: "PATCH", path: "/api/admin/campaigns" },
+  "V1p7K4dZ8mR5": { method: "GET", path: "/api/admin/campaigns/queue" },
+  "L9c3X6vH1tB8": { method: "PATCH", path: "/api/admin/campaigns/queue" },
+  "Y2n6R9tC4vK7": { method: "POST", path: "/api/admin/contacts" },
+  "J7t1P5xW3qM9": { method: "PATCH", path: "/api/admin/contacts" },
+} as const;
+
+/** Encrypted file uploads: customer documents, and posters in the admin area. */
+const BINARY_OPS = {
+  "U7b3R8mQ4zL1": "/api/uploads",
+  "P6m1T8vC3xK9": "/api/admin/media",
 } as const;
 
 function stringValue(input: Record<string, unknown>, key: string, max = 200) {
@@ -77,6 +95,11 @@ function targetFor(operation: string, input: Record<string, unknown>) {
       const q = stringValue(input, "q", 80);
       const status = stringValue(input, "status", 40);
       return { method: "GET", path: `/api/internal/admin-snapshot?q=${encodeURIComponent(q)}&status=${encodeURIComponent(status)}` };
+    }
+    case "D4q8M2wS7kF1": {
+      const q = stringValue(input, "q", 80);
+      const consent = stringValue(input, "consent", 20);
+      return { method: "GET", path: `/api/admin/contacts?q=${encodeURIComponent(q)}&consent=${encodeURIComponent(consent)}` };
     }
     case "B6r1K8mQ3cT9": {
       const id = stringValue(input, "id", 80);
@@ -180,7 +203,8 @@ async function handleBinary(request: NextRequest) {
   if (!context) return emptySecureFailure();
   try {
     const operation = typeof context.payload?.o === "string" ? context.payload.o : "";
-    if (operation !== "U7b3R8mQ4zL1") return secureJson(context, { error: "Unsupported request." }, { status: 400 });
+    const uploadPath = BINARY_OPS[operation as keyof typeof BINARY_OPS];
+    if (!uploadPath) return secureJson(context, { error: "Unsupported request." }, { status: 400 });
 
     const input = context.payload?.i && typeof context.payload.i === "object" ? context.payload.i : {};
     const name = stringValue(input, "n", 255);
@@ -190,7 +214,9 @@ async function handleBinary(request: NextRequest) {
     const form = new FormData();
     const fileBytes = context.bytes.slice();
     form.set("file", new Blob([fileBytes.buffer as ArrayBuffer], { type }), name);
-    const response = await internalFetch(request, { method: "POST", path: "/api/uploads" }, form);
+    // Poster uploads also carry a title, language and category.
+    for (const key of ["title", "locale", "category"]) { const value = stringValue(input, key, 120); if (value) form.set(key, value); }
+    const response = await internalFetch(request, { method: "POST", path: uploadPath }, form);
     return secureJson(context, await jsonFromInternal(response), { status: response.status, headers: passThroughHeaders(response) });
   } catch (error) {
     console.error("[opaque-api] encrypted upload failed", error instanceof Error ? error.message : "Unknown error");

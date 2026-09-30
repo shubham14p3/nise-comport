@@ -51,7 +51,8 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  if (pathname.startsWith("/api/") && !SAFE_METHODS.has(request.method) && !pathname.startsWith("/api/cron/")) {
+  // Cron jobs (bearer secret) and Meta's WhatsApp webhook (signed) come from other servers, not browsers.
+  if (pathname.startsWith("/api/") && !SAFE_METHODS.has(request.method) && !pathname.startsWith("/api/cron/") && pathname !== "/api/whatsapp/webhook") {
     const origin = request.headers.get("origin");
     const fetchSite = request.headers.get("sec-fetch-site");
     let crossSite = fetchSite === "cross-site";

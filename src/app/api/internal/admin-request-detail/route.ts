@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, asc, eq } from "drizzle-orm";
-import { requireStaff } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { requestEvents, serviceRequests, users } from "@/db/schema";
 import { statusLabel } from "@/lib/requests";
@@ -8,7 +8,7 @@ import { apiError } from "@/lib/http";
 
 export async function GET(request: NextRequest) {
   try {
-    await requireStaff();
+    await requirePermission("requests");
     const id = (request.nextUrl.searchParams.get("id") ?? "").slice(0, 80);
     if (!/^[a-f0-9-]{36}$/i.test(id)) return NextResponse.json({ error: "Not found." }, { status: 404 });
     const [row] = await db.select({

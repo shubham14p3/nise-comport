@@ -8,6 +8,7 @@ import { istDate, istDayEnd, istDayStart } from "@/lib/festivals";
 import { syncEventCoupons, WELCOME_COUPON, welcomeCode, type QueryFn } from "@/lib/offer-sync";
 import { couponDiscount } from "@/lib/print-pricing";
 import { curatedEventPromos } from "@/lib/promo-calendar";
+import { isPosterUrl } from "@/lib/poster-library";
 import { isPromoLive, viewFromPromo, type CustomerVoucher, type PromoView } from "@/lib/promo-view";
 
 type CouponRow = typeof coupons.$inferSelect;
@@ -25,6 +26,7 @@ export function couponView(row: CouponRow): PromoView {
     startsOn: row.startsAt ? istDate(row.startsAt) : istDate(row.createdAt ?? new Date()),
     endsOn: row.expiresAt ? istDate(new Date(row.expiresAt.getTime() - 1)) : "2099-12-31",
     eventStarts: row.eventStarts ?? null, eventEnds: row.eventEnds ?? null, tentative: row.tentative,
+    posters: row.posters ?? null,
   };
 }
 
@@ -36,7 +38,11 @@ async function loadPromoCalendar(): Promise<{ views: PromoView[]; source: "datab
   const now = new Date();
   try {
     const rows = await db.select().from(coupons)
-      .where(and(eq(coupons.active, true), isNull(coupons.userId), inArray(coupons.kind, ["festival", "sport"]), or(isNull(coupons.expiresAt), gt(coupons.expiresAt, now))))
+      .where(and(
+        eq(coupons.active, true), isNull(coupons.userId), or(isNull(coupons.expiresAt), gt(coupons.expiresAt, now)),
+        // Festival / sports codes, plus promotions the owner created in the admin area (they have a title).
+        or(inArray(coupons.kind, ["festival", "sport"]), and(eq(coupons.kind, "public"), sql`${coupons.title} is not null`)),
+      ))
       .orderBy(asc(coupons.eventStarts), asc(coupons.code))
       .limit(400);
     if (rows.length) return { views: rows.map(couponView), source: "database" };
@@ -177,7 +183,7 @@ export async function syncOffers() {
 // Admin
 // ---------------------------------------------------------------------------------------------
 
-export type AdminPromotion = PromoView & { id: string; active: boolean; locked: boolean; source: string | null; uses: number };
+export type AdminPromotion = PromoView & { id: string; active: boolean; locked: boolean; source: string | null; uses: number; perUserLimit: number | null; maxRedemptions: number | null };
 
 export async function adminPromotions() {
   const rows = await db.select().from(coupons).where(isNull(coupons.userId)).orderBy(asc(coupons.eventStarts), asc(coupons.code)).limit(500);
@@ -189,12 +195,82 @@ export async function adminPromotions() {
   }).from(coupons).where(eq(coupons.kind, "welcome"));
   const today = istDate(new Date());
   const promotions: AdminPromotion[] = rows
-    .map((row) => ({ ...couponView(row), id: row.id, active: row.active, locked: row.locked, source: row.source, uses: useMap.get(row.id) ?? 0 }))
+    .map((row) => ({ ...couponView(row), id: row.id, active: row.active, locked: row.locked, source: row.source, uses: useMap.get(row.id) ?? 0, perUserLimit: row.perUserLimit, maxRedemptions: row.maxRedemptions }))
     .filter((row) => row.endsOn >= addDaysIso(today, -30));
   return { promotions, welcome: { issued: Number(welcome?.issued ?? 0), used: Number(welcome?.used ?? 0) } };
 }
 
-export async function updatePromotion(id: string, patch: { active?: boolean; startsOn?: string; endsOn?: string; eventStarts?: string; eventEnds?: string; unlock?: boolean }) {
+type Text3Input = { en?: string; hi?: string; bn?: string };
+export type PromotionDetails = {
+  names?: Text3Input; description?: Text3Input | null; discountType?: "fixed" | "percent"; discount?: number; minimum?: number;
+  perUserLimit?: number | null; maxRedemptions?: number | null; posters?: Text3Input | null; emoji?: string | null;
+};
+
+const cleanText = (value: string | undefined, max: number) => (value ?? "").replace(/\s+/g, " ").trim().slice(0, max);
+
+/** Validates the editable parts of a promotion; missing Hindi/Bengali text falls back to English. */
+function detailChanges(input: PromotionDetails, current?: CouponRow): Partial<typeof coupons.$inferInsert> {
+  const changes: Partial<typeof coupons.$inferInsert> = {};
+  if (input.names) {
+    const en = cleanText(input.names.en, 80);
+    if (en.length < 3) throw new PublicError("Give the promotion a name (at least 3 characters).", 400, { fields: { name: "Add a name." } });
+    changes.title = { en, hi: cleanText(input.names.hi, 80) || en, bn: cleanText(input.names.bn, 80) || en };
+  }
+  if (input.description !== undefined) {
+    const en = cleanText(input.description?.en, 240);
+    changes.description = en ? { en, hi: cleanText(input.description?.hi, 240) || en, bn: cleanText(input.description?.bn, 240) || en } : null;
+  }
+  const type = input.discountType ?? (current?.discountType === "percent" ? "percent" : "fixed");
+  if (input.discountType) changes.discountType = type;
+  if (input.discount !== undefined) {
+    const max = type === "percent" ? 50 : 5000;
+    if (!(input.discount > 0 && input.discount <= max)) throw new PublicError(type === "percent" ? "Use a discount between 1% and 50%." : "Use a discount between ₹1 and ₹5,000.", 400, { fields: { discount: "Check the amount." } });
+    changes.discountValue = input.discount.toFixed(2);
+  }
+  if (input.minimum !== undefined) {
+    if (!(input.minimum >= 0 && input.minimum <= 100_000)) throw new PublicError("Check the minimum order amount.", 400, { fields: { minimum: "Check the amount." } });
+    changes.minimumAmount = input.minimum.toFixed(2);
+  }
+  if (input.perUserLimit !== undefined) changes.perUserLimit = input.perUserLimit === null ? null : Math.max(1, Math.min(50, Math.round(input.perUserLimit)));
+  if (input.maxRedemptions !== undefined) changes.maxRedemptions = input.maxRedemptions === null ? null : Math.max(1, Math.min(100_000, Math.round(input.maxRedemptions)));
+  if (input.posters !== undefined) {
+    const posters: Partial<Record<"en" | "hi" | "bn", string>> = {};
+    for (const lang of ["en", "hi", "bn"] as const) {
+      const url = input.posters?.[lang];
+      if (!url) continue;
+      if (!isPosterUrl(url)) throw new PublicError("Choose posters from the poster library.", 400, { fields: { posters: "Invalid poster." } });
+      posters[lang] = url;
+    }
+    changes.posters = Object.keys(posters).length ? posters : null;
+  }
+  if (input.emoji !== undefined) changes.emoji = cleanText(input.emoji ?? "", 8) || null;
+  return changes;
+}
+
+/** A promotion the owner creates by hand in Admin → Promotions. */
+export async function createPromotion(input: PromotionDetails & { code: string; startsOn: string; endsOn: string; active?: boolean }, actor: { id: string }) {
+  const code = normaliseCode(input.code);
+  if (!/^[A-Z0-9][A-Z0-9-]{2,19}$/.test(code)) throw new PublicError("Use 3–20 letters, numbers or dashes for the code, e.g. RENEW50.", 400, { fields: { code: "Check the code." } });
+  if (code.startsWith("WELCOME-")) throw new PublicError("Codes starting with WELCOME- are reserved for welcome coupons.", 400, { fields: { code: "Choose another code." } });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.startsOn) || !/^\d{4}-\d{2}-\d{2}$/.test(input.endsOn) || input.endsOn < input.startsOn) {
+    throw new PublicError("Check the dates: the code must end on or after the day it starts.", 400, { fields: { endsOn: "Check the dates." } });
+  }
+  const details = detailChanges({ discountType: "fixed", discount: 50, minimum: 150, perUserLimit: 1, ...input, names: input.names ?? { en: code } });
+  try {
+    const [row] = await db.insert(coupons).values({
+      code, discountType: details.discountType ?? "fixed", discountValue: details.discountValue ?? "50.00", minimumAmount: details.minimumAmount ?? "150.00",
+      active: input.active ?? true, kind: "public", title: details.title, description: details.description ?? null,
+      startsAt: istDayStart(input.startsOn), expiresAt: istDayEnd(input.endsOn), perUserLimit: "perUserLimit" in details ? details.perUserLimit : 1, maxRedemptions: details.maxRedemptions ?? null,
+      posters: details.posters ?? null, emoji: details.emoji ?? "🏷️", theme: "welcome", communities: [], source: "admin", locked: true, createdBy: actor.id,
+    }).returning();
+    return row;
+  } catch (error) {
+    if ((error as { code?: string }).code === "23505" || String((error as Error).message).includes("duplicate")) throw new PublicError("That code already exists. Choose another.", 409, { fields: { code: "Already used." } });
+    throw error;
+  }
+}
+
+export async function updatePromotion(id: string, patch: PromotionDetails & { active?: boolean; startsOn?: string; endsOn?: string; eventStarts?: string; eventEnds?: string; unlock?: boolean }) {
   const [row] = await db.select().from(coupons).where(eq(coupons.id, id)).limit(1);
   if (!row || row.userId) throw new PublicError("Promotion not found.", 404, { code: "not_found" });
   const changes: Partial<typeof coupons.$inferInsert> = { updatedAt: new Date() };
@@ -210,9 +286,12 @@ export async function updatePromotion(id: string, patch: { active?: boolean; sta
     if (patch.eventEnds) changes.eventEnds = patch.eventEnds;
     changes.tentative = false;
     changes.locked = true;
-    changes.source = "admin";
+    changes.source = row.kind === "public" ? row.source : "admin";
   }
-  if (patch.unlock) changes.locked = false;
+  // Festival / sports codes keep their generated wording and value; posters can be added to any code.
+  const editable = row.kind === "public" ? patch : { posters: patch.posters };
+  Object.assign(changes, detailChanges(editable, row));
+  if (patch.unlock && row.kind !== "public") changes.locked = false;
   const [updated] = await db.update(coupons).set(changes).where(eq(coupons.id, id)).returning();
   return updated;
 }

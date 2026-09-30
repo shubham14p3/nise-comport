@@ -9,6 +9,7 @@ import { isUniqueViolation, PublicError, RateLimitError, humanDuration } from "@
 import { clearRate, enforceRate, hitRate, identity, peekRate, RATE_RULES } from "@/lib/rate-limit";
 import { secondsUntilWindowEnds } from "@/lib/rate-limit-core";
 import { cleanName, isSixDigitCode, looksLikeEmail, normalizeEmail, normalizePhone, passwordProblem } from "@/lib/validation";
+import { hasPermission, type Permission } from "@/lib/permissions";
 
 export type User = typeof users.$inferSelect;
 export type SignupProfile = { name: string; password: string; phone?: string };
@@ -24,7 +25,7 @@ export const DEMO_LOGIN = { email: "demo@nisecomport.test", password: "LocalDemo
 const demoUser: User = {
   id: "00000000-0000-4000-8000-000000000001", name: "Demo Customer", email: DEMO_LOGIN.email, phone: null, passwordHash: "", emailVerifiedAt: new Date(0),
   city: null, state: null, postalCode: null, profileSummary: null, preferredContact: "email", role: "demo", createdAt: new Date(0), updatedAt: new Date(0),
-  passwordChangedAt: null, disabledAt: null, deletedAt: null,
+  passwordChangedAt: null, disabledAt: null, deletedAt: null, permissions: [],
 };
 
 const hashToken = (value: string) => createHash("sha256").update(value).digest("hex");
@@ -329,6 +330,14 @@ export async function requireStaff(role: "staff" | "admin" = "staff") {
   const user = await getCurrentUser();
   const allowed = role === "admin" ? ["admin"] : ["admin", "staff"];
   if (!user || !allowed.includes(user.role)) throw new PublicError(role === "admin" ? "Administrator access is required." : "Staff access is required.", 403, { code: "forbidden" });
+  return user;
+}
+
+/** Admin, or a staff member who has been given this permission. */
+export async function requirePermission(permission: Permission) {
+  const user = await getCurrentUser();
+  if (!user || !(user.role === "admin" || user.role === "staff")) throw new PublicError("Staff access is required.", 403, { code: "forbidden" });
+  if (!hasPermission(user, permission)) throw new PublicError("You don’t have access to this part of the admin area. Ask the owner to add it to your account.", 403, { code: "forbidden" });
   return user;
 }
 

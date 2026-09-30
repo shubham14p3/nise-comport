@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarPlus, FileSpreadsheet, Gift, Lock, LockOpen, RefreshCw, Search, TicketPercent, TriangleAlert } from "lucide-react";
+import { CalendarPlus, FileSpreadsheet, Gift, ImagePlus, Lock, LockOpen, Plus, RefreshCw, Search, TicketPercent, TriangleAlert } from "lucide-react";
+import PromotionEditor from "@/components/promotion-editor";
 import { todayIst } from "@/lib/festivals";
 import { secureApi } from "@/lib/secure-api-client";
 import type { PromoView } from "@/lib/promo-view";
 
-type Promotion = PromoView & { id: string; active: boolean; locked: boolean; source: string | null; uses: number };
+type Promotion = PromoView & { id: string; active: boolean; locked: boolean; source: string | null; uses: number; perUserLimit: number | null; maxRedemptions: number | null };
 type Listing = { promotions: Promotion[]; welcome: { issued: number; used: number } };
 type SyncReport = { feed: { ok: boolean; events: number; matched: number }; promos: number; created: number; updated: number; unchanged: number; conflicts: string[] };
 type View = "live" | "upcoming" | "all";
@@ -26,6 +27,7 @@ export default function PromotionsPanel({ canEdit }: { canEdit: boolean }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [editing, setEditing] = useState<{ id: string; startsOn: string; endsOn: string; eventStarts: string; eventEnds: string } | null>(null);
+  const [editor, setEditor] = useState<{ promotion?: Promotion } | null>(null);
   const today = todayIst();
 
   async function load() {
@@ -74,19 +76,24 @@ export default function PromotionsPanel({ canEdit }: { canEdit: boolean }) {
     <div className="promo-admin__bar">
       <div className="seg">{(["live", "upcoming", "all"] as View[]).map((id) => <button key={id} type="button" className={view === id ? "is-active" : undefined} aria-pressed={view === id} onClick={() => setView(id)}>{id === "live" ? "Live" : id === "upcoming" ? "Upcoming" : "All"}</button>)}</div>
       <label className="input-wrap"><Search size={16}/><input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Search code or festival" aria-label="Search promotions"/></label>
-      {canEdit && <button type="button" className="btn btn--primary btn--sm" onClick={() => void sync()} disabled={busy === "sync"}><RefreshCw size={15} className={busy === "sync" ? "spin" : undefined}/>{busy === "sync" ? "Syncing…" : "Sync with Google calendar"}</button>}
+      {canEdit && <button type="button" className="btn btn--primary btn--sm" onClick={() => { setEditor({}); setNotice(""); }}><Plus size={15}/>New promotion</button>}
+      {canEdit && <button type="button" className="btn btn--ghost btn--sm" onClick={() => void sync()} disabled={busy === "sync"}><RefreshCw size={15} className={busy === "sync" ? "spin" : undefined}/>{busy === "sync" ? "Syncing…" : "Sync with Google calendar"}</button>}
       <a className="btn btn--ghost btn--sm" href="/offers/offers.csv?download=1"><FileSpreadsheet size={15}/>CSV</a>
       <a className="btn btn--ghost btn--sm" href="/offers/calendar.ics?download=1"><CalendarPlus size={15}/>.ics</a>
     </div>
     {error && <div className="alert alert--error" role="alert">{error}</div>}
     {notice && <div className="alert alert--success" role="status">{notice}</div>}
+    {editor && <PromotionEditor key={editor.promotion?.id ?? "new"} promotion={editor.promotion} onCancel={() => setEditor(null)} onDone={(message) => { setEditor(null); setNotice(message); void load(); }}/>}
     {!data && !error && <p>Loading promotions…</p>}
     {data && !rows.length && <p className="admin-empty">No promotions in this view.</p>}
     <div className="promo-admin__list">{rows.map((row) => {
       const live = row.startsOn <= today && today <= row.endsOn;
       const isEditing = editing?.id === row.id;
       return <article key={row.id} className={`promo-row theme-${row.theme}${row.active ? "" : " is-off"}`}>
-        <span className="promo-row__emoji" aria-hidden="true">{row.emoji}</span>
+        {row.posters?.en || row.posters?.hi || row.posters?.bn
+          // eslint-disable-next-line @next/next/no-img-element -- admin thumbnail of a poster
+          ? <img className="promo-row__poster" src={row.posters.en || row.posters.hi || row.posters.bn} alt="" loading="lazy"/>
+          : <span className="promo-row__emoji" aria-hidden="true">{row.emoji}</span>}
         <div className="promo-row__main">
           <b>{row.code} <small>· {row.names.en}</small></b>
           <small>{row.kind} · valid {day(row.startsOn)} – {day(row.endsOn)}{row.eventStarts ? ` · event ${day(row.eventStarts)}${row.eventEnds && row.eventEnds !== row.eventStarts ? ` – ${day(row.eventEnds)}` : ""}` : ""} · ₹{row.discount} off on ₹{row.minimum}+ · used {row.uses}×</small>
@@ -108,6 +115,7 @@ export default function PromotionsPanel({ canEdit }: { canEdit: boolean }) {
         </div>
         {canEdit && <div className="promo-row__actions">
           <label className="switch" title={row.active ? "Switch off" : "Switch on"}><input type="checkbox" checked={row.active} disabled={busy === row.id} onChange={(event) => void patch(row.id, { active: event.target.checked }, `${row.code} switched ${event.target.checked ? "on" : "off"}.`)}/><span aria-hidden="true"/><span className="sr-only">{row.code} active</span></label>
+          <button type="button" className="profile-text-button" onClick={() => setEditor({ promotion: row })}>{row.kind === "public" ? "Edit" : <><ImagePlus size={13}/> Posters</>}</button>
           {!isEditing && row.eventKey && <button type="button" className="profile-text-button" onClick={() => setEditing({ id: row.id, startsOn: row.startsOn, endsOn: row.endsOn, eventStarts: row.eventStarts ?? "", eventEnds: row.eventEnds ?? "" })}>Edit dates</button>}
           {row.locked && <button type="button" className="profile-text-button" onClick={() => void patch(row.id, { unlock: true }, `${row.code} will follow the daily sync again.`)}><LockOpen size={13}/> Let sync manage</button>}
         </div>}

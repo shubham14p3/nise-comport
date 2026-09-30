@@ -85,6 +85,46 @@ curl -X POST -H "Authorization: Bearer $CRON_SECRET" https://www.nisecomport.com
 
 In **Admin → Promotions** staff see every code with its dates and how often it was used; the owner can switch a code off (takes effect at checkout immediately), correct tentative dates (the row is then locked so the daily job leaves it alone) or run the Google sync now. To change the amount, minimum or lead time for all codes, edit `FESTIVAL_PROMO` in `src/lib/festivals.ts` and run `npm run offers:sync`.
 
+### Promotions and posters made by hand
+
+**Admin → Promotions → New promotion** creates your own code (e.g. `RENEW50`): English, Hindi and Bengali names and short lines, ₹ or % off, minimum order, dates, uses per customer and total uses, and a poster per language. Hand-made codes appear on `/offers`, the ticker and the step flows while live, exactly like festival codes. Festival and sports codes keep their generated wording; for those you can only add posters or fix dates.
+
+Posters come from the built-in library (`public/promos/insurance/`, 20 insurance posters, see `src/lib/poster-library.ts`) or are uploaded (JPEG/PNG up to 5 MB, stored privately under `PRIVATE_UPLOAD_DIR/media/`, served at `/media/<id>`). Library posters that say "Confirm discount" or "Lowest price guarantee" carry a warning in the picker: on an insurance advert those read as a discount on the premium. Prefer the three "Get your quote" posters or corrected versions.
+
+## WhatsApp campaigns
+
+**Admin → Contacts** holds everyone the shop may message: name, mobile (stored once, however many lists it appears in), language, services with renewal/expiry dates, and whether they said YES or STOP. **Admin → WhatsApp campaigns** sends to them.
+
+- **Kinds:** *renewal reminder* (people whose service is due within N days and who haven't said STOP), *offer* (only people who replied YES) and *ask permission* (a YES/STOP question to people not asked yet). Every message except the question ends with "Reply STOP to stop these messages". A STOP (typed in English, हिन्दी or বাংলা) is final: that number is skipped in every campaign and every later import.
+- **Messages** are written in English, Hindi and Bengali (defaults provided) with `{name}`, `{service}`, `{date}`, `{code}` and `{phone}`; each contact gets their language. A poster per language is sent with the message.
+- **Pacing:** at most **10 per round**, messages inside a round 25–90 seconds apart, then a random pause of **10–30 minutes** (plus up to a minute) before the next round, a daily limit (default 10) and sending hours 09:00–20:00 IST (after hours or at the limit, it continues next morning at a slightly different time). Set "Messages per round" to 1 to space every single message 10–30 minutes apart. **Preview schedule** on a campaign shows the rounds, or run:
+
+  ```bash
+  npm run campaign:preview -- 25                 # 25 messages with the default pacing
+  npm run campaign:preview -- 40 --daily 30 --gap 10-30 --batch 10 --window 9-20
+  ```
+
+- **Send test** sends to the campaign's test numbers only (any time, not counted). **Start**, **Pause**, **Resume**, **Stop** and **Run now** control the real run.
+- **How messages go out:**
+  - *One-tap* (default, works today): due messages appear under **Ready to send**. Tap **Open in WhatsApp** (opens the chat with the text filled in; attach the poster from the link), send, then **Mark sent**. Mark YES/STOP replies in Contacts.
+  - *Automatic*: with the WhatsApp Business (Cloud) API, messages are sent as an approved template and replies/receipts come back through the webhook, including STOP. Nothing unofficial (no WhatsApp Web automation) is used, so the shop number isn't put at risk.
+
+A dummy campaign is created by the migration: **Insurance renewal (dummy test)**, one-tap, test number **+91 80927 66575**, with a matching test contact. Open it and press **Send test**.
+
+Schedule the campaign job every 5 minutes with the same `CRON_SECRET`:
+
+```bash
+curl -X POST -H "Authorization: Bearer $CRON_SECRET" https://www.nisecomport.com/api/cron/whatsapp
+```
+
+To switch on automatic sending (optional):
+
+1. In Meta Business Suite create a WhatsApp Business app, add the shop number and get a permanent access token and the phone number ID.
+2. Create a Marketing or Utility template, e.g. name `nise_renewal_v1`, with an image header and the body `Namaste {{1}}, {{2}} — NISE COMPORT, Telco. Reply STOP to stop these messages.` in each language you use (`en`, `hi`, `bn`). Wait for approval.
+3. Set `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN` (and optionally `WHATSAPP_API_VERSION`) in the server environment.
+4. In the Meta app set the webhook URL to `https://www.nisecomport.com/api/whatsapp/webhook` with the same verify token, and subscribe to `messages`.
+5. Edit the campaign, choose "Automatically (Business API)" and enter the template name.
+
 ## Real account and backend setup
 
 The preview credentials are not a real database user. For persistent accounts, requests, uploads, and wallet history, configure PostgreSQL and SMTP:
@@ -139,13 +179,26 @@ If `db:check` reports a timeout or connection refusal while the URL is correct, 
 
 ## Staff access
 
-Create an account through the signup page, then promote it from PostgreSQL as the first administrator:
+Create an account through the signup page, then promote it from PostgreSQL as the first administrator (the owner):
 
 ```sql
 UPDATE users SET role = 'admin' WHERE email = 'owner@example.com';
 ```
 
-Open `/admin` after signing in. Staff can review requests and update statuses. Administrators can record an approved promotional wallet credit against a customer email. This writes to the wallet ledger; it does not take payment. Customers can view their balance and entries under **My profile → Wallet**. Online top-up/payment processing is not enabled.
+Open `/admin` after signing in. The workspace has tabs, and each person only sees the tabs they may use:
+
+| Tab | Permission | What it allows |
+| --- | --- | --- |
+| Requests | `requests` | the request and print queue, customer files, status changes |
+| PAN data | `pan` | importing PAN lists and looking up records |
+| Promotions | `promotions` | creating codes by hand, posters, switching codes on or off, date fixes |
+| WhatsApp campaigns, Contacts | `campaigns` | contacts, campaigns and the send queue |
+| Wallet | `wallet` | recording approved promotional wallet credits (no payments) |
+| Team | owner only | adding and removing employees and ticking their permissions |
+
+**Admin → Team → Add an employee**: enter their email and tick what they may do. An existing customer account is turned into a staff account; otherwise a new staff account is created and they get an email telling them to sign in with "Sign in with an email code" and set a password from their profile. **Remove from team** turns them back into a customer, clears their permissions and signs them out everywhere. Staff accounts that existed before this update keep access to Requests only until the owner ticks more.
+
+Every staff API checks the permission on the server (`requirePermission()` in `src/lib/auth.ts`, rules in `src/lib/permissions.ts`); hiding a tab is only cosmetic. Customers never see the workspace, even with stray permissions in the database.
 
 ## What a customer flow does
 

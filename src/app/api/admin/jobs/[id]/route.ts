@@ -2,7 +2,7 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { printJobs, serviceRequests, users } from "@/db/schema";
-import { requireStaff } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { apiError, readJson } from "@/lib/http";
@@ -21,7 +21,7 @@ const schema = z.object({
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const staff = await requireStaff();
+    const staff = await requirePermission("requests");
     const input = schema.parse(await readJson(request));
     const { id } = await params;
     if (!/^[0-9a-f-]{36}$/i.test(id)) throw new PublicError("Not found.", 404);

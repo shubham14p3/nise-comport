@@ -1,19 +1,23 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useState, useSyncExternalStore } from "react";
 import SiteHeader from "@/components/site-header";
 import PanImportPanel from "@/components/pan-import-panel";
 import WalletCreditForm from "@/components/wallet-credit-form";
 import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
-import { ClipboardList, FileText, RefreshCw, Search, ShieldCheck } from "lucide-react";
+import { ClipboardList, Contact, Database, FileText, Megaphone, RefreshCw, Search, ShieldCheck, TicketPercent, UsersRound, WalletCards } from "lucide-react";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
 import PromotionsPanel from "@/components/promotions-panel";
+import CampaignsPanel from "@/components/campaigns-panel";
+import ContactsPanel from "@/components/contacts-panel";
+import TeamPanel from "@/components/team-panel";
+import type { Permission } from "@/lib/permissions";
 
 type Row = { id: string; reference: string; name: string; email: string; phone: string | null; status: string; createdAt: string };
 type Job = Row & { fileName: string; pageCount: number; total: string; fulfillment: string; scheduledAt: string | null };
 type RequestRow = Row & { serviceName: string; fileName: string | null };
-type Snapshot = { jobs: Job[]; requests: RequestRow[]; canImport: boolean; filters: { status: string; q: string } };
+type Snapshot = { jobs: Job[]; requests: RequestRow[]; filters: { status: string; q: string } };
 type RequestDetail = {
   request: { id: string; reference: string; serviceName: string; status: string; statusLabel: string; details: Record<string, unknown>; createdAt: string };
   customer: { name: string; email: string; phone: string | null; preferredContact: string };
@@ -24,10 +28,9 @@ const options = ["submitted", "reviewing", "waiting_for_customer", "ready_for_pi
 const label = (value: string) => value.replaceAll("_", " ");
 const when = (value: string) => new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 
-export default function AdminDashboard() {
+function RequestQueue() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [requests, setRequests] = useState<RequestRow[]>([]);
-  const [canImport, setCanImport] = useState(false);
   const [status, setStatus] = useState("");
   const [q, setQ] = useState("");
   const [loaded, setLoaded] = useState(false);
@@ -41,7 +44,7 @@ export default function AdminDashboard() {
     setError("");
     try {
       const result = await secureApi<Snapshot>("J2w7L5pD9nV4", { status: nextStatus, q: nextQ });
-      setJobs(result.jobs); setRequests(result.requests); setCanImport(result.canImport);
+      setJobs(result.jobs); setRequests(result.requests);
       setStatus(result.filters.status); setQ(result.filters.q); setLoaded(true);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not load the staff queue.");
@@ -54,7 +57,7 @@ export default function AdminDashboard() {
     secureApi<Snapshot>("J2w7L5pD9nV4", { status: "", q: "" })
       .then((result) => {
         if (!active) return;
-        setJobs(result.jobs); setRequests(result.requests); setCanImport(result.canImport);
+        setJobs(result.jobs); setRequests(result.requests);
         setStatus(result.filters.status); setQ(result.filters.q); setLoaded(true);
       })
       .catch((reason) => {
@@ -101,11 +104,7 @@ export default function AdminDashboard() {
     }
   }
 
-  return <main className="content-page"><SiteHeader/><section className="container admin-page">
-    <span className="eyebrow eyebrow-muted"><ShieldCheck size={14}/> TEAM WORKSPACE</span>
-    <h1>Service desk <em>queue.</em></h1>
-    <p>Private queue data, search terms, status updates and file access use the encrypted staff channel.</p>
-
+  return <>
     <form className="admin-filters" role="search" onSubmit={filter}>
       <label>Status<select value={status} onChange={event => setStatus(event.target.value)}><option value="">All statuses</option>{options.map(item => <option key={item} value={item}>{label(item)}</option>)}</select></label>
       <label>Search<input value={q} onChange={event => setQ(event.target.value)} placeholder="Reference, name, email or phone" maxLength={80}/></label>
@@ -148,8 +147,47 @@ export default function AdminDashboard() {
       </div>}
     </section>}
 
-    {loaded && <PromotionsPanel canEdit={canImport}/>}
-    {canImport && <><PanImportPanel/><WalletCreditForm/></>}
     <p className="admin-note"><RefreshCw size={13}/> Status changes are recorded with your name and email the customer. If someone else changed an item first, refresh the encrypted queue.</p>
+  </>;
+}
+
+type Tab = "requests" | "promotions" | "campaigns" | "contacts" | "team" | "pan" | "wallet";
+const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | "admin" }[] = [
+  { id: "requests", label: "Requests", icon: ClipboardList, needs: "requests" },
+  { id: "promotions", label: "Promotions", icon: TicketPercent, needs: "promotions" },
+  { id: "campaigns", label: "WhatsApp campaigns", icon: Megaphone, needs: "campaigns" },
+  { id: "contacts", label: "Contacts", icon: Contact, needs: "campaigns" },
+  { id: "team", label: "Team", icon: UsersRound, needs: "admin" },
+  { id: "pan", label: "PAN data", icon: Database, needs: "pan" },
+  { id: "wallet", label: "Wallet", icon: WalletCards, needs: "wallet" },
+];
+
+const readHash = () => window.location.hash.slice(1);
+const subscribeHash = (callback: () => void) => { window.addEventListener("hashchange", callback); return () => window.removeEventListener("hashchange", callback); };
+
+/**
+ * Staff workspace. Each tab needs a permission (see src/lib/permissions.ts); the owner sees all
+ * of them plus Team, where staff are added and their access is set.
+ */
+export default function AdminDashboard({ me }: { me: { name: string; role: string; permissions: Permission[] } }) {
+  const tabs = TABS.filter((tab) => tab.needs === "admin" ? me.role === "admin" : me.permissions.includes(tab.needs));
+  const hash = useSyncExternalStore(subscribeHash, readHash, () => "");
+  const [picked, setPicked] = useState<Tab | null>(null);
+  const fromHash = tabs.find((tab) => tab.id === hash)?.id;
+  const active = picked ?? fromHash ?? tabs[0]?.id;
+  function choose(tab: Tab) { setPicked(tab); window.history.replaceState(null, "", `#${tab}`); }
+  return <main className="content-page"><SiteHeader/><section className="container admin-page">
+    <span className="eyebrow eyebrow-muted"><ShieldCheck size={14}/> TEAM WORKSPACE · {me.role === "admin" ? "Owner" : "Staff"}</span>
+    <h1>Hello {me.name.split(/\s+/)[0]}, <em>here’s the desk.</em></h1>
+    <p>Private data, uploads and changes travel over the encrypted staff channel. You only see the areas the owner has given you.</p>
+    {tabs.length ? <nav className="admin-tabs" aria-label="Admin sections">{tabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={active === id ? "is-active" : undefined} aria-current={active === id ? "page" : undefined} onClick={() => choose(id)}><Icon size={16}/>{label}</button>)}</nav>
+      : <p className="alert alert--info">Your account doesn’t have access to any admin area yet. Ask the owner to add it in Team.</p>}
+    {active === "requests" && <RequestQueue/>}
+    {active === "promotions" && <PromotionsPanel canEdit/>}
+    {active === "campaigns" && <CampaignsPanel/>}
+    {active === "contacts" && <ContactsPanel/>}
+    {active === "team" && <TeamPanel meRole={me.role}/>}
+    {active === "pan" && <PanImportPanel/>}
+    {active === "wallet" && <WalletCreditForm/>}
   </section></main>;
 }
