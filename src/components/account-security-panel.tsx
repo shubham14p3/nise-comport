@@ -77,7 +77,7 @@ export default function AccountSecurityPanel({ email, emailVerified, activeSessi
     const { ok, result } = await call("J9r5W2bC8nX1", { password: deletePassword, confirmation });
     setBusy("");
     if (!ok) { setDeleteError(result.error ?? "Could not delete your account."); return; }
-    router.push("/?account=deleted"); router.refresh();
+    router.push("/"); router.refresh();
   }
 
   return <div className="security-panels">
