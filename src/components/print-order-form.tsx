@@ -1,7 +1,8 @@
 "use client";
 import SiteHeader from "@/components/site-header";
 
-import { ChangeEvent, FormEvent, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useMemo, useRef, useState } from "react";
+import { newIdempotencyKey } from "@/lib/client-id";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, Clock3, FileText, Info, MapPin, Minus, Plus, Printer, ShieldCheck, Upload, X } from "lucide-react";
@@ -30,6 +31,8 @@ export default function PrintOrderForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  // One key per form: a double-click or a retry after a network error can't create a second order.
+  const idempotencyKey = useRef<string | null>(null);
 
   const selectedPerCopy = useMemo(() => {
     if (!file) return 0;
@@ -46,7 +49,7 @@ export default function PrintOrderForm() {
   async function onFileChange(event: ChangeEvent<HTMLInputElement>) {
     const selected = event.target.files?.[0];
     if (!selected) return;
-    setError(""); setNotice(""); setFile(null); setBusy(true);
+    setError(""); setNotice(""); setFile(null); setBusy(true); idempotencyKey.current = null;
     try {
       const sessionResponse = await fetch("/api/auth/session");
       const session = await sessionResponse.json();
@@ -90,15 +93,16 @@ export default function PrintOrderForm() {
     if (colorPagesPerCopy > selectedPerCopy) { setError("Colour pages can’t exceed your selected pages per copy."); return; }
     if (fulfillment === "delivery" && !addressId) { setError("Choose a saved delivery address."); return; }
     setBusy(true);
+    idempotencyKey.current ??= newIdempotencyKey();
     try {
       const response = await fetch("/api/print-jobs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
         fileId: file.id, fileName: file.name, pageSelection: pageText.trim() || "all", copies, colorPagesPerCopy,
         sides, paperSize, orientation, fulfillment, addressId: fulfillment === "delivery" ? addressId : null,
-        scheduledAt: scheduledAt || null, coupon: couponBase === subtotal ? coupon : null,
+        scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : null, coupon: couponBase === subtotal ? coupon : null, idempotencyKey: idempotencyKey.current,
       }) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error);
-      router.push(`/profile?print=${result.job.reference}`); router.refresh();
+      router.push(`/profile?section=prints&print=${encodeURIComponent(result.job.reference)}`); router.refresh();
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not submit your print request."); }
     finally { setBusy(false); }
   }

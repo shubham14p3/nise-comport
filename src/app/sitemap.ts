@@ -1,5 +1,18 @@
-import {panGuides} from "@/lib/pan-content";
-import type {MetadataRoute} from "next";
-import {serviceCatalog,serviceDetails} from "@/lib/services";
-import {articles} from "@/lib/content";
-export default function sitemap():MetadataRoute.Sitemap{const base=process.env.NEXT_PUBLIC_SITE_URL??"https://nisecomport.com";const routes=["","/pan",...panGuides.map(g=>`/pan/${g.slug}`),"/services","/print","/about","/contact","/faq","/privacy","/terms","/gallery","/offers","/social","/team","/blog",...articles.map(item=>`/blog/${item.slug}`),...serviceCatalog.map(service=>`/services/${service.slug}`),...serviceDetails.map(service=>`/services/${service.slug}`)];return routes.map(route=>({url:`${base}${route}`,lastModified:new Date(),changeFrequency:route===""?"weekly":"monthly",priority:route===""?1:route==="/services"||route==="/blog"?.9:route.startsWith("/services/")||route.startsWith("/blog/")?.8:.6}))}
+import type { MetadataRoute } from "next";
+import { publicRoutes } from "@/lib/routes";
+import { absoluteUrl } from "@/lib/site";
+
+/**
+ * sitemap.xml built from the single list of public routes, with real "last changed" dates
+ * (not today's date on every URL, which search engines learn to ignore), images and hreflang.
+ */
+export default function sitemap(): MetadataRoute.Sitemap {
+  return publicRoutes().map((route) => ({
+    url: absoluteUrl(route.path),
+    lastModified: new Date(`${route.lastModified}T00:00:00+05:30`),
+    changeFrequency: route.changeFrequency,
+    priority: route.priority,
+    ...(route.images?.length ? { images: route.images.map((image) => absoluteUrl(image)) } : {}),
+    ...(route.alternates ? { alternates: { languages: Object.fromEntries(Object.entries({ [route.path.startsWith("/hi") ? "hi-IN" : "en-IN"]: route.path, ...route.alternates }).map(([language, path]) => [language, absoluteUrl(path)])) } } : {}),
+  }));
+}

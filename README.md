@@ -120,3 +120,39 @@ The PAN form is a NISE assistance intake, not an official government form. It do
 The status helper validates a reference's basic format and opens the selected official tracker. It does not claim to retrieve live status; provider CAPTCHA/verification remains on the official site. Google OAuth, online wallet top-ups and automatic WhatsApp delivery are not added by this change.
 
 Verification: `npm run lint`, `npm test`, `npm run build`. Real PostgreSQL persistence and SMTP delivery need your configured environment; a successful build alone does not verify those external integrations.
+
+## Security, request flows and SEO update
+
+This update closes the gaps found in the flow review. Full scenario list with manual tests: [`docs/SCENARIOS.md`](docs/SCENARIOS.md).
+
+### After pulling
+
+```bash
+npm ci
+npm run db:migrate          # applies drizzle/0004_security_flows_seo.sql
+npm run lint && npm test && npm run build
+```
+
+Set the new environment values (see `.env.example`). The important ones:
+
+- `OTP_SECRET` – **required in production**, 32+ random characters (`openssl rand -base64 48`). Email codes are refused without it.
+- `NEXT_PUBLIC_SITE_URL` – the one canonical host. The live site redirects to `www`, so the default is `https://www.nisecomport.com`; the other host is 308-redirected.
+- `CRON_SECRET` – then call `/api/cron/cleanup` every 10–15 minutes (GET or POST with `Authorization: Bearer …`). It sends queued emails with retries and removes expired codes, sessions, rate-limit rows and files.
+- `STAFF_ALERT_EMAIL` – receives new-request and cancellation alerts.
+- `NEXT_PUBLIC_OPENING_HOURS`, `NEXT_PUBLIC_GEO_LAT/LNG`, `NEXT_PUBLIC_GOOGLE_MAPS_URL`, `NEXT_PUBLIC_GOOGLE_REVIEW_URL`, `NEXT_PUBLIC_SAME_AS` – shown on the site and in structured data only when set. They must match the Google Business Profile.
+- `GOOGLE_SITE_VERIFICATION`, `BING_SITE_VERIFICATION`, `INDEXNOW_KEY` – search-engine verification and instant indexing.
+
+### What changed
+
+- **Accounts:** no account discovery through sign-up/sign-in/reset; rate limits and sign-in lockout stored in PostgreSQL (`rate_limits`); forgot/reset password; change password; change sign-in email with a code to the new address; sign out of other devices; delete account (anonymised, blocked while requests are open); disabled/deleted users can’t sign in; safe `?next=` redirects; Indian phone numbers normalised to +91.
+- **Errors:** API errors never expose SQL, file paths or stack traces (`PublicError` + `apiError`); 404, error and global-error pages; `/api/health` for monitoring.
+- **Requests:** idempotency keys (no duplicates on double-click), safe reference numbers, customer cancellation, status history (`request_events`), optimistic locking for staff, confirmation + staff emails sent immediately with cron retries, admin filters and search.
+- **SEO:** central NAP config (`src/lib/site.ts`), JSON-LD graph, fixed titles/descriptions/canonicals, raster PNG share previews (`python3 scripts/generate-og-images.py`), global footer, breadcrumbs, 12 Hindi pages with hreflang, 11 new guides, 5 new services (`published: false` hides one), Areas-we-serve page, legacy URL redirects, sitemap with real dates/images/hreflang, RSS, `llms.txt`, IndexNow, manifest and icons, security headers.
+
+### SEO tools
+
+```bash
+npm run seo:check      # after `npm run build && npm start`: checks every sitemap URL
+npm run seo:indexnow   # after a production deploy (needs INDEXNOW_KEY on the server and locally)
+python3 scripts/generate-og-images.py   # after adding a service or guide (needs Pillow)
+```

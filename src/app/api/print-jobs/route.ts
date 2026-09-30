@@ -4,7 +4,10 @@ import { z } from "zod";
 import { addresses, coupons, printJobs, storedFiles } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { apiError, makeReference } from "@/lib/http";
+import { apiError, readJson } from "@/lib/http";
+import { PublicError } from "@/lib/errors";
+import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
+import { isIdempotencyConflict, notifyNewRequest, recordEvent, withUniqueReference } from "@/lib/requests";
 import { blackWhiteCost, COLOR_PAGE_RATE, countSelectedPages, couponDiscount } from "@/lib/print-pricing";
 import { privateStoragePath } from "@/lib/storage";
 import { readFile } from "node:fs/promises";
@@ -16,6 +19,7 @@ const schema = z.object({
   sides: z.enum(["single", "double"]), paperSize: z.enum(["A4", "A3", "Letter"]), orientation: z.enum(["portrait", "landscape"]),
   fulfillment: z.enum(["pickup", "delivery"]), addressId: z.uuid().nullable().optional(),
   scheduledAt: z.string().nullable().optional(), coupon: z.string().trim().max(40).nullable().optional(),
+  idempotencyKey: z.uuid().optional(),
 });
 
 async function readDocumentPageCount(file: typeof storedFiles.$inferSelect) {
@@ -29,8 +33,15 @@ async function readDocumentPageCount(file: typeof storedFiles.$inferSelect) {
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Please sign in to place an order." }, { status: 401 });
+  if (user.role === "demo") return NextResponse.json({ error: "The local demo account can’t place print orders." }, { status: 403 });
   try {
-    const data = schema.parse(await request.json());
+    const data = schema.parse(await readJson(request));
+    const jobFields = { id: printJobs.id, reference: printJobs.reference, status: printJobs.status, subtotal: printJobs.subtotal, discount: printJobs.discount, total: printJobs.total };
+    if (data.idempotencyKey) {
+      const [existing] = await db.select(jobFields).from(printJobs).where(and(eq(printJobs.userId, user.id), eq(printJobs.idempotencyKey, data.idempotencyKey))).limit(1);
+      if (existing) return NextResponse.json({ ok: true, job: existing, duplicate: true });
+    }
+    await enforceRate(RATE_RULES.printJobsPerUserHour, identity("user", user.id), "You’ve sent several print requests in the last hour. Please call or WhatsApp us.");
     const [file] = await db.select().from(storedFiles).where(and(eq(storedFiles.id, data.fileId), eq(storedFiles.userId, user.id))).limit(1);
     if (!file || file.originalName !== data.fileName) return NextResponse.json({ error: "Your private upload could not be found. Upload the document again." }, { status: 400 });
     if (data.fulfillment === "delivery") {
@@ -60,15 +71,30 @@ export async function POST(request: NextRequest) {
     }
 
     const scheduledAt = data.scheduledAt ? new Date(data.scheduledAt) : null;
-    if (scheduledAt && (!Number.isFinite(scheduledAt.getTime()) || scheduledAt.getTime() <= Date.now())) return NextResponse.json({ error: "Choose a future pickup or delivery time." }, { status: 400 });
+    if (scheduledAt && (!Number.isFinite(scheduledAt.getTime()) || scheduledAt.getTime() <= Date.now() + 15 * 60_000)) throw new PublicError("Choose a pickup or delivery time at least 15 minutes from now.", 400, { fields: { scheduledAt: "Choose a later time." } });
+    if (scheduledAt && scheduledAt.getTime() > Date.now() + 60 * 24 * 60 * 60_000) throw new PublicError("Choose a pickup or delivery time within the next 60 days.", 400, { fields: { scheduledAt: "Choose an earlier date." } });
     const total = Math.max(0, subtotal - discount);
-    const [job] = await db.insert(printJobs).values({
-      reference: makeReference("PR"), userId: user.id, status: "submitted", fileId: file.id, fileName: file.originalName,
-      pageCount: printedPageCount, pageSelection: data.pageSelection.trim() || "all", copies: data.copies,
-      blackWhitePages, colorPages, sides: data.sides, paperSize: data.paperSize, orientation: data.orientation,
-      fulfillment: data.fulfillment, addressId: data.fulfillment === "delivery" ? data.addressId! : null,
-      scheduledAt, couponCode, subtotal: subtotal.toFixed(2), discount: discount.toFixed(2), total: total.toFixed(2),
-    }).returning({ id: printJobs.id, reference: printJobs.reference, status: printJobs.status, subtotal: printJobs.subtotal, discount: printJobs.discount, total: printJobs.total });
+    let job: { id: string; reference: string; status: string; subtotal: string; discount: string; total: string };
+    try {
+      job = await withUniqueReference("PR", async (reference) => {
+        const [row] = await db.insert(printJobs).values({
+          reference, userId: user.id, status: "submitted", fileId: file.id, fileName: file.originalName,
+          pageCount: printedPageCount, pageSelection: data.pageSelection.trim() || "all", copies: data.copies,
+          blackWhitePages, colorPages, sides: data.sides, paperSize: data.paperSize, orientation: data.orientation,
+          fulfillment: data.fulfillment, addressId: data.fulfillment === "delivery" ? data.addressId! : null,
+          scheduledAt, couponCode, subtotal: subtotal.toFixed(2), discount: discount.toFixed(2), total: total.toFixed(2), idempotencyKey: data.idempotencyKey ?? null,
+        }).returning(jobFields);
+        return row;
+      });
+    } catch (error) {
+      if (data.idempotencyKey && isIdempotencyConflict(error)) {
+        const [existing] = await db.select(jobFields).from(printJobs).where(and(eq(printJobs.userId, user.id), eq(printJobs.idempotencyKey, data.idempotencyKey))).limit(1);
+        if (existing) return NextResponse.json({ ok: true, job: existing, duplicate: true });
+      }
+      throw error;
+    }
+    await recordEvent("print", job.id, user.id, null, "submitted", "Created online");
+    await notifyNewRequest(user, job.reference, "print order", [`File: ${file.originalName}`, `Pages: ${printedPageCount} (${colorPages} colour)`, `Fulfilment: ${data.fulfillment}`, `Estimate: ₹${total.toFixed(2)}`]);
     return NextResponse.json({ ok: true, job }, { status: 201 });
   } catch (error) { return apiError(error); }
 }

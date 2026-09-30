@@ -1,0 +1,43 @@
+/**
+ * Pure helpers for fixed-window rate limiting (no imports, unit-tested).
+ * A window of N seconds starts at a multiple of N since the Unix epoch, so every server
+ * instance agrees on the window without coordination.
+ */
+export function windowStartFor(nowMs: number, windowSeconds: number) {
+  const size = windowSeconds * 1000;
+  return new Date(Math.floor(nowMs / size) * size);
+}
+
+export function secondsUntilWindowEnds(nowMs: number, windowSeconds: number) {
+  const start = windowStartFor(nowMs, windowSeconds).getTime();
+  return Math.max(1, Math.ceil((start + windowSeconds * 1000 - nowMs) / 1000));
+}
+
+export type RateRule = { name: string; limit: number; windowSeconds: number };
+
+/** Builds the storage key. The identity part must already be hashed (never store raw emails or IPs). */
+export function rateKey(rule: RateRule, identityHash: string) {
+  return `${rule.name}:${rule.windowSeconds}:${identityHash}`;
+}
+
+/**
+ * Central list of limits so they can be reviewed in one place.
+ * Per-network (IP) limits are generous on purpose: customers are often helped to sign up on the
+ * shop’s own Wi-Fi, so many accounts can legitimately share one IP address.
+ */
+export const RATE_RULES = {
+  otpSendPerEmailMinute: { name: "otp-send-email", limit: 1, windowSeconds: 60 },
+  otpSendPerEmailHour: { name: "otp-send-email", limit: 5, windowSeconds: 3600 },
+  otpSendPerEmailDay: { name: "otp-send-email", limit: 10, windowSeconds: 86400 },
+  otpSendPerIpHour: { name: "otp-send-ip", limit: 60, windowSeconds: 3600 },
+  otpVerifyPerIpHour: { name: "otp-verify-ip", limit: 150, windowSeconds: 3600 },
+  passwordPerIp15m: { name: "password-ip", limit: 60, windowSeconds: 900 },
+  passwordFailuresPerEmail15m: { name: "password-fail-email", limit: 5, windowSeconds: 900 },
+  passwordFailuresPerEmailDay: { name: "password-fail-email", limit: 20, windowSeconds: 86400 },
+  accountChangePerUserHour: { name: "account-change", limit: 10, windowSeconds: 3600 },
+  requestsPerUserHour: { name: "service-request", limit: 10, windowSeconds: 3600 },
+  requestsPerUserDay: { name: "service-request", limit: 30, windowSeconds: 86400 },
+  uploadsPerUserDay: { name: "upload", limit: 40, windowSeconds: 86400 },
+  printJobsPerUserHour: { name: "print-job", limit: 15, windowSeconds: 3600 },
+  cancelPerUserHour: { name: "cancel-request", limit: 10, windowSeconds: 3600 },
+} as const satisfies Record<string, RateRule>;
