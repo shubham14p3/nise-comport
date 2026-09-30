@@ -71,6 +71,27 @@ npm run dev
 
 Sign up using a real email address. The app sends a six-digit verification code via your SMTP mailbox. After verification, sign in to see persistent service request and print-job history. Store real uploaded files outside `public/`; do not commit `.env.local` or customer documents.
 
+## Using the hosted PostgreSQL database locally
+
+The application, Drizzle migrations and database tools now use the same `.env.local` connection.
+
+For local development with the hosted PostgreSQL database:
+
+```bash
+npm ci
+npm run db:check
+npm run db:setup
+npm run dev
+```
+
+- `npm run db:check` connects using `DATABASE_URL`, shows only the host/database/user and schema status, and never prints the password.
+- `npm run db:setup` checks the connection, applies all Drizzle migrations, then checks again.
+- `/api/health` also performs a live `select 1` check when the Next.js app is running.
+
+When developing on your own computer, set `DATABASE_URL` to the hosting server's public PostgreSQL host. When Next.js is deployed on the same hosting server as PostgreSQL, change only the host portion to `localhost` (or provide a server-level `DATABASE_URL`); the database name, user and encoded password remain the same.
+
+If `db:check` reports a timeout or connection refusal while the URL is correct, enable remote PostgreSQL access or whitelist your current public IP in the hosting control panel. A network block is different from an authentication error.
+
 ## Staff access
 
 Create an account through the signup page, then promote it from PostgreSQL as the first administrator:
