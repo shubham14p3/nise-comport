@@ -66,6 +66,24 @@ if (!serverTransport.includes('AES-GCM') || !serverTransport.includes('HKDF') ||
 const gateway = readFileSync("src/app/api/x7q9m2/route.ts", "utf8");
 if (!gateway.includes("x-nise-internal")) failures.push("opaque gateway: server-only internal dispatch token is missing");
 
+const operationPattern = /["']([A-Z][A-Za-z0-9]{11})["']/g;
+const usedOperations = new Set();
+for (const path of filesUnder("src")) {
+  const source = readFileSync(path, "utf8");
+  if (!source.includes('"use client"') && !source.includes("'use client'")) continue;
+  for (const match of source.matchAll(operationPattern)) usedOperations.add(match[1]);
+}
+const mappedOperations = new Set([...gateway.matchAll(operationPattern)].map((match) => match[1]));
+for (const operation of usedOperations) {
+  if (!mappedOperations.has(operation)) failures.push(`opaque gateway: missing mapping for client operation ${operation}`);
+}
+for (const operation of mappedOperations) {
+  if (!usedOperations.has(operation)) failures.push(`opaque gateway: unused operation mapping ${operation}`);
+}
+if (!serverTransport.includes("JSON.stringify({ z: status, d: data })") || !serverTransport.includes("status: 200")) {
+  failures.push("secure-api-server: application status is no longer fully hidden inside encrypted responses");
+}
+
 const privateRaw = process.env.API_ENVELOPE_PRIVATE_JWK;
 const publicRaw = process.env.NEXT_PUBLIC_API_ENVELOPE_PUBLIC_JWK;
 const internal = process.env.INTERNAL_API_TOKEN ?? "";
