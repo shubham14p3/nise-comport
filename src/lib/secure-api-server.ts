@@ -29,7 +29,6 @@ type ResponseEnvelope = {
   i: string;
   t: number;
   n: string;
-  z: number;
   c: string;
 };
 
@@ -102,8 +101,8 @@ function requestAad(route: string, ts: number, nonce: string) {
   return encoder.encode(`NC1|Q|POST|${route}|${ts}|${nonce}`);
 }
 
-function responseAad(route: string, ts: number, nonce: string, status: number) {
-  return encoder.encode(`NC1|S|${route}|${ts}|${nonce}|${status}`);
+function responseAad(route: string, ts: number, nonce: string) {
+  return encoder.encode(`NC1|S|${route}|${ts}|${nonce}`);
 }
 
 async function deriveContext(request: NextRequest, route: string, envelope: {
@@ -239,14 +238,14 @@ export async function secureJson(
   const ts = Date.now();
   const iv = webcrypto.getRandomValues(new Uint8Array(12));
   const responseKey = await deriveAesKey(context.sharedSecret, context.salt, `NC1|${context.route}|response`);
-  const clear = encoder.encode(JSON.stringify(data));
+  const clear = encoder.encode(JSON.stringify({ z: status, d: data }));
   const ciphertext = await subtle.encrypt(
-    { name: "AES-GCM", iv: toArrayBuffer(iv), additionalData: toArrayBuffer(responseAad(context.route, ts, context.nonce, status)), tagLength: 128 },
+    { name: "AES-GCM", iv: toArrayBuffer(iv), additionalData: toArrayBuffer(responseAad(context.route, ts, context.nonce)), tagLength: 128 },
     responseKey,
     toArrayBuffer(clear),
   );
   const envelope: ResponseEnvelope = {
-    v: 1, a: ALG, i: bytesToB64url(iv), t: ts, n: context.nonce, z: status, c: bytesToB64url(ciphertext),
+    v: 1, a: ALG, i: bytesToB64url(iv), t: ts, n: context.nonce, c: bytesToB64url(ciphertext),
   };
   const headers = new Headers(init.headers);
   headers.set("content-type", "application/nise-envelope+json; charset=utf-8");
@@ -254,7 +253,7 @@ export async function secureJson(
   headers.set("x-nx-sealed", "1");
   headers.set("x-content-type-options", "nosniff");
   headers.set("cross-origin-resource-policy", "same-origin");
-  return NextResponse.json(envelope, { status, headers });
+  return NextResponse.json(envelope, { status: 200, headers });
 }
 
 export async function secureBinary(
@@ -267,13 +266,13 @@ export async function secureBinary(
   const ts = Date.now();
   const iv = webcrypto.getRandomValues(new Uint8Array(12));
   const responseKey = await deriveAesKey(context.sharedSecret, context.salt, `NC1|${context.route}|response`);
-  const meta = encoder.encode(JSON.stringify(metadata));
+  const meta = encoder.encode(JSON.stringify({ z: status, ...metadata }));
   const clear = new Uint8Array(4 + meta.byteLength + bytes.byteLength);
   new DataView(clear.buffer).setUint32(0, meta.byteLength);
   clear.set(meta, 4);
   clear.set(bytes, 4 + meta.byteLength);
   const ciphertext = await subtle.encrypt(
-    { name: "AES-GCM", iv: toArrayBuffer(iv), additionalData: toArrayBuffer(responseAad(context.route, ts, context.nonce, status)), tagLength: 128 },
+    { name: "AES-GCM", iv: toArrayBuffer(iv), additionalData: toArrayBuffer(responseAad(context.route, ts, context.nonce)), tagLength: 128 },
     responseKey,
     clear,
   );
@@ -285,8 +284,7 @@ export async function secureBinary(
   headers.set("x-nx-i", bytesToB64url(iv));
   headers.set("x-nx-t", String(ts));
   headers.set("x-nx-n", context.nonce);
-  headers.set("x-nx-z", String(status));
   headers.set("x-content-type-options", "nosniff");
   headers.set("cross-origin-resource-policy", "same-origin");
-  return new NextResponse(ciphertext, { status, headers });
+  return new NextResponse(ciphertext, { status: 200, headers });
 }
