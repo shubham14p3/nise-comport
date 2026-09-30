@@ -166,7 +166,7 @@ function ProfileWorkspace({ snapshot, reload }: { snapshot: Snapshot; reload: ()
             <p>{typeof requestDetail.request.details.description === "string" ? requestDetail.request.details.description : focusRequest.description || "No additional note was submitted."}</p>
             {requestDetail.events.length > 0 && <ol className="request-timeline">{requestDetail.events.map((event, index) => <li key={`${event.createdAt}-${index}`}><b>{event.label}</b> <small>{dateTime(event.createdAt)}</small></li>)}</ol>}
             {requestDetail.files.length > 0 && <div><b>Supporting documents</b><ul>{requestDetail.files.map((file, index) => <li key={`${file.createdAt}-${index}`}>{file.name} <small>· {dateLabel(file.createdAt)}</small></li>)}</ul></div>}
-            <div className="selected-request-actions"><Link href={`/services/${requestDetail.request.serviceSlug}`}>Service checklist <ArrowRight size={14}/></Link>{requestDetail.request.cancellable && <CancelRequestButton reference={requestDetail.request.reference}/>}</div>
+            <div className="selected-request-actions"><Link href={`/services/${requestDetail.request.serviceSlug}`}>Service checklist <ArrowRight size={14}/></Link>{requestDetail.request.cancellable && <CancelRequestButton reference={requestDetail.request.reference} onDone={async () => { setSelectedRequest(""); setRequestDetail(null); await reload(); }}/>}</div>
           </>}
         </article>}
         <RequestRows rows={activeRequests}/></div>;
