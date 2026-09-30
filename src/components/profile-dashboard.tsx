@@ -6,7 +6,7 @@ import AccountSecurityPanel from "@/components/account-security-panel";
 import PanSavedDetails from "@/components/pan-saved-details";
 import CancelRequestButton from "@/components/cancel-request-button";
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import {
   ArrowRight, Bell, Check, CircleHelp, FileText, Gift, History,
   MapPin, Printer, ShieldCheck, UserRound, WalletCards,
@@ -65,13 +65,13 @@ export default function ProfileDashboard({ demoMode = false }: { demoMode?: bool
   const [snapshot, setSnapshot] = useState<Snapshot | null>(demoMode ? DEMO_SNAPSHOT : null);
   const [loadError, setLoadError] = useState("");
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoadError("");
     try { setSnapshot(await secureApi<Snapshot>("P8a2N5dK1vR7")); }
     catch (error) { setLoadError(error instanceof Error ? error.message : "Could not load your private workspace."); }
-  }
+  }, []);
 
-  useEffect(() => { if (!demoMode) void load(); }, [demoMode]);
+  useEffect(() => { if (!demoMode) void load(); }, [demoMode, load]);
 
   if (!snapshot) {
     return <main className="profile-page"><SiteHeader/><div className="container profile-container">
