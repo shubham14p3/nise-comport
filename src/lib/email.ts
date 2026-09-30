@@ -17,6 +17,7 @@ function transporter() {
     host: process.env.SMTP_HOST,
     port,
     secure: port === 465,
+    requireTLS: port === 587,
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
     // Never let a slow mail server hang a sign-in request.
     connectionTimeout: 10_000,
