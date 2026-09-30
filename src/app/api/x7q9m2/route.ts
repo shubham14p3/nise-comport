@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { clientIp } from "@/lib/http";
 import {
   emptySecureFailure, openSecureBinaryRequest, openSecureRequest,
   secureBinary, secureJson, type SecureApiContext,
@@ -35,6 +36,9 @@ const OPS = {
   "L5v1N7qD9kR3": { method: "POST", path: "/api/admin/pan-imports" },
   "T7s3F8mP2cX6": { method: "POST", path: "/api/admin/wallet-credit" },
   "P8a2N5dK1vR7": { method: "GET", path: "/api/internal/profile-snapshot" },
+  "W3k8P1zN6qT2": { method: "POST", path: "/api/places/autocomplete" },
+  "Q9v4H2mX7rB5": { method: "POST", path: "/api/places/details" },
+  "E7t2Y9cK4nM1": { method: "POST", path: "/api/places/reverse" },
 } as const;
 
 function stringValue(input: Record<string, unknown>, key: string, max = 200) {
@@ -113,6 +117,8 @@ async function internalFetch(request: NextRequest, target: { method: string; pat
 
   const cookie = request.headers.get("cookie");
   if (cookie) headers.set("cookie", cookie);
+  // The visitor's IP for rate limits; the internal routes trust it only with the token above.
+  headers.set("x-nise-client-ip", clientIp(request));
   const forwarded = request.headers.get("x-forwarded-for");
   const realIp = request.headers.get("x-real-ip");
   if (forwarded) headers.set("x-forwarded-for", forwarded);

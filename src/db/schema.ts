@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid, integer, boolean, jsonb, numeric, uniqueIndex, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, integer, boolean, jsonb, numeric, uniqueIndex, index, doublePrecision } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(), name: text("name").notNull(), email: text("email").notNull(),
@@ -27,6 +27,8 @@ export const addresses = pgTable("addresses", {
   id: uuid("id").defaultRandom().primaryKey(), userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   label: text("label").notNull().default("Home"), line1: text("line1").notNull(), line2: text("line2"), city: text("city").notNull(),
   state: text("state").notNull(), postalCode: text("postal_code").notNull(), isDefault: boolean("is_default").notNull().default(false),
+  /** From Google Places / "use my location" (optional; manual addresses leave these empty). */
+  landmark: text("landmark"), latitude: doublePrecision("latitude"), longitude: doublePrecision("longitude"), googlePlaceId: text("google_place_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

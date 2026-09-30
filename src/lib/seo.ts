@@ -10,7 +10,7 @@ type PageMetaOptions = {
   /** Language alternates, e.g. { "hi-IN": "/hi/services/pan-card-jamshedpur" }. The current page is added automatically. */
   languages?: Record<string, string>;
   /** Language of this page. Defaults to en-IN. */
-  locale?: "en-IN" | "hi-IN";
+  locale?: "en-IN" | "hi-IN" | "bn-IN";
   keywords?: string[];
   type?: "website" | "article";
   publishedTime?: string;

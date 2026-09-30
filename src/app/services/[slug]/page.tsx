@@ -3,17 +3,22 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ArrowRight, ArrowUpRight, Check, MapPin, Phone, ShieldCheck } from "lucide-react";
+import { ArrowRight, ArrowUpRight, CircleCheck, ExternalLink, MapPin, Phone, ShieldCheck } from "lucide-react";
 import Breadcrumbs from "@/components/breadcrumbs";
 import FaqSection from "@/components/faq-section";
 import JsonLd from "@/components/json-ld";
-import RequestServiceForm from "@/components/request-service-form";
+import { CategoryIcon, WhatsAppIcon } from "@/components/icons";
+import OfferCard from "@/components/offer-card";
 import { articlesForService } from "@/lib/content";
+import { categoryMetaFor } from "@/lib/categories";
+import { posterFor } from "@/lib/gallery";
 import { findHindiService } from "@/lib/hindi";
+import { offersFor } from "@/lib/offers";
+import { translatedSlugs } from "@/lib/translated-slugs";
 import { SITE_CONTENT_DATE } from "@/lib/routes";
 import { pageMetadata } from "@/lib/seo";
 import { serviceEditorial } from "@/lib/service-editorial";
-import { categoryFor, findService, isServiceDetail, publishedServiceDetails, serviceCatalog, serviceSeoDescription, serviceSeoTitle, servicesInCategory } from "@/lib/services";
+import { categoryFor, findService, isServiceDetail, publishedServiceDetails, requestHrefFor, serviceCatalog, serviceSeoDescription, serviceSeoTitle, servicesInCategory, shortServiceName } from "@/lib/services";
 import { site, whatsappLink } from "@/lib/site";
 import { itemListLd, serviceLd } from "@/lib/structured-data";
 
@@ -36,7 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     keywords: [...service.keywords, "NISE COMPORT", "Kharangajhar", "Telco", "Jamshedpur", "Jharkhand"],
     image: detail ? `/og/services/${service.slug}.png` : undefined,
     imageAlt: `${service.title} – NISE COMPORT, Telco, Jamshedpur`,
-    ...(hindi ? { languages: { "hi-IN": `/hi/services/${service.slug}` } } : {}),
+    ...(hindi ? { languages: { "hi-IN": `/hi/services/${service.slug}`, ...(translatedSlugs.bn.includes(service.slug) ? { "bn-IN": `/bn/services/${service.slug}` } : {}) } } : {}),
   });
 }
 
@@ -59,19 +64,104 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
   const checklist = detail?.documents?.length ? `\n\nPlease confirm whether I should prepare these documents:\n${detail.documents.map((item, index) => `${index + 1}. ${item}`).join("\n")}` : "";
   const enquiry = whatsappLink(`Hi NISE COMPORT, I need help with ${title}.${checklist}\n\nI can attach the relevant documents here after you confirm what is safe and necessary to share.`);
 
-  return <main className="content-page"><SiteHeader/>
+  const categorySlug = detail ? detail.categorySlug : service.slug;
+  const meta = categoryMetaFor(categorySlug);
+  const startHref = requestHrefFor(service.slug);
+  const offers = offersFor(categorySlug).slice(0, 2);
+  const bengali = translatedSlugs.bn.includes(service.slug);
+  const reviewed = new Date(`${SITE_CONTENT_DATE}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+
+  return <main className="page"><SiteHeader/>
     <JsonLd data={[serviceLd({ name: title, description: service.description, path, serviceType: serviceSeoTitle(service), category: category?.title }), children.length ? itemListLd(title, children.map((item) => ({ name: item.title, path: `/services/${item.slug}` }))) : null]}/>
-    <section className="content-hero detail-hero"><div className="container"><Breadcrumbs items={crumbs}/><Link href={category ? `/services/${category.slug}` : "/services"} className="back-small"><ArrowLeft size={14}/> {category ? category.title : "All services"}</Link><div className="service-detail-hero-grid"><div><span className="eyebrow eyebrow-muted">LOCAL HELP · KHARANGAJHAR, TELCO, JAMSHEDPUR</span><h1>{title}<br/><em>with clear local guidance.</em></h1><p>{service.description}</p>{editorial?.audience && <p className="service-audience"><b>This page is for</b> {editorial.audience}</p>}<div className="content-location"><MapPin size={15}/> {site.address.oneLine}</div><div className="service-hero-actions"><a className="button button-green" href="#request-form">Ask about this service <ArrowRight size={15}/></a><a className="button button-outline" href={enquiry} target="_blank" rel="noopener noreferrer">WhatsApp enquiry</a><a className="button button-outline" href={`tel:${site.phones.primary.e164}`}><Phone size={14}/> Call</a></div>{hindi && <p className="language-switch"><Link href={`/hi/services/${service.slug}`} hrefLang="hi-IN" lang="hi">यह पेज हिन्दी में पढ़ें →</Link></p>}<p className="page-reviewed">Page reviewed: {new Date(`${SITE_CONTENT_DATE}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}</p></div>{editorial?.image && <div className="service-detail-image"><Image src={editorial.image} alt={editorial.imageAlt} width={720} height={520} priority sizes="(max-width: 900px) 100vw, 45vw"/></div>}</div></div></section>
-    {detail ? <>
-      <section className="container detail-body"><div><span className="eyebrow eyebrow-muted">SERVICE OVERVIEW</span><h2>How we can help with {detail.title.replace(/ in Jamshedpur$/i, "").toLowerCase()}</h2><p>We provide practical application and document assistance. We explain the steps and any service charge before you decide to proceed.</p><ul>{detail.highlights.map(item => <li key={item}><Check size={15}/>{item}</li>)}</ul><h2 className="service-content-heading">Documents to prepare</h2><p>Requirements can vary by applicant and service type. Use this as a starting checklist and confirm the latest instructions with the official provider.</p><ul>{detail.documents.map(item => <li key={item}><Check size={15}/>{item}</li>)}</ul></div><aside><span><MapPin size={17}/></span><h3>Start with a quick enquiry</h3><p>Tell us what you need. Our team will check availability and explain your next step.</p><a href={enquiry} target="_blank" rel="noopener noreferrer">Ask on WhatsApp <ArrowRight size={14}/></a><a href={`tel:${site.phones.primary.e164}`}>Call {site.phones.primary.display} <ArrowRight size={14}/></a><a href={site.mapsUrl} target="_blank" rel="noopener noreferrer">Get directions <ArrowRight size={14}/></a></aside></section>
-      {editorial?.beforeYouStart?.length ? <section className="container service-prep-section"><div className="service-prep-heading"><div><span className="eyebrow eyebrow-muted">BEFORE YOU VISIT</span><h2>A little preparation<br/><em>makes it easier.</em></h2></div><p>Bring only what is needed for your request. We will confirm current requirements before you travel or share sensitive information.</p></div><div className="service-prep-grid">{editorial.beforeYouStart.map((item, index) => <article key={item}><span>0{index + 1}</span><p>{item}</p></article>)}</div></section> : null}
-      <section className="container service-steps"><span className="eyebrow eyebrow-muted">A TRANSPARENT PROCESS</span><h2>What happens next</h2><ol className="service-step-grid">{detail.steps.map((step, index) => <li key={step}><span>0{index + 1}</span><p>{step}</p></li>)}</ol></section>
-      {officialLinks.length ? <section className="container official-links-section"><span className="eyebrow eyebrow-muted">CHECK THE LATEST REQUIREMENTS</span><h2>Official information</h2><p>Use the official source for current rules, documents, appointments and fees. NISE COMPORT can help you navigate the process.</p><div>{officialLinks.map(link => <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer external"><span>{link.label}</span><ArrowRight size={16}/></a>)}</div></section> : null}
-    </> : <section className="container category-service-list"><div className="section-heading"><div><span className="eyebrow eyebrow-muted">EXPLORE THIS SERVICE AREA</span><h2>Choose the help<br/><em>you need.</em></h2></div><p>Each service has its own checklist and next steps. Select a page to learn more before sending an enquiry.</p></div><div className="catalog-grid">{children.map((item, index) => <article className="catalog-card" key={item.slug}><span className="catalog-index">{String(index + 1).padStart(2, "0")}</span><h2><Link href={`/services/${item.slug}`}>{item.title}</Link></h2><p>{item.description}</p><div className="catalog-tags">{item.keywords.slice(0, 2).map(word => <span key={word}>{word}</span>)}</div><Link href={`/services/${item.slug}`} aria-label={`Read about ${item.title}`}><ArrowRight size={17}/></Link></article>)}</div></section>}
-    {guides.length ? <section className="container related-guides"><span className="eyebrow eyebrow-muted">READ BEFORE YOU COME</span><h2>Related guides</h2><div className="guide-teasers">{guides.map((guide) => <article key={guide.slug}><span>{guide.category}</span><h3><Link href={`/blog/${guide.slug}`}>{guide.title}</Link></h3><p>{guide.excerpt}</p></article>)}</div></section> : null}
+    <section className={`page-hero page-hero--service tone-${meta?.tone ?? "blue"}`}>
+      <div className="page-hero__bg" aria-hidden="true"><span className="blob blob--1"/><span className="blob blob--2"/></div>
+      <div className="container page-hero__split">
+        <div>
+          <Breadcrumbs items={crumbs}/>
+          {meta && <Link className="cat-chip" href={`/services?category=${meta.slug}`}><CategoryIcon icon={meta.icon} size={16}/>{meta.short.en}</Link>}
+          <h1>{title}</h1>
+          <p className="page-hero__lead">{service.description}</p>
+          {editorial?.audience && <p className="page-hero__audience"><b>For:</b> {editorial.audience}</p>}
+          <div className="page-hero__ctas">
+            <Link className="btn btn--primary btn--lg" href={detail ? startHref : `/request?category=${service.slug}`}>Start in 4 steps <ArrowRight size={18}/></Link>
+            <a className="btn btn--wa btn--lg" href={enquiry} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> WhatsApp</a>
+            <a className="btn btn--glass btn--lg" href={`tel:${site.phones.primary.e164}`}><Phone size={18}/> Call</a>
+          </div>
+          <p className="page-hero__meta"><MapPin size={16}/> {site.address.oneLine}{hindi && <> · <Link href={`/hi/services/${service.slug}`} hrefLang="hi-IN" lang="hi">हिन्दी में पढ़ें</Link></>}{bengali && <> · <Link href={`/bn/services/${service.slug}`} hrefLang="bn-IN" lang="bn">বাংলায় পড়ুন</Link></>}</p>
+        </div>
+        <div className="page-hero__art"><Image src={posterFor(service.slug, categorySlug)} alt={editorial?.imageAlt ?? `${title} illustration`} width={1200} height={900} priority sizes="(max-width: 900px) 100vw, 44vw"/></div>
+      </div>
+    </section>
+
+    {detail ? <div className="container detail">
+      <div className="detail__main">
+        <section className="detail__block">
+          <span className="eyebrow">HOW WE HELP</span>
+          <h2>What we can do for you</h2>
+          <ul className="tick-grid">{detail.highlights.map((item) => <li key={item}><CircleCheck size={20}/>{item}</li>)}</ul>
+        </section>
+        <section className="detail__block">
+          <span className="eyebrow">CHECKLIST</span>
+          <h2>Documents to prepare</h2>
+          <p className="muted">Requirements vary by applicant. Use this as a starting list; we confirm the latest before you visit.</p>
+          <ul className="doc-list">{detail.documents.map((item, index) => <li key={item}><span>{index + 1}</span>{item}</li>)}</ul>
+        </section>
+        {editorial?.beforeYouStart?.length ? <section className="detail__block">
+          <span className="eyebrow">BEFORE YOU VISIT</span>
+          <h2>A little prep, a lot less running around</h2>
+          <div className="prep-grid">{editorial.beforeYouStart.map((item, index) => <article key={item}><span>0{index + 1}</span><p>{item}</p></article>)}</div>
+        </section> : null}
+        <section className="detail__block">
+          <span className="eyebrow">THE PROCESS</span>
+          <h2>What happens next</h2>
+          <ol className="timeline timeline--big">{detail.steps.map((step) => <li key={step}><b>{step}</b></li>)}</ol>
+        </section>
+        {officialLinks.length ? <section className="detail__block">
+          <span className="eyebrow">OFFICIAL SOURCES</span>
+          <h2>Check the latest rules</h2>
+          <p className="muted">Official sites set the current documents, appointments and fees. We help you navigate them.</p>
+          <div className="link-list">{officialLinks.map((link) => <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer external"><span>{link.label}</span><ExternalLink size={18}/></a>)}</div>
+        </section> : null}
+        <p className="fine">Page reviewed: {reviewed}</p>
+      </div>
+      <aside className="detail__aside">
+        <div className="start-card">
+          <span className="eyebrow">READY WHEN YOU ARE</span>
+          <h3>Start {shortServiceName(title)}</h3>
+          <ol className="mini-steps"><li>Pick service</li><li>Your details</li><li>Visit time</li><li>Send</li></ol>
+          <Link className="btn btn--primary btn--block" href={startHref}>Start in 4 steps <ArrowRight size={18}/></Link>
+          <a className="btn btn--wa btn--block" href={enquiry} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> Ask on WhatsApp</a>
+          <p className="fine"><ShieldCheck size={15}/> Fees explained before we start.</p>
+        </div>
+        {offers.map((offer) => <OfferCard key={offer.id} offer={offer} variant="rail"/>)}
+      </aside>
+    </div> : <section className="section section--flush">
+      <div className="container">
+        <div className="section-head section-head--left"><span className="eyebrow">IN THIS CATEGORY</span><h2>Choose the help you need</h2><p>Each service has its own checklist and a 4-step request.</p></div>
+        <div className="svc-grid">{children.map((item) => <article key={item.slug} className={`svc-card tone-${meta?.tone ?? "blue"}`}>
+          <div className="svc-card__top"><span className="svc-card__icon">{meta && <CategoryIcon icon={meta.icon} size={22}/>}</span></div>
+          <h3><Link href={`/services/${item.slug}`}>{shortServiceName(item.title)}</Link></h3>
+          <p>{item.description}</p>
+          <div className="svc-card__actions"><Link className="btn btn--primary btn--sm" href={requestHrefFor(item.slug)}>Start <ArrowRight size={16}/></Link><Link className="btn btn--ghost btn--sm" href={`/services/${item.slug}`}>Details</Link></div>
+        </article>)}</div>
+      </div>
+    </section>}
+
+    {guides.length ? <section className="section section--tint">
+      <div className="container">
+        <div className="section-head section-head--left"><span className="eyebrow">READ BEFORE YOU COME</span><h2>Related guides</h2></div>
+        <div className="guide-grid">{guides.map((guide) => <article key={guide.slug} className="guide-card"><div className="guide-card__body"><span className="chip">{guide.category}</span><h3><Link href={`/blog/${guide.slug}`}>{guide.title}</Link></h3><p>{guide.excerpt}</p><Link className="text-link" href={`/blog/${guide.slug}`} aria-label={`Read: ${guide.title}`}>Read guide <ArrowRight size={16}/></Link></div></article>)}</div>
+      </div>
+    </section> : null}
     <FaqSection faqs={faqs}/>
-    <section className="container request-section-wrap" id="request-form">{service.slug === "pan-card-jamshedpur" ? <div className="pan-card"><h2>PAN guides and common request form</h2><p>Choose new PAN, correction, reprint, minor or business assistance. Review documents and track an official application.</p><Link className="button button-green" href="/pan/request">Prepare a PAN request</Link> <Link href="/pan">Open the complete PAN guide</Link></div> : <RequestServiceForm slug={service.slug} title={title}/>}</section>
-    {siblings.length ? <section className="container related-services"><span className="eyebrow eyebrow-muted">ALSO IN {category?.title.toUpperCase()}</span><div className="related-links">{siblings.map((item) => <Link key={item.slug} href={`/services/${item.slug}`}>{item.title} <ArrowUpRight size={13}/></Link>)}</div></section> : null}
-    <section className="container provider-note"><ShieldCheck size={18}/><p>NISE COMPORT is an independent service facilitator, not a government authority, bank or insurer. The applicant is responsible for accurate information. Approval, issuance, processing times and decisions rest with the relevant authority or provider. Our service charge is separate from any official or third-party fee.</p></section>
+    {siblings.length ? <section className="section section--flush">
+      <div className="container">
+        <div className="section-head section-head--left"><span className="eyebrow">ALSO IN {category?.title.toUpperCase()}</span></div>
+        <div className="link-cloud">{siblings.map((item) => <Link key={item.slug} href={`/services/${item.slug}`}>{shortServiceName(item.title)} <ArrowUpRight size={15}/></Link>)}</div>
+      </div>
+    </section> : null}
+    <section className="section section--flush">
+      <div className="container"><div className="note-card"><ShieldCheck size={22}/><p>NISE COMPORT is an independent service facilitator, not a government authority, bank or insurer. The applicant is responsible for accurate information. Approval, issuance, processing times and decisions rest with the relevant authority or provider. Our service charge is separate from any official or third-party fee.</p></div></div>
+    </section>
   </main>;
 }

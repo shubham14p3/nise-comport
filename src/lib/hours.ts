@@ -103,11 +103,13 @@ export function formatTime12h(value: string) {
 
 const SHORT_EN: Record<DayCode, string> = { Mo: "Mon", Tu: "Tue", We: "Wed", Th: "Thu", Fr: "Fri", Sa: "Sat", Su: "Sun" };
 const SHORT_HI: Record<DayCode, string> = { Mo: "सोम", Tu: "मंगल", We: "बुध", Th: "गुरु", Fr: "शुक्र", Sa: "शनि", Su: "रवि" };
+const SHORT_BN: Record<DayCode, string> = { Mo: "সোম", Tu: "মঙ্গল", We: "বুধ", Th: "বৃহস্পতি", Fr: "শুক্র", Sa: "শনি", Su: "রবি" };
 
 /** Groups consecutive days with identical hours: ["Mon–Sat: 10 am – 7 pm", "Sun: closed"]. */
-export function summarizeHours(rules: OpeningHoursRule[], language: "en" | "hi" = "en") {
-  const names = language === "hi" ? SHORT_HI : SHORT_EN;
-  const closed = language === "hi" ? "बंद" : "closed";
+export function summarizeHours(rules: OpeningHoursRule[], language: "en" | "hi" | "bn" = "en") {
+  if (!rules.length) return [];
+  const names = language === "hi" ? SHORT_HI : language === "bn" ? SHORT_BN : SHORT_EN;
+  const closed = language === "hi" ? "बंद" : language === "bn" ? "বন্ধ" : "closed";
   const rows = DAY_CODES.map((day) => ({ day, text: hoursForDay(rules, day).map((slot) => `${formatTime12h(slot.opens)} – ${formatTime12h(slot.closes)}`).join(", ") || closed }));
   const groups: { from: DayCode; to: DayCode; text: string }[] = [];
   for (const row of rows) {

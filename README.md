@@ -28,17 +28,30 @@ The demo uses the same editable profile layout as a real account. Changes are te
 
 ## Pages to check
 
-- `/` home page and links to the main sections
-- `/services` service categories and individual service pages
-- `/gallery`, `/offers`, `/social`, `/team`
-- `/blog` and individual local service guides
-- `/print` document upload and estimate request flow
-- `/login`, `/signup`, `/profile`
+- `/` home page: hero with search, 8 category tiles, live offers, how-it-works, gallery, guides, FAQ
+- `/services` every service with search and category filters (`/services?category=insurance`), plus each service page
+- `/request` the 4-step request flow (service → details → visit/doorstep → review) with the blinking offer rail
+- `/print` and `/pan/request` the same 4-step pattern for printing and PAN
+- `/offers`, `/gallery` (Google Business photos + illustrated service posters), `/blog`, `/contact`
+- `/hi` and `/bn` Hindi and Bengali home pages, and `/hi/services/…`, `/bn/services/…`
+- `/login`, `/signup`, `/forgot-password`, `/profile` (sections open with `/profile#requests`, `#addresses`, …)
 - `/admin` staff request queue (requires a database account with staff/admin role)
 
-The global header links to Services, Gallery, Offers, Guides, Social and Contact. It shows **Sign in** when signed out; for a signed-in customer it shows **My profile** and **Sign out**. On smaller screens, use **Menu** for navigation.
+Every page has the **Change language** menu (English, हिन्दी, বাংলা), the live-offer ticker, the chat assistant (quick answers, then a prefilled WhatsApp message) and, on phones, the bottom dock.
 
-The customer profile uses a section menu for Overview, My requests, Request history, Print orders, Wallet, Vouchers & offers, Saved addresses, Profile details, Sign-in & privacy and Get help. Selecting a section updates the content panel rather than extending one long page. New request references open a private request-detail page.
+## Testing sign-up and sign-in codes without SMTP
+
+In `npm run dev` with no SMTP settings, emails are not sent: the full email, including the 6-digit code, is printed in the terminal that runs `npm run dev` (look for `[dev mail]`). The sign-in page shows a reminder in development. Production builds never do this. To test real delivery, fill the `SMTP_*` settings and run `npm run smtp:check`.
+
+How verification works: sign-up sends a 6-digit code to the email address; the account is created only after the code is entered (codes expire after 10 minutes, 5 attempts). Sign-in uses the password, or an emailed code if the email was never verified. The test admin created by `create-test-admin.mjs` is already verified, so it signs in with its password.
+
+## Google Maps (address search, photos, rating)
+
+Set `GOOGLE_MAPS_API_KEY` (server key with **Places API (New)** and **Geocoding API**) and `GOOGLE_PLACE_ID`. Address search and "use my current location" then work in the request flow, print delivery and saved addresses; `/gallery` and the home page show the shop's Google photos (with photographer credit) and rating. All Google calls run on the server through the encrypted gateway; photos are cached for 12 hours to keep usage low. Without a key, customers type the address manually and the gallery shows the illustrated posters. Your own photos can also go in `public/images/gallery/` (see `src/lib/gallery.ts`).
+
+## Offers
+
+Edit `src/lib/offers.ts`: turn offers on or off, set an end date, choose the categories where they blink. "First time only" offers are checked on the server when a request is sent; the request is always created and the customer is told if the offer didn't apply. Keep insurance offers on your service charge only (a rebate on an insurer's premium is not allowed).
 
 ## Real account and backend setup
 
@@ -104,8 +117,8 @@ Open `/admin` after signing in. Staff can review requests and update statuses. A
 
 ## What a customer flow does
 
-1. Browse a service page to read steps and document requirements.
-2. Send a request with a description and optional supporting file.
+1. Browse a category or service page, or search `/services`.
+2. Send a request in 4 steps: service, details (+ optional file after sign-in), visit / call-back / doorstep / online, review. Signed-out visitors fill everything first, sign in at the end and land back on the review step.
 3. Check its reference, submitted details and status in the customer profile.
 4. For printing, upload a document, inspect the page count/preview, choose pages and pickup/delivery, then **send a request**.
 5. The service team checks availability and confirms the final quote. Print submission is not a checkout and no online payment is taken.

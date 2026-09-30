@@ -108,3 +108,16 @@ export function serviceSeoDescription(service: ServiceGroup | ServiceDetail) {
   const base = service.description.trim();
   return base.length + suffix.length <= 160 ? base + suffix : trimAtWord(base, 160);
 }
+
+/** Where "Start request" goes for a service: PAN and printing have their own step flows. */
+export function requestHrefFor(slug: string) {
+  if (slug === "pan-card-jamshedpur") return "/pan/request";
+  if (slug === "printing-scanning-jamshedpur") return "/print";
+  if (serviceCatalog.some((group) => group.slug === slug)) return `/request?category=${encodeURIComponent(slug)}`;
+  return `/request?service=${encodeURIComponent(slug)}`;
+}
+
+/** Short, card-friendly name: drops the trailing location and "Assistance"/"Help" filler. */
+export function shortServiceName(title: string) {
+  return title.replace(/\s+(in|near)\s+(Jamshedpur|Telco)(,.*)?$/i, "").replace(/\s+\((BC Point)\)$/i, "").replace(/\s+(Assistance|Help)$/i, "").trim();
+}

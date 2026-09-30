@@ -1,9 +1,48 @@
 import SiteHeader from "@/components/site-header";
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowUpRight, Images } from "lucide-react";
-import { galleryItems } from "@/lib/content";
+import { ArrowRight, Camera, MapPin, Star } from "lucide-react";
+import Breadcrumbs from "@/components/breadcrumbs";
+import GalleryGrid, { type GalleryEntry } from "@/components/gallery-grid";
+import JsonLd from "@/components/json-ld";
+import { localGallery } from "@/lib/gallery";
+import { getPlaceSummary } from "@/lib/google-places";
 import { pageMetadata } from "@/lib/seo";
-export const metadata:Metadata=pageMetadata("Gallery – Service Desk in Telco, Jamshedpur","Browse NISE COMPORT service explainers and community updates from our CSC / Pragya Kendra desk in Kharangajhar, Telco, Jamshedpur.","/gallery");
-export default function GalleryPage(){return <main className="content-page"><SiteHeader/><section className="content-hero"><div className="container"><span className="eyebrow eyebrow-muted">OUR DESK, SERVICES &amp; UPDATES</span><h1>A look at what<br/><em>we help with.</em></h1><p>Explore NISE COMPORT service explainers and community artwork. For current eligibility, fees and availability, contact our Kharangajhar team.</p></div></section><section className="container gallery-grid">{galleryItems.map((item,index)=><figure className={`gallery-card gallery-${index%3}`} key={item.title}><Image src={item.image} alt={item.alt} width={900} height={640}/><figcaption><span>{item.category}</span><strong>{item.title}</strong></figcaption></figure>)}</section><section className="container provider-note"><Images size={18}/><p>These images are service information artwork. They do not represent live offers, government approval or guaranteed service availability.</p></section><div className="container gallery-cta"><Link className="button button-green" href="/services">Explore service pages <ArrowUpRight size={16}/></Link></div></main>}
+import { absoluteUrl, site } from "@/lib/site";
+
+export const revalidate = 43200;
+
+export const metadata: Metadata = pageMetadata("Gallery – Our Desk & Services in Telco, Jamshedpur", "Photos of the NISE COMPORT CSC / Pragya Kendra desk in Kharangajhar, Telco, Jamshedpur from Google, plus illustrated guides to our services.", "/gallery");
+
+export default async function GalleryPage() {
+  const place = await getPlaceSummary();
+  const googleItems: GalleryEntry[] = (place?.photos ?? []).map((photo) => ({
+    key: `google-${photo.index}`, src: `/api/gallery/photo/${photo.index}`, width: photo.width, height: photo.height,
+    title: "NISE COMPORT, Kharangajhar", alt: `Photo of NISE COMPORT, Telco, Jamshedpur by ${photo.author}`, tag: "google", author: photo.author, authorUri: photo.authorUri,
+  }));
+  const items: GalleryEntry[] = [...googleItems, ...localGallery.map((item) => ({ ...item, key: item.src }))];
+  const imageLd = localGallery.map((item) => ({ "@type": "ImageObject", contentUrl: absoluteUrl(item.src), name: item.title, description: item.alt, creator: { "@type": "Organization", name: site.name } }));
+
+  return <main className="page"><SiteHeader/>
+    <JsonLd data={{ "@context": "https://schema.org", "@type": "ImageGallery", name: "NISE COMPORT gallery", url: absoluteUrl("/gallery"), image: imageLd }}/>
+    <section className="page-hero page-hero--compact">
+      <div className="page-hero__bg" aria-hidden="true"><span className="blob blob--1"/><span className="blob blob--2"/></div>
+      <div className="container">
+        <Breadcrumbs items={[{ name: "Home", path: "/" }, { name: "Gallery", path: "/gallery" }]}/>
+        <h1>Our desk, <span className="grad-text">in pictures.</span></h1>
+        <p className="page-hero__lead">Real photos of our Kharangajhar counter from Google, plus quick visual guides to what we help with.</p>
+        <div className="page-hero__chips">
+          {place?.rating ? <a className="rating-chip" href={place.mapsUri ?? site.mapsUrl} target="_blank" rel="noopener noreferrer"><Star size={16} fill="currentColor"/> <b>{place.rating.toFixed(1)}</b> · {place.ratingCount} Google reviews</a> : null}
+          <a className="btn btn--glass btn--sm" href={place?.mapsUri ?? site.mapsUrl} target="_blank" rel="noopener noreferrer"><Camera size={16}/>All photos on Google Maps</a>
+        </div>
+      </div>
+    </section>
+    <section className="section section--flush">
+      <div className="container">
+        <GalleryGrid items={items}/>
+        {!googleItems.length && <p className="note-card"><MapPin size={20}/><span>Shop photos from our Google Business Profile appear here automatically once Google Maps is connected. Meanwhile, <a href={site.mapsUrl} target="_blank" rel="noopener noreferrer">see us on Google Maps</a>.</span></p>}
+        <div className="section-foot"><Link className="btn btn--primary" href="/request">Start a request <ArrowRight size={18}/></Link></div>
+      </div>
+    </section>
+  </main>;
+}

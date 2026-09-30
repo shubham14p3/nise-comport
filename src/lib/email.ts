@@ -47,8 +47,21 @@ ${mail.action ? `<p style="margin:24px 0"><a href="${escapeHtml(mail.action.href
   return { text, html };
 }
 
+/**
+ * Local development without SMTP: print the email (including any code) in the terminal running
+ * `npm run dev`, so sign-up and sign-in can be tested. Never used in production builds, and
+ * MAIL_DEV_CONSOLE=0 turns it off even in development.
+ */
+function devConsoleMail() {
+  return process.env.NODE_ENV !== "production" && process.env.MAIL_DEV_CONSOLE !== "0" && (!smtpConfigured() || process.env.MAIL_DEV_CONSOLE === "1");
+}
+
 export async function sendMail(mail: Mail) {
   const { text, html } = render(mail);
+  if (devConsoleMail()) {
+    console.info(`\n──── [dev mail] to ${mail.to} ────\nSubject: ${mail.subject}\n${text}\n──────────────────────────────\n`);
+    return;
+  }
   await transporter().sendMail({
     from: process.env.SMTP_FROM,
     ...(process.env.SMTP_REPLY_TO ? { replyTo: process.env.SMTP_REPLY_TO } : {}),

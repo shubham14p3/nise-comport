@@ -5,6 +5,7 @@ import SiteHeader from "@/components/site-header";
 import PanImportPanel from "@/components/pan-import-panel";
 import WalletCreditForm from "@/components/wallet-credit-form";
 import PanSavedDetails from "@/components/pan-saved-details";
+import RequestExtras from "@/components/request-extras";
 import { ClipboardList, FileText, RefreshCw, Search, ShieldCheck } from "lucide-react";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
 
@@ -140,7 +141,7 @@ export default function AdminDashboard() {
         <p>{detail.customer.name} · <a href={`mailto:${detail.customer.email}`}>{detail.customer.email}</a>{detail.customer.phone ? <> · <a href={`tel:${detail.customer.phone}`}>{detail.customer.phone}</a></> : null}</p>
         <p>Preferred contact: {typeof detail.request.details.preferredContact === "string" ? detail.request.details.preferredContact : detail.customer.preferredContact}</p>
         <PanSavedDetails details={detail.request.details}/>
-        <article className="pan-card"><h3>Customer note</h3><p>{typeof detail.request.details.description === "string" ? detail.request.details.description : "No note provided."}</p></article>
+        <article className="pan-card"><h3>Customer request</h3><RequestExtras details={detail.request.details} fallback="No note provided."/></article>
         <article className="pan-card"><h3>History</h3>{detail.events.length ? <ol className="request-timeline">{detail.events.map((event, index) => <li key={`${event.createdAt}-${index}`}><b>{event.fromLabel ? `${event.fromLabel} → ` : ""}{event.toLabel}</b> <small>{when(event.createdAt)}{event.actor ? ` · ${event.actor}` : ""}</small>{event.note ? <p>{event.note}</p> : null}</li>)}</ol> : <p>No history recorded yet.</p>}</article>
         <button type="button" className="profile-text-button" onClick={() => setDetail(null)}>Close details</button>
       </div>}

@@ -5,7 +5,7 @@ const OPAQUE_API = "/api/x7q9m2";
 const PRIVATE_API_PREFIXES = [
   "/api/auth/", "/api/account/", "/api/profile", "/api/addresses", "/api/requests",
   "/api/pan/requests", "/api/print-jobs", "/api/uploads", "/api/coupons/validate",
-  "/api/admin/", "/api/internal/",
+  "/api/admin/", "/api/internal/", "/api/places/",
 ];
 
 function canonicalHost() {
@@ -14,6 +14,14 @@ function canonicalHost() {
 
 function isLocal(host: string) {
   return /^(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])(:\d+)?$/.test(host) || /^(10|192\.168|172\.(1[6-9]|2\d|3[01]))\./.test(host) || host.endsWith(".local");
+}
+
+/** Constant-time comparison so the internal token can't be guessed byte by byte from timing. */
+function sameSecret(a: string, b: string) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let index = 0; index < a.length; index++) diff |= a.charCodeAt(index) ^ b.charCodeAt(index);
+  return diff === 0;
 }
 
 function privateApi(pathname: string) {
@@ -34,8 +42,8 @@ export function proxy(request: NextRequest) {
   // Private business APIs are server-internal only. Browsers use the encrypted opaque endpoint.
   if (pathname.startsWith("/api/") && pathname !== OPAQUE_API && privateApi(pathname)) {
     const expected = process.env.INTERNAL_API_TOKEN;
-    const supplied = request.headers.get("x-nise-internal");
-    if (!expected || expected.length < 32 || supplied !== expected) {
+    const supplied = request.headers.get("x-nise-internal") ?? "";
+    if (!expected || expected.length < 32 || !sameSecret(supplied, expected)) {
       return new NextResponse(null, {
         status: 404,
         headers: { "cache-control": "no-store, max-age=0", "x-content-type-options": "nosniff" },

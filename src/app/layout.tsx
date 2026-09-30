@@ -1,13 +1,20 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import localFont from "next/font/local";
+import { Hind_Siliguri, Poppins } from "next/font/google";
+import ChatWidget from "@/components/chat-widget";
 import JsonLd from "@/components/json-ld";
+import MobileDock from "@/components/mobile-dock";
 import SiteFooter from "@/components/site-footer";
 import { site } from "@/lib/site";
 import { graph, localBusinessLd, organizationLd, websiteLd } from "@/lib/structured-data";
 import { publishedServiceDetails, serviceSeoTitle } from "@/lib/services";
 
-const metropolis = localFont({ src: [{ path: "../../legacy/assets/fonts/metropolis/Metropolis-Regular.woff", weight: "400" }, { path: "../../legacy/assets/fonts/metropolis/Metropolis-Medium.woff", weight: "500" }, { path: "../../legacy/assets/fonts/metropolis/Metropolis-SemiBold.woff", weight: "600" }, { path: "../../legacy/assets/fonts/metropolis/Metropolis-Bold.woff", weight: "700" }, { path: "../../legacy/assets/fonts/metropolis/Metropolis-Black.woff", weight: "800" }], variable: "--font-metropolis", display: "swap" });
+/** Poppins covers English and Hindi (Devanagari); Hind Siliguri, from the same type foundry, covers Bengali. */
+const poppins = Poppins({ subsets: ["latin", "devanagari"], weight: ["400", "500", "600", "700", "800"], variable: "--font-poppins", display: "swap" });
+const hindSiliguri = Hind_Siliguri({ subsets: ["bengali"], weight: ["400", "500", "600", "700"], variable: "--font-bengali", display: "swap", preload: false });
+
+/** Small search index for the chat assistant (titles and keywords only). */
+const chatServices = publishedServiceDetails.map((service) => ({ slug: service.slug, title: service.title, category: service.categorySlug, keywords: service.keywords }));
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -35,7 +42,7 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport: Viewport = { themeColor: "#14271f", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = { themeColor: "#070b1f", width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 const siteGraph = graph(
   organizationLd(),
@@ -45,10 +52,12 @@ const siteGraph = graph(
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="en-IN">
-    <body className={metropolis.variable}>
+    <body className={`${poppins.variable} ${hindSiliguri.variable}`}>
       <a className="skip-link" href="#main-content">Skip to content</a>
       <div id="main-content">{children}</div>
       <SiteFooter/>
+      <MobileDock/>
+      <ChatWidget whatsapp={site.whatsapp.primary} phone={site.phones.primary.e164} mapsUrl={site.mapsUrl} hours={site.openingHours} services={chatServices}/>
       <JsonLd data={siteGraph["@graph"]}/>
     </body>
   </html>;

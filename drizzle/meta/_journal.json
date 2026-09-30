@@ -36,6 +36,13 @@
       "when": 1790727600000,
       "tag": "0004_security_flows_seo",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790820000000,
+      "tag": "0005_address_geo",
+      "breakpoints": true
     }
   ]
 }

@@ -4,14 +4,17 @@ import SiteHeader from "@/components/site-header";
 import AddressManager from "@/components/address-manager";
 import AccountSecurityPanel from "@/components/account-security-panel";
 import PanSavedDetails from "@/components/pan-saved-details";
+import RequestExtras from "@/components/request-extras";
 import CancelRequestButton from "@/components/cancel-request-button";
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import {
-  ArrowRight, Bell, Check, CircleHelp, FileText, Gift, History,
-  MapPin, Printer, ShieldCheck, UserRound, WalletCards,
+  ArrowRight, Check, CircleHelp, FileText, Gift, History, LayoutDashboard,
+  MapPin, Plus, Printer, ShieldCheck, UserRound, WalletCards,
 } from "lucide-react";
+import { WhatsAppIcon } from "@/components/icons";
 import { secureApi } from "@/lib/secure-api-client";
+import { whatsappHref } from "@/lib/public-contact";
 
 type RequestItem = { reference: string; serviceSlug: string; serviceName: string; status: string; description: string; createdAt: string };
 type WalletItem = { amount: string; kind: string; description: string; reference: string | null; createdAt: string };
@@ -45,7 +48,7 @@ type RequestDetail = {
 type Section = "overview" | "requests" | "history" | "prints" | "wallet" | "vouchers" | "addresses" | "profile" | "security" | "help";
 
 const navigation: { id: Section; label: string; icon: typeof UserRound }[] = [
-  { id: "overview", label: "Overview", icon: UserRound },
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "requests", label: "My requests", icon: FileText },
   { id: "history", label: "Request history", icon: History },
   { id: "prints", label: "Print orders", icon: Printer },
@@ -88,18 +91,27 @@ export default function ProfileDashboard({ demoMode = false }: { demoMode?: bool
   }, [demoMode]);
 
   if (!snapshot) {
-    return <main className="profile-page"><SiteHeader/><div className="container profile-container">
-      <header className="profile-page-heading"><div><span className="eyebrow eyebrow-muted">CUSTOMER ACCOUNT</span><h1>Your private<br/><em>workspace.</em></h1><p>{loadError || "Opening your encrypted account workspace…"}</p></div></header>
-      {loadError && <button className="button button-green" type="button" onClick={() => void load()}>Try again</button>}
+    return <main className="page page--app profile"><SiteHeader/><div className="container profile__loading">
+      <div className={loadError ? "profile__loading-card" : "profile__loading-card is-busy"}><span className="spinner" aria-hidden="true"/><h1>{loadError ? "We couldn’t open your account" : "Opening your account…"}</h1><p>{loadError || "Loading your requests and details over an encrypted connection."}</p>
+        {loadError && <button className="btn btn--primary" type="button" onClick={() => void load()}>Try again</button>}</div>
     </div></main>;
   }
 
   return <ProfileWorkspace snapshot={snapshot} reload={demoMode ? async () => undefined : load} demoMode={demoMode}/>;
 }
 
+const subscribeHash = (callback: () => void) => { window.addEventListener("hashchange", callback); return () => window.removeEventListener("hashchange", callback); };
+/** Sections open from links like /profile#requests (the hash never reaches the server). */
+function sectionFromUrl(): Section {
+  const value = window.location.hash.slice(1);
+  return navigation.some((item) => item.id === value) ? value as Section : "overview";
+}
+
 function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; reload: () => Promise<void>; demoMode: boolean }) {
   const { user, requests, jobs, wallet, coupons, activeSessions, openWork } = snapshot;
-  const [section, setSection] = useState<Section>("overview");
+  const urlSection = useSyncExternalStore(subscribeHash, sectionFromUrl, () => "overview" as Section);
+  const [chosenSection, setSection] = useState<Section | null>(null);
+  const section = chosenSection ?? urlSection;
   const [name, setName] = useState(user.name);
   const [phone, setPhone] = useState(user.phone ?? "");
   const [city, setCity] = useState(user.city);
@@ -144,85 +156,115 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
   function openSection(next: Section) {
     setSection(next);
     if (next !== "requests") { setSelectedRequest(""); setRequestDetail(null); setRequestDetailError(""); }
+    try { window.history.replaceState(window.history.state, "", next === "overview" ? "/profile" : `/profile#${next}`); } catch { /* ignore */ }
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function viewRequest(reference: string) {
-    setSection("requests"); setSelectedRequest(reference); setRequestDetail(null); setRequestDetailError(""); setRequestDetailBusy(true);
+    openSection("requests"); setSelectedRequest(reference); setRequestDetail(null); setRequestDetailError(""); setRequestDetailBusy(true);
     try { setRequestDetail(await secureApi<RequestDetail>("F4m9C1xT6qH3", { reference })); }
     catch (error) { setRequestDetailError(error instanceof Error ? error.message : "Could not open this request."); }
     finally { setRequestDetailBusy(false); }
   }
 
+  const statusClass = (status: string) => `status-pill status-pill--${closedStatuses.has(status.toLowerCase()) ? status.toLowerCase() === "completed" ? "done" : "closed" : "progress"}`;
+
   function RequestRows({ rows }: { rows: RequestItem[] }) {
-    if (!rows.length) return <EmptyState icon={<FileText size={20}/>} title="No requests here yet" text="When you submit a service enquiry, its reference and staff updates will appear in this section." action={<Link className="button button-green" href="/services">Browse service guides <ArrowRight size={15}/></Link>} />;
-    return <div className="profile-record-list">{rows.map((item) => <article className="profile-record" key={item.reference}>
-      <span className="request-icon"><FileText size={18}/></span>
-      <div className="profile-record-copy"><b>{item.serviceName}</b><small>{item.reference} · {dateLabel(item.createdAt)}</small><p>{item.description || "You did not add a note to this request."}</p></div>
-      <span className={`request-status status-${item.status.toLowerCase().replaceAll(" ", "-")}`}><i/>{item.status}</span>
-      <button className="profile-text-button" type="button" onClick={() => void viewRequest(item.reference)}>View details <ArrowRight size={14}/></button>
+    if (!rows.length) return <EmptyState icon={<FileText size={22}/>} title="No requests here yet" text="Send your first request in four quick steps. Its reference number and live status will appear here." action={<Link className="btn btn--primary" href="/request">Start a request <ArrowRight size={16}/></Link>} />;
+    return <div className="record-list">{rows.map((item) => <article className="record" key={item.reference}>
+      <span className="record__icon"><FileText size={20}/></span>
+      <div className="record__body"><b>{item.serviceName}</b><small>{item.reference} · {dateLabel(item.createdAt)}</small>{item.description && <p>{item.description}</p>}</div>
+      <span className={statusClass(item.status)}>{item.status.replaceAll("_", " ")}</span>
+      <button className="btn btn--ghost btn--sm" type="button" onClick={() => void viewRequest(item.reference)}>Details <ArrowRight size={15}/></button>
     </article>)}</div>;
   }
 
   function EmptyState({ icon, title, text, action }: { icon: React.ReactNode; title: string; text: string; action?: React.ReactNode }) {
-    return <div className="profile-empty-state"><span>{icon}</span><h3>{title}</h3><p>{text}</p>{action}</div>;
+    return <div className="empty-state"><span className="empty-state__icon">{icon}</span><h3>{title}</h3><p>{text}</p>{action}</div>;
   }
 
   function SectionHeading({ eyebrow, title, text }: { eyebrow: string; title: string; text: string }) {
-    return <div className="profile-panel-heading"><span className="eyebrow eyebrow-muted">{eyebrow}</span><h2>{title}</h2><p>{text}</p></div>;
+    return <div className="panel-head"><span className="eyebrow">{eyebrow}</span><h2>{title}</h2><p>{text}</p></div>;
   }
+
+  const completion = [name, phone, city, state, postalCode].filter((value) => value.trim()).length;
 
   const content = (() => {
     switch (section) {
       case "overview": return <>
-        <section className="profile-welcome-card"><div><span className="eyebrow">YOUR CUSTOMER SPACE</span><h2>Good to see you,<br/><em>{firstName}.</em></h2><p>See your service progress, update your details, or start with a local service guide.</p><Link href="/services" className="button button-cream">Browse services <ArrowRight size={15}/></Link></div><div className="profile-welcome-art"><FileText size={47} strokeWidth={1}/><i/><i/><i/></div></section>
-        <section className="profile-metric-grid"><Metric icon={<FileText size={18}/>} number={activeRequests.length} label="Open requests"/><Metric icon={<Printer size={18}/>} number={jobs.length} label="Print orders"/><Metric icon={<WalletCards size={18}/>} number={rupees(balance)} label="Wallet balance"/></section>
-        <div className="profile-panel profile-overview-panel"><SectionHeading eyebrow="RECENT ACTIVITY" title="Your latest requests" text="Open any request to see the information you submitted and its current status."/><RequestRows rows={requests.slice(0, 3)}/></div>
-        <div className="profile-quick-links"><Link href="/pan"><FileText size={17}/><span><b>PAN assistance</b><small>Guides, common request form and official tracking.</small></span><ArrowRight size={15}/></Link><button onClick={() => openSection("profile")}><UserRound size={17}/><span><b>Complete your profile</b><small>Add a phone number and local contact details.</small></span><ArrowRight size={15}/></button><button onClick={() => openSection("addresses")}><MapPin size={17}/><span><b>Manage saved addresses</b><small>Keep addresses for print pickup or delivery.</small></span><ArrowRight size={15}/></button><Link href="/print"><Printer size={17}/><span><b>Request a print estimate</b><small>Choose your pages and options before sending it.</small></span><ArrowRight size={15}/></Link></div>
+        <div className="metric-grid">
+          <Metric icon={<FileText size={20}/>} number={activeRequests.length} label="Open requests" tone="blue" onClick={() => openSection("requests")}/>
+          <Metric icon={<Printer size={20}/>} number={jobs.length} label="Print orders" tone="violet" onClick={() => openSection("prints")}/>
+          <Metric icon={<WalletCards size={20}/>} number={rupees(balance)} label="Wallet balance" tone="green" onClick={() => openSection("wallet")}/>
+        </div>
+        <div className="panel"><SectionHeading eyebrow="RECENT ACTIVITY" title="Your latest requests" text="Open any request to see what you sent and its current status."/><RequestRows rows={requests.slice(0, 3)}/></div>
+        <div className="quick-grid">
+          <Link href="/request" className="quick tone-blue"><Plus size={20}/><span><b>Start a request</b><small>4 quick steps, any service.</small></span><ArrowRight size={18}/></Link>
+          <Link href="/print" className="quick tone-cyan"><Printer size={20}/><span><b>Print from your phone</b><small>Upload, pick pages, collect.</small></span><ArrowRight size={18}/></Link>
+          <button type="button" onClick={() => openSection("profile")} className="quick tone-violet"><UserRound size={20}/><span><b>Complete your profile</b><small>{completion}/5 details added.</small></span><ArrowRight size={18}/></button>
+          <button type="button" onClick={() => openSection("addresses")} className="quick tone-green"><MapPin size={20}/><span><b>Saved addresses</b><small>For delivery and doorstep help.</small></span><ArrowRight size={18}/></button>
+        </div>
       </>;
-      case "requests": return <div className="profile-panel"><SectionHeading eyebrow="IN PROGRESS" title="My service requests" text="Private request details load through the encrypted account channel and are not placed in the page URL."/>
-        {focusRequest && <article className="selected-request-card"><div className="selected-request-top"><div><span className="eyebrow eyebrow-muted">REQUEST DETAILS · {focusRequest.reference}</span><h3>{focusRequest.serviceName}</h3><small>Submitted {dateLabel(focusRequest.createdAt)}</small></div><span className={`request-status status-${focusRequest.status.toLowerCase().replaceAll(" ", "-")}`}><i/>{focusRequest.status}</span></div>
-          {requestDetailBusy && <p>Opening private request details…</p>}
-          {requestDetailError && <div className="form-alert error-alert">{requestDetailError}</div>}
+      case "requests": return <div className="panel"><SectionHeading eyebrow="IN PROGRESS" title="My service requests" text="Private request details load over the encrypted account connection and never appear in the page address."/>
+        {focusRequest && <article className="request-detail"><div className="request-detail__top"><div><span className="eyebrow">REQUEST · {focusRequest.reference}</span><h3>{focusRequest.serviceName}</h3><small>Submitted {dateLabel(focusRequest.createdAt)}</small></div><span className={statusClass(focusRequest.status)}>{focusRequest.status.replaceAll("_", " ")}</span></div>
+          {requestDetailBusy && <p className="muted">Opening private request details…</p>}
+          {requestDetailError && <div className="alert alert--error">{requestDetailError}</div>}
           {requestDetail && <>
             <PanSavedDetails details={requestDetail.request.details}/>
-            <p>{typeof requestDetail.request.details.description === "string" ? requestDetail.request.details.description : focusRequest.description || "No additional note was submitted."}</p>
-            {requestDetail.events.length > 0 && <ol className="request-timeline">{requestDetail.events.map((event, index) => <li key={`${event.createdAt}-${index}`}><b>{event.label}</b> <small>{dateTime(event.createdAt)}</small></li>)}</ol>}
-            {requestDetail.files.length > 0 && <div><b>Supporting documents</b><ul>{requestDetail.files.map((file, index) => <li key={`${file.createdAt}-${index}`}>{file.name} <small>· {dateLabel(file.createdAt)}</small></li>)}</ul></div>}
-            <div className="selected-request-actions"><Link href={`/services/${requestDetail.request.serviceSlug}`}>Service checklist <ArrowRight size={14}/></Link>{requestDetail.request.cancellable && <CancelRequestButton reference={requestDetail.request.reference} onDone={async () => { setSelectedRequest(""); setRequestDetail(null); await reload(); }}/>}</div>
+            <RequestExtras details={requestDetail.request.details} fallback={focusRequest.description}/>
+            {requestDetail.events.length > 0 && <ol className="timeline">{requestDetail.events.map((event, index) => <li key={`${event.createdAt}-${index}`}><b>{event.label}</b><small>{dateTime(event.createdAt)}</small></li>)}</ol>}
+            {requestDetail.files.length > 0 && <div className="request-detail__files"><b>Supporting documents</b><ul>{requestDetail.files.map((file, index) => <li key={`${file.createdAt}-${index}`}><FileText size={16}/>{file.name} <small>· {dateLabel(file.createdAt)}</small></li>)}</ul></div>}
+            <div className="request-detail__actions">{requestDetail.request.serviceSlug !== "other" && <Link className="btn btn--ghost btn--sm" href={`/services/${requestDetail.request.serviceSlug}`}>Service checklist <ArrowRight size={15}/></Link>}<a className="btn btn--wa btn--sm" href={whatsappHref(`Hi NISE COMPORT, about my request ${requestDetail.request.reference}`)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={16}/>Ask on WhatsApp</a>{requestDetail.request.cancellable && <CancelRequestButton reference={requestDetail.request.reference} onDone={async () => { setSelectedRequest(""); setRequestDetail(null); await reload(); }}/>}</div>
           </>}
         </article>}
         <RequestRows rows={activeRequests}/></div>;
-      case "history": return <div className="profile-panel"><SectionHeading eyebrow="COMPLETED & CLOSED" title="Request history" text="A record of completed, rejected, cancelled, or otherwise closed service requests."/><RequestRows rows={historyRequests}/>{!historyRequests.length && requests.length > 0 && <p className="profile-inline-note">Your requests are still in progress. They’ll move into history after the team closes them.</p>}</div>;
-      case "prints": return <div className="profile-panel"><SectionHeading eyebrow="DOCUMENT SERVICES" title="Print orders" text="Track print requests, pickup or delivery selection, the estimate, and the latest fulfilment status." />{jobs.length ? <div className="profile-record-list">{jobs.map((job) => <article className="profile-record" key={job.reference}><span className="request-icon"><Printer size={18}/></span><div className="profile-record-copy"><b>Print order · {job.fulfillment}</b><small>{job.reference} · {dateLabel(job.createdAt)}</small><p>Estimate recorded: {rupees(Number(job.total))}</p></div><span className={`request-status status-${job.status.toLowerCase().replaceAll(" ", "-")}`}><i/>{job.status}</span></article>)}</div> : <EmptyState icon={<Printer size={20}/>} title="No print orders yet" text="Upload a document, choose print options, and request an estimate. The team confirms the final cost before printing." action={<Link href="/print" className="button button-green">Start a print request <ArrowRight size={15}/></Link>}/>}</div>;
-      case "wallet": return <div className="profile-panel"><SectionHeading eyebrow="CUSTOMER REWARDS" title="Wallet & credits" text="Credits and adjustments posted by the service team appear here with their date and reference."/><div className="profile-wallet-summary"><span>AVAILABLE BALANCE</span><strong>{rupees(balance)}</strong><small>Wallet top-up and online wallet payment are not enabled.</small></div>{wallet.length ? <div className="wallet-ledger">{wallet.map((entry, index) => <article key={`${entry.createdAt}-${index}`}><div><b>{entry.description}</b><small>{dateLabel(entry.createdAt)}{entry.reference ? ` · ${entry.reference}` : ""}</small></div><strong className={entry.kind.toLowerCase() === "debit" ? "debit-value" : "credit-value"}>{entry.kind.toLowerCase() === "debit" ? "−" : "+"}{rupees(Number(entry.amount))}</strong></article>)}</div> : <EmptyState icon={<WalletCards size={20}/>} title="No wallet activity yet" text="Any eligible promotional credit or adjustment will be recorded here by staff."/>}</div>;
-      case "vouchers": return <div className="profile-panel"><SectionHeading eyebrow="SAVINGS & PROMOTIONS" title="Available vouchers" text="Active public coupon codes from the store. Eligibility is checked again when you request a print estimate." />{coupons.length ? coupons.map((coupon) => <article className="pan-card" key={coupon.code}><h3>{coupon.code}</h3><p>{coupon.discountType === "percent" ? `${coupon.discountValue}%` : rupees(Number(coupon.discountValue))} off · Minimum order {rupees(Number(coupon.minimumAmount))}</p><p>{coupon.expiresAt ? `Expires ${dateLabel(coupon.expiresAt)}` : "No expiry configured"}</p><Link href="/print">Use with a print request →</Link></article>) : <p>No active coupon codes are available. <Link href="/offers">See public offers</Link>.</p>}</div>;
-      case "addresses": return <div className="profile-panel"><SectionHeading eyebrow="DELIVERY & CONTACT" title="Saved addresses" text="Save an address for a print delivery request. You can choose pickup instead when sending a print job."/>{demoMode ? <EmptyState icon={<MapPin size={20}/>} title="Demo preview" text="Saved addresses are available after creating a real account."/> : <AddressManager/>}</div>;
-      case "profile": return <div className="profile-panel"><SectionHeading eyebrow="PERSONAL INFORMATION" title="Your profile details" text="Keep your contact and location information current."/><div className="profile-completion"><b>Profile readiness: {[name, phone, city, state, postalCode].filter((value) => value.trim()).length}/5 details completed</b><p>Your contact information can prefill assistance forms after the private workspace opens.</p></div><form className="profile-edit-form profile-edit-grid" onSubmit={saveProfile}>
-        <label>Full name<input required minLength={2} maxLength={100} autoComplete="name" value={name} onChange={(event) => setName(event.target.value)}/></label>
-        <label>Email address<input value={user.email} readOnly/><small>To change it, open “Sign-in & privacy”.</small></label>
-        <label>Mobile number<input type="tel" inputMode="tel" maxLength={20} autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} aria-invalid={Boolean(profileFieldErrors.phone)}/><small>{profileFieldErrors.phone ?? "Needed for phone or WhatsApp updates."}</small></label>
-        <label>City<input maxLength={100} autoComplete="address-level2" value={city} onChange={(event) => setCity(event.target.value)}/></label>
-        <label>State<input maxLength={100} autoComplete="address-level1" value={state} onChange={(event) => setState(event.target.value)}/></label>
-        <label>PIN code<input inputMode="numeric" pattern="[1-9][0-9]{5}" maxLength={6} autoComplete="postal-code" value={postalCode} onChange={(event) => setPostalCode(event.target.value.replace(/\D/g, "").slice(0, 6))} aria-invalid={Boolean(profileFieldErrors.postalCode)}/>{profileFieldErrors.postalCode && <small className="field-error">{profileFieldErrors.postalCode}</small>}</label>
-        <label>Preferred update channel<select value={preferredContact} onChange={(event) => setPreferredContact(event.target.value as ProfileUser["preferredContact"])}><option value="email">Email</option><option value="phone">Phone call</option><option value="whatsapp">WhatsApp</option></select><small>{profileFieldErrors.preferredContact}</small></label>
-        <label className="profile-summary-field">A note for your profile <span>OPTIONAL</span><textarea maxLength={500} rows={4} value={profileSummary} onChange={(event) => setProfileSummary(event.target.value)}/><small>{profileSummary.length}/500 characters. Don’t enter passwords, OTPs or identity numbers.</small></label>
-        {profileError && <div className="form-alert error-alert profile-form-message">{profileError}</div>}{profileMessage && <div className="form-alert success-alert profile-form-message">{profileMessage}</div>}
-        <div className="profile-form-actions"><button className="button button-green" disabled={profileBusy}>{profileBusy ? "Saving…" : "Save profile details"}</button></div>
-      </form></div>;
-      case "security": return <div className="profile-panel"><SectionHeading eyebrow="ACCOUNT ACCESS" title="Sign-in & privacy" text="Manage your password, sign-in email and devices. Keep access codes private."/><AccountSecurityPanel email={user.email} emailVerified={user.emailVerified} activeSessions={activeSessions} openWork={openWork} demoMode={demoMode}/></div>;
-      case "help": return <div className="profile-panel"><SectionHeading eyebrow="LOCAL SUPPORT" title="Need help with your account?" text="Contact the Kharangajhar team if a request status needs clarification or your profile details need an update."/><div className="profile-help-card"><CircleHelp size={24}/><div><b>NISE COMPORT · Kharangajhar, Telco Colony</b><p>Ground Floor, Singh Building, Shop No-3, Hanuman Mandir Road, Kharangajhar, Telco Colony, Jamshedpur, Jharkhand 831004</p><a href="tel:+919771219893">+91 97712 19893</a><div><Link className="button button-green" href="/contact">Contact the team <ArrowRight size={15}/></Link><a className="button button-outline" href="https://wa.me/919771219893" target="_blank" rel="noreferrer">WhatsApp</a></div></div></div></div>;
+      case "history": return <div className="panel"><SectionHeading eyebrow="COMPLETED & CLOSED" title="Request history" text="Completed, cancelled and otherwise closed requests."/><RequestRows rows={historyRequests}/>{!historyRequests.length && requests.length > 0 && <p className="muted">Your requests are still in progress. They move here once the team closes them.</p>}</div>;
+      case "prints": return <div className="panel"><SectionHeading eyebrow="DOCUMENT SERVICES" title="Print orders" text="Your print requests, pickup or delivery choice, the estimate and the latest status." />{jobs.length ? <div className="record-list">{jobs.map((job) => <article className="record" key={job.reference}><span className="record__icon"><Printer size={20}/></span><div className="record__body"><b>Print order · {job.fulfillment}</b><small>{job.reference} · {dateLabel(job.createdAt)}</small><p>Estimate: {rupees(Number(job.total))}</p></div><span className={statusClass(job.status)}>{job.status.replaceAll("_", " ")}</span></article>)}</div> : <EmptyState icon={<Printer size={22}/>} title="No print orders yet" text="Upload a document, choose options and request an estimate. The team confirms the final cost before printing." action={<Link href="/print" className="btn btn--primary">Start a print request <ArrowRight size={16}/></Link>}/>}</div>;
+      case "wallet": return <div className="panel"><SectionHeading eyebrow="CUSTOMER REWARDS" title="Wallet & credits" text="Credits and adjustments posted by the team, with date and reference."/><div className="wallet-hero"><span>AVAILABLE BALANCE</span><strong>{rupees(balance)}</strong><small>Top-up and online wallet payment are not enabled.</small></div>{wallet.length ? <div className="ledger">{wallet.map((entry, index) => <article key={`${entry.createdAt}-${index}`}><div><b>{entry.description}</b><small>{dateLabel(entry.createdAt)}{entry.reference ? ` · ${entry.reference}` : ""}</small></div><strong className={entry.kind.toLowerCase() === "debit" ? "is-debit" : "is-credit"}>{entry.kind.toLowerCase() === "debit" ? "−" : "+"}{rupees(Number(entry.amount))}</strong></article>)}</div> : <EmptyState icon={<WalletCards size={22}/>} title="No wallet activity yet" text="Eligible promotional credits or adjustments will appear here."/>}</div>;
+      case "vouchers": return <div className="panel"><SectionHeading eyebrow="SAVINGS" title="Vouchers & offers" text="Active coupon codes. Eligibility is checked again when you use one." />{coupons.length ? <div className="voucher-grid">{coupons.map((coupon) => <article className="voucher" key={coupon.code}><span className="badge badge--live"><i/>LIVE</span><h3>{coupon.code}</h3><p>{coupon.discountType === "percent" ? `${coupon.discountValue}%` : rupees(Number(coupon.discountValue))} off · min. {rupees(Number(coupon.minimumAmount))}</p><small>{coupon.expiresAt ? `Expires ${dateLabel(coupon.expiresAt)}` : "No expiry set"}</small><Link className="text-link" href="/print">Use with a print request <ArrowRight size={15}/></Link></article>)}</div> : <EmptyState icon={<Gift size={22}/>} title="No voucher codes right now" text="Live offers are applied inside the request steps automatically." action={<Link className="btn btn--primary" href="/offers">See live offers <ArrowRight size={16}/></Link>}/>}</div>;
+      case "addresses": return <div className="panel"><SectionHeading eyebrow="DELIVERY & CONTACT" title="Saved addresses" text="Search with Google, use your current location or type it. Used for print delivery and doorstep help."/>{demoMode ? <EmptyState icon={<MapPin size={22}/>} title="Demo preview" text="Saved addresses are available after creating a real account."/> : <AddressManager/>}</div>;
+      case "profile": return <div className="panel"><SectionHeading eyebrow="PERSONAL INFORMATION" title="Your profile details" text="Keep your contact details current. They prefill your request forms."/>
+        <div className="progress-card"><div><b>Profile {Math.round((completion / 5) * 100)}% complete</b><small>{completion}/5 details added</small></div><span className="progress"><i style={{ width: `${(completion / 5) * 100}%` }}/></span></div>
+        <form className="form-grid profile-form" onSubmit={saveProfile}>
+          <label className="field"><span className="field__label">Full name</span><input required minLength={2} maxLength={100} autoComplete="name" value={name} onChange={(event) => setName(event.target.value)}/></label>
+          <label className="field"><span className="field__label">Email address</span><input value={user.email} readOnly/><span className="field__hint">Change it under “Sign-in &amp; privacy”.</span></label>
+          <label className="field"><span className="field__label">Mobile number</span><input type="tel" inputMode="tel" maxLength={20} autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} aria-invalid={Boolean(profileFieldErrors.phone)}/><span className={profileFieldErrors.phone ? "field__error" : "field__hint"}>{profileFieldErrors.phone ?? "Needed for phone or WhatsApp updates."}</span></label>
+          <label className="field"><span className="field__label">Preferred update channel</span><select value={preferredContact} onChange={(event) => setPreferredContact(event.target.value as ProfileUser["preferredContact"])}><option value="email">Email</option><option value="phone">Phone call</option><option value="whatsapp">WhatsApp</option></select>{profileFieldErrors.preferredContact && <span className="field__error">{profileFieldErrors.preferredContact}</span>}</label>
+          <label className="field"><span className="field__label">City</span><input maxLength={100} autoComplete="address-level2" value={city} onChange={(event) => setCity(event.target.value)}/></label>
+          <label className="field"><span className="field__label">State</span><input maxLength={100} autoComplete="address-level1" value={state} onChange={(event) => setState(event.target.value)}/></label>
+          <label className="field"><span className="field__label">PIN code</span><input inputMode="numeric" pattern="[1-9][0-9]{5}" maxLength={6} autoComplete="postal-code" value={postalCode} onChange={(event) => setPostalCode(event.target.value.replace(/\D/g, "").slice(0, 6))} aria-invalid={Boolean(profileFieldErrors.postalCode)}/>{profileFieldErrors.postalCode && <span className="field__error">{profileFieldErrors.postalCode}</span>}</label>
+          <span className="field field--spacer" aria-hidden="true"/>
+          <label className="field field--full"><span className="field__label">A note for our team <em>optional</em></span><textarea maxLength={500} rows={4} value={profileSummary} onChange={(event) => setProfileSummary(event.target.value)}/><span className="field__hint">{profileSummary.length}/500 · Don’t enter passwords, OTPs or identity numbers.</span></label>
+          {profileError && <div className="alert alert--error field--full">{profileError}</div>}{profileMessage && <div className="alert alert--success field--full">{profileMessage}</div>}
+          <div className="form-actions field--full"><button className="btn btn--primary btn--lg" disabled={profileBusy}>{profileBusy ? "Saving…" : "Save profile details"}</button></div>
+        </form></div>;
+      case "security": return <div className="panel"><SectionHeading eyebrow="ACCOUNT ACCESS" title="Sign-in & privacy" text="Manage your password, sign-in email and devices. Keep access codes private."/><AccountSecurityPanel email={user.email} emailVerified={user.emailVerified} activeSessions={activeSessions} openWork={openWork} demoMode={demoMode}/></div>;
+      case "help": return <div className="panel"><SectionHeading eyebrow="LOCAL SUPPORT" title="Need help with your account?" text="Contact the Kharangajhar team about a request status or your details."/><div className="help-card"><CircleHelp size={26}/><div><b>NISE COMPORT · Kharangajhar, Telco Colony</b><p>Ground Floor, Singh Building, Shop No-3, Hanuman Mandir Road, Kharangajhar, Telco Colony, Jamshedpur, Jharkhand 831004</p><div className="help-card__actions"><a className="btn btn--wa" href={whatsappHref("Hi NISE COMPORT, I need help with my account.")} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={17}/>WhatsApp</a><a className="btn btn--ghost" href="tel:+919771219893">Call +91 97712 19893</a><Link className="btn btn--ghost" href="/contact">Contact page</Link></div></div></div></div>;
     }
   })();
 
-  return <main className="profile-page"><SiteHeader/><div className="container profile-container">
-    <header className="profile-page-heading"><div><span className="eyebrow eyebrow-muted">CUSTOMER ACCOUNT</span><h1>Your profile,<br/><em>your service desk.</em></h1><p>Welcome, {firstName}. Choose a section to see just the information you need.</p></div></header>
-    <div className="profile-workspace"><aside className="profile-sidebar"><div className="profile-identity"><div className="profile-avatar"><UserRound size={24}/></div><div><b>{user.name}</b><small>{user.email}</small></div></div><span className="verified-badge"><ShieldCheck size={13}/> Email {user.emailVerified ? "verified" : "not verified"}</span><div className="sidebar-divider"/><nav className="profile-section-nav" aria-label="Profile sections">{navigation.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={section === id ? "active" : ""} onClick={() => openSection(id)}><Icon size={16}/><span>{label}</span>{id === "requests" && activeRequests.length > 0 && <small>{activeRequests.length}</small>}</button>)}</nav><div className="sidebar-help"><span><Bell size={15}/></span><div><b>Need a hand?</b><small>Local team support</small><button onClick={() => openSection("help")}>Get help <ArrowRight size={12}/></button></div></div></aside>
-      <section className="profile-main-panel" aria-live="polite"><div className="profile-mobile-section-select"><label htmlFor="profile-section">Profile section</label><select id="profile-section" value={section} onChange={(event) => openSection(event.target.value as Section)}>{navigation.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></div>{content}</section>
+  const current = navigation.find((item) => item.id === section);
+
+  return <main className="page page--app profile"><SiteHeader/>
+    <section className="profile__hero">
+      <div className="page-hero__bg" aria-hidden="true"><span className="blob blob--1"/><span className="blob blob--2"/></div>
+      <div className="container profile__hero-inner">
+        <span className="profile__avatar" aria-hidden="true">{firstName.slice(0, 1).toUpperCase()}</span>
+        <div className="profile__hello"><span className="eyebrow eyebrow--light">MY ACCOUNT</span><h1>Hi {firstName}, <span className="grad-text grad-text--warm">good to see you.</span></h1><p>{user.email} · <span className={user.emailVerified ? "verified" : "unverified"}><ShieldCheck size={15}/> Email {user.emailVerified ? "verified" : "not verified"}</span></p></div>
+        <Link className="btn btn--primary btn--lg profile__cta" href="/request"><Plus size={18}/>New request</Link>
+      </div>
+    </section>
+    <div className="container profile__layout">
+      <aside className="profile__nav" aria-label="Account sections">
+        <nav>{navigation.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={section === id ? "is-active" : undefined} aria-current={section === id ? "page" : undefined} onClick={() => openSection(id)}><Icon size={19}/><span>{label}</span>{id === "requests" && activeRequests.length > 0 && <small>{activeRequests.length}</small>}</button>)}</nav>
+      </aside>
+      <section className="profile__main" aria-live="polite" aria-label={current?.label}>{content}
+        <p className="fine"><Check size={15}/> Account data loads over an encrypted connection. Final government and provider decisions rest with the relevant authority.</p>
+      </section>
     </div>
-    <p className="profile-footnote"><Check size={14}/> Private account data is loaded through the encrypted account channel; final government/provider decisions remain with the relevant authority.</p>
-  </div></main>;
+  </main>;
 }
 
-function Metric({ icon, number, label }: { icon: React.ReactNode; number: React.ReactNode; label: string }) {
-  return <article className="profile-metric"><span>{icon}</span><div><b>{number}</b><small>{label}</small></div></article>;
+function Metric({ icon, number, label, tone, onClick }: { icon: React.ReactNode; number: React.ReactNode; label: string; tone: string; onClick: () => void }) {
+  return <button type="button" className={`metric tone-${tone}`} onClick={onClick}><span className="metric__icon">{icon}</span><span><b>{number}</b><small>{label}</small></span><ArrowRight size={18}/></button>;
 }

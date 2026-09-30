@@ -218,17 +218,6 @@ export function findArticle(slug: string) { return articles.find((article) => ar
 export function articlesForService(serviceSlug: string) { return articles.filter((article) => article.serviceSlug === serviceSlug); }
 
 // Public artwork and service explainers from the original NISE COMPORT media library.
-export const galleryItems = [
-  { title: "Digital citizen services", image: "/images/service/1.png", alt: "NISE COMPORT citizen service information artwork", category: "Services" },
-  { title: "PAN application support", image: "/images/service/pan.png", alt: "PAN application assistance service artwork", category: "Government services" },
-  { title: "Aadhaar guidance", image: "/images/service/aadhaar.png", alt: "Aadhaar service guidance artwork", category: "Government services" },
-  { title: "Insurance enquiry", image: "/images/service/two-wheeler.png", alt: "Two wheeler insurance enquiry artwork", category: "Insurance" },
-  { title: "Passport application help", image: "/images/service/passport.png", alt: "Passport application help service artwork", category: "Citizen services" },
-  { title: "Online form assistance", image: "/images/service/5.png", alt: "Online application form support artwork", category: "Digital help" },
-  { title: "Certificate checklist", image: "/images/service/4.png", alt: "Certificate document support artwork", category: "Jharkhand services" },
-  { title: "Print and scan services", image: "/images/service/media.png", alt: "Printing and document services artwork", category: "Print & scan" },
-  { title: "Community updates", image: "/images/slider/slide1.png", alt: "NISE COMPORT community service centre artwork", category: "Community" },
-];
 export const socialPosts = [
   { platform: "WhatsApp", title: "Need help with an online form?", text: "Bring the official form link and your supporting documents to our Kharangajhar desk. Message us first to check what to prepare.", image: "/images/offer/post/1.png", href: "https://wa.me/919771219893" },
   { platform: "Instagram", title: "Local help, with a clear next step", text: "PAN, certificates, insurance enquiries, printing and everyday digital services in Jamshedpur.", image: "/images/offer/post/2.png", href: "https://www.instagram.com/" },
@@ -243,8 +232,3 @@ export const teamMembers = [
   { name: "Jyoti Verma", role: "Service team", image: "/images/team/8.png" },
   { name: "Amarjeet Kumar", role: "Business partner", image: "/images/team/9.png" },
 ];
-export const offerInfo = {
-  title: "Current offers & customer vouchers",
-  description: "NISE COMPORT shares limited offers and voucher codes here when they are available. Ask the team to confirm the eligible service, validity and conditions before you start.",
-  note: "No discount is active by default. Customer coupons are checked against the live voucher list when you enter a code in a supported request flow. An offer does not reduce government, insurer or other third-party charges unless the offer terms explicitly say so.",
-};

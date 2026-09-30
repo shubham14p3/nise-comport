@@ -16,7 +16,7 @@ export default function CancelRequestButton({ reference, onDone }: { reference: 
     try {
       await secureApi("G8q4T1vM6rC0", { reference, reason });
       setOpen(false); if (onDone) await onDone(); else router.refresh();
-    } catch { setError("You appear to be offline. Check your connection and try again."); }
+    } catch (reason) { setError(reason instanceof TypeError ? "You appear to be offline. Check your connection and try again." : reason instanceof Error ? reason.message : "Could not cancel this request."); }
     finally { setBusy(false); }
   }
 

@@ -6,7 +6,8 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "SAMEORIGIN" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()" },
+  // geolocation=(self): only our own pages may ask for location ("Use my current location" for addresses).
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self), payment=(), usb=(), interest-cohort=()" },
   { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
 ];
 
@@ -18,6 +19,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   compress: true,
   images: { formats: ["image/avif", "image/webp"], minimumCacheTTL: 60 * 60 * 24 * 30 },
+  // The share-image route reads this font from disk (Poppins covers English and Hindi).
+  outputFileTracingIncludes: { "/api/og": ["./src/assets/fonts/**", "./public/images/logo/**"] },
   async redirects() {
     return legacyRedirects();
   },
@@ -33,6 +36,7 @@ const nextConfig: NextConfig = {
       { source: "/signup", headers: noindex },
       { source: "/forgot-password", headers: noindex },
       { source: "/pan/request", headers: noindex },
+      { source: "/request", headers: noindex },
       { source: "/images/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=2592000, stale-while-revalidate=86400" }] },
       { source: "/og/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }] },
       { source: "/brand/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=2592000, stale-while-revalidate=86400" }] },

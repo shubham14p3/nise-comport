@@ -11,15 +11,15 @@ const minuteSnapshot = () => Math.floor(Date.now() / 60_000);
 const serverSnapshot = () => null;
 
 /** "Open now · closes 7 pm" badge, calculated in India time in the visitor's browser. */
-export default function OpenStatus({ rules, language = "en" }: { rules: OpeningHoursRule[]; language?: "en" | "hi" }) {
+export default function OpenStatus({ rules, language = "en" }: { rules: OpeningHoursRule[]; language?: "en" | "hi" | "bn" }) {
   const minute = useSyncExternalStore(subscribe, minuteSnapshot, serverSnapshot);
   if (minute === null || !rules.length) return null;
   const state = openState(rules, new Date(minute * 60_000));
-  const hi = language === "hi";
-  const text = state.open
-    ? hi ? `अभी खुला है · ${formatTime12h(state.closesAt)} बजे बंद होगा` : `Open now · closes ${formatTime12h(state.closesAt)}`
-    : state.nextOpen
-      ? hi ? `अभी बंद है · ${formatTime12h(state.nextOpen.time)} बजे खुलेगा` : `Closed now · opens ${state.nextOpen.dayName} at ${formatTime12h(state.nextOpen.time)}`
-      : hi ? "अभी बंद है" : "Closed now";
+  const time = (value: string) => formatTime12h(value);
+  const text = language === "hi"
+    ? state.open ? `अभी खुला है · ${time(state.closesAt)} बजे बंद होगा` : state.nextOpen ? `अभी बंद है · ${time(state.nextOpen.time)} बजे खुलेगा` : "अभी बंद है"
+    : language === "bn"
+      ? state.open ? `এখন খোলা · ${time(state.closesAt)}-এ বন্ধ হবে` : state.nextOpen ? `এখন বন্ধ · ${time(state.nextOpen.time)}-এ খুলবে` : "এখন বন্ধ"
+      : state.open ? `Open now · closes ${time(state.closesAt)}` : state.nextOpen ? `Closed now · opens ${state.nextOpen.dayName} at ${time(state.nextOpen.time)}` : "Closed now";
   return <span className={`open-status ${state.open ? "is-open" : "is-closed"}`} role="status"><i aria-hidden="true"/>{text}</span>;
 }

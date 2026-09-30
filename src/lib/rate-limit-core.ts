@@ -40,4 +40,7 @@ export const RATE_RULES = {
   uploadsPerUserDay: { name: "upload", limit: 40, windowSeconds: 86400 },
   printJobsPerUserHour: { name: "print-job", limit: 15, windowSeconds: 3600 },
   cancelPerUserHour: { name: "cancel-request", limit: 10, windowSeconds: 3600 },
+  /** Google address search (each call costs money): generous for people, tight for scripts. */
+  placesPerIpHour: { name: "places-ip", limit: 150, windowSeconds: 3600 },
+  placesPerIpDay: { name: "places-ip", limit: 600, windowSeconds: 86400 },
 } as const satisfies Record<string, RateRule>;

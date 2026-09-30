@@ -13,6 +13,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: route.changeFrequency,
     priority: route.priority,
     ...(route.images?.length ? { images: route.images.map((image) => absoluteUrl(image)) } : {}),
-    ...(route.alternates ? { alternates: { languages: Object.fromEntries(Object.entries({ [route.path.startsWith("/hi") ? "hi-IN" : "en-IN"]: route.path, ...route.alternates }).map(([language, path]) => [language, absoluteUrl(path)])) } } : {}),
+    ...(route.alternates ? { alternates: { languages: Object.fromEntries(Object.entries({ [route.path.startsWith("/hi") ? "hi-IN" : route.path.startsWith("/bn") ? "bn-IN" : "en-IN"]: route.path, ...route.alternates }).map(([language, path]) => [language, absoluteUrl(path)])) } } : {}),
   }));
 }

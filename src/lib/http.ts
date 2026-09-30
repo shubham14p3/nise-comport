@@ -55,8 +55,30 @@ export function makeReference(prefix: string) {
   return `${prefix}-${date}-${random}`;
 }
 
-/** Best-effort client IP. Only trust X-Forwarded-For when the app runs behind your own proxy/CDN. */
+/** Constant-time comparison for shared secrets. */
+export function safeEqual(a: string, b: string) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let index = 0; index < a.length; index++) diff |= a.charCodeAt(index) ^ b.charCodeAt(index);
+  return diff === 0;
+}
+
+/** True when the request came from the encrypted gateway (/api/x7q9m2) with the internal token. */
+export function isInternalRequest(request: Request) {
+  const expected = process.env.INTERNAL_API_TOKEN;
+  const supplied = request.headers.get("x-nise-internal");
+  return Boolean(expected && expected.length >= 32 && supplied && safeEqual(supplied, expected));
+}
+
+/**
+ * Best-effort client IP. Requests relayed by the encrypted gateway carry the original visitor's IP
+ * in x-nise-client-ip (trusted only with the internal token); on hosts that rewrite
+ * X-Forwarded-For for server-to-server calls, every visitor would otherwise share one IP bucket.
+ * Only trust X-Forwarded-For when the app runs behind your own proxy/CDN.
+ */
 export function clientIp(request: Request) {
+  const relayed = request.headers.get("x-nise-client-ip");
+  if (relayed && isInternalRequest(request)) return relayed.trim().slice(0, 64);
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0]!.trim().slice(0, 64);
   return (request.headers.get("x-real-ip") ?? request.headers.get("cf-connecting-ip") ?? "unknown").trim().slice(0, 64);

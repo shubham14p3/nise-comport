@@ -2,65 +2,208 @@ import SiteHeader from "@/components/site-header";
 import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
-import { galleryItems, socialPosts, articles } from "@/lib/content";
-import { ArrowRight, ArrowUpRight, BadgeCheck, Banknote, BookOpenCheck, Check, ChevronRight, Clock3, FileText, Fingerprint, HeartHandshake, Landmark, MapPin, Phone, Printer, ShieldCheck, Sparkles, WalletCards } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BadgeCheck, ClipboardCheck, Clock3, FileSearch, Languages, LockKeyhole, MapPin, MessageCircle, Phone, ReceiptText, Send, ShieldCheck, Star, Truck } from "lucide-react";
+import CategoryGrid from "@/components/category-grid";
 import FaqSection from "@/components/faq-section";
+import HeroSearch from "@/components/hero-search";
+import HeroVisual from "@/components/hero-visual";
+import { WhatsAppIcon } from "@/components/icons";
 import JsonLd from "@/components/json-ld";
+import OfferCard from "@/components/offer-card";
 import OpenStatus from "@/components/open-status";
+import { articles } from "@/lib/content";
+import { localGallery } from "@/lib/gallery";
+import { getPlaceSummary } from "@/lib/google-places";
 import { summarizeHours } from "@/lib/hours";
+import { liveOffers } from "@/lib/offers";
 import { pageMetadata } from "@/lib/seo";
+import { publishedServiceDetails } from "@/lib/services";
 import { site, whatsappLink } from "@/lib/site";
 import { webPageLd } from "@/lib/structured-data";
+
+export const revalidate = 43200;
 
 export const metadata: Metadata = {
   ...pageMetadata(
     "NISE COMPORT | CSC & Pragya Kendra in Telco, Jamshedpur",
-    "PAN card, Aadhaar update help, income/caste/residence certificates, AEPS banking, insurance, online forms and printing at NISE COMPORT, Kharangajhar, Telco, Jamshedpur.",
+    "PAN card, Aadhaar update help, income/caste/residence certificates, AEPS banking, insurance, online forms, bills and printing at NISE COMPORT, Kharangajhar, Telco, Jamshedpur.",
     "/",
-    { languages: { "hi-IN": "/hi" }, keywords: ["CSC centre Jamshedpur", "Pragya Kendra Telco", "Pragya Kendra Kharangajhar", "PAN card Jamshedpur", "Aadhaar update Jamshedpur", "income certificate Jamshedpur", "caste certificate Jharkhand", "AEPS Telco", "online form filling Jamshedpur", "printing Telco", "प्रज्ञा केंद्र जमशेदपुर", "सीएससी सेंटर टेल्को"] },
+    { languages: { "hi-IN": "/hi", "bn-IN": "/bn" }, keywords: ["CSC centre Jamshedpur", "Pragya Kendra Telco", "Pragya Kendra Kharangajhar", "PAN card Jamshedpur", "Aadhaar update Jamshedpur", "income certificate Jamshedpur", "caste certificate Jharkhand", "AEPS Telco", "bike insurance Jamshedpur", "online form filling Jamshedpur", "printing Telco", "प्रज्ञा केंद्र जमशेदपुर", "सीएससी सेंटर टेल्को", "জামশেদপুর প্রজ্ঞা কেন্দ্র"] },
   ),
 };
 
-const services = [
-  { icon: Fingerprint, title: "PAN & Aadhaar", text: "New PAN, corrections and reprints; guidance on the right Aadhaar update route.", tag: "Identity", href: "/services/pan-card-jamshedpur", links: [{ href: "/services/pan-card-jamshedpur", label: "PAN card" }, { href: "/services/aadhaar-assistance-jamshedpur", label: "Aadhaar update help" }] },
-  { icon: Landmark, title: "Certificates & forms", text: "Income, caste, residence, EWS, birth and voter services through official portals.", tag: "Government", href: "/services/jharkhand-certificates-jamshedpur", links: [{ href: "/services/jharkhand-certificates-jamshedpur", label: "Income, caste & residence" }, { href: "/services/voter-id-services-jamshedpur", label: "Voter ID" }] },
-  { icon: Banknote, title: "Banking & payments", text: "AEPS cash withdrawal, money transfer, account opening, bill payments and fee deposits.", tag: "Everyday", href: "/services/banking-aeps-money-transfer", links: [{ href: "/services/banking-aeps-money-transfer", label: "AEPS & money transfer" }, { href: "/services/fee-bill-recharge-jamshedpur", label: "Bills & recharge" }] },
-  { icon: ShieldCheck, title: "Insurance", text: "Two-wheeler, car, health and life insurance enquiries through participating providers.", tag: "Protection", href: "/services/insurance", links: [{ href: "/services/bike-insurance-jamshedpur", label: "Bike insurance" }, { href: "/services/car-insurance-jamshedpur", label: "Car insurance" }] },
-  { icon: Printer, title: "Print & scan", text: "Upload documents, choose exact pages, and schedule pickup or delivery.", tag: "Popular", href: "/print", links: [{ href: "/print", label: "Start a print request" }, { href: "/services/printing-scanning-jamshedpur", label: "Printing & photocopy" }] },
-  { icon: BookOpenCheck, title: "Education & travel", text: "Scholarship, admission, exam and job forms; train, bus and flight booking help.", tag: "Support", href: "/services/education", links: [{ href: "/services/student-scholarship-forms-jamshedpur", label: "Scholarship forms" }, { href: "/services/exam-form-filling-jamshedpur", label: "Exam & job forms" }] },
+const popular = [
+  { label: "PAN card", href: "/services/pan-card-jamshedpur" },
+  { label: "Income certificate", href: "/services/jharkhand-certificates-jamshedpur" },
+  { label: "Bike insurance", href: "/services/bike-insurance-jamshedpur" },
+  { label: "AEPS", href: "/services/banking-aeps-money-transfer" },
+  { label: "Print", href: "/print" },
 ];
 
-const steps = ["Choose a service", "Share details securely", "Track your request", "Get it done locally"];
+const steps = [
+  { icon: FileSearch, title: "Pick your service", text: "Choose from 8 categories or just search." },
+  { icon: Send, title: "Share a few details", text: "Takes 2 minutes. No OTPs, no PINs." },
+  { icon: ClipboardCheck, title: "We confirm everything", text: "Documents, fees and timing, upfront." },
+  { icon: BadgeCheck, title: "Get it done & track it", text: "Live status in your account." },
+];
 
 const homeFaqs = [
-  { question: "Where is NISE COMPORT in Jamshedpur?", answer: `${site.address.oneLine}. Use the “Get directions” link on this page to open the route in Google Maps.` },
+  { question: "Where is NISE COMPORT in Jamshedpur?", answer: `${site.address.oneLine}. Tap “Get directions” to open the route in Google Maps.` },
   { question: "Is NISE COMPORT a government office?", answer: "No. NISE COMPORT is an independent CSC / Pragya Kendra service centre. We help you use official and partner services; the relevant department, bank or provider makes the final decision." },
-  { question: "Which services can I get here?", answer: "PAN card applications and corrections, guidance on Aadhaar updates, Jharkhand income, caste, residence and EWS certificates, voter ID, AEPS banking and money transfer, insurance enquiries, scholarship and exam forms, bill payments, printing, scanning and more. See the services page for the full list." },
   { question: "Are government fees included in your charge?", answer: "No. Official or third-party fees are separate from our service charge. We explain both before any work starts and give you a receipt." },
-  { question: "Do I need an appointment?", answer: "No appointment is needed for most services. Sending a request online or a quick WhatsApp message helps us confirm the documents you need, so you finish in one visit." },
-  { question: "Can I track my request online?", answer: "Yes. Create a free account, send a request and follow its status and reference number in your profile. We also email you when the status changes." },
+  { question: "Can I track my request online?", answer: "Yes. Create a free account, send a request in four quick steps and follow its status and reference number in your account. We also update you by email, phone or WhatsApp." },
+  { question: "Do you help in Hindi and Bengali?", answer: "Yes. The website works in English, हिन्दी and বাংলা, and our team is happy to help you in the language you’re comfortable with." },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
   const hours = summarizeHours(site.openingHours);
+  const offers = liveOffers();
+  const place = await getPlaceSummary();
+  const galleryPreview = [
+    ...(place?.photos.slice(0, 3).map((photo) => ({ key: `g${photo.index}`, src: `/api/gallery/photo/${photo.index}`, alt: `Photo of NISE COMPORT by ${photo.author}`, title: `Photo · ${photo.author}`, google: true })) ?? []),
+    ...localGallery.slice(0, 6).map((item) => ({ key: item.src, src: item.src, alt: item.alt, title: item.title, google: false })),
+  ].slice(0, 6);
+
   return <>
     <SiteHeader/>
     <JsonLd data={webPageLd({ name: "NISE COMPORT – CSC & Pragya Kendra in Telco, Jamshedpur", description: site.description, path: "/" })}/>
-    <main>
-      <section className="hero"><div className="container hero-grid"><div className="hero-copy"><div className="eyebrow"><span className="eyebrow-dot"/> CSC · PRAGYA KENDRA · KHARANGAJHAR, TELCO <span className="eyebrow-line"/></div><h1>Your CSC &amp; Pragya Kendra in <em>Telco, Jamshedpur.</em></h1><p className="hero-lead">Less paperwork, more progress. Get in-person help with PAN, Aadhaar updates, Jharkhand certificates, banking, insurance, online forms and printing, with clear fees and next steps.</p><div className="hero-buttons"><Link href="/services" className="button button-green">Explore our services <ArrowRight size={17}/></Link><a href={`tel:${site.phones.primary.e164}`} className="text-link"><Phone size={15}/> {site.phones.primary.display}</a><a href="#how-it-works" className="text-link">How it works <ChevronRight size={16}/></a></div><div className="hero-proof"><div className="avatar-stack"><span>NC</span><span>IN</span><span>✓</span></div><div><strong>Here when you need us</strong><small>Hanuman Mandir Road, Kharangajhar, Telco</small></div><div className="proof-divider"/><div className="proof-stars"><OpenStatus rules={site.openingHours}/><small>{hours.length ? hours[0] : "Mon–Sat · Walk in or call first"}</small></div></div></div>
-        <div className="hero-visual"><div className="visual-orbit orbit-one"/><div className="visual-orbit orbit-two"/><div className="hero-photo"><div className="photo-caption"><span className="caption-icon"><MapPin size={16}/></span><div><strong>Your neighbourhood service desk</strong><small>Kharangajhar · Telco · Jamshedpur</small></div></div></div><div className="floating-card status-card"><span className="status-icon"><Check size={18}/></span><div><strong>Request received</strong><small>We’ll take it from here</small></div><span className="status-pulse"/></div><div className="floating-card trust-card"><div className="trust-icon"><ShieldCheck size={19}/></div><div><strong>Your details, respected</strong><small>Handled with care at every step</small></div></div><div className="hero-stamp"><Sparkles size={16}/><span>HERE TO<br/>HELP</span></div></div>
-      </div><div className="container hero-bottom"><span>ONE COUNTER, MANY SOLUTIONS</span><div className="hero-bottom-line"/><span>{hours.length ? hours.join(" · ") : <>Mon–Sat <b>·</b> Personal assistance available</>}</span></div></section>
-      <section className="service-section section-pad" id="services"><div className="container"><div className="section-heading"><div><div className="eyebrow eyebrow-muted">SERVICES MADE SIMPLE</div><h2>Help for the things<br/>that <em>move you forward.</em></h2></div><div className="section-heading-side"><p>From PAN and certificates to AEPS banking and printing: dependable help in Kharangajhar, Telco, without the runaround.</p><Link className="arrow-link" href="/services">See all services <ArrowUpRight size={16}/></Link></div></div><div className="service-grid">{services.map(({ icon: Icon, title, text, tag, href, links }, i) => <article className="service-card" key={title}><div className="service-card-top"><span className="service-icon"><Icon size={20} strokeWidth={1.8}/></span><span className="service-num">0{i + 1}</span></div><div className="service-tag">{tag}</div><h3><Link href={href}>{title}</Link></h3><p>{text}</p><div className="service-card-links">{links.map((link) => <Link key={link.href} href={link.href}>{link.label}</Link>)}</div><Link href={href} aria-label={`Explore ${title}`} className="card-arrow"><ArrowUpRight size={17}/></Link></article>)}</div><div className="service-note"><span className="note-check"><Check size={15}/></span><p>We’re an independent service centre helping you navigate digital and government portals. <Link href="/about">Learn about our role</Link></p></div></div></section>
-      <section className="process-section section-pad" id="how-it-works"><div className="container process-layout"><div className="process-intro"><div className="eyebrow eyebrow-light">A CLEARER WAY TO GET THINGS DONE</div><h2>Four steps.<br/><em>Real support.</em></h2><p>No confusing process. We’ll guide you from your first question to the final receipt.</p><Link href="/services" className="button button-cream">Start with a service <ArrowRight size={16}/></Link></div><div className="process-steps">{steps.map((step, index) => <div className="process-step" key={step}><span className="step-number">0{index + 1}</span><div><h3>{step}</h3><p>{["Browse the options or tell us what you need.", "We’ll explain documents, service fees and next steps.", "Check progress and updates in your customer profile.", "Collect your documents or choose a convenient delivery."][index]}</p></div><span className="step-check"><Check size={15}/></span></div>)}</div></div></section>
-      <section className="print-feature section-pad"><div className="container print-layout"><div className="print-visual"><div className="paper-sheet"><div className="paper-top"><span>N</span><span>DOCUMENT SERVICES</span></div><div className="paper-lines"><i/><i/><i/><i/><i/></div><div className="paper-highlight"><span>PAGE 01</span><b>B&amp;W</b></div><div className="paper-lines short"><i/><i/><i/></div><div className="paper-footer">NISE COMPORT · PRINT JOB</div></div><div className="print-bubble"><Printer size={18}/><span>Ready for<br/><b>pickup</b></span></div><div className="print-seal"><Check size={18}/></div></div><div className="print-copy"><div className="eyebrow eyebrow-muted">ONLINE PRINTING IN JAMSHEDPUR</div><h2>Your pages.<br/><em>Your choices.</em></h2><p>Pick pages, colour and finish, then send a request. Our team confirms the final quote and pickup or delivery; there is no online checkout.</p><div className="print-points"><span><Check size={15}/> Precise page selection</span><span><Check size={15}/> Colour or black &amp; white</span><span><Check size={15}/> Scheduled pickup or delivery</span></div><Link href="/print" className="button button-green">Request a print estimate <ArrowRight size={16}/></Link><small className="print-fine">Upload PDF, Word documents or images. Your files stay private and are removed according to our retention policy.</small></div></div></section>
-      <section className="home-guides section-pad"><div className="container"><div className="section-heading"><div><div className="eyebrow eyebrow-muted">PRACTICAL LOCAL GUIDES</div><h2>Know what to bring<br/><em>before you visit.</em></h2></div><Link className="arrow-link" href="/blog">All service guides <ArrowUpRight size={16}/></Link></div><div className="guide-teasers">{articles.slice(0, 6).map(article => <article key={article.slug}><span>{article.category}</span><h3><Link href={`/blog/${article.slug}`}>{article.title}</Link></h3><p>{article.excerpt}</p><Link className="arrow-link" href={`/blog/${article.slug}`} aria-label={`Read: ${article.title}`}>Read guide <ArrowUpRight size={14}/></Link></article>)}</div></div></section>
-      <section className="home-gallery section-pad"><div className="container"><div className="section-heading"><div><div className="eyebrow eyebrow-muted">FROM OUR SERVICE DESK</div><h2>Local help, made<br/><em>easy to explore.</em></h2></div><Link className="arrow-link" href="/gallery">Open the gallery <ArrowUpRight size={16}/></Link></div><div className="home-gallery-grid">{galleryItems.slice(0, 4).map(item => <Link className="home-gallery-card" href="/gallery" key={item.title}><Image src={item.image} alt={item.alt} width={520} height={350} sizes="(max-width: 700px) 50vw, 25vw"/><span>{item.category}</span><strong>{item.title}</strong></Link>)}</div></div></section>
-      <section className="home-content-section"><div className="container home-content-grid"><div><div className="eyebrow eyebrow-muted">CURRENT UPDATES</div><h2>Offers, vouchers<br/><em>& social posts.</em></h2><p>Check what is active, see customer updates and ask the team before you plan around a discount.</p><div className="home-content-links"><Link href="/offers">Offers & vouchers <ArrowUpRight size={15}/></Link><Link href="/social">WhatsApp, Instagram & YouTube <ArrowUpRight size={15}/></Link></div></div><div className="home-post-grid">{socialPosts.slice(0, 2).map(post => <Link className="home-post-card" href="/social" key={post.platform}><Image src={post.image} alt={`${post.platform} update: ${post.title}`} width={360} height={230} sizes="(max-width: 700px) 50vw, 20vw"/><small>{post.platform}</small><strong>{post.title}</strong></Link>)}</div></div></section>
-      <section className="about-section section-pad" id="about"><div className="container about-grid"><div className="about-art"><div className="about-image"/><div className="about-note"><HeartHandshake size={19}/><div><strong>People before process</strong><small>That’s how local service should feel.</small></div></div><div className="about-number"><strong>Local</strong><span>ROOTED IN<br/>JAMSHEDPUR</span></div></div><div className="about-copy"><div className="eyebrow eyebrow-muted">A NEIGHBOURHOOD TEAM YOU CAN REACH</div><h2>Digital services,<br/><em>with a human touch.</em></h2><p>Some things are easier when someone is there to help. We’re a local independent CSC / Pragya Kendra service centre in Kharangajhar, Telco, helping people from across Jamshedpur navigate online services with clear guidance and careful attention.</p><div className="about-promise"><span><BadgeCheck size={20}/></span><div><strong>Clear fees. Clear next steps.</strong><p>We distinguish our service charge from any government or third-party fee, and provide a receipt for the work we do.</p></div></div><Link className="arrow-link" href="/about">Get to know us <ArrowUpRight size={16}/></Link> <Link className="arrow-link" href="/areas-we-serve">Areas we serve <ArrowUpRight size={16}/></Link></div></div></section>
+    <main className="home">
+      <section className="hero">
+        <div className="hero__bg" aria-hidden="true"><span className="blob blob--1"/><span className="blob blob--2"/><span className="blob blob--3"/><span className="hero__grid"/></div>
+        <div className="container hero__layout">
+          <div className="hero__copy">
+            <span className="pill pill--glass"><i className="live-dot"/> Kharangajhar · Telco · Jamshedpur</span>
+            <h1 className="hero__title"><span className="hero__kicker">CSC &amp; Pragya Kendra in Telco, Jamshedpur</span>Sarkari &amp; digital kaam, <span className="grad-text">sorted in one visit.</span></h1>
+            <p className="hero__lead">PAN, Aadhaar help, certificates, AEPS banking, insurance, bills, forms and printing. Start online in 4 quick steps, track it live, and walk in only when you need to.</p>
+            <HeroSearch popular={popular}/>
+            <div className="hero__ctas">
+              <Link href="/request" className="btn btn--primary btn--lg">Start a request <ArrowRight size={20}/></Link>
+              <a href={whatsappLink("Hi NISE COMPORT, I need help with a service.")} className="btn btn--glass btn--lg" target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={20}/> Chat on WhatsApp</a>
+            </div>
+            <ul className="hero__trust">
+              <li><BadgeCheck size={18}/> Clear fees upfront</li>
+              <li><Clock3 size={18}/> Live request tracking</li>
+              <li><Languages size={18}/> English · हिन्दी · বাংলা</li>
+            </ul>
+            {place?.rating ? <a className="rating-chip" href={place.mapsUri ?? site.mapsUrl} target="_blank" rel="noopener noreferrer"><Star size={16} fill="currentColor"/> <b>{place.rating.toFixed(1)}</b> on Google · {place.ratingCount} reviews</a> : null}
+          </div>
+          <HeroVisual offer={offers.find((offer) => offer.badge === "LIVE")}/>
+        </div>
+        <div className="container hero__stats">
+          <div><strong>{publishedServiceDetails.length}+</strong><span>services under one roof</span></div>
+          <div><strong>8</strong><span>categories, from PAN to travel</span></div>
+          <div><strong>3</strong><span>languages on the website</span></div>
+          <div><strong><OpenStatus rules={site.openingHours}/>{!site.openingHours.length && "Mon–Sat"}</strong><span>{hours[0] ?? "Walk in or call first"}</span></div>
+        </div>
+      </section>
+
+      <section className="section" id="services">
+        <div className="container">
+          <div className="section-head">
+            <span className="eyebrow">WHAT DO YOU NEED TODAY?</span>
+            <h2>Everything for your <span className="grad-text">documents, money &amp; more.</span></h2>
+            <p>Pick a category to see every service inside it, with documents to prepare and a 4-step request.</p>
+          </div>
+          <CategoryGrid/>
+          <div className="section-foot"><Link className="btn btn--ghost" href="/services">Browse all {publishedServiceDetails.length} services <ArrowRight size={18}/></Link></div>
+        </div>
+      </section>
+
+      {offers.length > 0 && <section className="section section--night offers-band" id="offers">
+        <div className="offers-band__glow" aria-hidden="true"/>
+        <div className="container">
+          <div className="section-head section-head--light">
+            <span className="badge badge--live"><i/>LIVE OFFERS</span>
+            <h2>Deals that make it <span className="grad-text grad-text--warm">even easier.</span></h2>
+            <p>Claim them right inside your request. Offers apply to our service charge, never to government fees.</p>
+          </div>
+          <div className="offer-grid">{offers.map((offer) => <OfferCard key={offer.id} offer={offer}/>)}</div>
+          <div className="section-foot"><Link className="btn btn--glass" href="/offers">See all offers <ArrowRight size={18}/></Link></div>
+        </div>
+      </section>}
+
+      <section className="section section--tint" id="how-it-works">
+        <div className="container">
+          <div className="section-head">
+            <span className="eyebrow">HOW IT WORKS</span>
+            <h2>Four steps. <span className="grad-text">Zero confusion.</span></h2>
+            <p>Start on your phone, finish at our counter (or doorstep). We tell you everything before we begin.</p>
+          </div>
+          <ol className="steps-row">{steps.map(({ icon: Icon, title, text }, index) => <li key={title} className="step-card" style={{ animationDelay: `${index * 80}ms` }}>
+            <span className="step-card__num">0{index + 1}</span>
+            <span className="step-card__icon"><Icon size={26}/></span>
+            <h3>{title}</h3><p>{text}</p>
+          </li>)}</ol>
+          <div className="section-foot"><Link className="btn btn--primary" href="/request">Try it now <ArrowRight size={18}/></Link></div>
+        </div>
+      </section>
+
+      <section className="section" id="why">
+        <div className="container">
+          <div className="section-head">
+            <span className="eyebrow">WHY PEOPLE PICK US</span>
+            <h2>A counter that <span className="grad-text">actually explains things.</span></h2>
+          </div>
+          <div className="bento">
+            <article className="bento__item bento__item--wide tone-blue"><ReceiptText size={28}/><h3>Clear fees, before we start</h3><p>You see our service charge and any government or provider fee separately, and you get a receipt. No surprises at the counter.</p><div className="fee-demo" aria-hidden="true"><span>Official fee<b>as per portal</b></span><span>Our service charge<b>told upfront</b></span></div></article>
+            <article className="bento__item tone-green"><Clock3 size={28}/><h3>Track it live</h3><p>Every request gets a reference number and status updates in your account.</p></article>
+            <article className="bento__item tone-violet"><Languages size={28}/><h3>Your language</h3><p>English, हिन्दी or বাংলা, on the site and at the counter.</p></article>
+            <article className="bento__item tone-pink"><LockKeyhole size={28}/><h3>Private by design</h3><p>Encrypted connections. We never ask for your OTP, PIN or password.</p></article>
+            <article className="bento__item tone-cyan"><Truck size={28}/><h3>Pickup, delivery or doorstep</h3><p>Collect prints from our Kharangajhar counter, ask for delivery, or request doorstep help nearby.</p><Link className="text-link" href="/print">Print from your phone <ArrowRight size={16}/></Link></article>
+          </div>
+        </div>
+      </section>
+
+      <section className="section section--tint" id="gallery">
+        <div className="container">
+          <div className="section-head section-head--split">
+            <div><span className="eyebrow">GALLERY</span><h2>A peek at <span className="grad-text">our desk &amp; services.</span></h2></div>
+            <Link className="btn btn--ghost" href="/gallery">Open gallery <ArrowUpRight size={18}/></Link>
+          </div>
+          <div className="gallery-strip">{galleryPreview.map((item) => <Link key={item.key} href="/gallery" className="gallery-strip__item">
+            <Image src={item.src} alt={item.alt} width={600} height={450} sizes="(max-width: 700px) 80vw, 33vw" unoptimized={item.google}/>
+            <span>{item.title}</span>
+          </Link>)}</div>
+        </div>
+      </section>
+
+      <section className="section" id="guides">
+        <div className="container">
+          <div className="section-head section-head--split">
+            <div><span className="eyebrow">LOCAL GUIDES</span><h2>Know what to bring <span className="grad-text">before you visit.</span></h2></div>
+            <Link className="btn btn--ghost" href="/blog">All guides <ArrowUpRight size={18}/></Link>
+          </div>
+          <div className="guide-grid">{articles.slice(0, 3).map((article) => <article key={article.slug} className="guide-card">
+            <Link href={`/blog/${article.slug}`} className="guide-card__media" tabIndex={-1} aria-hidden="true"><Image src={article.image} alt="" width={420} height={260} sizes="(max-width: 700px) 100vw, 33vw"/></Link>
+            <div className="guide-card__body"><span className="chip">{article.category}</span><h3><Link href={`/blog/${article.slug}`}>{article.title}</Link></h3><p>{article.excerpt}</p><Link className="text-link" href={`/blog/${article.slug}`} aria-label={`Read: ${article.title}`}>Read guide <ArrowRight size={16}/></Link></div>
+          </article>)}</div>
+        </div>
+      </section>
+
       <FaqSection faqs={homeFaqs} eyebrow="GOOD TO KNOW" title="Questions people ask before visiting"/>
-      <section className="cta-section" id="contact"><div className="container cta-box"><div className="cta-spark"><Sparkles size={20}/></div><div><div className="eyebrow eyebrow-light">WHEN YOU NEED A HAND, WE’RE HERE</div><h2>Let’s get it <em>sorted.</em></h2><p>Call {site.phones.primary.display} or message us on WhatsApp. We’ll walk you through the next step. <br/><MapPin size={14}/> {site.address.oneLine}</p></div><div className="cta-actions"><Link href="/services" className="button button-cream">Find a service <ArrowRight size={16}/></Link><a href={whatsappLink("Hello NISE COMPORT, I need help with a service.")} className="cta-contact" target="_blank" rel="noopener noreferrer">Chat on WhatsApp <ArrowUpRight size={16}/></a><a href={site.mapsUrl} className="cta-contact" target="_blank" rel="noopener noreferrer">Get directions <ArrowUpRight size={16}/></a></div></div></section>
-      <section className="trust-strip"><div className="container trust-items"><span><ShieldCheck size={17}/> Privacy-minded</span><span><WalletCards size={17}/> Transparent charges</span><span><Clock3 size={17}/> Trackable requests</span><span><MapPin size={17}/> Locally available</span></div></section>
+
+      <section className="section" id="visit">
+        <div className="container">
+          <div className="visit-card">
+            <div className="visit-card__glow" aria-hidden="true"/>
+            <div className="visit-card__copy">
+              <span className="eyebrow eyebrow--light">VISIT US</span>
+              <h2>Let’s get it <span className="grad-text grad-text--warm">sorted.</span></h2>
+              <p className="visit-card__address"><MapPin size={20}/> {site.address.oneLine}</p>
+              <p className="visit-card__hours"><Clock3 size={20}/> <span><OpenStatus rules={site.openingHours}/> {hours.length ? hours.join(" · ") : "Mon–Sat · call before visiting"}</span></p>
+              <div className="visit-card__ctas">
+                <a className="btn btn--light" href={site.mapsUrl} target="_blank" rel="noopener noreferrer"><MapPin size={18}/> Get directions</a>
+                <a className="btn btn--wa" href={whatsappLink("Hi NISE COMPORT, I need help with a service.")} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> WhatsApp</a>
+                <a className="btn btn--glass" href={`tel:${site.phones.primary.e164}`}><Phone size={18}/> {site.phones.primary.display}</a>
+              </div>
+            </div>
+            <div className="visit-card__side" aria-hidden="true">
+              <div className="map-art"><span className="map-art__road map-art__road--1"/><span className="map-art__road map-art__road--2"/><span className="map-art__road map-art__road--3"/><span className="map-art__pin"><MapPin size={28}/></span><span className="map-art__label">NISE COMPORT</span></div>
+              <div className="visit-card__chips"><span><ShieldCheck size={16}/> Independent CSC</span><span><MessageCircle size={16}/> Replies on WhatsApp</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
-    <div className="mobile-dock"><Link href="/services"><Landmark size={18}/><span>Services</span></Link><Link href="/print"><Printer size={18}/><span>Print</span></Link><a href={`tel:${site.phones.primary.e164}`}><Phone size={18}/><span>Call</span></a><Link href="/profile?section=requests"><FileText size={18}/><span>Track</span></Link></div>
   </>;
 }

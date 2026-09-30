@@ -71,6 +71,7 @@ export const site = {
     lines: [`${street},`, `${locality},`, "Jamshedpur, Jharkhand 831004"],
     oneLine: `${street}, ${locality}, Jamshedpur, Jharkhand 831004`,
     hindi: "दुकान नंबर 3, भूतल, सिंह बिल्डिंग, हनुमान मंदिर रोड, खरंगाझार, टेल्को कॉलोनी, जमशेदपुर, झारखंड 831004",
+    bengali: "দোকান নং 3, গ্রাউন্ড ফ্লোর, সিং বিল্ডিং, হনুমান মন্দির রোড, খরংগাঝাড়, টেলকো কলোনি, জামশেদপুর, ঝাড়খণ্ড 831004",
   },
   geo: latitude !== undefined && longitude !== undefined ? { latitude, longitude } : null,
   /** Exact Google Business Profile link when set; otherwise a Maps search for the address. */
@@ -85,7 +86,7 @@ export const site = {
   foundingYear: numberOrUndefined(env("NEXT_PUBLIC_FOUNDING_YEAR")),
   logoPath: "/images/logo/logo-footer.png",
   defaultOgImage: "/api/og?title=NISE%20COMPORT%20%E2%80%93%20CSC%20%26%20Pragya%20Kendra%20in%20Jamshedpur",
-  languages: ["en-IN", "hi-IN"],
+  languages: ["en-IN", "hi-IN", "bn-IN"],
   areasServed: ["Kharangajhar", "Telco", "Govindpur", "Birsanagar", "Golmuri", "Bhalubasa", "Sakchi", "Mango", "Jugsalai", "Bistupur", "Sonari", "Kadma", "Adityapur", "Jamshedpur", "East Singhbhum", "Jharkhand"],
   verification: {
     google: env("GOOGLE_SITE_VERIFICATION"),

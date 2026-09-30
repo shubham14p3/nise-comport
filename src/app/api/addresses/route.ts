@@ -10,7 +10,10 @@ const addressSchema = z.object({
   label: z.string().trim().min(1).max(40).default("Home"),
   line1: z.string().trim().min(3).max(160), line2: z.string().trim().max(160).optional().default(""),
   city: z.string().trim().min(2).max(80), state: z.string().trim().min(2).max(80),
-  postalCode: z.string().regex(/^\d{6}$/), isDefault: z.boolean().optional().default(false),
+  postalCode: z.string().regex(/^[1-9]\d{5}$/, "Enter a 6-digit PIN code."), isDefault: z.boolean().optional().default(false),
+  landmark: z.string().trim().max(120).optional(),
+  latitude: z.number().min(-90).max(90).optional(), longitude: z.number().min(-180).max(180).optional(),
+  placeId: z.string().trim().max(300).optional(),
 });
 
 export async function GET() {
@@ -25,11 +28,16 @@ export async function POST(request: NextRequest) {
   if (!user) return NextResponse.json({ error: "Please sign in to save an address." }, { status: 401 });
   try {
     const input = addressSchema.parse(await request.json());
-    const current = await db.select({ id: addresses.id }).from(addresses).where(eq(addresses.userId, user.id)).limit(1);
+    const current = await db.select({ id: addresses.id }).from(addresses).where(eq(addresses.userId, user.id)).limit(20);
+    if (current.length >= 20) return NextResponse.json({ error: "You can save up to 20 addresses. Remove one to add another." }, { status: 409 });
     const makeDefault = input.isDefault || current.length === 0;
     const [address] = await db.transaction(async (tx) => {
       if (makeDefault) await tx.update(addresses).set({ isDefault: false }).where(eq(addresses.userId, user.id));
-      return tx.insert(addresses).values({ ...input, line2: input.line2 || null, isDefault: makeDefault, userId: user.id }).returning();
+      const { placeId, landmark, latitude, longitude, ...rest } = input;
+      return tx.insert(addresses).values({
+        ...rest, line2: rest.line2 || null, isDefault: makeDefault, userId: user.id,
+        landmark: landmark || null, latitude: latitude ?? null, longitude: longitude ?? null, googlePlaceId: placeId || null,
+      }).returning();
     });
     return NextResponse.json({ ok: true, address }, { status: 201 });
   } catch (error) { return apiError(error); }
