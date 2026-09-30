@@ -39,16 +39,16 @@ try { openingHours = openingHoursText ? parseOpeningHours(openingHoursText) : []
 const whatsappPrimary = (env("NEXT_PUBLIC_WHATSAPP_PRIMARY") ?? "919771219893").replace(/\D/g, "");
 const whatsappSecondary = (env("NEXT_PUBLIC_WHATSAPP_SECONDARY") ?? "919835552756").replace(/\D/g, "");
 
-const street = "Shop No 3, Ground Floor, Singh Building, Hanuman Mandir Road";
-const locality = "Kharangajhar, Telco";
-const mapsQuery = "NISE COMPORT, Shop No 3, Singh Building, Hanuman Mandir Road, Kharangajhar, Telco, Jamshedpur 831004";
+const street = "Ground Floor, Singh Building, Shop No-3, Hanuman Mandir Road";
+const locality = "Kharangajhar, Telco Colony";
+const mapsQuery = "NISE COMPORT, Ground Floor, Singh Building, Shop No-3, Hanuman Mandir Road, Kharangajhar, Telco Colony, Jamshedpur, Jharkhand 831004, India";
 
 export const site = {
   name: "NISE COMPORT",
   alternateNames: ["NISE-COMPORT", "Nise Comport", "NiseComport", "NISE COMPORT Pragya Kendra", "Pragya Kendra Kharangajhar"],
   tagline: "A Move Towards Digital India e-Gov Services",
-  shortDescription: "Independent CSC and Pragya Kendra service centre in Kharangajhar, Telco, Jamshedpur.",
-  description: "NISE COMPORT is an independent CSC / Pragya Kendra service centre in Kharangajhar, Telco, Jamshedpur, Jharkhand. We help with PAN, Aadhaar guidance, Jharkhand certificates, voter services, banking (BC/AEPS), insurance, online forms, bill payments, printing and scanning.",
+  shortDescription: "Independent CSC and Pragya Kendra service centre in Kharangajhar, Telco Colony, Jamshedpur.",
+  description: "NISE COMPORT is an independent CSC / Pragya Kendra service centre in Kharangajhar, Telco Colony, Jamshedpur, Jharkhand. We help with PAN, Aadhaar guidance, Jharkhand certificates, voter services, banking (BC/AEPS), insurance, online forms, bill payments, printing and scanning.",
   url,
   locale: "en_IN",
   email: env("NEXT_PUBLIC_CONTACT_EMAIL") ?? "info@nisecomport.com",
@@ -70,7 +70,7 @@ export const site = {
     countryName: "India",
     lines: [`${street},`, `${locality},`, "Jamshedpur, Jharkhand 831004"],
     oneLine: `${street}, ${locality}, Jamshedpur, Jharkhand 831004`,
-    hindi: "दुकान नंबर 3, भूतल, सिंह बिल्डिंग, हनुमान मंदिर रोड, खरंगाझार, टेल्को, जमशेदपुर, झारखंड 831004",
+    hindi: "दुकान नंबर 3, भूतल, सिंह बिल्डिंग, हनुमान मंदिर रोड, खरंगाझार, टेल्को कॉलोनी, जमशेदपुर, झारखंड 831004",
   },
   geo: latitude !== undefined && longitude !== undefined ? { latitude, longitude } : null,
   /** Exact Google Business Profile link when set; otherwise a Maps search for the address. */
