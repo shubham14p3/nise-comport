@@ -9,9 +9,14 @@ type ResponseEnvelope = { v: 1; a: typeof ALG; i: string; t: number; n: string; 
 
 export class SecureApiError extends Error {
   status: number;
-  body: any;
-  constructor(status: number, body: any) {
-    super(body && typeof body === "object" && typeof body.error === "string" ? body.error : body && typeof body === "object" && typeof body.message === "string" ? body.message : "Request failed.");
+  body: unknown;
+  constructor(status: number, body: unknown) {
+    const message = body && typeof body === "object" && "error" in body && typeof body.error === "string"
+      ? body.error
+      : body && typeof body === "object" && "message" in body && typeof body.message === "string"
+        ? body.message
+        : "Request failed.";
+    super(message);
     this.name = "SecureApiError";
     this.status = status;
     this.body = body;
@@ -183,7 +188,7 @@ export async function secureFile(operation: string, input: unknown = {}) {
     }),
   });
   if (response.headers.get("x-nx-sealed") !== "1" || response.headers.get("x-nx-b") !== "1") {
-    const opened = await decryptJsonResponse<any>(response, ctx.responseKey, ctx.nonce);
+    const opened = await decryptJsonResponse<unknown>(response, ctx.responseKey, ctx.nonce);
     if (opened.status >= 400) throw new SecureApiError(opened.status, opened.data);
     throw new Error("Secure file response is invalid.");
   }
