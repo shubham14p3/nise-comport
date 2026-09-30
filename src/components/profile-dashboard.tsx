@@ -27,6 +27,13 @@ type Snapshot = {
   user: ProfileUser; requests: RequestItem[]; jobs: PrintItem[]; wallet: WalletItem[];
   coupons: Coupon[]; activeSessions: number; openWork: number;
 };
+const DEMO_SNAPSHOT: Snapshot = {
+  user: {
+    name: "Demo Customer", email: "demo@nisecomport.test", phone: null, emailVerified: false,
+    city: "", state: "", postalCode: "", profileSummary: "", preferredContact: "email", updatedAt: "",
+  },
+  requests: [], jobs: [], wallet: [], coupons: [], activeSessions: 1, openWork: 0,
+};
 type RequestDetail = {
   request: {
     reference: string; serviceSlug: string; serviceName: string; status: string; statusLabel: string;
@@ -54,8 +61,8 @@ const dateLabel = (value: string) => new Date(value).toLocaleDateString("en-IN",
 const dateTime = (value: string) => new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 const rupees = (value: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(value);
 
-export default function ProfileDashboard() {
-  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+export default function ProfileDashboard({ demoMode = false }: { demoMode?: boolean }) {
+  const [snapshot, setSnapshot] = useState<Snapshot | null>(demoMode ? DEMO_SNAPSHOT : null);
   const [loadError, setLoadError] = useState("");
 
   async function load() {
@@ -64,7 +71,7 @@ export default function ProfileDashboard() {
     catch (error) { setLoadError(error instanceof Error ? error.message : "Could not load your private workspace."); }
   }
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { if (!demoMode) void load(); }, [demoMode]);
 
   if (!snapshot) {
     return <main className="profile-page"><SiteHeader/><div className="container profile-container">
@@ -73,10 +80,10 @@ export default function ProfileDashboard() {
     </div></main>;
   }
 
-  return <ProfileWorkspace snapshot={snapshot} reload={load}/>;
+  return <ProfileWorkspace snapshot={snapshot} reload={demoMode ? async () => undefined : load} demoMode={demoMode}/>;
 }
 
-function ProfileWorkspace({ snapshot, reload }: { snapshot: Snapshot; reload: () => Promise<void> }) {
+function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; reload: () => Promise<void>; demoMode: boolean }) {
   const { user, requests, jobs, wallet, coupons, activeSessions, openWork } = snapshot;
   const [section, setSection] = useState<Section>("overview");
   const [name, setName] = useState(user.name);
@@ -104,6 +111,7 @@ function ProfileWorkspace({ snapshot, reload }: { snapshot: Snapshot; reload: ()
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setProfileBusy(true); setProfileMessage(""); setProfileError(""); setProfileFieldErrors({});
+    if (demoMode) { setProfileBusy(false); setProfileMessage("Demo preview only — these changes are temporary and are not sent to the server."); return; }
     try {
       const result = await secureApi<{ user?: { phone?: string | null; updatedAt?: string }; fields?: Record<string, string> }>("T2f9K4pW7cL1", {
         name, phone, city, state, postalCode, profileSummary, preferredContact, ...(updatedAt ? { expectedUpdatedAt: updatedAt } : {}),
@@ -174,7 +182,7 @@ function ProfileWorkspace({ snapshot, reload }: { snapshot: Snapshot; reload: ()
       case "prints": return <div className="profile-panel"><SectionHeading eyebrow="DOCUMENT SERVICES" title="Print orders" text="Track print requests, pickup or delivery selection, the estimate, and the latest fulfilment status." />{jobs.length ? <div className="profile-record-list">{jobs.map((job) => <article className="profile-record" key={job.reference}><span className="request-icon"><Printer size={18}/></span><div className="profile-record-copy"><b>Print order · {job.fulfillment}</b><small>{job.reference} · {dateLabel(job.createdAt)}</small><p>Estimate recorded: {rupees(Number(job.total))}</p></div><span className={`request-status status-${job.status.toLowerCase().replaceAll(" ", "-")}`}><i/>{job.status}</span></article>)}</div> : <EmptyState icon={<Printer size={20}/>} title="No print orders yet" text="Upload a document, choose print options, and request an estimate. The team confirms the final cost before printing." action={<Link href="/print" className="button button-green">Start a print request <ArrowRight size={15}/></Link>}/>}</div>;
       case "wallet": return <div className="profile-panel"><SectionHeading eyebrow="CUSTOMER REWARDS" title="Wallet & credits" text="Credits and adjustments posted by the service team appear here with their date and reference."/><div className="profile-wallet-summary"><span>AVAILABLE BALANCE</span><strong>{rupees(balance)}</strong><small>Wallet top-up and online wallet payment are not enabled.</small></div>{wallet.length ? <div className="wallet-ledger">{wallet.map((entry, index) => <article key={`${entry.createdAt}-${index}`}><div><b>{entry.description}</b><small>{dateLabel(entry.createdAt)}{entry.reference ? ` · ${entry.reference}` : ""}</small></div><strong className={entry.kind.toLowerCase() === "debit" ? "debit-value" : "credit-value"}>{entry.kind.toLowerCase() === "debit" ? "−" : "+"}{rupees(Number(entry.amount))}</strong></article>)}</div> : <EmptyState icon={<WalletCards size={20}/>} title="No wallet activity yet" text="Any eligible promotional credit or adjustment will be recorded here by staff."/>}</div>;
       case "vouchers": return <div className="profile-panel"><SectionHeading eyebrow="SAVINGS & PROMOTIONS" title="Available vouchers" text="Active public coupon codes from the store. Eligibility is checked again when you request a print estimate." />{coupons.length ? coupons.map((coupon) => <article className="pan-card" key={coupon.code}><h3>{coupon.code}</h3><p>{coupon.discountType === "percent" ? `${coupon.discountValue}%` : rupees(Number(coupon.discountValue))} off · Minimum order {rupees(Number(coupon.minimumAmount))}</p><p>{coupon.expiresAt ? `Expires ${dateLabel(coupon.expiresAt)}` : "No expiry configured"}</p><Link href="/print">Use with a print request →</Link></article>) : <p>No active coupon codes are available. <Link href="/offers">See public offers</Link>.</p>}</div>;
-      case "addresses": return <div className="profile-panel"><SectionHeading eyebrow="DELIVERY & CONTACT" title="Saved addresses" text="Save an address for a print delivery request. You can choose pickup instead when sending a print job."/><AddressManager/></div>;
+      case "addresses": return <div className="profile-panel"><SectionHeading eyebrow="DELIVERY & CONTACT" title="Saved addresses" text="Save an address for a print delivery request. You can choose pickup instead when sending a print job."/>{demoMode ? <EmptyState icon={<MapPin size={20}/>} title="Demo preview" text="Saved addresses are available after creating a real account."/> : <AddressManager/>}</div>;
       case "profile": return <div className="profile-panel"><SectionHeading eyebrow="PERSONAL INFORMATION" title="Your profile details" text="Keep your contact and location information current."/><div className="profile-completion"><b>Profile readiness: {[name, phone, city, state, postalCode].filter((value) => value.trim()).length}/5 details completed</b><p>Your contact information can prefill assistance forms after the private workspace opens.</p></div><form className="profile-edit-form profile-edit-grid" onSubmit={saveProfile}>
         <label>Full name<input required minLength={2} maxLength={100} autoComplete="name" value={name} onChange={(event) => setName(event.target.value)}/></label>
         <label>Email address<input value={user.email} readOnly/><small>To change it, open “Sign-in & privacy”.</small></label>
@@ -187,7 +195,7 @@ function ProfileWorkspace({ snapshot, reload }: { snapshot: Snapshot; reload: ()
         {profileError && <div className="form-alert error-alert profile-form-message">{profileError}</div>}{profileMessage && <div className="form-alert success-alert profile-form-message">{profileMessage}</div>}
         <div className="profile-form-actions"><button className="button button-green" disabled={profileBusy}>{profileBusy ? "Saving…" : "Save profile details"}</button></div>
       </form></div>;
-      case "security": return <div className="profile-panel"><SectionHeading eyebrow="ACCOUNT ACCESS" title="Sign-in & privacy" text="Manage your password, sign-in email and devices. Keep access codes private."/><AccountSecurityPanel email={user.email} emailVerified={user.emailVerified} activeSessions={activeSessions} openWork={openWork}/></div>;
+      case "security": return <div className="profile-panel"><SectionHeading eyebrow="ACCOUNT ACCESS" title="Sign-in & privacy" text="Manage your password, sign-in email and devices. Keep access codes private."/><AccountSecurityPanel email={user.email} emailVerified={user.emailVerified} activeSessions={activeSessions} openWork={openWork} demoMode={demoMode}/></div>;
       case "help": return <div className="profile-panel"><SectionHeading eyebrow="LOCAL SUPPORT" title="Need help with your account?" text="Contact the Kharangajhar team if a request status needs clarification or your profile details need an update."/><div className="profile-help-card"><CircleHelp size={24}/><div><b>NISE COMPORT · Kharangajhar, Telco Colony</b><p>Ground Floor, Singh Building, Shop No-3, Hanuman Mandir Road, Kharangajhar, Telco Colony, Jamshedpur, Jharkhand 831004</p><a href="tel:+919771219893">+91 97712 19893</a><div><Link className="button button-green" href="/contact">Contact the team <ArrowRight size={15}/></Link><a className="button button-outline" href="https://wa.me/919771219893" target="_blank" rel="noreferrer">WhatsApp</a></div></div></div></div>;
     }
   })();
