@@ -112,7 +112,6 @@ async function deriveContext(request: NextRequest, route: string, envelope: {
   const now = Date.now();
   if (Math.abs(now - envelope.ts) > MAX_CLOCK_SKEW_MS) return null;
   if (!/^[A-Za-z0-9_-]{16,64}$/.test(envelope.nonce)) return null;
-  if (!await rememberNonce(envelope.nonce)) return null;
   if (envelope.salt.length !== 16 || envelope.iv.length !== 12 || envelope.ciphertext.length < 16) return null;
 
   const clientPublic = await subtle.importKey(
@@ -130,6 +129,9 @@ async function deriveContext(request: NextRequest, route: string, envelope: {
     requestKey,
     toArrayBuffer(envelope.ciphertext),
   );
+  // Persist the nonce only after authentication succeeds. Concurrent replays race on
+  // the primary key and only one request is allowed to continue.
+  if (!await rememberNonce(envelope.nonce)) return null;
   return { clear: new Uint8Array(clear), sharedSecret, salt: envelope.salt };
 }
 
