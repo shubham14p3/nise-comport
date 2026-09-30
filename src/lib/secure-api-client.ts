@@ -5,7 +5,7 @@ const decoder = new TextDecoder();
 const ROUTE = "/api/x7q9m2";
 const ALG = "ECDH-P256-HKDF-SHA256-A256GCM";
 
-type ResponseEnvelope = { v: 1; a: typeof ALG; i: string; t: number; n: string; z: number; c: string };
+type ResponseEnvelope = { v: 1; a: typeof ALG; i: string; t: number; n: string; c: string };
 
 export class SecureApiError extends Error {
   status: number;
@@ -51,8 +51,8 @@ function requestAad(ts: number, nonce: string) {
   return encoder.encode(`NC1|Q|POST|${ROUTE}|${ts}|${nonce}`);
 }
 
-function responseAad(ts: number, nonce: string, status: number) {
-  return encoder.encode(`NC1|S|${ROUTE}|${ts}|${nonce}|${status}`);
+function responseAad(ts: number, nonce: string) {
+  return encoder.encode(`NC1|S|${ROUTE}|${ts}|${nonce}`);
 }
 
 async function deriveAesKey(sharedSecret: ArrayBuffer, salt: Uint8Array, info: string) {
@@ -87,16 +87,18 @@ async function prepare() {
   return { clientPub, sharedSecret, salt, iv, nonce, ts, requestKey, responseKey };
 }
 
-async function decryptJsonResponse<T>(response: Response, responseKey: CryptoKey, nonce: string): Promise<T> {
-  if (response.headers.get("x-nx-sealed") !== "1") throw new Error("Secure response validation failed.");
+async function decryptJsonResponse<T>(response: Response, responseKey: CryptoKey, nonce: string): Promise<{ status: number; data: T }> {
+  if (response.headers.get("x-nx-sealed") !== "1" || response.status !== 200) throw new Error("Secure response validation failed.");
   const envelope = await response.json() as ResponseEnvelope;
-  if (envelope.v !== 1 || envelope.a !== ALG || envelope.n !== nonce || envelope.z !== response.status) throw new Error("Secure response validation failed.");
+  if (envelope.v !== 1 || envelope.a !== ALG || envelope.n !== nonce) throw new Error("Secure response validation failed.");
   const clear = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: toArrayBuffer(b64urlToBytes(envelope.i)), additionalData: toArrayBuffer(responseAad(envelope.t, nonce, envelope.z)), tagLength: 128 },
+    { name: "AES-GCM", iv: toArrayBuffer(b64urlToBytes(envelope.i)), additionalData: toArrayBuffer(responseAad(envelope.t, nonce)), tagLength: 128 },
     responseKey,
     toArrayBuffer(b64urlToBytes(envelope.c)),
   );
-  return JSON.parse(decoder.decode(clear)) as T;
+  const wrapped = JSON.parse(decoder.decode(clear)) as { z?: number; d?: T };
+  if (!Number.isInteger(wrapped.z) || Number(wrapped.z) < 100 || Number(wrapped.z) > 599 || !("d" in wrapped)) throw new Error("Secure response validation failed.");
+  return { status: Number(wrapped.z), data: wrapped.d as T };
 }
 
 export async function secureApi<T>(operation: string, input: unknown = {}): Promise<T> {
@@ -117,9 +119,9 @@ export async function secureApi<T>(operation: string, input: unknown = {}): Prom
       t: ctx.ts, n: ctx.nonce, c: bytesToB64url(ciphertext),
     }),
   });
-  const body = await decryptJsonResponse<T>(response, ctx.responseKey, ctx.nonce);
-  if (!response.ok) throw new SecureApiError(response.status, body);
-  return body;
+  const opened = await decryptJsonResponse<T>(response, ctx.responseKey, ctx.nonce);
+  if (opened.status >= 400) throw new SecureApiError(opened.status, opened.data);
+  return opened.data;
 }
 
 export async function secureResult<T>(operation: string, input: unknown = {}) {
@@ -157,9 +159,9 @@ export async function secureUpload<T>(operation: string, file: File, input: Reco
     },
     body: ciphertext,
   });
-  const body = await decryptJsonResponse<T>(response, ctx.responseKey, ctx.nonce);
-  if (!response.ok) throw new SecureApiError(response.status, body);
-  return body;
+  const opened = await decryptJsonResponse<T>(response, ctx.responseKey, ctx.nonce);
+  if (opened.status >= 400) throw new SecureApiError(opened.status, opened.data);
+  return opened.data;
 }
 
 export async function secureFile(operation: string, input: unknown = {}) {
@@ -181,17 +183,17 @@ export async function secureFile(operation: string, input: unknown = {}) {
     }),
   });
   if (response.headers.get("x-nx-sealed") !== "1" || response.headers.get("x-nx-b") !== "1") {
-    const body = await decryptJsonResponse<any>(response, ctx.responseKey, ctx.nonce);
-    throw new SecureApiError(response.status, body);
+    const opened = await decryptJsonResponse<any>(response, ctx.responseKey, ctx.nonce);
+    if (opened.status >= 400) throw new SecureApiError(opened.status, opened.data);
+    throw new Error("Secure file response is invalid.");
   }
   const ts = Number(response.headers.get("x-nx-t"));
   const returnedNonce = response.headers.get("x-nx-n");
-  const status = Number(response.headers.get("x-nx-z"));
   const iv = response.headers.get("x-nx-i");
-  if (!iv || returnedNonce !== ctx.nonce || status !== response.status || !Number.isFinite(ts)) throw new Error("Secure response validation failed.");
+  if (!iv || returnedNonce !== ctx.nonce || response.status !== 200 || !Number.isFinite(ts)) throw new Error("Secure response validation failed.");
   const encrypted = new Uint8Array(await response.arrayBuffer());
   const decrypted = new Uint8Array(await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv: toArrayBuffer(b64urlToBytes(iv)), additionalData: toArrayBuffer(responseAad(ts, ctx.nonce, status)), tagLength: 128 },
+    { name: "AES-GCM", iv: toArrayBuffer(b64urlToBytes(iv)), additionalData: toArrayBuffer(responseAad(ts, ctx.nonce)), tagLength: 128 },
     ctx.responseKey,
     toArrayBuffer(encrypted),
   ));
@@ -199,8 +201,10 @@ export async function secureFile(operation: string, input: unknown = {}) {
   const view = new DataView(decrypted.buffer, decrypted.byteOffset, decrypted.byteLength);
   const metadataLength = view.getUint32(0);
   if (metadataLength < 2 || 4 + metadataLength > decrypted.byteLength) throw new Error("Secure file response is invalid.");
-  const metadata = JSON.parse(decoder.decode(decrypted.subarray(4, 4 + metadataLength))) as { t?: string; d?: string };
+  const metadata = JSON.parse(decoder.decode(decrypted.subarray(4, 4 + metadataLength))) as { z?: number; t?: string; d?: string };
+  const status = Number(metadata.z);
+  if (!Number.isInteger(status) || status < 100 || status > 599) throw new Error("Secure file response is invalid.");
+  if (status >= 400) throw new SecureApiError(status, { error: "Could not open this file." });
   const bytes = decrypted.slice(4 + metadataLength);
-  if (!response.ok) throw new SecureApiError(response.status, { error: "Could not open this file." });
-  return { blob: new Blob([bytes], { type: metadata.t || "application/octet-stream" }), disposition: metadata.d };
+  return { blob: new Blob([toArrayBuffer(bytes)], { type: metadata.t || "application/octet-stream" }), disposition: metadata.d };
 }
