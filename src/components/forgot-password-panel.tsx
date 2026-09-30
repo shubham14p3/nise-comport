@@ -53,7 +53,7 @@ export default function ForgotPasswordPanel({ initialEmail = "" }: { initialEmai
     try {
       const { ok, result } = await post("L8t1B5rX9mQ4", { email, code: code.trim(), password });
       if (!ok) { setError(result.error ?? "We couldn’t reset your password."); return; }
-      router.push("/profile?section=security"); router.refresh();
+      router.push("/profile"); router.refresh();
     } finally { setBusy(false); }
   }
 
