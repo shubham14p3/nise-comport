@@ -5,6 +5,7 @@ import BrandWordmark from "@/components/brand-wordmark";
 import { ArrowUpRight, LogOut, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { secureApi } from "@/lib/secure-api-client";
 
 type HeaderUser = { id: string; name: string; email: string; role: string };
 
@@ -16,10 +17,9 @@ export default function SiteHeader() {
 
   useEffect(() => {
     let active = true;
-    fetch("/api/auth/session", { cache: "no-store" })
-      .then(async (response) => {
-        const result = await response.json();
-        if (active && response.ok) setUser(result.user);
+    secureApi<{ user: HeaderUser | null }>("C4w7G2hN6kP9")
+      .then((result) => {
+        if (active) setUser(result.user);
       })
       .catch(() => undefined)
       .finally(() => { if (active) setSessionLoaded(true); });
@@ -28,7 +28,7 @@ export default function SiteHeader() {
 
   async function signOut() {
     setSigningOut(true);
-    await fetch("/api/auth/session", { method: "DELETE" });
+    await secureApi("R6y0D3sJ8vM2");
     setUser(null);
     setSigningOut(false);
     router.refresh();
