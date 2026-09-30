@@ -1,0 +1,124 @@
+#!/usr/bin/env node
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
+import { exit } from "node:process";
+import { webcrypto } from "node:crypto";
+
+const failures = [];
+const forbiddenPrivateApis = [
+  "/api/auth/", "/api/account/", "/api/profile", "/api/addresses", "/api/requests",
+  "/api/pan/requests", "/api/print-jobs", "/api/uploads", "/api/coupons/validate",
+  "/api/admin/", "/api/internal/",
+];
+const forbiddenPrivateUrls = ["/profile/requests/", "/admin/requests/", "?next=", "?email=", "?section=", "?account=", "/pan/request?type="];
+
+function filesUnder(dir) {
+  const out = [];
+  if (!existsSync(dir)) return out;
+  for (const name of readdirSync(dir)) {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) out.push(...filesUnder(path));
+    else if (/\.(ts|tsx|js|jsx)$/.test(name)) out.push(path);
+  }
+  return out;
+}
+
+for (const path of filesUnder("src")) {
+  const source = readFileSync(path, "utf8");
+  if (!source.includes('"use client"') && !source.includes("'use client'")) continue;
+  const rel = relative(process.cwd(), path).replaceAll("\\", "/");
+  for (const token of [...forbiddenPrivateApis, ...forbiddenPrivateUrls]) {
+    if (source.includes(token)) failures.push(`${rel}: exposes forbidden browser token ${token}`);
+  }
+  if (rel !== "src/lib/secure-api-client.ts" && source.includes("fetch(") && !source.includes("@/lib/secure-api-client")) {
+    failures.push(`${rel}: direct fetch() without secure-api-client`);
+  }
+}
+
+for (const path of [
+  "src/app/(account)/profile/page.tsx",
+  "src/app/admin/page.tsx",
+  "src/app/pan/request/page.tsx",
+]) {
+  const source = readFileSync(path, "utf8");
+  if (/initialRequests|initialWallet|prefill=\{\{|jobs=\{|requests=\{/.test(source)) {
+    failures.push(`${path}: private record data may be serialized into the RSC payload`);
+  }
+}
+
+const proxy = readFileSync("src/proxy.ts", "utf8");
+for (const prefix of forbiddenPrivateApis) {
+  if (!proxy.includes(prefix)) failures.push(`src/proxy.ts: missing private API guard for ${prefix}`);
+}
+if (!proxy.includes("/api/x7q9m2")) failures.push("src/proxy.ts: opaque endpoint is not configured");
+
+const serverTransport = readFileSync("src/lib/secure-api-server.ts", "utf8");
+if (!serverTransport.includes("onConflictDoNothing()")) failures.push("secure-api-server: persistent anti-replay insert is missing");
+if (!serverTransport.includes("MAX_CLOCK_SKEW_MS = 90_000")) failures.push("secure-api-server: request clock window changed unexpectedly");
+if (!serverTransport.includes('AES-GCM') || !serverTransport.includes('HKDF') || !serverTransport.includes('ECDH')) failures.push("secure-api-server: expected authenticated transport primitives are missing");
+
+const gateway = readFileSync("src/app/api/x7q9m2/route.ts", "utf8");
+if (!gateway.includes("x-nise-internal")) failures.push("opaque gateway: server-only internal dispatch token is missing");
+
+const operationPattern = /["']([A-Z][A-Za-z0-9]{11})["']/g;
+const usedOperations = new Set();
+for (const path of filesUnder("src")) {
+  const source = readFileSync(path, "utf8");
+  if (!source.includes('"use client"') && !source.includes("'use client'")) continue;
+  for (const match of source.matchAll(operationPattern)) usedOperations.add(match[1]);
+}
+const mappedOperations = new Set([...gateway.matchAll(operationPattern)].map((match) => match[1]));
+for (const operation of usedOperations) {
+  if (!mappedOperations.has(operation)) failures.push(`opaque gateway: missing mapping for client operation ${operation}`);
+}
+for (const operation of mappedOperations) {
+  if (!usedOperations.has(operation)) failures.push(`opaque gateway: unused operation mapping ${operation}`);
+}
+if (!serverTransport.includes("JSON.stringify({ z: status, d: data })") || !serverTransport.includes("status: 200")) {
+  failures.push("secure-api-server: application status is no longer fully hidden inside encrypted responses");
+}
+
+const example = readFileSync(".env.example", "utf8");
+for (const name of ["API_ENVELOPE_PRIVATE_JWK", "NEXT_PUBLIC_API_ENVELOPE_PUBLIC_JWK", "INTERNAL_API_TOKEN"]) {
+  if (!example.includes(name + "=")) failures.push(`.env.example: missing ${name} placeholder`);
+}
+
+// Local secret files are intentionally not loaded or inspected here.
+// CI/deployment may supply the values directly in the process environment.
+const privateRaw = process.env.API_ENVELOPE_PRIVATE_JWK?.trim();
+const publicRaw = process.env.NEXT_PUBLIC_API_ENVELOPE_PUBLIC_JWK?.trim();
+const internal = process.env.INTERNAL_API_TOKEN?.trim();
+
+if ((privateRaw && !publicRaw) || (!privateRaw && publicRaw)) {
+  failures.push("Transport keypair must be supplied together.");
+}
+if (privateRaw && publicRaw) {
+  try {
+    const privateJwk = JSON.parse(privateRaw);
+    const publicJwk = JSON.parse(publicRaw);
+    if (privateJwk.crv !== "P-256" || publicJwk.crv !== "P-256" || privateJwk.x !== publicJwk.x || privateJwk.y !== publicJwk.y || !privateJwk.d) {
+      failures.push("Transport public/private JWK values do not form the configured P-256 pair.");
+    } else {
+      await webcrypto.subtle.importKey("jwk", privateJwk, { name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"]);
+      await webcrypto.subtle.importKey("jwk", publicJwk, { name: "ECDH", namedCurve: "P-256" }, false, []);
+    }
+  } catch {
+    failures.push("Transport JWK values could not be imported by WebCrypto.");
+  }
+}
+if (internal !== undefined && internal.length < 32) {
+  failures.push("INTERNAL_API_TOKEN must be at least 32 characters when supplied.");
+}
+
+if (failures.length) {
+  console.error("Opaque transport security check failed:");
+  for (const failure of failures) console.error(`  - ${failure}`);
+  exit(1);
+}
+console.log("✓ Opaque transport security checks passed");
+console.log("  Private browser APIs: guarded");
+console.log("  Private record URLs: absent from client components");
+console.log("  RSC private-data checks: passed");
+console.log("  Transport placeholders: present in .env.example");
+if (privateRaw && publicRaw) console.log("  Supplied ECDH transport keypair: valid");
+if (internal) console.log("  Supplied internal gateway token: valid");

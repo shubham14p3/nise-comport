@@ -1,4 +1,5 @@
 "use client";
+import { secureApi, secureUpload } from "@/lib/secure-api-client";
 import { FormEvent, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Upload } from "lucide-react";
@@ -36,28 +37,22 @@ export default function RequestServiceForm({ slug, title }: { slug: string; titl
     if (file && file.size > MAX_FILE_BYTES) { setError("The attachment is larger than 20 MB. Please attach a smaller file or bring it to the desk."); return; }
     setBusy(true);
     try {
-      const sessionResponse = await fetch("/api/auth/session", { cache: "no-store" });
-      const session = await sessionResponse.json().catch(() => ({ user: null }));
+      const session = await secureApi<{ user: { role: string } | null }>("C4w7G2hN6kP9");
       if (!session.user) {
         writeDraft(slug, text);
-        router.push(`/login?next=${encodeURIComponent(`/services/${slug}#request-form`)}`);
+        router.push("/login");
         return;
       }
       if (session.user.role === "demo") { setError("The local demo account can’t send requests. Create a real account to continue."); return; }
       idempotencyKey.current ??= newIdempotencyKey();
       let fileId: string | undefined;
       if (file) {
-        const upload = new FormData(); upload.set("file", file);
-        const uploaded = await fetch("/api/uploads", { method: "POST", body: upload });
-        const uploadResult = await uploaded.json().catch(() => ({}));
-        if (!uploaded.ok) throw new Error(uploadResult.error ?? "The attachment could not be uploaded.");
+        const uploadResult = await secureUpload<{ file: { id: string } }>("U7b3R8mQ4zL1", file);
         fileId = uploadResult.file.id;
       }
-      const response = await fetch("/api/requests", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ serviceSlug: slug, description: text, preferredContact, fileId, idempotencyKey: idempotencyKey.current }) });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error ?? "Could not submit this request.");
+      await secureApi("S5w2J9nF3kL7", { serviceSlug: slug, description: text, preferredContact, fileId, idempotencyKey: idempotencyKey.current });
       writeDraft(slug, "");
-      router.push(`/profile/requests/${encodeURIComponent(result.request.reference)}`); router.refresh();
+      router.push("/profile"); router.refresh();
     } catch (reason) {
       setError(reason instanceof TypeError ? "You appear to be offline. Your text is still here; try again when you’re connected." : reason instanceof Error ? reason.message : "Could not submit this request.");
     } finally { setBusy(false); }

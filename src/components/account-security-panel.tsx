@@ -3,16 +3,12 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { KeyRound, LogOut, Mail, ShieldCheck, Trash2 } from "lucide-react";
 import { passwordProblem, PASSWORD_MIN } from "@/lib/validation";
+import { secureResult } from "@/lib/secure-api-client";
 
 type ApiResult = { error?: string; message?: string; signedOut?: number; email?: string };
 
-async function call(url: string, method: "POST" | "DELETE", body?: unknown) {
-  try {
-    const response = await fetch(url, { method, headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined });
-    return { ok: response.ok, result: (await response.json().catch(() => ({}))) as ApiResult };
-  } catch {
-    return { ok: false, result: { error: "You appear to be offline. Check your connection and try again." } as ApiResult };
-  }
+async function call(operation: string, body?: unknown) {
+  return secureResult<ApiResult>(operation, body ?? {});
 }
 
 function Alert({ error, message }: { error: string; message: string }) {
@@ -43,7 +39,7 @@ export default function AccountSecurityPanel({ email, emailVerified, activeSessi
     event.preventDefault(); setPasswordError(""); setPasswordMessage("");
     if (hint) { setPasswordError(hint); return; }
     setBusy("password");
-    const { ok, result } = await call("/api/account/password", "POST", { currentPassword, newPassword });
+    const { ok, result } = await call("B7n3Q8xH5rV0", { currentPassword, newPassword });
     setBusy("");
     if (!ok) { setPasswordError(result.error ?? "Could not change your password."); return; }
     setCurrentPassword(""); setNewPassword(""); setPasswordMessage(result.message ?? "Password changed.");
@@ -51,7 +47,7 @@ export default function AccountSecurityPanel({ email, emailVerified, activeSessi
 
   async function startEmailChange(event: FormEvent) {
     event.preventDefault(); setEmailError(""); setEmailMessage(""); setBusy("email");
-    const { ok, result } = await call("/api/account/email", "POST", { newEmail, password: emailPassword });
+    const { ok, result } = await call("M1z6P9dS4kJ7", { newEmail, password: emailPassword });
     setBusy("");
     if (!ok) { setEmailError(result.error ?? "Could not start the email change."); return; }
     setEmailPassword(""); setEmailStage("code"); setEmailMessage(result.message ?? "Check the new inbox for a code.");
@@ -59,7 +55,7 @@ export default function AccountSecurityPanel({ email, emailVerified, activeSessi
 
   async function confirmEmailChange(event: FormEvent) {
     event.preventDefault(); setEmailError(""); setEmailMessage(""); setBusy("email");
-    const { ok, result } = await call("/api/account/email/confirm", "POST", { newEmail, code: emailCode });
+    const { ok, result } = await call("F8c2L5vN0qR3", { newEmail, code: emailCode });
     setBusy("");
     if (!ok) { setEmailError(result.error ?? "Could not confirm the new email."); return; }
     setEmailStage("start"); setEmailCode(""); setEmailMessage(`Your sign-in email is now ${result.email ?? newEmail}.`); setNewEmail("");
@@ -68,7 +64,7 @@ export default function AccountSecurityPanel({ email, emailVerified, activeSessi
 
   async function signOutOthers() {
     setSessionsError(""); setSessionsMessage(""); setBusy("sessions");
-    const { ok, result } = await call("/api/account/sessions", "DELETE");
+    const { ok, result } = await call("Y4h7T1mK6pD9");
     setBusy("");
     if (!ok) { setSessionsError(result.error ?? "Could not sign out other devices."); return; }
     setSessionsMessage(result.signedOut ? `Signed out of ${result.signedOut} other device${result.signedOut === 1 ? "" : "s"}.` : "No other devices were signed in.");
@@ -78,10 +74,10 @@ export default function AccountSecurityPanel({ email, emailVerified, activeSessi
     event.preventDefault(); setDeleteError("");
     if (confirmation.trim().toUpperCase() !== "DELETE") { setDeleteError("Type DELETE to confirm."); return; }
     setBusy("delete");
-    const { ok, result } = await call("/api/account/delete", "POST", { password: deletePassword, confirmation });
+    const { ok, result } = await call("J9r5W2bC8nX1", { password: deletePassword, confirmation });
     setBusy("");
     if (!ok) { setDeleteError(result.error ?? "Could not delete your account."); return; }
-    router.push("/?account=deleted"); router.refresh();
+    router.push("/"); router.refresh();
   }
 
   return <div className="security-panels">

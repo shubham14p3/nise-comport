@@ -13,8 +13,8 @@ import { cleanName, isSixDigitCode, looksLikeEmail, normalizeEmail, normalizePho
 export type User = typeof users.$inferSelect;
 export type SignupProfile = { name: string; password: string; phone?: string };
 
-const SESSION_COOKIE = "nise_session";
-const DEMO_COOKIE = "nise_demo_session";
+const SESSION_COOKIE = "nc_7x9k";
+const DEMO_COOKIE = "nc_d4q8";
 const SESSION_DAYS = 14;
 const OTP_MINUTES = 10;
 const OTP_MAX_ATTEMPTS = 5;

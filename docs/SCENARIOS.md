@@ -138,3 +138,18 @@ Flow: name, email, optional phone, password → `POST /api/auth/request-otp` →
 | SEO-14 | Fix old directory listings that say “V P Singh Building” or “Old Sector Market” | **Owner** |
 
 **Post-deploy test:** `npm run build && npm start`, then `SITE_URL=http://localhost:3000 npm run seo:check` (checks every sitemap URL for status, H1, title, description, canonical, JSON-LD, and that private pages are noindex).
+
+
+## Opaque transport and private URL scenarios
+
+- [ ] **Encrypted login request:** open DevTools Network, sign in, and confirm the browser posts only to `/api/x7q9m2`; email/password and the logical auth operation are not readable in the request body.
+- [ ] **Encrypted error response:** submit an intentionally wrong password and confirm the valid encrypted HTTP exchange still has the constant outer status while the UI receives the correct decrypted error.
+- [ ] **Direct private API blocked:** browse/curl a former private endpoint such as `/api/auth/session` without the internal server token; expect an empty 404.
+- [ ] **Replay rejected:** capture one encrypted envelope and resend the exact same body/headers inside its 90-second window; only the first authenticated nonce may execute.
+- [ ] **Tamper rejected:** alter the ciphertext, IV, timestamp, nonce or ECDH public key; expect a generic empty failure and no business action.
+- [ ] **Private profile RSC:** load `/profile` and inspect the initial document/RSC traffic; customer email, phone, requests, wallet records and saved addresses must not be serialized there. They arrive only in encrypted transport.
+- [ ] **Private admin RSC:** load `/admin`; queue records, customer data and database IDs must not appear in initial RSC payloads.
+- [ ] **No request IDs in URL:** opening customer request details keeps the browser on `/profile`; opening staff request details keeps it on `/admin`.
+- [ ] **Encrypted upload:** upload a document and confirm filename/content are not readable in the browser request body; only opaque encryption metadata is visible.
+- [ ] **Encrypted preview/download:** preview a customer file or open a staff file and confirm the network response is ciphertext; the browser renders a local `blob:` URL after decryption.
+- [ ] **Operation registry coverage:** run `npm run security:check`; it must find no plaintext private endpoints in client modules and validate the configured P-256 transport keypair.

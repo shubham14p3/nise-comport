@@ -5,23 +5,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
-import { safeNextPath } from "@/lib/safe-redirect";
+import { secureResult } from "@/lib/secure-api-client";
 import { passwordProblem, PASSWORD_MIN } from "@/lib/validation";
 
 type Mode = "signin" | "signup";
 type ApiResult = { error?: string; fields?: Record<string, string>; retryAfter?: number; message?: string; requiresOtp?: boolean; resendAfter?: number };
 
-async function post(url: string, body: unknown): Promise<{ ok: boolean; status: number; result: ApiResult }> {
-  try {
-    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    const result = (await response.json().catch(() => ({}))) as ApiResult;
-    return { ok: response.ok, status: response.status, result };
-  } catch {
-    return { ok: false, status: 0, result: { error: "You appear to be offline. Check your connection and try again." } };
-  }
+async function post(operation: string, body: unknown): Promise<{ ok: boolean; status: number; result: ApiResult }> {
+  return secureResult<ApiResult>(operation, body);
 }
 
-export default function AuthPanel({ mode, demoEnabled = false, nextPath = "/profile" }: { mode: Mode; demoEnabled?: boolean; nextPath?: string }) {
+export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; demoEnabled?: boolean }) {
   const router = useRouter();
   const [stage, setStage] = useState<"details" | "otp">("details");
   const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [phone, setPhone] = useState(""); const [password, setPassword] = useState(""); const [otp, setOtp] = useState("");
@@ -29,7 +23,6 @@ export default function AuthPanel({ mode, demoEnabled = false, nextPath = "/prof
   const [showPassword, setShowPassword] = useState(false); const [busy, setBusy] = useState(false);
   const [error, setError] = useState(""); const [success, setSuccess] = useState(""); const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [resendIn, setResendIn] = useState(0);
-  const target = safeNextPath(nextPath);
   const title = mode === "signup" ? "A little help goes a long way." : "Good to see you again.";
   const passwordHint = mode === "signup" && password ? passwordProblem(password, { email, name }) : "";
 
@@ -45,20 +38,20 @@ export default function AuthPanel({ mode, demoEnabled = false, nextPath = "/prof
     if (result.retryAfter && result.retryAfter <= 120) setResendIn(result.retryAfter);
   }
 
-  function done() { router.push(target); router.refresh(); }
+  function done() { router.push("/profile"); router.refresh(); }
 
   async function submitDetails(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(""); setSuccess(""); setFieldErrors({});
     try {
       if (mode === "signin") {
-        const { ok, result } = await post("/api/auth/password", { email, password });
+        const { ok, result } = await post("Q7m4kP2vL9sD", { email, password });
         if (!ok) { showFailure(result, "We couldn’t sign you in. Please try again."); return; }
         if (result.requiresOtp) { setStage("otp"); setResendIn(60); setSuccess("Please verify your email. If a code isn’t already in your inbox, we’ve just sent one."); return; }
         done(); return;
       }
       const problem = passwordProblem(password, { email, name });
       if (problem) { setFieldErrors({ password: problem }); setError(problem); return; }
-      const { ok, result } = await post("/api/auth/request-otp", { email, purpose: "signup", website });
+      const { ok, result } = await post("N5c8R1xT6bW3", { email, purpose: "signup", website });
       if (!ok) { showFailure(result, "We couldn’t send a code. Please try again."); return; }
       setStage("otp"); setResendIn(result.resendAfter ?? 60); setSuccess(result.message ?? "Check your inbox for a 6-digit code.");
     } finally { setBusy(false); }
@@ -68,7 +61,7 @@ export default function AuthPanel({ mode, demoEnabled = false, nextPath = "/prof
     if (!email) { setFieldErrors({ email: "Enter your email address first." }); return; }
     setBusy(true); setError(""); setSuccess(""); setFieldErrors({});
     try {
-      const { ok, result } = await post("/api/auth/request-otp", { email, purpose: "signin", website });
+      const { ok, result } = await post("N5c8R1xT6bW3", { email, purpose: "signin", website });
       if (!ok) { showFailure(result, "We couldn’t send a sign-in code."); return; }
       setStage("otp"); setResendIn(result.resendAfter ?? 60); setSuccess(result.message ?? "Check your inbox for a 6-digit sign-in code.");
     } finally { setBusy(false); }
@@ -77,7 +70,7 @@ export default function AuthPanel({ mode, demoEnabled = false, nextPath = "/prof
   async function resend() {
     setBusy(true); setError(""); setSuccess("");
     try {
-      const { ok, result } = await post("/api/auth/request-otp", { email, purpose: mode, website });
+      const { ok, result } = await post("N5c8R1xT6bW3", { email, purpose: mode, website });
       if (!ok) { showFailure(result, "Could not resend the code."); return; }
       setResendIn(result.resendAfter ?? 60); setOtp(""); setSuccess("A new code is on its way. Only the newest code works.");
     } finally { setBusy(false); }
@@ -86,7 +79,7 @@ export default function AuthPanel({ mode, demoEnabled = false, nextPath = "/prof
   async function verify(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(""); setFieldErrors({});
     try {
-      const { ok, result } = await post("/api/auth/verify-otp", { email, code: otp.trim(), purpose: mode, ...(mode === "signup" ? { name, password, phone } : {}) });
+      const { ok, result } = await post("H9d2M7qK4zF8", { email, code: otp.trim(), purpose: mode, ...(mode === "signup" ? { name, password, phone } : {}) });
       if (!ok) {
         showFailure(result, "We couldn’t verify that code.");
         if (result.fields?.password || result.fields?.name || result.fields?.phone) setStage("details");
@@ -112,7 +105,7 @@ export default function AuthPanel({ mode, demoEnabled = false, nextPath = "/prof
         <div className="hp-field" aria-hidden="true"><label>Website<input tabIndex={-1} autoComplete="off" value={website} onChange={e => setWebsite(e.target.value)}/></label></div>
         {error && <div className="form-alert error-alert" role="alert">{error}</div>}{success && <div className="form-alert success-alert" role="status">{success}</div>}
         <button className="button button-green auth-submit" disabled={busy}>{busy ? "Please wait…" : mode === "signup" ? "Continue with email verification" : "Sign in"}<ArrowRight size={16}/></button>
-        {mode === "signin" && <div className="auth-secondary-actions"><button type="button" className="resend-link" disabled={busy} onClick={() => void requestSignInCode()}>Sign in with an email code</button><Link className="resend-link" href={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`}>Forgot password?</Link></div>}
+        {mode === "signin" && <div className="auth-secondary-actions"><button type="button" className="resend-link" disabled={busy} onClick={() => void requestSignInCode()}>Sign in with an email code</button><Link className="resend-link" href="/forgot-password">Forgot password?</Link></div>}
       </form> : <form onSubmit={verify} className="auth-form" noValidate>
         <label>6-digit verification code<input inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6}" maxLength={6} value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" className="otp-input" aria-invalid={Boolean(fieldErrors.code)} autoFocus/></label>
         {error && <div className="form-alert error-alert" role="alert">{error}</div>}{success && <div className="form-alert success-alert" role="status">{success}</div>}
@@ -123,5 +116,5 @@ export default function AuthPanel({ mode, demoEnabled = false, nextPath = "/prof
         </div>
         <p className="auth-legal">Codes expire after 10 minutes and allow 5 attempts. NISE COMPORT staff will never ask for this code.</p>
       </form>}
-      <div className="auth-switch">{mode === "signup" ? <>Already have an account? <Link href={`/login${target !== "/profile" ? `?next=${encodeURIComponent(target)}` : ""}`}>Sign in</Link></> : <>New to NISE COMPORT? <Link href={`/signup${target !== "/profile" ? `?next=${encodeURIComponent(target)}` : ""}`}>Create an account</Link></>}</div><p className="auth-legal">By continuing, you agree to our <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy Policy</Link>.</p></div></section></div></main>;
+      <div className="auth-switch">{mode === "signup" ? <>Already have an account? <Link href="/login">Sign in</Link></> : <>New to NISE COMPORT? <Link href="/signup">Create an account</Link></>}</div><p className="auth-legal">By continuing, you agree to our <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy Policy</Link>.</p></div></section></div></main>;
 }

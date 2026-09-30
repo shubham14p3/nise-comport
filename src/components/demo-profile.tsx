@@ -1,2 +1,5 @@
 import ProfileDashboard from "@/components/profile-dashboard";
-export default function DemoProfile({section}:{section?:"overview"|"requests"|"history"|"prints"|"wallet"|"vouchers"|"addresses"|"profile"|"security"|"help"}){return <ProfileDashboard initialSection={section} demoMode user={{id:"demo",name:"Demo Customer",email:"demo@nisecomport.test",phone:null,emailVerified:false,city:"",state:"",postalCode:"",profileSummary:"",preferredContact:"email"}} initialRequests={[]} initialJobs={[]} initialWallet={[]}/>;}
+
+export default function DemoProfile() {
+  return <ProfileDashboard demoMode/>;
+}

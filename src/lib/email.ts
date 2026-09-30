@@ -111,7 +111,7 @@ export async function sendStatusEmail(to: string, name: string, reference: strin
   await sendMail({
     to, subject: `NISE COMPORT update for ${reference}`, heading: `Update on ${reference}`,
     paragraphs: [`Hello ${name},`, `Your ${label} (${reference}) is now marked “${status}”.`, "Sign in to your profile to see the details. Reply or call us if anything needs changing."],
-    action: { label: "Open my requests", href: `${site.url}/profile?section=requests` },
+    action: { label: "Open my account", href: `${site.url}/profile` },
   });
 }
 
@@ -119,7 +119,7 @@ export async function sendRequestReceivedEmail(to: string, name: string, referen
   await sendMail({
     to, subject: `We received your request ${reference}`, heading: "Request received",
     paragraphs: [`Hello ${name},`, `Thank you. We received your ${label} request. Your reference is ${reference}.`, "Our team will review it and contact you with the document checklist and any service charge before any work starts. Please don’t send OTPs, PINs or passwords to anyone."],
-    action: { label: "View my request", href: `${site.url}/profile/requests/${encodeURIComponent(reference)}` },
+    action: { label: "Open my account", href: `${site.url}/profile` },
   });
 }
 
