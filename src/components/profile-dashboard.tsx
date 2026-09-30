@@ -2,6 +2,7 @@
 
 import SiteHeader from "@/components/site-header";
 import AddressManager from "@/components/address-manager";
+import AccountSecurityPanel from "@/components/account-security-panel";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
@@ -17,6 +18,8 @@ type ProfileUser = {
   id: string; name: string; email: string; phone: string | null; emailVerified: boolean;
   city: string; state: string; postalCode: string; profileSummary: string;
   preferredContact: "email" | "phone" | "whatsapp";
+  /** ISO timestamp used to detect edits made in another tab or device. */
+  updatedAt?: string;
 };
 type Section = "overview" | "requests" | "history" | "prints" | "wallet" | "vouchers" | "addresses" | "profile" | "security" | "help";
 
@@ -36,8 +39,9 @@ const closedStatuses = new Set(["completed", "rejected", "cancelled", "closed"])
 const dateLabel = (value: string) => new Date(value).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 const rupees = (value: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(value);
 
-export default function ProfileDashboard({ user, initialRequests, initialJobs, initialWallet, selectedReference, initialSection, demoMode = false, availableCoupons = [] }: {
+export default function ProfileDashboard({ user, initialRequests, initialJobs, initialWallet, selectedReference, initialSection, demoMode = false, availableCoupons = [], activeSessions = 1, openWork = 0 }: {
   user: ProfileUser; initialRequests: RequestItem[]; initialJobs: PrintItem[]; initialWallet: WalletItem[]; selectedReference?: string; initialSection?: Section; demoMode?: boolean; availableCoupons?: {code:string;discountType:string;discountValue:string;minimumAmount:string;expiresAt:string|null}[];
+  activeSessions?: number; openWork?: number;
 }) {
   const router = useRouter();
   const [section, setSection] = useState<Section>(selectedReference ? "requests" : initialSection ?? "overview");
@@ -51,6 +55,8 @@ export default function ProfileDashboard({ user, initialRequests, initialJobs, i
   const [profileBusy, setProfileBusy] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
   const [profileError, setProfileError] = useState("");
+  const [profileFieldErrors, setProfileFieldErrors] = useState<Record<string, string>>({});
+  const [updatedAt, setUpdatedAt] = useState(user.updatedAt ?? "");
   const [selectedRequest, setSelectedRequest] = useState(selectedReference ?? "");
   const firstName = user.name.trim().split(/\s+/)[0];
   const balance = initialWallet.reduce((total, entry) => total + (entry.kind.toLowerCase() === "debit" ? -1 : 1) * Number(entry.amount), 0);
@@ -59,15 +65,17 @@ export default function ProfileDashboard({ user, initialRequests, initialJobs, i
   const focusRequest = initialRequests.find((item) => item.reference === selectedRequest);
 
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setProfileBusy(true); setProfileMessage(""); setProfileError("");
+    event.preventDefault(); setProfileBusy(true); setProfileMessage(""); setProfileError(""); setProfileFieldErrors({});
     if (demoMode) { setProfileMessage("Preview updated for this session. Create an account to save your details permanently."); setProfileBusy(false); return; }
     try {
       const response = await fetch("/api/profile", {
         method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, phone, city, state, postalCode, profileSummary, preferredContact }),
+        body: JSON.stringify({ name, phone, city, state, postalCode, profileSummary, preferredContact, ...(updatedAt ? { expectedUpdatedAt: updatedAt } : {}) }),
       });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error);
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) { setProfileFieldErrors(result.fields ?? {}); throw new Error(result.error ?? "Could not update your profile."); }
+      if (result.user?.phone !== undefined) setPhone(result.user.phone ?? "");
+      if (result.user?.updatedAt) setUpdatedAt(result.user.updatedAt);
       setProfileMessage("Your profile details have been saved.");
       router.refresh();
     } catch (reason) {
@@ -113,17 +121,17 @@ export default function ProfileDashboard({ user, initialRequests, initialJobs, i
       case "addresses": return <div className="profile-panel"><SectionHeading eyebrow="DELIVERY & CONTACT" title="Saved addresses" text="Save an address for a print delivery request. You can choose pickup instead when sending a print job."/>{demoMode ? <p>Saved addresses require a real account. <Link href="/signup">Create an account</Link> to add and manage delivery addresses.</p> : <AddressManager/>}</div>;
       case "profile": return <div className="profile-panel"><SectionHeading eyebrow="PERSONAL INFORMATION" title="Your profile details" text="Keep your contact and location information current. Required application information is confirmed with you separately for each service."/><div className="profile-completion"><b>Profile readiness: {[name,phone,city,state,postalCode].filter(v=>v.trim()).length}/5 details completed</b><p>Your contact information prefills the PAN assistance form. Check applicant details separately when applying for another person.</p></div><form className="profile-edit-form profile-edit-grid" onSubmit={saveProfile}>
         <label>Full name<input required minLength={2} maxLength={100} autoComplete="name" value={name} onChange={(event) => setName(event.target.value)}/><small>Your account contact name. An application can be for another person.</small></label>
-        <label>Email address<input value={user.email} readOnly/><small>{demoMode ? "Development preview email; not a verified customer account." : "Your sign-in email cannot be changed here."}</small></label>
-        <label>Mobile number<input pattern="\+?[1-9][0-9]{7,14}" maxLength={16} autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="Add your mobile number"/><small>Enter it yourself. Email OTP does not provide a phone number.</small></label>
+        <label>Email address<input value={user.email} readOnly/><small>{demoMode ? "Development preview email; not a verified customer account." : "To change it, open “Sign-in & privacy” in the menu."}</small></label>
+        <label>Mobile number<input type="tel" inputMode="tel" maxLength={20} autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="e.g. 98765 43210" aria-invalid={Boolean(profileFieldErrors.phone)}/><small>{profileFieldErrors.phone ?? "We save it in +91 format. Needed for phone or WhatsApp updates."}</small></label>
         <label>City<input maxLength={100} autoComplete="address-level2" value={city} onChange={(event) => setCity(event.target.value)} placeholder="For example, Jamshedpur"/></label>
         <label>State<input maxLength={100} autoComplete="address-level1" value={state} onChange={(event) => setState(event.target.value)} placeholder="For example, Jharkhand"/></label>
-        <label>PIN code<input inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="postal-code" value={postalCode} onChange={(event) => setPostalCode(event.target.value)} placeholder="6-digit PIN code"/></label>
-        <label>Preferred update channel<select value={preferredContact} onChange={(event) => setPreferredContact(event.target.value as ProfileUser["preferredContact"])}><option value="email">Email</option><option value="phone">Phone call</option><option value="whatsapp">WhatsApp</option></select><small>We use this preference for service updates where available.</small></label>
+        <label>PIN code<input inputMode="numeric" pattern="[1-9][0-9]{5}" maxLength={6} autoComplete="postal-code" value={postalCode} onChange={(event) => setPostalCode(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="6-digit PIN code" aria-invalid={Boolean(profileFieldErrors.postalCode)}/>{profileFieldErrors.postalCode && <small className="field-error">{profileFieldErrors.postalCode}</small>}</label>
+        <label>Preferred update channel<select value={preferredContact} onChange={(event) => setPreferredContact(event.target.value as ProfileUser["preferredContact"])}><option value="email">Email</option><option value="phone">Phone call</option><option value="whatsapp">WhatsApp</option></select><small>{profileFieldErrors.preferredContact ?? "We use this preference for service updates where available."}</small></label>
         <label className="profile-summary-field">A note for your profile <span>OPTIONAL</span><textarea maxLength={500} rows={4} value={profileSummary} onChange={(event) => setProfileSummary(event.target.value)} placeholder="Anything you would like the service team to know about contacting you? Avoid adding passwords, OTPs, or identity numbers here."/><small>{profileSummary.length}/500 characters. Don’t enter sensitive identity details here.</small></label>
         {profileError && <div className="form-alert error-alert profile-form-message">{profileError}</div>}{profileMessage && <div className="form-alert success-alert profile-form-message">{profileMessage}</div>}
         <div className="profile-form-actions"><button className="button button-green" disabled={profileBusy}>{profileBusy ? "Saving…" : "Save profile details"}</button><span>{demoMode ? "Preview changes last until you reload this page." : "These details are stored with your account and can be updated later."}</span></div>
-      </form><div className="profile-provider-note"><ShieldCheck size={17}/><p>Google sign-in is not connected in this version. Your name and email come from signup; phone, city, state, PIN code, and contact preference are entered and managed by you.</p></div></div>;
-      case "security": return <div className="profile-panel"><SectionHeading eyebrow="ACCOUNT ACCESS" title="Sign-in & privacy" text="Your account is protected by the email address you verified. Keep access codes private."/><div className="profile-security-list"><article><ShieldCheck size={19}/><div><b>Email verification</b><p>{user.emailVerified ? `Verified for ${user.email}` : "Email verification status is not available."}</p></div><span>{user.emailVerified ? "Verified" : "Check status"}</span></article><article><UserRound size={19}/><div><b>Current sign-in options</b><p>Email and password or a one-time code sent to your email address.</p></div><span>Enabled</span></article><article><Bell size={19}/><div><b>Google sign-in</b><p>Google OAuth has not been configured. It will not prefill account information until that integration is added and authorized.</p></div><span>Not connected</span></article></div><p className="profile-security-tip"><b>Safety reminder:</b> Never share your email OTP, password, Aadhaar OTP, banking PIN, or account password with anyone.</p></div>;
+      </form><div className="profile-provider-note"><ShieldCheck size={17}/><p>Your name and email come from sign-up; phone, city, state, PIN code and contact preference are entered and managed by you. To change your sign-in email, use “Sign-in &amp; privacy”.</p></div></div>;
+      case "security": return <div className="profile-panel"><SectionHeading eyebrow="ACCOUNT ACCESS" title="Sign-in & privacy" text="Manage your password, sign-in email and devices. Keep access codes private."/><AccountSecurityPanel email={user.email} emailVerified={user.emailVerified} activeSessions={activeSessions} openWork={openWork} demoMode={demoMode}/></div>;
       case "help": return <div className="profile-panel"><SectionHeading eyebrow="LOCAL SUPPORT" title="Need help with your account?" text="Contact the Kharangajhar team if a request status needs clarification or your profile details need an update."/><div className="profile-help-card"><CircleHelp size={24}/><div><b>NISE COMPORT · Kharangajhar, Telco</b><p>Shop No 3, Ground Floor, Singh Building, Hanuman Mandir Road, Kharangajhar, Jamshedpur, Jharkhand 831004</p><a href="tel:+919771219893">+91 97712 19893</a><div><Link className="button button-green" href="/contact">Contact the team <ArrowRight size={15}/></Link><a className="button button-outline" href="https://wa.me/919771219893" target="_blank" rel="noreferrer">WhatsApp</a></div></div></div></div>;
     }
   })();

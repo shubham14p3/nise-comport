@@ -1,4 +1,15 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import AuthPanel from "@/components/auth-panel";
-export const metadata: Metadata = { title: "Create your account", description: "Create your NISE COMPORT account with secure email verification.", robots: { index: false, follow: false } };
-export default function SignupPage() { return <AuthPanel mode="signup"/>; }
+import { getCurrentUser } from "@/lib/auth";
+import { safeNextPath } from "@/lib/safe-redirect";
+import { privateMetadata } from "@/lib/seo";
+
+export const metadata = privateMetadata("Create your account", "Create your NISE COMPORT account with secure email verification.");
+
+export default async function SignupPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  const { next } = await searchParams;
+  const target = safeNextPath(next);
+  const user = await getCurrentUser().catch(() => null);
+  if (user) redirect(target);
+  return <AuthPanel mode="signup" nextPath={target}/>;
+}

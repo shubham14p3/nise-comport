@@ -11,6 +11,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { printJobs, storedFiles } from "@/db/schema";
 import { apiError } from "@/lib/http";
+import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
 import { privateStoragePath } from "@/lib/storage";
 
 export const runtime = "nodejs";
@@ -53,8 +54,12 @@ async function convertWordToPdf(fileName: string, bytes: Buffer) {
 export async function POST(request: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Please sign in before uploading documents." }, { status: 401 });
+  if (user.role === "demo") return NextResponse.json({ error: "The local demo account can’t upload documents." }, { status: 403 });
+  const declaredSize = Number(request.headers.get("content-length") ?? "0");
+  if (declaredSize > MAX_FILE_SIZE + 1024 * 1024) return NextResponse.json({ error: "Choose a file up to 20 MB." }, { status: 413 });
   let finalPath: string | undefined;
   try {
+    await enforceRate(RATE_RULES.uploadsPerUserDay, identity("user", user.id), "You’ve uploaded many files today. Please bring the remaining documents to the service desk or try tomorrow.");
     const form = await request.formData();
     const file = form.get("file");
     if (!(file instanceof File)) return NextResponse.json({ error: "Choose a file to upload." }, { status: 400 });

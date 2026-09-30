@@ -5,6 +5,10 @@ export const users = pgTable("users", {
   phone: text("phone"), passwordHash: text("password_hash").notNull(), emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
   city: text("city"), state: text("state"), postalCode: text("postal_code"), profileSummary: text("profile_summary"), preferredContact: text("preferred_contact").notNull().default("email"),
   role: text("role").notNull().default("customer"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  passwordChangedAt: timestamp("password_changed_at", { withTimezone: true }),
+  disabledAt: timestamp("disabled_at", { withTimezone: true }),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
 }, (table) => [uniqueIndex("users_email_unique").on(table.email)]);
 
 export const emailOtps = pgTable("email_otps", {
@@ -31,8 +35,13 @@ export const serviceRequests = pgTable("service_requests", {
   serviceSlug: text("service_slug").notNull(), serviceName: text("service_name").notNull(), status: text("status").notNull().default("submitted"),
   details: jsonb("details").notNull().default({}), serviceFee: numeric("service_fee", { precision: 10, scale: 2 }).notNull().default("0"),
   externalFee: numeric("external_fee", { precision: 10, scale: 2 }).notNull().default("0"), notes: text("notes"),
+  idempotencyKey: text("idempotency_key"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [index("service_requests_user_created_idx").on(table.userId, table.createdAt)]);
+}, (table) => [
+  index("service_requests_user_created_idx").on(table.userId, table.createdAt),
+  index("service_requests_status_created_idx").on(table.status, table.createdAt),
+  uniqueIndex("service_requests_user_idempotency_idx").on(table.userId, table.idempotencyKey),
+]);
 
 export const storedFiles = pgTable("stored_files", {
   id: uuid("id").defaultRandom().primaryKey(), userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -49,8 +58,12 @@ export const printJobs = pgTable("print_jobs", {
   fulfillment: text("fulfillment").notNull(), scheduledAt: timestamp("scheduled_at", { withTimezone: true }), addressId: uuid("address_id").references(() => addresses.id),
   subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(), discount: numeric("discount", { precision: 10, scale: 2 }).notNull().default("0"),
   total: numeric("total", { precision: 10, scale: 2 }).notNull(), paymentStatus: text("payment_status").notNull().default("pending"),
+  idempotencyKey: text("idempotency_key"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [index("print_jobs_user_created_idx").on(table.userId, table.createdAt)]);
+}, (table) => [
+  index("print_jobs_user_created_idx").on(table.userId, table.createdAt),
+  uniqueIndex("print_jobs_user_idempotency_idx").on(table.userId, table.idempotencyKey),
+]);
 
 export const coupons = pgTable("coupons", {
   id: uuid("id").defaultRandom().primaryKey(), code: text("code").notNull().unique(), discountType: text("discount_type").notNull(),
@@ -72,8 +85,9 @@ export const referrals = pgTable("referrals", {
 export const notifications = pgTable("notifications", {
   id: uuid("id").defaultRandom().primaryKey(), userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   channel: text("channel").notNull(), kind: text("kind").notNull(), payload: jsonb("payload").notNull(), status: text("status").notNull().default("queued"),
+  attempts: integer("attempts").notNull().default(0), lastError: text("last_error"), sentAt: timestamp("sent_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [index("notifications_status_created_idx").on(table.status, table.createdAt)]);
 
 export const panImports = pgTable("pan_imports", {
   id: uuid("id").defaultRandom().primaryKey(), uploadedBy: uuid("uploaded_by").notNull().references(() => users.id), fileId: uuid("file_id").references(() => storedFiles.id, { onDelete: "set null" }),
@@ -87,3 +101,15 @@ export const panRecords = pgTable("pan_records", {
   importId: uuid("import_id").references(() => panImports.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("pan_records_name_idx").on(table.holderName)]);
+
+/** Fixed-window counters for rate limiting and sign-in lockout (keys are hashed; no personal data). */
+export const rateLimits = pgTable("rate_limits", {
+  key: text("key").primaryKey(), windowStart: timestamp("window_start", { withTimezone: true }).notNull(), count: integer("count").notNull().default(0),
+}, (table) => [index("rate_limits_window_idx").on(table.windowStart)]);
+
+/** Status history for service requests and print jobs: who changed what, and when. */
+export const requestEvents = pgTable("request_events", {
+  id: uuid("id").defaultRandom().primaryKey(), requestKind: text("request_kind").notNull(), requestId: uuid("request_id").notNull(),
+  actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }), fromStatus: text("from_status"), toStatus: text("to_status").notNull(),
+  note: text("note"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("request_events_request_idx").on(table.requestKind, table.requestId, table.createdAt)]);
