@@ -47,7 +47,20 @@ export default function AdminDashboard() {
     }
   }
 
-  useEffect(() => { void load("", ""); }, []);
+  useEffect(() => {
+    let active = true;
+    secureApi<Snapshot>("J2w7L5pD9nV4", { status: "", q: "" })
+      .then((result) => {
+        if (!active) return;
+        setJobs(result.jobs); setRequests(result.requests); setCanImport(result.canImport);
+        setStatus(result.filters.status); setQ(result.filters.q); setLoaded(true);
+      })
+      .catch((reason) => {
+        if (!active) return;
+        setError(reason instanceof Error ? reason.message : "Could not load the staff queue."); setLoaded(true);
+      });
+    return () => { active = false; };
+  }, []);
 
   async function filter(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setDetail(null); await load(status, q);
