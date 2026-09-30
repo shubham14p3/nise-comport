@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
-import { safeNextPath } from "@/lib/safe-redirect";
 import { secureResult } from "@/lib/secure-api-client";
 import { passwordProblem, PASSWORD_MIN } from "@/lib/validation";
 
@@ -16,7 +15,7 @@ async function post(operation: string, body: unknown): Promise<{ ok: boolean; st
   return secureResult<ApiResult>(operation, body);
 }
 
-export default function AuthPanel({ mode, demoEnabled = false, nextPath = "/profile" }: { mode: Mode; demoEnabled?: boolean; nextPath?: string }) {
+export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; demoEnabled?: boolean }) {
   const router = useRouter();
   const [stage, setStage] = useState<"details" | "otp">("details");
   const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [phone, setPhone] = useState(""); const [password, setPassword] = useState(""); const [otp, setOtp] = useState("");
@@ -24,7 +23,6 @@ export default function AuthPanel({ mode, demoEnabled = false, nextPath = "/prof
   const [showPassword, setShowPassword] = useState(false); const [busy, setBusy] = useState(false);
   const [error, setError] = useState(""); const [success, setSuccess] = useState(""); const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [resendIn, setResendIn] = useState(0);
-  const target = safeNextPath(nextPath);
   const title = mode === "signup" ? "A little help goes a long way." : "Good to see you again.";
   const passwordHint = mode === "signup" && password ? passwordProblem(password, { email, name }) : "";
 
@@ -40,7 +38,7 @@ export default function AuthPanel({ mode, demoEnabled = false, nextPath = "/prof
     if (result.retryAfter && result.retryAfter <= 120) setResendIn(result.retryAfter);
   }
 
-  function done() { router.push(target); router.refresh(); }
+  function done() { router.push("/profile"); router.refresh(); }
 
   async function submitDetails(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(""); setSuccess(""); setFieldErrors({});
@@ -118,5 +116,5 @@ export default function AuthPanel({ mode, demoEnabled = false, nextPath = "/prof
         </div>
         <p className="auth-legal">Codes expire after 10 minutes and allow 5 attempts. NISE COMPORT staff will never ask for this code.</p>
       </form>}
-      <div className="auth-switch">{mode === "signup" ? <>Already have an account? <Link href={`/login${target !== "/profile" ? `?next=${encodeURIComponent(target)}` : ""}`}>Sign in</Link></> : <>New to NISE COMPORT? <Link href={`/signup${target !== "/profile" ? `?next=${encodeURIComponent(target)}` : ""}`}>Create an account</Link></>}</div><p className="auth-legal">By continuing, you agree to our <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy Policy</Link>.</p></div></section></div></main>;
+      <div className="auth-switch">{mode === "signup" ? <>Already have an account? <Link href="/login">Sign in</Link></> : <>New to NISE COMPORT? <Link href="/signup">Create an account</Link></>}</div><p className="auth-legal">By continuing, you agree to our <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy Policy</Link>.</p></div></section></div></main>;
 }
