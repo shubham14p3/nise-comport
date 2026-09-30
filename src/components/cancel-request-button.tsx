@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import { secureApi } from "@/lib/secure-api-client";
 
 /** Lets a customer cancel a request before staff have finished it. */
-export default function CancelRequestButton({ reference }: { reference: string }) {
+export default function CancelRequestButton({ reference, onDone }: { reference: string; onDone?: () => void | Promise<void> }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState("");
@@ -15,7 +15,7 @@ export default function CancelRequestButton({ reference }: { reference: string }
     event.preventDefault(); setBusy(true); setError("");
     try {
       await secureApi("G8q4T1vM6rC0", { reference, reason });
-      setOpen(false); router.refresh();
+      setOpen(false); if (onDone) await onDone(); else router.refresh();
     } catch { setError("You appear to be offline. Check your connection and try again."); }
     finally { setBusy(false); }
   }
