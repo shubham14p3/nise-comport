@@ -84,25 +84,31 @@ if (!serverTransport.includes("JSON.stringify({ z: status, d: data })") || !serv
   failures.push("secure-api-server: application status is no longer fully hidden inside encrypted responses");
 }
 
-const privateRaw = process.env.API_ENVELOPE_PRIVATE_JWK;
-const publicRaw = process.env.NEXT_PUBLIC_API_ENVELOPE_PUBLIC_JWK;
-const internal = process.env.INTERNAL_API_TOKEN ?? "";
-if (!privateRaw || !publicRaw) failures.push("Transport ECDH keypair is missing from environment.");
-else {
-  try {
-    const privateJwk = JSON.parse(privateRaw);
-    const publicJwk = JSON.parse(publicRaw);
-    if (privateJwk.crv !== "P-256" || publicJwk.crv !== "P-256" || privateJwk.x !== publicJwk.x || privateJwk.y !== publicJwk.y || !privateJwk.d) {
-      failures.push("Transport public/private JWK values do not form the configured P-256 pair.");
-    } else {
-      await webcrypto.subtle.importKey("jwk", privateJwk, { name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"]);
-      await webcrypto.subtle.importKey("jwk", publicJwk, { name: "ECDH", namedCurve: "P-256" }, false, []);
+const privateRaw = process.env.API_ENVELOPE_PRIVATE_JWK?.trim();
+const publicRaw = process.env.NEXT_PUBLIC_API_ENVELOPE_PUBLIC_JWK?.trim();
+const internal = process.env.INTERNAL_API_TOKEN?.trim() ?? "";
+const requireRuntimeKeys = process.env.REQUIRE_API_TRANSPORT_KEYS === "true";
+
+if (!privateRaw && !publicRaw && !internal && !requireRuntimeKeys) {
+  console.log("  Runtime transport keys: not configured locally (code-only checks continue)");
+} else {
+  if (!privateRaw || !publicRaw) failures.push("Transport ECDH keypair is incomplete in the environment.");
+  else {
+    try {
+      const privateJwk = JSON.parse(privateRaw);
+      const publicJwk = JSON.parse(publicRaw);
+      if (privateJwk.crv !== "P-256" || publicJwk.crv !== "P-256" || privateJwk.x !== publicJwk.x || privateJwk.y !== publicJwk.y || !privateJwk.d) {
+        failures.push("Transport public/private JWK values do not form the configured P-256 pair.");
+      } else {
+        await webcrypto.subtle.importKey("jwk", privateJwk, { name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"]);
+        await webcrypto.subtle.importKey("jwk", publicJwk, { name: "ECDH", namedCurve: "P-256" }, false, []);
+      }
+    } catch {
+      failures.push("Transport JWK values could not be imported by WebCrypto.");
     }
-  } catch {
-    failures.push("Transport JWK values could not be imported by WebCrypto.");
   }
+  if (internal.length < 32) failures.push("INTERNAL_API_TOKEN must be at least 32 characters.");
 }
-if (internal.length < 32) failures.push("INTERNAL_API_TOKEN must be at least 32 characters.");
 
 if (failures.length) {
   console.error("Opaque transport security check failed:");
@@ -113,5 +119,7 @@ console.log("✓ Opaque transport security checks passed");
 console.log("  Private browser APIs: guarded");
 console.log("  Private record URLs: absent from client components");
 console.log("  RSC private-data checks: passed");
-console.log("  ECDH transport keypair: valid");
-console.log("  Internal gateway token: configured");
+if (privateRaw && publicRaw && internal) {
+  console.log("  ECDH transport keypair: valid");
+  console.log("  Internal gateway token: configured");
+}
