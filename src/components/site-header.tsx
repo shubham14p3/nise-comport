@@ -41,7 +41,7 @@ export default function SiteHeader() {
 
   return <header className="site-header"><div className="container nav-wrap">
     <Link className="brand" href="/" aria-label="NISE COMPORT home"><BrandWordmark/></Link>
-    <nav className="desktop-nav" aria-label="Main navigation"><Link href="/services">Services</Link><Link href="/pan">PAN help</Link><Link href="/blog">Guides</Link><Link href="/print">Print</Link><Link href="/offers">Offers</Link><Link href="/contact">Contact</Link><Link href="/hi" hrefLang="hi-IN" lang="hi">हिन्दी</Link></nav>
+    <nav className="desktop-nav" aria-label="Main navigation"><Link href="/services">Services</Link><Link href="/print">Print</Link><Link href="/offers">Offers</Link><Link href="/blog">Guides</Link><Link href="/contact">Contact</Link><Link href="/hi" hrefLang="hi-IN" lang="hi">हिन्दी</Link></nav>
     <div className="nav-actions">{accountLinks}<details className="mobile-nav-menu"><summary className="mobile-menu" aria-label="Open menu"><Menu size={21}/><span>Menu</span></summary><nav aria-label="Mobile navigation"><Link href="/services">All services</Link><Link href="/print">Print &amp; scan</Link><Link href="/offers">Offers &amp; vouchers</Link><Link href="/blog">Local guides</Link><Link href="/areas-we-serve">Areas we serve</Link><Link href="/gallery">Gallery</Link><Link href="/social">Social updates</Link><Link href="/team">Our team</Link><Link href="/contact">Contact</Link><Link href="/hi" hrefLang="hi-IN" lang="hi">हिन्दी</Link>{sessionLoaded && user ? <><Link href="/profile">My profile</Link><button type="button" onClick={signOut} disabled={signingOut}>Sign out</button></> : sessionLoaded ? <Link href="/login">Sign in</Link> : null}<Link href="/faq">FAQs</Link></nav></details></div>
   </div></header>;
 }
