@@ -1,6 +1,7 @@
 "use client";
 import { FormEvent, useState } from "react";
 import { Database, Search, Upload } from "lucide-react";
+import { secureApi, secureUpload } from "@/lib/secure-api-client";
 type ImportRow = { id: string; rowCount: number; acceptedRows: number; rejectedRows: number; createdAt: string };
 type RecordRow = { id: string; holderName: string; recordStatus: string; createdAt: string };
 export default function PanImportPanel() {
@@ -9,18 +10,13 @@ export default function PanImportPanel() {
   const [busy, setBusy] = useState(false); const [message, setMessage] = useState(""); const [error, setError] = useState("");
   async function search(event?: FormEvent) {
     event?.preventDefault(); setError("");
-    const response = await fetch(`/api/admin/pan-imports?q=${encodeURIComponent(query)}`); const result = await response.json();
-    if (!response.ok) { setError(result.error); return; }
-    setImports(result.imports); setRecords(result.records);
+    try { const result = await secureApi<{ imports: ImportRow[]; records: RecordRow[] }>("C9p2W6mH4xB8", { q: query }); setImports(result.imports); setRecords(result.records); } catch (reason) { setError(reason instanceof Error ? reason.message : "Search failed."); }
   }
   async function importFile(event: FormEvent) {
     event.preventDefault(); if (!file) return; setBusy(true); setError(""); setMessage("");
     try {
-      const form = new FormData(); form.set("file", file);
-      const uploaded = await fetch("/api/uploads", { method: "POST", body: form }); const uploadedResult = await uploaded.json();
-      if (!uploaded.ok) throw new Error(uploadedResult.error);
-      const response = await fetch("/api/admin/pan-imports", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ fileId: uploadedResult.file.id }) });
-      const result = await response.json(); if (!response.ok) throw new Error(result.error);
+      const uploadedResult = await secureUpload<{ file: { id: string } }>("U7b3R8mQ4zL1", file);
+      const result = await secureApi<{ import: { acceptedRows: number; rejectedRows: number } }>("L5v1N7qD9kR3", { fileId: uploadedResult.file.id });
       setMessage(`${result.import.acceptedRows} new records imported. ${result.import.rejectedRows} duplicates or invalid rows were skipped.`); setFile(null); await search();
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Import failed."); }
     finally { setBusy(false); }
