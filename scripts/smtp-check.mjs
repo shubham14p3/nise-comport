@@ -2,6 +2,7 @@
 import { existsSync } from "node:fs";
 import { loadEnvFile } from "node:process";
 import nodemailer from "nodemailer";
+import { promises as dns } from "node:dns";
 
 for (const file of [".env.local", ".env"]) {
   if (!existsSync(file)) continue;
@@ -40,6 +41,16 @@ const transport = nodemailer.createTransport({
 });
 
 console.log(`Checking SMTP at ${process.env.SMTP_HOST}:${port} as ${process.env.SMTP_USER} (${port === 587 ? "STARTTLS required" : port === 465 ? "implicit TLS" : "TLS per server"})…`);
+
+let resolvedAddresses = [];
+try {
+  const answers = await dns.lookup(process.env.SMTP_HOST, { all: true });
+  resolvedAddresses = [...new Set(answers.map((answer) => answer.address))];
+  if (resolvedAddresses.length) console.log(`  DNS: ${resolvedAddresses.join(", ")}`);
+} catch (error) {
+  console.warn(`  DNS lookup failed: ${error instanceof Error ? error.message : String(error)}`);
+}
+
 try {
   await transport.verify();
   console.log("✓ SMTP connection and authentication successful");
@@ -49,6 +60,24 @@ try {
   const code = error && typeof error === "object" && "code" in error ? String(error.code) : "";
   if (code) console.error(`  Code: ${code}`);
   console.error(`  ${error instanceof Error ? error.message : String(error)}`);
+
+  if (code === "ESOCKET" && resolvedAddresses.length) {
+    const ptrNames = new Set();
+    for (const address of resolvedAddresses) {
+      try {
+        for (const name of await dns.reverse(address)) ptrNames.add(name.replace(/\.$/, ""));
+      } catch {
+        // Reverse DNS is optional; continue checking any other resolved address.
+      }
+    }
+    if (ptrNames.size) {
+      console.error(`  Reverse DNS candidate(s): ${[...ptrNames].join(", ")}`);
+      console.error("  If one of these hostnames is listed by your hosting provider and matches the TLS certificate, use that exact hostname as SMTP_HOST.");
+    } else {
+      console.error("  No reverse-DNS hostname was returned. Ask the email host for the SSL/TLS server hostname (not merely mail.yourdomain.com).");
+    }
+  }
+
   process.exitCode = 1;
 } finally {
   transport.close();
