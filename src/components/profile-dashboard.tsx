@@ -71,7 +71,21 @@ export default function ProfileDashboard({ demoMode = false }: { demoMode?: bool
     catch (error) { setLoadError(error instanceof Error ? error.message : "Could not load your private workspace."); }
   }, []);
 
-  useEffect(() => { if (!demoMode) void load(); }, [demoMode, load]);
+  useEffect(() => {
+    if (demoMode) return;
+    let active = true;
+    void secureApi<Snapshot>("P8a2N5dK1vR7")
+      .then((result) => {
+        if (!active) return;
+        setSnapshot(result);
+        setLoadError("");
+      })
+      .catch((error) => {
+        if (!active) return;
+        setLoadError(error instanceof Error ? error.message : "Could not load your private workspace.");
+      });
+    return () => { active = false; };
+  }, [demoMode]);
 
   if (!snapshot) {
     return <main className="profile-page"><SiteHeader/><div className="container profile-container">

@@ -55,7 +55,7 @@ function targetFor(operation: string, input: Record<string, unknown>) {
     }
     case "R1k5V8nD3sJ9": {
       const id = stringValue(input, "id", 80);
-      const { id: _id, ...body } = input;
+      const body = Object.fromEntries(Object.entries(input).filter(([key]) => key !== "id"));
       return { method: "PATCH", path: `/api/admin/jobs/${encodeURIComponent(id)}`, body };
     }
     case "C9p2W6mH4xB8": {
