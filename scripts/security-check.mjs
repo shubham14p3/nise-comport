@@ -29,14 +29,14 @@ function filesUnder(dir) {
   return out;
 }
 
-for (const path of filesUnder("src/components")) {
+for (const path of filesUnder("src")) {
   const source = readFileSync(path, "utf8");
   if (!source.includes('"use client"') && !source.includes("'use client'")) continue;
   const rel = relative(process.cwd(), path).replaceAll("\\", "/");
   for (const token of [...forbiddenPrivateApis, ...forbiddenPrivateUrls]) {
     if (source.includes(token)) failures.push(`${rel}: exposes forbidden browser token ${token}`);
   }
-  if (rel !== "src/components/" && source.includes("fetch(") && !source.includes("@/lib/secure-api-client")) {
+  if (rel !== "src/lib/secure-api-client.ts" && source.includes("fetch(") && !source.includes("@/lib/secure-api-client")) {
     failures.push(`${rel}: direct fetch() without secure-api-client`);
   }
 }
