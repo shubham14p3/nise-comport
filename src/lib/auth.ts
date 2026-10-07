@@ -102,6 +102,12 @@ async function issueCode(email: string, purposeKey: string, template: OtpPurpose
   try {
     await sendOtpEmail(email, code, template);
   } catch (error) {
+    // Local development: don't block testing on a mail problem; print the code instead.
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[auth] OTP email failed:", error instanceof Error ? error.message : error, "— check SMTP_HOST/SMTP_PASSWORD (npm run smtp:check).");
+      console.warn(`[auth] DEV ONLY: email code for ${email} is ${code}`);
+      return;
+    }
     await db.delete(emailOtps).where(eq(emailOtps.id, challenge.id));
     console.error("[auth] OTP email failed", error);
     if (error instanceof PublicError) throw error;

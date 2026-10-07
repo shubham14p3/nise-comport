@@ -35,6 +35,7 @@ const transport = nodemailer.createTransport({
   secure: port === 465,
   requireTLS: port === 587,
   auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
+  ...(process.env.SMTP_TLS_SERVERNAME?.trim() ? { tls: { servername: process.env.SMTP_TLS_SERVERNAME.trim() } } : {}),
   connectionTimeout: 10_000,
   greetingTimeout: 10_000,
   socketTimeout: 20_000,

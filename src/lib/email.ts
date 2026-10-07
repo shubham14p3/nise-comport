@@ -19,6 +19,9 @@ function transporter() {
     secure: port === 465,
     requireTLS: port === 587,
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
+    // If the mail server's certificate is issued to another name than SMTP_HOST (common on shared
+    // hosting), set SMTP_TLS_SERVERNAME to the name on the certificate.
+    ...(process.env.SMTP_TLS_SERVERNAME?.trim() ? { tls: { servername: process.env.SMTP_TLS_SERVERNAME.trim() } } : {}),
     // Never let a slow mail server hang a sign-in request.
     connectionTimeout: 10_000,
     greetingTimeout: 10_000,
