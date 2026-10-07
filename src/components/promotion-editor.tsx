@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import { Save, X } from "lucide-react";
 import PosterPicker from "@/components/poster-picker";
+import ScopePicker, { type Scope } from "@/components/scope-picker";
 import { todayIst, addDays } from "@/lib/festivals";
 import { secureApi } from "@/lib/secure-api-client";
 import type { PromoView } from "@/lib/promo-view";
@@ -28,6 +29,8 @@ export default function PromotionEditor({ promotion, onDone, onCancel }: { promo
   const [perUser, setPerUser] = useState(promotion?.perUserLimit === null ? "" : String(promotion?.perUserLimit ?? 1));
   const [maxUses, setMaxUses] = useState(promotion?.maxRedemptions ? String(promotion.maxRedemptions) : "");
   const [posters, setPosters] = useState<Partial<Record<Lang, string>>>(promotion?.posters ?? {});
+  const [scope, setScope] = useState<Scope | null>(promotion?.appliesTo ?? null);
+  const [maxDiscount, setMaxDiscount] = useState(promotion?.maxDiscount ? String(promotion.maxDiscount) : "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -35,13 +38,14 @@ export default function PromotionEditor({ promotion, onDone, onCancel }: { promo
     event.preventDefault(); setBusy(true); setError("");
     try {
       if (eventCode && promotion) {
-        await secureApi("M7x3Q9vB2kF5", { id: promotion.id, posters });
-        onDone(`Posters saved for ${promotion.code}.`);
+        await secureApi("M7x3Q9vB2kF5", { id: promotion.id, posters, appliesTo: scope });
+        onDone(`${promotion.code} saved.`);
         return;
       }
       const details = {
         names, description: blurb.en.trim() ? blurb : null, discountType, discount: Number(discount), minimum: Number(minimum),
         perUserLimit: perUser ? Number(perUser) : null, maxRedemptions: maxUses ? Number(maxUses) : null, posters,
+        appliesTo: scope, maxDiscount: discountType === "percent" && maxDiscount ? Number(maxDiscount) : null,
       };
       if (promotion) {
         await secureApi("M7x3Q9vB2kF5", { id: promotion.id, ...details, startsOn, endsOn });
@@ -55,7 +59,7 @@ export default function PromotionEditor({ promotion, onDone, onCancel }: { promo
   }
 
   return <form className="promo-editor" onSubmit={submit}>
-    <div className="promo-editor__head"><h3>{promotion ? eventCode ? `Posters for ${promotion.code}` : `Edit ${promotion.code}` : "New promotion"}</h3><button type="button" className="icon-btn" onClick={onCancel} aria-label="Close"><X size={18}/></button></div>
+    <div className="promo-editor__head"><h3>{promotion ? eventCode ? `Posters & services for ${promotion.code}` : `Edit ${promotion.code}` : "New promotion"}</h3><button type="button" className="icon-btn" onClick={onCancel} aria-label="Close"><X size={18}/></button></div>
     {!eventCode && <>
       <div className="form-grid form-grid--3">
         <label className="field"><span className="field__label">Code</span><input value={code} disabled={Boolean(promotion)} required onChange={(event) => setCode(event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 20))} placeholder="e.g. RENEW50"/></label>
@@ -74,12 +78,15 @@ export default function PromotionEditor({ promotion, onDone, onCancel }: { promo
       </div>
       <div className="form-grid form-grid--4">
         <label className="field"><span className="field__label">Discount</span><span className="input-wrap"><select value={discountType} onChange={(event) => setDiscountType(event.target.value as "fixed" | "percent")} aria-label="Discount type"><option value="fixed">₹ off</option><option value="percent">% off</option></select><input type="number" min={1} max={discountType === "percent" ? 50 : 5000} value={discount} onChange={(event) => setDiscount(event.target.value)} required/></span></label>
+        {discountType === "percent" && <label className="field"><span className="field__label">Maximum discount (₹) <em>optional</em></span><input type="number" min={1} max={5000} value={maxDiscount} onChange={(event) => setMaxDiscount(event.target.value)} placeholder="No cap"/></label>}
         <label className="field"><span className="field__label">Minimum order (₹)</span><input type="number" min={0} value={minimum} onChange={(event) => setMinimum(event.target.value)} required/></label>
         <label className="field"><span className="field__label">Uses per customer</span><input type="number" min={1} max={50} value={perUser} onChange={(event) => setPerUser(event.target.value)} placeholder="Unlimited"/></label>
         <label className="field"><span className="field__label">Total uses <em>optional</em></span><input type="number" min={1} value={maxUses} onChange={(event) => setMaxUses(event.target.value)} placeholder="No limit"/></label>
       </div>
       <p className="field__hint">Codes reduce your service charge or print bill only. Don’t describe them as a discount on an insurance premium or a government fee.</p>
     </>}
+    <span className="field__label">Where can this code be used? <em>the discount is only given on these services</em></span>
+    <ScopePicker value={scope} onChange={setScope}/>
     <span className="field__label">Posters <em>shown on the offers page and sent with WhatsApp campaigns, in the customer’s language</em></span>
     <PosterPicker value={posters} onChange={setPosters}/>
     {error && <div className="alert alert--error" role="alert">{error}</div>}

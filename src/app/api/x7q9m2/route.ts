@@ -55,6 +55,10 @@ const OPS = {
   "Y2n6R9tC4vK7": { method: "POST", path: "/api/admin/contacts" },
   "J7t1P5xW3qM9": { method: "PATCH", path: "/api/admin/contacts" },
   "Q3n7B1xK5vR8": { method: "POST", path: "/api/leads" },
+  "F6t1W8kN3pQ2": { method: "POST", path: "/api/admin/coupon-batches" },
+  "C8m3J6xR1vT4": { method: "GET", path: "/api/admin/site-content" },
+  "K1w5Y9pB3nD7": { method: "POST", path: "/api/admin/site-content" },
+  "H2c7R4vM9xL5": { method: "PATCH", path: "/api/admin/coupon-batches" },
   "O9c4V7mB2pL5": { method: "POST", path: "/api/admin/inbox" },
   "E3h8K1tW6qZ9": { method: "PATCH", path: "/api/admin/leads" },
   "B4j9D6sX2mH7": { method: "POST", path: "/api/admin/records" },
@@ -103,6 +107,10 @@ function targetFor(operation: string, input: Record<string, unknown>) {
     case "I5x2N8kQ3wT6": {
       const category = stringValue(input, "category", 40);
       return { method: "GET", path: `/api/admin/inbox?category=${encodeURIComponent(category)}${input.count ? "&count=1" : ""}` };
+    }
+    case "Z5b8N2qT6wK1": {
+      const id = stringValue(input, "id", 40);
+      return { method: "GET", path: `/api/admin/coupon-batches${id ? `?id=${encodeURIComponent(id)}` : ""}` };
     }
     case "W8r2T5yN1cF6": {
       const params = new URLSearchParams();

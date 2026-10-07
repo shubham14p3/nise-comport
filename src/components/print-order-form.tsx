@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Check, Clock3, FileText, Info, LockKeyhole, MapPin, Minus, Plus, Printer, ShieldCheck, Store, TicketPercent, Upload, X } from "lucide-react";
 import AddressPicker, { addressProblem, EMPTY_ADDRESS, type AddressValue } from "@/components/address-picker";
 import { useLiveCodes } from "@/components/offers-provider";
+import { scopeAllows } from "@/lib/promo-scope";
 import { OfferRail, OfferStrip, WizardActions, WizardFrame } from "@/components/wizard";
 import { promoDict } from "@/lib/promo-i18n";
 import { newIdempotencyKey } from "@/lib/client-id";
@@ -16,7 +17,7 @@ import { useLocale } from "@/lib/use-locale";
 import { rememberReturn } from "@/lib/after-login";
 
 type FileDetails = { id: string; name: string; pages: number; size: number; mimeType: string };
-type Voucher = { code: string; emoji: string; used: boolean; live: boolean; personal: boolean };
+type Voucher = { code: string; emoji: string; used: boolean; live: boolean; personal: boolean; appliesTo?: { categories: string[]; services: string[] } | null };
 type DeliveryAddress = { id: string; label: string; line1: string; line2: string | null; city: string; postalCode: string; isDefault: boolean };
 const money = (amount: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(amount);
 const STEPS = ["Upload", "Pages & finish", "Pickup or delivery", "Review & send"];
@@ -64,8 +65,8 @@ export default function PrintOrderForm() {
   const activeDiscount = couponBase === subtotal ? discount : 0;
   const total = subtotal - activeDiscount;
   const suggestions = [
-    ...vouchers.filter((item) => item.personal && item.live && !item.used).map((item) => ({ code: item.code, emoji: item.emoji, personal: true })),
-    ...liveCodes.filter((item) => item.code && !vouchers.some((voucher) => voucher.code === item.code && voucher.used)).map((item) => ({ code: item.code!, emoji: item.emoji, personal: false })),
+    ...vouchers.filter((item) => item.personal && item.live && !item.used && scopeAllows(item.appliesTo, { service: "print" })).map((item) => ({ code: item.code, emoji: item.emoji, personal: true })),
+    ...liveCodes.filter((item) => item.code && scopeAllows(item.appliesTo, { service: "print" }) && !vouchers.some((voucher) => voucher.code === item.code && voucher.used)).map((item) => ({ code: item.code!, emoji: item.emoji, personal: false })),
   ].slice(0, 5);
 
   useEffect(() => {
@@ -104,7 +105,7 @@ export default function PrintOrderForm() {
   async function applyCoupon(code = coupon) {
     setError(""); setNotice(""); setCoupon(code);
     try {
-      const result = await secureApi<{ discount: number; code: string }>("K2p9D5xN1hW7", { code, amount: subtotal });
+      const result = await secureApi<{ discount: number; code: string }>("K2p9D5xN1hW7", { code, amount: subtotal, service: "print" });
       setDiscount(result.discount); setCouponBase(subtotal); setNotice(`Coupon ${result.code} applied.`);
     } catch (reason) { setDiscount(0); setCouponBase(null); setError(reason instanceof Error ? reason.message : "Could not validate the coupon."); }
   }

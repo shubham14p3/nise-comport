@@ -29,6 +29,11 @@ export type PromoView = {
   tentative: boolean;
   /** Poster image per language (/promos/… or /media/…), if the owner added one. */
   posters?: Partial<Text3> | null;
+  /** Where the code works, e.g. "Print orders, Insurance" (absent = all services). */
+  validOn?: string | null;
+  appliesTo?: { categories: string[]; services: string[] } | null;
+  /** Rupee cap on a % code. */
+  maxDiscount?: number | null;
 };
 
 /** A coupon on the customer's Vouchers page. */
@@ -111,6 +116,8 @@ export function promoToOffer(view: PromoView): Offer {
     endsAt: view.endsOn,
     href: view.kind === "welcome" ? "/profile#vouchers" : `/request?coupon=${encodeURIComponent(view.code)}`,
     code: view.code,
+    appliesTo: view.appliesTo ?? null,
+    validOn: view.validOn ?? null,
     emoji: view.emoji,
     theme: view.theme,
     kind: view.kind,

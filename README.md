@@ -111,6 +111,22 @@ Posters come from the built-in library (`public/promos/insurance/`, 20 insurance
 
 Set `RECORDS_ENCRYPTION_KEY` (`openssl rand -base64 32`) and back it up before the first import; `npm run db:migrate` adds the tables (migrations 0008 and 0009).
 
+### Where a code works, caps, personal codes and abuse protection
+
+- **Where a code works:** every promotion (hand-made, festival or sports) can be limited in **Admin → Promotions → Edit / Posters & services** to print orders, PAN requests, whole categories or single services. Elsewhere the code is refused with "This code works only on: …", and the request flow and print page only suggest codes that fit. % codes can have a **maximum discount** in rupees.
+- **Personal codes** (Admin → Promotions → Personal codes): one unique code per customer (e.g. `DIWALI-7KQ2M9XA`), bound to their account so a copied code is useless, usable N times (default 2), only on the chosen services, for chosen customers (emails/mobiles), customers who used certain services, customers who haven't come back in N days, or everyone. "Count customers" shows the reach first; customers can be emailed their code, and each code has a one-tap WhatsApp share. Switch a whole batch off at any time.
+- **Guessing protection:** codes only work for signed-in customers; more than 8 wrong codes an hour (20 a day) locks the code box for that account. Code-checks are also limited to 40 an hour.
+
+## Site content (banners and services from the admin area)
+
+**Admin → Site content** (permission "Site content"):
+
+- **Banners** for the thin strip at the top of every page, the home page, the services page or service pages (optionally only some categories). Headline, short text and button in English/Hindi/Bengali, a link (a page on the site, WhatsApp or tel:), an optional poster image, colour, order and start/end dates. Changes show within a minute.
+- **New services**: title, web address, category, description, search words, what we do, documents, steps and FAQs. Each gets its own `/services/…` page and appears in the services list, the request flow, the chat search and the sitemap.
+- **Hide built-in services** you no longer offer (and show them again).
+
+Run `npm run db:migrate` for migration 0010.
+
 ## WhatsApp campaigns
 
 **Admin → Contacts** holds everyone the shop may message: name, mobile (stored once, however many lists it appears in), language, services with renewal/expiry dates, and whether they said YES or STOP. **Admin → WhatsApp campaigns** sends to them.

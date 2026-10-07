@@ -6,7 +6,8 @@ import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { istDate, istDayEnd, istDayStart } from "@/lib/festivals";
 import { syncEventCoupons, WELCOME_COUPON, welcomeCode, type QueryFn } from "@/lib/offer-sync";
-import { couponDiscount } from "@/lib/print-pricing";
+import { cappedDiscount, cleanScope, scopeAllows, scopeLabel, type ScopeContext } from "@/lib/promo-scope";
+import { findService, publishedServiceDetails, serviceCatalog } from "@/lib/services";
 import { curatedEventPromos } from "@/lib/promo-calendar";
 import { isPosterUrl } from "@/lib/poster-library";
 import { isPromoLive, viewFromPromo, type CustomerVoucher, type PromoView } from "@/lib/promo-view";
@@ -27,6 +28,9 @@ export function couponView(row: CouponRow): PromoView {
     endsOn: row.expiresAt ? istDate(new Date(row.expiresAt.getTime() - 1)) : "2099-12-31",
     eventStarts: row.eventStarts ?? null, eventEnds: row.eventEnds ?? null, tentative: row.tentative,
     posters: row.posters ?? null,
+    appliesTo: cleanScope(row.appliesTo),
+    validOn: cleanScope(row.appliesTo) ? scopeLabel(cleanScope(row.appliesTo), scopeNames()) : null,
+    maxDiscount: row.maxDiscount ? Number(row.maxDiscount) : null,
   };
 }
 
@@ -78,7 +82,24 @@ export type ResolvedCoupon = { coupon: CouponRow; view: PromoView; discount: num
  * works out the discount; without it (a service request, billed later) the discount is the face
  * value and the minimum is checked when staff bill the request.
  */
-export async function resolveCoupon(input: { code: string; userId: string; amount?: number }): Promise<ResolvedCoupon> {
+/** Where a code is being used: print orders, PAN, or a service (with its category). */
+export function scopeContext(service?: string | null): ScopeContext | undefined {
+  if (!service) return undefined;
+  if (service === "print" || service === "pan") return { service };
+  const found = findService(service);
+  return { service, category: found && "categorySlug" in found ? String(found.categorySlug) : service };
+}
+
+/** Names for scope labels: category and service slugs → titles. */
+export function scopeNames() {
+  return Object.fromEntries([...serviceCatalog, ...publishedServiceDetails].map((item) => [item.slug, item.title]));
+}
+
+/**
+ * Checks a code for a customer. With `context` (the service being requested, or "print"), a code
+ * limited to other services is refused with a message saying where it does work.
+ */
+export async function resolveCoupon(input: { code: string; userId: string; amount?: number; context?: ScopeContext }): Promise<ResolvedCoupon> {
   const code = normaliseCode(input.code);
   if (!/^[A-Z0-9-]{3,40}$/.test(code)) throw new PublicError("Enter a valid coupon code.", 400, { fields: { coupon: "Check the code." } });
   const [coupon] = await db.select().from(coupons).where(eq(coupons.code, code)).limit(1);
@@ -90,6 +111,10 @@ export async function resolveCoupon(input: { code: string; userId: string; amoun
     throw new PublicError(`This code starts on ${istDayLabel(coupon.startsAt)}.`, 400, { code: "coupon_not_started", fields: { coupon: "Not live yet." } });
   }
   if (coupon.expiresAt && coupon.expiresAt <= now) throw new PublicError("This code has ended.", 400, { code: "coupon_expired", fields: { coupon: "Expired." } });
+  const scope = cleanScope(coupon.appliesTo);
+  if (input.context && !scopeAllows(scope, input.context)) {
+    throw new PublicError(`This code works only on: ${scopeLabel(scope, scopeNames())}.`, 400, { code: "coupon_wrong_service", fields: { coupon: "Not for this service." } });
+  }
   if (coupon.perUserLimit !== null) {
     const [{ used }] = await db.select({ used: count() }).from(couponRedemptions).where(and(eq(couponRedemptions.couponId, coupon.id), eq(couponRedemptions.userId, input.userId)));
     if (Number(used) >= coupon.perUserLimit) throw new PublicError("You’ve already used this code. Try another live code.", 400, { code: "coupon_used", fields: { coupon: "Already used." } });
@@ -102,7 +127,7 @@ export async function resolveCoupon(input: { code: string; userId: string; amoun
   let discount: number | null = null;
   if (input.amount !== undefined) {
     if (input.amount < minimum) throw new PublicError(`Add ${rupees(Math.ceil(minimum - input.amount))} more to use this code (minimum order ${rupees(minimum)}).`, 400, { code: "coupon_minimum", fields: { coupon: `Minimum ${rupees(minimum)}.` } });
-    discount = couponDiscount(coupon.discountType, Number(coupon.discountValue), input.amount);
+    discount = cappedDiscount(coupon.discountType, Number(coupon.discountValue), input.amount, coupon.maxDiscount ? Number(coupon.maxDiscount) : null);
     if (!discount) throw new PublicError("This code doesn’t reduce the order total.", 400, { code: "coupon_no_discount" });
   }
   return { coupon, view: couponView(coupon), discount };
@@ -204,6 +229,10 @@ type Text3Input = { en?: string; hi?: string; bn?: string };
 export type PromotionDetails = {
   names?: Text3Input; description?: Text3Input | null; discountType?: "fixed" | "percent"; discount?: number; minimum?: number;
   perUserLimit?: number | null; maxRedemptions?: number | null; posters?: Text3Input | null; emoji?: string | null;
+  /** Limit to these categories/services ({ categories: [], services: [] } or null = everything). */
+  appliesTo?: { categories?: string[]; services?: string[] } | null;
+  /** Rupee cap for % codes (null = no cap). */
+  maxDiscount?: number | null;
 };
 
 const cleanText = (value: string | undefined, max: number) => (value ?? "").replace(/\s+/g, " ").trim().slice(0, max);
@@ -230,6 +259,11 @@ function detailChanges(input: PromotionDetails, current?: CouponRow): Partial<ty
   if (input.minimum !== undefined) {
     if (!(input.minimum >= 0 && input.minimum <= 100_000)) throw new PublicError("Check the minimum order amount.", 400, { fields: { minimum: "Check the amount." } });
     changes.minimumAmount = input.minimum.toFixed(2);
+  }
+  if (input.appliesTo !== undefined) changes.appliesTo = cleanScope(input.appliesTo);
+  if (input.maxDiscount !== undefined) {
+    if (input.maxDiscount !== null && !(input.maxDiscount > 0 && input.maxDiscount <= 5000)) throw new PublicError("Use a maximum discount between ₹1 and ₹5,000, or leave it empty.", 400, { fields: { maxDiscount: "Check the amount." } });
+    changes.maxDiscount = input.maxDiscount === null ? null : input.maxDiscount.toFixed(2);
   }
   if (input.perUserLimit !== undefined) changes.perUserLimit = input.perUserLimit === null ? null : Math.max(1, Math.min(50, Math.round(input.perUserLimit)));
   if (input.maxRedemptions !== undefined) changes.maxRedemptions = input.maxRedemptions === null ? null : Math.max(1, Math.min(100_000, Math.round(input.maxRedemptions)));
@@ -261,7 +295,7 @@ export async function createPromotion(input: PromotionDetails & { code: string; 
       code, discountType: details.discountType ?? "fixed", discountValue: details.discountValue ?? "50.00", minimumAmount: details.minimumAmount ?? "150.00",
       active: input.active ?? true, kind: "public", title: details.title, description: details.description ?? null,
       startsAt: istDayStart(input.startsOn), expiresAt: istDayEnd(input.endsOn), perUserLimit: "perUserLimit" in details ? details.perUserLimit : 1, maxRedemptions: details.maxRedemptions ?? null,
-      posters: details.posters ?? null, emoji: details.emoji ?? "🏷️", theme: "welcome", communities: [], source: "admin", locked: true, createdBy: actor.id,
+      posters: details.posters ?? null, appliesTo: details.appliesTo ?? null, maxDiscount: details.maxDiscount ?? null, emoji: details.emoji ?? "🏷️", theme: "welcome", communities: [], source: "admin", locked: true, createdBy: actor.id,
     }).returning();
     return row;
   } catch (error) {
@@ -289,7 +323,7 @@ export async function updatePromotion(id: string, patch: PromotionDetails & { ac
     changes.source = row.kind === "public" ? row.source : "admin";
   }
   // Festival / sports codes keep their generated wording and value; posters can be added to any code.
-  const editable = row.kind === "public" ? patch : { posters: patch.posters };
+  const editable = row.kind === "public" ? patch : { posters: patch.posters, appliesTo: patch.appliesTo, maxDiscount: patch.maxDiscount };
   Object.assign(changes, detailChanges(editable, row));
   if (patch.unlock && row.kind !== "public") changes.locked = false;
   const [updated] = await db.update(coupons).set(changes).where(eq(coupons.id, id)).returning();

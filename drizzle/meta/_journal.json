@@ -71,6 +71,13 @@
       "when": 1791700000000,
       "tag": "0009_record_contacts",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791800000000,
+      "tag": "0010_coupon_scope_batches",
+      "breakpoints": true
     }
   ]
 }

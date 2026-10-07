@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 async function posterEditor() {
   const user = await getCurrentUser();
-  return user && (hasPermission(user, "promotions") || hasPermission(user, "campaigns")) ? user : null;
+  return user && (hasPermission(user, "promotions") || hasPermission(user, "campaigns") || hasPermission(user, "content")) ? user : null;
 }
 
 /** Uploaded posters (the built-in ones are listed in src/lib/poster-library.ts). */

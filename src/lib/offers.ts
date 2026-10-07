@@ -22,6 +22,9 @@ export type OfferTone = "pink" | "saffron" | "green" | "violet" | "cyan";
 
 export type Offer = {
   id: string;
+  /** Services a promo code is limited to (see promo-scope.ts); absent = all. */
+  appliesTo?: { categories: string[]; services: string[] } | null;
+  validOn?: string | null;
   active: boolean;
   /** Big headline, e.g. "₹100 OFF". */
   highlight: Text;

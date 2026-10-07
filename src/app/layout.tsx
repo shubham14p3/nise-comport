@@ -10,13 +10,14 @@ import { getLivePromos } from "@/lib/promotions";
 import { site } from "@/lib/site";
 import { graph, localBusinessLd, organizationLd, websiteLd } from "@/lib/structured-data";
 import { publishedServiceDetails, serviceSeoTitle } from "@/lib/services";
+import { allServices } from "@/lib/site-content";
+import SiteBanners from "@/components/site-banners";
 
 /** Poppins covers English and Hindi (Devanagari); Hind Siliguri, from the same type foundry, covers Bengali. */
 const poppins = Poppins({ subsets: ["latin", "devanagari"], weight: ["400", "500", "600", "700", "800"], variable: "--font-poppins", display: "swap" });
 const hindSiliguri = Hind_Siliguri({ subsets: ["bengali"], weight: ["400", "500", "600", "700"], variable: "--font-bengali", display: "swap", preload: false });
 
 /** Small search index for the chat assistant (titles and keywords only). */
-const chatServices = publishedServiceDetails.map((service) => ({ slug: service.slug, title: service.title, category: service.categorySlug, keywords: service.keywords }));
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -57,11 +58,13 @@ const siteGraph = graph(
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   // Live festival / sports codes for the ticker, offer rails and chat (cached; falls back to the checked dates).
-  const promos = await getLivePromos();
+  const [promos, services] = await Promise.all([getLivePromos(), allServices()]);
+  const chatServices = services.map((service) => ({ slug: service.slug, title: service.title, category: service.categorySlug, keywords: service.keywords }));
   return <html lang="en-IN">
     <body className={`${poppins.variable} ${hindSiliguri.variable}`}>
       <OffersProvider promos={promos}>
         <a className="skip-link" href="#main-content">Skip to content</a>
+        <SiteBanners placement="strip"/>
         <div id="main-content">{children}</div>
         <SiteFooter/>
         <MobileDock/>

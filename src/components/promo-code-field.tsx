@@ -16,8 +16,10 @@ const rupees = (value: number) => `₹${Number.isInteger(value) ? value : value.
  * get an instant check; otherwise the code is checked when the request is sent.
  * `amount` (print orders) makes the check exact; without it the saving is taken off when billing.
  */
-export default function PromoCodeField({ locale, value, applied, onChange, onApplied, suggestions, signedIn, amount }: {
+export default function PromoCodeField({ locale, value, applied, onChange, onApplied, suggestions, signedIn, amount, service }: {
   locale: Locale; value: string; applied: AppliedCode | null; signedIn: boolean; amount?: number;
+  /** "print", "pan" or the service slug: codes meant for other services are refused. */
+  service?: string;
   suggestions: CodeSuggestion[];
   onChange: (code: string) => void; onApplied: (info: AppliedCode | null) => void;
 }) {
@@ -32,7 +34,7 @@ export default function PromoCodeField({ locale, value, applied, onChange, onApp
     if (!signedIn) { onApplied(null); return; }
     setBusy(true);
     try {
-      const result = await secureApi<{ code: string; discount: number; exact: boolean; minimum: number; emoji?: string }>("K2p9D5xN1hW7", { code, ...(amount !== undefined ? { amount } : {}) });
+      const result = await secureApi<{ code: string; discount: number; exact: boolean; minimum: number; emoji?: string }>("K2p9D5xN1hW7", { code, ...(amount !== undefined ? { amount } : {}), ...(service ? { service } : {}) });
       onApplied({ code: result.code, discount: result.discount, exact: result.exact, minimum: result.minimum, emoji: result.emoji });
     } catch (reason) {
       onApplied(null);

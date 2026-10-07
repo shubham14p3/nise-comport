@@ -9,6 +9,8 @@ import FaqSection from "@/components/faq-section";
 import JsonLd from "@/components/json-ld";
 import { CategoryIcon, WhatsAppIcon } from "@/components/icons";
 import OfferCard from "@/components/offer-card";
+import SiteBanners from "@/components/site-banners";
+import { resolveService, servicesInCategoryAll } from "@/lib/site-content";
 import { articlesForService } from "@/lib/content";
 import { categoryMetaFor } from "@/lib/categories";
 import { posterFor } from "@/lib/gallery";
@@ -20,11 +22,13 @@ import { translatedSlugs } from "@/lib/translated-slugs";
 import { SITE_CONTENT_DATE } from "@/lib/routes";
 import { pageMetadata } from "@/lib/seo";
 import { serviceEditorial } from "@/lib/service-editorial";
-import { categoryFor, findService, isServiceDetail, publishedServiceDetails, requestHrefFor, serviceCatalog, serviceSeoDescription, serviceSeoTitle, servicesInCategory, shortServiceName } from "@/lib/services";
+import { categoryFor, findService, isServiceDetail, publishedServiceDetails, requestHrefFor, serviceCatalog, serviceSeoDescription, serviceSeoTitle, shortServiceName } from "@/lib/services";
 import { site, whatsappLink } from "@/lib/site";
 import { itemListLd, serviceLd } from "@/lib/structured-data";
 
-export const dynamicParams = false;
+// Services added in Admin → Site content are rendered on first visit.
+export const dynamicParams = true;
+export const revalidate = 3600;
 
 export function generateStaticParams() { return [...serviceCatalog, ...publishedServiceDetails].map((service) => ({ slug: service.slug })); }
 
@@ -35,13 +39,13 @@ const genericFaqs = [
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const service = findService(slug);
+  const service = await resolveService(slug);
   if (!service) return {};
   const hindi = findHindiService(slug);
   const detail = isServiceDetail(service);
   return pageMetadata(serviceSeoTitle(service), serviceSeoDescription(service), `/services/${service.slug}`, {
     keywords: [...service.keywords, "NISE COMPORT", "Kharangajhar", "Telco", "Jamshedpur", "Jharkhand"],
-    image: detail ? `/og/services/${service.slug}.png` : undefined,
+    image: detail && findService(slug) ? `/og/services/${service.slug}.png` : undefined,
     imageAlt: `${service.title} – NISE COMPORT, Telco, Jamshedpur`,
     ...(hindi ? { languages: { "hi-IN": `/hi/services/${service.slug}`, ...(translatedSlugs.bn.includes(service.slug) ? { "bn-IN": `/bn/services/${service.slug}` } : {}) } } : {}),
   });
@@ -49,13 +53,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ServiceDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const service = findService(slug);
+  const service = await resolveService(slug);
   if (!service) notFound();
   const detail = isServiceDetail(service) ? service : null;
   const category = detail ? categoryFor(detail) : undefined;
   const editorial = detail ? serviceEditorial[detail.slug] : undefined;
-  const children = detail ? [] : servicesInCategory(service.slug);
-  const siblings = detail ? servicesInCategory(detail.categorySlug).filter((item) => item.slug !== detail.slug).slice(0, 4) : [];
+  const children = detail ? [] : await servicesInCategoryAll(service.slug);
+  const siblings = detail ? (await servicesInCategoryAll(detail.categorySlug)).filter((item) => item.slug !== detail.slug).slice(0, 4) : [];
   const guides = articlesForService(service.slug).slice(0, 4);
   const hindi = findHindiService(service.slug);
   const title = service.title;
@@ -135,6 +139,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
           <a className="btn btn--wa btn--block" href={enquiry} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> Ask on WhatsApp</a>
           <p className="fine"><ShieldCheck size={15}/> Fees explained before we start.</p>
         </div>
+        <SiteBanners placement="service-page" category={categorySlug}/>
         {offers.map((offer) => <OfferCard key={offer.id} offer={offer} variant="rail"/>)}
       </aside>
     </div> : <section className="section section--flush">

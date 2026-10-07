@@ -4,14 +4,15 @@
  *
  * Plain module (no imports) so it can be used in the browser and in tests.
  */
-export const STAFF_PERMISSIONS = ["requests", "records", "pan", "promotions", "campaigns", "wallet"] as const;
+export const STAFF_PERMISSIONS = ["requests", "records", "pan", "promotions", "content", "campaigns", "wallet"] as const;
 export type Permission = (typeof STAFF_PERMISSIONS)[number];
 
 export const PERMISSION_INFO: Record<Permission, { label: string; detail: string }> = {
   requests: { label: "Requests & print orders", detail: "See the queue, open customer files and update statuses." },
   records: { label: "Customer records", detail: "Import Excel registers (PAN, insurance, certificates…) and look up customers. Every opened record is logged." },
   pan: { label: "PAN data", detail: "Import PAN lists and look up records." },
-  promotions: { label: "Promotions", detail: "Create codes and posters, switch codes on or off." },
+  promotions: { label: "Promotions", detail: "Create codes, personal codes and posters, switch codes on or off." },
+  content: { label: "Site content", detail: "Banners on the website, adding new services and hiding old ones." },
   campaigns: { label: "WhatsApp campaigns", detail: "Contacts, campaigns and the send queue." },
   wallet: { label: "Wallet credits", detail: "Add credits to customer wallets." },
 };

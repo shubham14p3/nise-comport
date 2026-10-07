@@ -7,6 +7,7 @@ import { ArrowRight, Check, FileText, Headphones, House, Laptop, MapPin, PartyPo
 import AddressPicker, { addressProblem, EMPTY_ADDRESS, formatAddress, type AddressValue } from "@/components/address-picker";
 import { CategoryIcon, WhatsAppIcon } from "@/components/icons";
 import { useLiveCodes } from "@/components/offers-provider";
+import { scopeAllows } from "@/lib/promo-scope";
 import PromoCodeField, { type AppliedCode, type CodeSuggestion } from "@/components/promo-code-field";
 import { OfferRail, OfferStrip, WizardActions, WizardFrame } from "@/components/wizard";
 import { categoryMeta, categoryMetaFor } from "@/lib/categories";
@@ -31,7 +32,7 @@ type Draft = {
   mode: Mode | ""; day: string; slot: Slot | ""; addressId: string; address: AddressValue;
   offerId: string; consent: boolean; coupon: string;
 };
-type Voucher = { code: string; emoji: string; names: Record<Locale, string>; used: boolean; live: boolean; personal: boolean };
+type Voucher = { code: string; emoji: string; names: Record<Locale, string>; used: boolean; live: boolean; personal: boolean; appliesTo?: { categories: string[]; services: string[] } | null };
 type SessionUser = { name: string; role: string } | null;
 
 const DRAFT_KEY = "nise-request-wizard";
@@ -263,10 +264,12 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const slotLabel = (slot: Slot | "") => slot ? t[slot] : "";
   const dayLabel = (iso: string) => { const day = days.find((item) => item.iso === iso); return day ? day.offset === 0 ? t.today : day.offset === 1 ? t.tomorrow : `${day.weekday}, ${day.date}` : iso; };
   const visitSummary = draft.mode === "walkin" ? `${t.walkin} · ${dayLabel(draft.day)}${draft.slot ? ` · ${slotLabel(draft.slot)}` : ""}` : draft.mode === "doorstep" ? `${t.doorstep} · ${savedAddress ? `${savedAddress.line1}, ${savedAddress.city}` : formatAddress(draft.address)}` : draft.mode === "callback" ? t.callback : draft.mode === "online" ? t.online : "";
+  // Only suggest codes that work on the chosen service.
+  const fitsService = (scope?: { categories: string[]; services: string[] } | null) => !draft.serviceSlug || scopeAllows(scope, { service: draft.serviceSlug, category: service?.category ?? null });
   const suggestions: CodeSuggestion[] = [
-    ...vouchers.filter((item) => item.personal && item.live && !item.used).map((item) => ({ code: item.code, emoji: item.emoji, label: item.names[locale] ?? item.code, personal: true })),
+    ...vouchers.filter((item) => item.personal && item.live && !item.used && fitsService(item.appliesTo)).map((item) => ({ code: item.code, emoji: item.emoji, label: item.names[locale] ?? item.code, personal: true })),
     ...[...liveCodes].sort((a, b) => Number(Boolean(activeCategory && b.categories !== "all" && b.categories.includes(activeCategory))) - Number(Boolean(activeCategory && a.categories !== "all" && a.categories.includes(activeCategory))))
-      .filter((item) => item.code && !vouchers.some((voucher) => voucher.code === item.code && voucher.used))
+      .filter((item) => item.code && fitsService(item.appliesTo) && !vouchers.some((voucher) => voucher.code === item.code && voucher.used))
       .map((item) => ({ code: item.code!, emoji: item.emoji, label: item.title[locale] })),
   ];
   const picks = QUICK_PICKS[service?.category ?? (draft.serviceSlug === "other" ? "other" : draft.category)] ?? QUICK_PICKS.other;
@@ -351,7 +354,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
           <div><dt>{t.summaryVisit}</dt><dd>{visitSummary}</dd><button type="button" onClick={() => goTo(2)}>{t.edit}</button></div>
         </dl>
         {offer && <div className={`applied-offer tone-${offer.tone}`}><span className="badge badge--live"><i/>{dict(locale).ticker.live}</span><div><b>{offer.highlight[locale]} · {offer.title[locale]}</b><small>{t.offerApplied}. {offer.firstTimeOnly ? t.offerCheck : ""}</small></div></div>}
-        <PromoCodeField locale={locale} value={draft.coupon} applied={applied} signedIn={Boolean(user && user.role !== "demo")} suggestions={suggestions}
+        <PromoCodeField locale={locale} value={draft.coupon} applied={applied} signedIn={Boolean(user && user.role !== "demo")} suggestions={suggestions} service={draft.serviceSlug || undefined}
           onChange={(coupon) => update({ coupon })} onApplied={setApplied}/>
         <label className="check"><input type="checkbox" checked={draft.consent} onChange={(event) => update({ consent: event.target.checked })}/><span>{t.consent}</span></label>
         {user === null && <p className="alert alert--info">{t.signInNote}</p>}

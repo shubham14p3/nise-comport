@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { pgTable, text, timestamp, uuid, integer, boolean, jsonb, numeric, uniqueIndex, index, doublePrecision, date } from "drizzle-orm/pg-core";
+import type { ServiceDetail } from "../lib/services";
 
 /** Text in the three interface languages. */
 type Text3 = { en: string; hi: string; bn: string };
@@ -100,13 +101,35 @@ export const coupons = pgTable("coupons", {
   source: text("source"), tentative: boolean("tentative").notNull().default(false), locked: boolean("locked").notNull().default(false),
   /** Poster image URL per language ({ en, hi, bn }); shown on /offers and sent with WhatsApp campaigns. */
   posters: jsonb("posters").$type<Partial<Text3>>(),
+  /** Services the code works on ({ categories, services }); null = everything. Set in Admin → Promotions. */
+  appliesTo: jsonb("applies_to").$type<{ categories: string[]; services: string[] }>(),
+  /** Upper limit for % codes, in rupees. */
+  maxDiscount: numeric("max_discount", { precision: 10, scale: 2 }),
+  /** Personal codes created together for a group of customers. */
+  batchId: uuid("batch_id"),
   createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex("coupons_event_key_unique").on(table.eventKey).where(sql`${table.eventKey} is not null`),
   uniqueIndex("coupons_welcome_user_unique").on(table.userId).where(sql`${table.kind} = 'welcome'`),
   index("coupons_kind_window_idx").on(table.kind, table.startsAt, table.expiresAt),
+  index("coupons_batch_idx").on(table.batchId),
+  index("coupons_user_idx").on(table.userId),
 ]);
+
+/** A group of personal codes: one unique code per chosen customer, bound to their account. */
+export const couponBatches = pgTable("coupon_batches", {
+  id: uuid("id").defaultRandom().primaryKey(), name: text("name").notNull(), prefix: text("prefix").notNull(),
+  title: jsonb("title").$type<Text3>().notNull(), discountType: text("discount_type").notNull(),
+  discountValue: numeric("discount_value", { precision: 10, scale: 2 }).notNull(), minimumAmount: numeric("minimum_amount", { precision: 10, scale: 2 }).notNull().default("0"),
+  maxDiscount: numeric("max_discount", { precision: 10, scale: 2 }), usesPerCode: integer("uses_per_code").notNull().default(1),
+  appliesTo: jsonb("applies_to").$type<{ categories: string[]; services: string[] }>(),
+  audience: jsonb("audience").$type<{ kind: string; values?: string[]; services?: string[] }>().notNull(),
+  startsAt: timestamp("starts_at", { withTimezone: true }), expiresAt: timestamp("expires_at", { withTimezone: true }),
+  issued: integer("issued").notNull().default(0), active: boolean("active").notNull().default(true),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 /** Each use of a coupon on a print job or service request (for per-customer limits and reporting). */
 export const couponRedemptions = pgTable("coupon_redemptions", {
@@ -283,3 +306,24 @@ export const customerRecords = pgTable("customer_records", {
   index("customer_records_phones_idx").using("gin", table.phoneHashes),
   index("customer_records_email_idx").on(table.emailHash),
 ]);
+
+/** Banners the owner manages in Admin → Site content (top strip, home page, services, service pages). */
+export const siteBanners = pgTable("site_banners", {
+  id: uuid("id").defaultRandom().primaryKey(), placement: text("placement").notNull(),
+  title: jsonb("title").$type<Text3>().notNull(), text: jsonb("text").$type<Text3>(), cta: jsonb("cta").$type<Text3>(),
+  href: text("href"), image: text("image"), tone: text("tone").notNull().default("blue"),
+  categories: jsonb("categories").$type<string[]>().notNull().default([]),
+  startsOn: date("starts_on"), endsOn: date("ends_on"), active: boolean("active").notNull().default(true), sortOrder: integer("sort_order").notNull().default(0),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("site_banners_placement_idx").on(table.placement, table.active)]);
+
+/** Services added in the admin area (kind "service"), or built-in services hidden from the site (kind "hide"). */
+export const customServices = pgTable("custom_services", {
+  id: uuid("id").defaultRandom().primaryKey(), kind: text("kind").notNull().default("service"), slug: text("slug").notNull(),
+  categorySlug: text("category_slug").notNull(), title: text("title").notNull(),
+  data: jsonb("data").$type<ServiceDetail>().notNull(),
+  published: boolean("published").notNull().default(true), sortOrder: integer("sort_order").notNull().default(0),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [uniqueIndex("custom_services_slug_unique").on(table.slug)]);

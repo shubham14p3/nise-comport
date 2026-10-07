@@ -20,6 +20,7 @@ import { getLivePromos } from "@/lib/promotions";
 import { liveOfferCodes } from "@/lib/promo-view";
 import { pageMetadata } from "@/lib/seo";
 import { publishedServiceDetails } from "@/lib/services";
+import SiteBanners from "@/components/site-banners";
 import { site, whatsappLink } from "@/lib/site";
 import { webPageLd } from "@/lib/structured-data";
 
@@ -99,6 +100,7 @@ export default async function HomePage() {
           <div><strong><OpenStatus rules={site.openingHours}/>{!site.openingHours.length && "Mon–Sat"}</strong><span>{hours[0] ?? "Walk in or call first"}</span></div>
         </div>
       </section>
+      <SiteBanners placement="home"/>
 
       <section className="section" id="services">
         <div className="container">

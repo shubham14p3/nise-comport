@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     let discount = 0;
     if (data.coupon) {
       // Festival, sports, welcome and hand-made codes: live window, one use per customer, minimum order.
-      const resolved = await resolveCoupon({ code: data.coupon, userId: user.id, amount: subtotal });
+      const resolved = await resolveCoupon({ code: data.coupon, userId: user.id, amount: subtotal, context: { service: "print" } });
       couponCode = resolved.coupon.code;
       couponId = resolved.coupon.id;
       discount = resolved.discount ?? 0;

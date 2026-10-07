@@ -10,7 +10,9 @@ import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
 import { isIdempotencyConflict, notifyNewRequest, recordEvent, withUniqueReference } from "@/lib/requests";
 import { findOffer, isOfferLive, offerAppliesTo } from "@/lib/offers";
 import { recordRedemption, resolveCoupon } from "@/lib/promotions";
-import { findService, isServiceDetail, serviceCatalog, servicesInCategory } from "@/lib/services";
+import { resolveService } from "@/lib/site-content";
+import type { ScopeContext } from "@/lib/promo-scope";
+import { isServiceDetail, serviceCatalog, servicesInCategory } from "@/lib/services";
 import { normalizePhone } from "@/lib/validation";
 
 const schema = z.object({
@@ -45,7 +47,7 @@ export async function POST(request: NextRequest) {
     const user = await requireUser();
     const input = schema.parse(await readJson(request));
     // "other" = the customer isn't sure which service they need.
-    const found = input.serviceSlug === "other" ? undefined : findService(input.serviceSlug);
+    const found = input.serviceSlug === "other" ? undefined : (await resolveService(input.serviceSlug)) ?? undefined;
     if (input.serviceSlug !== "other" && !found) throw new PublicError("Choose one of the listed services.", 400, { fields: { serviceSlug: "Choose one of the listed services." } });
     const service = found ?? { slug: "other", title: "General enquiry" };
     const categoryCandidate = input.category ?? found?.slug;
@@ -87,7 +89,7 @@ export async function POST(request: NextRequest) {
     await enforceRate(RATE_RULES.requestsPerUserDay, userKey, "You’ve reached today’s online request limit. Please call or WhatsApp us.");
 
     const offer = await checkOffer(input.offerId, category, user.id);
-    const coupon = await checkCoupon(input.couponCode, user.id);
+    const coupon = await checkCoupon(input.couponCode, user.id, found ? { service: found.slug, category } : { service: "other" });
 
     if (input.fileId) {
       const [file] = await db.select({ id: storedFiles.id, requestId: storedFiles.requestId }).from(storedFiles).where(and(eq(storedFiles.id, input.fileId), eq(storedFiles.userId, user.id))).limit(1);
@@ -144,10 +146,10 @@ export async function POST(request: NextRequest) {
 type CouponCheck = { applied: true; id: string; code: string; value: number; minimum: number; title: string } | { applied: false; reason?: string };
 
 /** Like offers, a code that can't be used doesn't stop the request; the customer is told why. */
-async function checkCoupon(code: string | undefined, userId: string): Promise<CouponCheck> {
+async function checkCoupon(code: string | undefined, userId: string, context?: ScopeContext): Promise<CouponCheck> {
   if (!code) return { applied: false };
   try {
-    const { coupon, view } = await resolveCoupon({ code, userId });
+    const { coupon, view } = await resolveCoupon({ code, userId, context });
     return { applied: true, id: coupon.id, code: coupon.code, value: view.discount, minimum: view.minimum, title: `${view.emoji} ${view.names.en}` };
   } catch (error) {
     if (error instanceof PublicError) return { applied: false, reason: error.message };

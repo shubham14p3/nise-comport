@@ -136,6 +136,11 @@ export async function sendRequestReceivedEmail(to: string, name: string, referen
   });
 }
 
+/** A message to a customer (e.g. their personal promo code) with a button to their account. */
+export async function sendCustomerMessageEmail(to: string, subject: string, lines: string[], link: string) {
+  await sendMail({ to, subject, heading: subject, paragraphs: lines, action: { label: "Open my account", href: link } });
+}
+
 export async function sendStaffAlertEmail(to: string, subject: string, lines: string[], link: string) {
   await sendMail({ to, subject, heading: subject, paragraphs: lines, action: { label: "Open staff dashboard", href: link } });
 }

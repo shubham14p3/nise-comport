@@ -7,13 +7,14 @@ import PanImportPanel from "@/components/pan-import-panel";
 import WalletCreditForm from "@/components/wallet-credit-form";
 import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
-import { ArrowRight, Bell, ClipboardList, Contact, Database, FolderLock, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, TicketPercent, UsersRound, WalletCards } from "lucide-react";
+import { ArrowRight, Bell, ClipboardList, Contact, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, TicketPercent, UsersRound, WalletCards } from "lucide-react";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
 import PromotionsPanel from "@/components/promotions-panel";
 import CampaignsPanel from "@/components/campaigns-panel";
 import ContactsPanel from "@/components/contacts-panel";
 import TeamPanel from "@/components/team-panel";
 import InboxPanel from "@/components/inbox-panel";
+import SiteContentPanel from "@/components/site-content-panel";
 import RecordsPanel from "@/components/records-panel";
 import type { Permission } from "@/lib/permissions";
 
@@ -157,12 +158,13 @@ function RequestQueue() {
   </>;
 }
 
-type Tab = "inbox" | "requests" | "records" | "promotions" | "campaigns" | "contacts" | "team" | "pan" | "wallet";
+type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "campaigns" | "contacts" | "team" | "pan" | "wallet";
 const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | "admin" | "staff" }[] = [
   { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
   { id: "requests", label: "Requests", icon: ClipboardList, needs: "requests" },
   { id: "records", label: "Records", icon: FolderLock, needs: "records" },
   { id: "promotions", label: "Promotions", icon: TicketPercent, needs: "promotions" },
+  { id: "content", label: "Site content", icon: LayoutTemplate, needs: "content" },
   { id: "campaigns", label: "WhatsApp", icon: Megaphone, needs: "campaigns" },
   { id: "contacts", label: "Contacts", icon: Contact, needs: "campaigns" },
   { id: "team", label: "Team", icon: UsersRound, needs: "admin" },
@@ -227,6 +229,7 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
         {active === "requests" && <RequestQueue/>}
         {active === "records" && <RecordsPanel/>}
         {active === "promotions" && <PromotionsPanel canEdit/>}
+        {active === "content" && <SiteContentPanel/>}
         {active === "campaigns" && <CampaignsPanel/>}
         {active === "contacts" && <ContactsPanel/>}
         {active === "team" && <TeamPanel meRole={me.role}/>}

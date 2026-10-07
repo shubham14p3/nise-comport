@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarPlus, FileSpreadsheet, Gift, ImagePlus, Lock, LockOpen, Plus, RefreshCw, Search, TicketPercent, TriangleAlert } from "lucide-react";
 import PromotionEditor from "@/components/promotion-editor";
+import PersonalCodes from "@/components/personal-codes";
 import { todayIst } from "@/lib/festivals";
 import { secureApi } from "@/lib/secure-api-client";
 import type { PromoView } from "@/lib/promo-view";
@@ -103,6 +104,8 @@ export default function PromotionsPanel({ canEdit }: { canEdit: boolean }) {
             {row.tentative && <span className="status-pill status-pill--warn"><TriangleAlert size={12}/> Dates TBC</span>}
             {row.locked && <span className="status-pill"><Lock size={12}/> Edited</span>}
             {row.source === "google" && <span className="status-pill">Google date</span>}
+            <span className={row.validOn ? "status-pill status-pill--scope" : "status-pill"} title="Where the code can be used">{row.validOn ? `Only: ${row.validOn}` : "All services"}</span>
+            {row.maxDiscount ? <span className="status-pill">max ₹{row.maxDiscount}</span> : null}
           </span>
           {isEditing && editing && <div className="promo-row__edit">
             <label>Code from<input type="date" value={editing.startsOn} onChange={(event) => setEditing({ ...editing, startsOn: event.target.value })}/></label>
@@ -115,12 +118,13 @@ export default function PromotionsPanel({ canEdit }: { canEdit: boolean }) {
         </div>
         {canEdit && <div className="promo-row__actions">
           <label className="switch" title={row.active ? "Switch off" : "Switch on"}><input type="checkbox" checked={row.active} disabled={busy === row.id} onChange={(event) => void patch(row.id, { active: event.target.checked }, `${row.code} switched ${event.target.checked ? "on" : "off"}.`)}/><span aria-hidden="true"/><span className="sr-only">{row.code} active</span></label>
-          <button type="button" className="profile-text-button" onClick={() => setEditor({ promotion: row })}>{row.kind === "public" ? "Edit" : <><ImagePlus size={13}/> Posters</>}</button>
+          <button type="button" className="profile-text-button" onClick={() => setEditor({ promotion: row })}>{row.kind === "public" ? "Edit" : <><ImagePlus size={13}/> Posters & services</>}</button>
           {!isEditing && row.eventKey && <button type="button" className="profile-text-button" onClick={() => setEditing({ id: row.id, startsOn: row.startsOn, endsOn: row.endsOn, eventStarts: row.eventStarts ?? "", eventEnds: row.eventEnds ?? "" })}>Edit dates</button>}
           {row.locked && <button type="button" className="profile-text-button" onClick={() => void patch(row.id, { unlock: true }, `${row.code} will follow the daily sync again.`)}><LockOpen size={13}/> Let sync manage</button>}
         </div>}
       </article>;
     })}</div>
+    {canEdit && <PersonalCodes/>}
     <p className="admin-note"><Gift size={13}/> Codes are created daily up to December 2028 from Google’s Indian holiday calendar and the Team India fixtures list. Switching a code off takes effect immediately at checkout.</p>
   </section>;
 }

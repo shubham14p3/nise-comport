@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray, lt, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { notifications } from "@/db/schema";
-import { sendRequestReceivedEmail, sendStaffAlertEmail, sendStatusEmail, smtpConfigured } from "@/lib/email";
+import { sendCustomerMessageEmail, sendRequestReceivedEmail, sendStaffAlertEmail, sendStatusEmail, smtpConfigured } from "@/lib/email";
 import { site } from "@/lib/site";
 
 const MAX_ATTEMPTS = 5;
@@ -15,7 +15,7 @@ export function staffAlertEmail() {
   return process.env.STAFF_ALERT_EMAIL?.trim() || site.email;
 }
 
-export async function queueNotification(userId: string, kind: "status_update" | "request_received" | "staff_alert", payload: StatusPayload | ReceivedPayload | StaffPayload) {
+export async function queueNotification(userId: string, kind: "status_update" | "request_received" | "staff_alert" | "customer_message", payload: StatusPayload | ReceivedPayload | StaffPayload) {
   const [row] = await db.insert(notifications).values({ userId, channel: "email", kind, payload, status: "queued" }).returning({ id: notifications.id });
   return row.id;
 }
@@ -26,6 +26,10 @@ async function deliverOne(item: typeof notifications.$inferSelect) {
   if (item.kind === "request_received") {
     if (!text("email") || !text("reference")) throw new Error("Notification payload is incomplete.");
     await sendRequestReceivedEmail(text("email"), text("name") || "there", text("reference"), text("label") || "service");
+  } else if (item.kind === "customer_message") {
+    const lines = Array.isArray(payload.lines) ? payload.lines.filter((line): line is string => typeof line === "string") : [];
+    if (!text("email") || !text("subject")) throw new Error("Notification payload is incomplete.");
+    await sendCustomerMessageEmail(text("email"), text("subject"), lines, `${site.url}/profile#vouchers`);
   } else if (item.kind === "staff_alert") {
     const lines = Array.isArray(payload.lines) ? payload.lines.filter((line): line is string => typeof line === "string") : [];
     if (!text("email") || !text("subject")) throw new Error("Notification payload is incomplete.");
