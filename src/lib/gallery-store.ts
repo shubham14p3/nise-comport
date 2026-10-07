@@ -96,7 +96,7 @@ export async function uploadPhoto(file: File, tagInput: string, actor: { id: str
   const [duplicate] = await db.select({ id: galleryItems.id }).from(galleryItems).where(eq(galleryItems.hash, hash)).limit(1);
   if (duplicate || galleryPhotos.some((photo) => photo.hash === hash)) throw new PublicError("This photo is already in the gallery.", 409);
 
-  let sharp: typeof import("sharp");
+  let sharp: typeof import("sharp").default;
   try { sharp = (await import("sharp")).default; }
   catch { throw new PublicError("Photo conversion isn’t available on this server. Ask your developer to install “sharp”.", 503); }
   let output: { data: Buffer; info: { width: number; height: number } };
