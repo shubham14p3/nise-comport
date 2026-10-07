@@ -336,3 +336,17 @@ export const requestDrafts = pgTable("request_drafts", {
   data: jsonb("data").$type<Record<string, unknown>>().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Gallery photos uploaded in Admin → Gallery (objectKey set; served at /gallery/photo/<name>), and
+ * staff edits to photos added with `npm run photos` (objectKey null; matched by src).
+ */
+export const galleryItems = pgTable("gallery_items", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  src: text("src").notNull(), objectKey: text("object_key"),
+  tag: text("tag").notNull().default("shop"), title: text("title").notNull(), alt: text("alt").notNull(),
+  width: integer("width").notNull().default(0), height: integer("height").notNull().default(0),
+  hidden: boolean("hidden").notNull().default(false), hash: text("hash"),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [uniqueIndex("gallery_items_src_unique").on(table.src), index("gallery_items_tag_idx").on(table.tag)]);

@@ -5,7 +5,9 @@ import { ArrowRight, Camera, MapPin, Star } from "lucide-react";
 import Breadcrumbs from "@/components/breadcrumbs";
 import GalleryGrid, { type GalleryEntry } from "@/components/gallery-grid";
 import JsonLd from "@/components/json-ld";
-import { localGallery, ownPhotos } from "@/lib/gallery";
+import { localGallery } from "@/lib/gallery";
+import { livePhotos } from "@/lib/gallery-store";
+import { FESTIVAL_TAGS, tagGroup, tagLabel } from "@/lib/gallery-tags";
 import { findService, shortServiceName } from "@/lib/services";
 import { getPlaceSummary } from "@/lib/google-places";
 import { pageMetadata } from "@/lib/seo";
@@ -21,11 +23,13 @@ export default async function GalleryPage() {
     key: `google-${photo.index}`, src: `/api/gallery/photo/${photo.index}`, width: photo.width, height: photo.height,
     title: "NISE COMPORT, Kharangajhar", alt: `Photo of NISE COMPORT, Telco, Jamshedpur by ${photo.author}`, tag: "google", author: photo.author, authorUri: photo.authorUri,
   }));
+  const ownPhotos = await livePhotos();
   const mine: GalleryEntry[] = ownPhotos.map((photo) => {
-    const service = findService(photo.service);
+    const service = tagGroup(photo.tag) === "service" ? findService(photo.tag) : undefined;
     return {
       key: photo.src, src: photo.src, width: photo.width, height: photo.height, title: photo.title, alt: photo.alt, tag: "shop" as const,
-      ...(service ? { href: `/services/${service.slug}`, service: service.slug, serviceLabel: shortServiceName(service.title) } : {}),
+      group: tagGroup(photo.tag), service: photo.tag, serviceLabel: service ? shortServiceName(service.title) : tagLabel(photo.tag),
+      ...(service ? { href: `/services/${service.slug}` } : FESTIVAL_TAGS[photo.tag] ? { href: "/offers" } : {}),
     };
   });
   const items: GalleryEntry[] = [...mine, ...googleItems, ...localGallery.map((item) => ({ ...item, key: item.src }))];

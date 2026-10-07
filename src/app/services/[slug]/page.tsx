@@ -15,7 +15,8 @@ import SiteBanners from "@/components/site-banners";
 import { resolveService, servicesInCategoryAll } from "@/lib/site-content";
 import { articlesForService } from "@/lib/content";
 import { categoryMetaFor } from "@/lib/categories";
-import { photosForService, posterFor } from "@/lib/gallery";
+import { posterFor } from "@/lib/gallery";
+import { livePhotosFor } from "@/lib/gallery-store";
 import { findHindiService } from "@/lib/hindi";
 import { offersFor } from "@/lib/offers";
 import { getLivePromos } from "@/lib/promotions";
@@ -89,7 +90,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
   const meta = categoryMetaFor(categorySlug);
   const startHref = requestHrefFor(service.slug);
   const motor = MOTOR_LINKS[service.slug];
-  const photos = detail ? photosForService(service.slug) : [];
+  const photos = detail ? await livePhotosFor(service.slug) : [];
   const offers = offersFor(categorySlug, new Date(), liveOfferCodes(await getLivePromos())).slice(0, 2);
   const bengali = translatedSlugs.bn.includes(service.slug);
   const reviewed = new Date(`${SITE_CONTENT_DATE}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });

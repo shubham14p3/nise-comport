@@ -1,17 +1,22 @@
 # Photo inbox
 
-Drop photos (JPG, PNG, WebP, HEIC…) into a folder here, then run `npm run photos`.
+Drop photos (JPG, PNG, WebP, HEIC…) into a folder here and run `npm run photos`.
+That's all: the photos are converted, added to the website and saved to GitHub (commit + push).
 
-- **Not sure which service a photo belongs to?** Put it in `all-photos/`. It goes into the
-  gallery as a general NISE COMPORT photo. You can sort it later (see below).
-- **Know the service?** Put it in that service's folder (`pan-card/`, `aadhaar/`, `voter-id/` …).
-  It then also shows on that service's page.
-- `shop/` = shop front and counter, `team/` = staff photos.
+**Which folder?**
+- `all-photos/` – not sure? Put it here. It shows as a general photo of the centre; you can move
+  it to the right category later in Admin → Gallery photos.
+- Our centre: `shop/`, `team/`, `camps/` (service camps), `training/` (computer classes).
+- Festivals & days: `diwali/`, `holi/`, `durga-puja/`, `ganesh-puja/`, `chhath-puja/`, `christmas/`,
+  `independence-day/`, `republic-day/`, `makar-sankranti/`, `saraswati-puja/`, `raksha-bandhan/`,
+  `eid/`, `new-year/`, `karma-puja/`, `sarhul/` … (one folder each).
+- Services (photo also shows on that service's page): `pan-card/`, `aadhaar/`, `voter-id/`,
+  `bike-insurance/`, `printing-scanning/`, `computer-repair/`, `jeevan-pramaan/` … (one folder each).
 
-What `npm run photos` does: turns each photo upright, removes GPS/camera data, resizes to
-1600 px, saves a small WebP with a search-friendly name in public/images/gallery/photos/,
-and lists it in src/lib/gallery-photos.ts. Originals move to `_done/`. Photos are never
-uploaded to GitHub from this folder (only the empty folders are).
+**What happens:** each photo is turned upright, GPS/camera data removed, resized to 1600 px and
+saved as a small WebP with a search-friendly name (e.g. `diwali-nise-comport-telco-jamshedpur-3.webp`).
+Originals move to `_done/`. Running it again skips photos already added.
+Add `-- --no-git` to convert without committing.
 
-**Sorting later:** open src/lib/gallery-photos.ts, find the photo and change
-`"service": "shop"` to the folder name, e.g. `"service": "pan-card"`. Save, commit, done.
+**Without the PC:** staff with the "Site content" permission can upload from any computer or phone
+in Admin → Gallery photos (also converted to WebP automatically) and change any photo's category.

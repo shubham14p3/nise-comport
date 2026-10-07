@@ -57,6 +57,8 @@ const OPS = {
   "Q3n7B1xK5vR8": { method: "POST", path: "/api/leads" },
   "M9q2X5wJ8tB3": { method: "POST", path: "/api/insurance" },
   "D4r8F2kW6nQ1": { method: "POST", path: "/api/requests/draft" },
+  "G2l6S9wQ4mT8": { method: "GET", path: "/api/admin/gallery" },
+  "G7l3A1xN5pK2": { method: "POST", path: "/api/admin/gallery" },
   "D9k3W7pR2xN5": { method: "GET", path: "/api/requests/draft" },
   "F6t1W8kN3pQ2": { method: "POST", path: "/api/admin/coupon-batches" },
   "C8m3J6xR1vT4": { method: "GET", path: "/api/admin/site-content" },
@@ -71,6 +73,7 @@ const OPS = {
 const BINARY_OPS = {
   "U7b3R8mQ4zL1": "/api/uploads",
   "P6m1T8vC3xK9": "/api/admin/media",
+  "G5p8U2kV7nR3": "/api/admin/gallery/upload",
 } as const;
 
 function stringValue(input: Record<string, unknown>, key: string, max = 200) {
@@ -241,7 +244,7 @@ async function handleBinary(request: NextRequest) {
     const fileBytes = context.bytes.slice();
     form.set("file", new Blob([fileBytes.buffer as ArrayBuffer], { type }), name);
     // Poster uploads also carry a title, language and category.
-    for (const key of ["title", "locale", "category"]) { const value = stringValue(input, key, 120); if (value) form.set(key, value); }
+    for (const key of ["title", "locale", "category", "tag"]) { const value = stringValue(input, key, 120); if (value) form.set(key, value); }
     const response = await internalFetch(request, { method: "POST", path: uploadPath }, form);
     return secureJson(context, await jsonFromInternal(response), { status: response.status, headers: passThroughHeaders(response) });
   } catch (error) {
