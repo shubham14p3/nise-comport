@@ -11,7 +11,7 @@ type BuiltIn = { slug: string; title: string; categorySlug: string; hidden: bool
 type Custom = { id: string; slug: string; title: string; categorySlug: string; description: string; keywords: string[]; highlights: string[]; documents: string[]; steps: string[]; faqs: { question: string; answer: string }[]; seoTitle?: string; seoDescription?: string; published: boolean; sortOrder: number };
 type Content = { banners: Banner[]; builtIn: BuiltIn[]; custom: Custom[]; categories: { slug: string; title: string }[] };
 
-const PLACES: Record<string, string> = { strip: "Thin strip at the top of every page", home: "Home page, below the top section", services: "All-services page", "service-page": "Service pages (side panel)" };
+const PLACES: Record<string, string> = { strip: "Thin strip at the top of every page", home: "Home page, below the top section", services: "All-services page", "service-page": "Service pages (side panel)", insurer: "Insurer logo (insurance page) — only insurers you're authorised to sell" };
 const TONES = ["blue", "violet", "pink", "green", "saffron", "cyan", "night"];
 const empty3 = { en: "", hi: "", bn: "" };
 

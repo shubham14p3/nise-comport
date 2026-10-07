@@ -69,7 +69,8 @@ export default function InboxPanel({ onSeen }: { onSeen?: () => void }) {
       <h3><Phone size={16}/> Call these people back <span>{data.leads.length}</span></h3>
       {data.leads.map((row) => <article key={row.id} className={`lead-row lead-row--${row.status}`}>
         <div><b>{row.name}</b> <a href={`tel:${row.phone}`}>{pretty(row.phone)}</a>
-          <small>{row.topic}{row.message ? ` — ${row.message}` : ""} · {ago(row.createdAt)}{row.status === "called" ? " · called once" : ""}</small></div>
+          <small>{row.topic}{row.message && !row.message.includes("\n") ? ` — ${row.message}` : ""} · {ago(row.createdAt)}{row.status === "called" ? " · called once" : ""}</small>
+          {row.message?.includes("\n") && <p className="lead-row__details">{row.message}</p>}</div>
         <div className="lead-row__actions">
           <a className="btn btn--ghost btn--sm" href={`tel:${row.phone}`}><Phone size={14}/>Call</a>
           <a className="btn btn--ghost btn--sm" href={`https://wa.me/${row.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`Namaste ${row.name}, NISE COMPORT here about your enquiry: ${row.topic}.`)}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={14}/>WhatsApp</a>

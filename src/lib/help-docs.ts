@@ -7,7 +7,7 @@
  */
 type Text3 = { en: string; hi: string; bn: string };
 export type HelpSection = { heading: string; items: string[]; note?: string };
-export type HelpVariant = { id: string; label: Text3; sections: HelpSection[] };
+export type HelpVariant = { id: string; label: Text3; sections: HelpSection[]; /** Our own page for this case (replaces "Start a request"). */ href?: string };
 export type HelpGuide = {
   id: string; title: Text3; words: string[]; intro: string;
   variants: HelpVariant[];
@@ -19,6 +19,7 @@ export type HelpGuide = {
 const ID = ["Aadhaar card", "PAN card", "Voter ID", "Passport", "Driving licence"];
 const ADDRESS = ["Aadhaar card", "Electricity, water or gas bill (recent)", "Bank or post office passbook", "Ration card", "Registered rent agreement or sale deed"];
 const AGE = ["Birth certificate", "Class 10 or 12 marksheet / certificate", "PAN card", "Passport", "Aadhaar card"];
+const INS_NOTE = "NISE COMPORT arranges the policy; the insurance company issues it and decides claims. We support you until the claim is settled.";
 const v = (id: string, en: string, hi: string, bn: string, sections: HelpSection[]): HelpVariant => ({ id, label: { en, hi, bn }, sections });
 
 export const HELP_GUIDES: HelpGuide[] = [
@@ -92,15 +93,27 @@ export const HELP_GUIDES: HelpGuide[] = [
     ])],
   },
   {
-    id: "insurance", title: { en: "Vehicle insurance", hi: "वाहन बीमा", bn: "গাড়ির বিমা" }, service: "bike-insurance-jamshedpur",
-    words: ["insurance", "bima", "policy", "renew", "renewal", "bike insurance", "car insurance", "claim", "बीमा", "বিমা"],
-    intro: "We compare plans and do the paperwork. Renewing early keeps your no-claim bonus.",
+    id: "insurance", title: { en: "Car & bike insurance", hi: "कार और बाइक बीमा", bn: "গাড়ি ও বাইকের বিমা" }, service: "bike-insurance-jamshedpur",
+    words: ["insurance", "bima", "policy", "renew", "renewal", "bike insurance", "car insurance", "two wheeler", "scooter", "claim", "ncb", "no claim", "idv", "zero dep", "third party", "expired", "बीमा", "বিমা"],
+    intro: "We compare quotes from several insurers and do the paperwork. The insurer issues the policy and settles claims; we stay with you until it's done.",
     variants: [
-      v("buy", "Buy or renew", "नया / रिन्यूअल", "নতুন / রিনিউ", [
-        { heading: "Vehicle", items: ["RC (registration certificate)", "Previous policy copy (for renewal and no-claim bonus)", "Valid PUC certificate", "Sale invoice instead of RC for a brand-new vehicle"] },
-        { heading: "You", items: ["PAN card (needed for KYC)", "Aadhaar card", "Or passport / Voter ID / driving licence", "Mobile number for the OTP"] },
-      ]),
-      v("claim", "Claim help", "क्लेम सहायता", "ক্লেম সহায়তা", [{ heading: "Bring", items: ["Signed claim form (we help you fill it)", "FIR copy for theft, injury or major damage", "Workshop estimate and original bills", "Driving licence of the driver at the time", "RC and policy copy"] }]),
+      { ...v("new", "New vehicle", "नई गाड़ी", "নতুন গাড়ি", [
+        { heading: "Vehicle", items: ["Dealer sale invoice (or RC if already registered)", "Chassis and engine number (on the invoice)", "Model, variant and fuel type"] },
+        { heading: "You", items: ["Aadhaar card", "PAN card (for KYC)", "Mobile number for the OTP", "Nominee name for personal accident cover"] },
+        { heading: "Good to know", items: ["New car: 1-year own damage + 3-year third party (or bundled)", "New bike: 1-year own damage + 5-year third party (or bundled)", "Ask about zero depreciation and return-to-invoice add-ons"], note: INS_NOTE },
+      ]), href: "/insurance?need=new#quote" },
+      { ...v("renew", "Renew before expiry", "समाप्ति से पहले रिन्यूअल", "মেয়াদের আগে রিনিউ", [
+        { heading: "Bring", items: ["RC (registration certificate)", "Current policy copy (shows your No Claim Bonus)", "Valid PUC certificate", "Aadhaar or PAN for KYC, and your mobile number"] },
+        { heading: "Good to know", items: ["Renew up to 45 days before the end date", "No inspection needed and your NCB (20% to 50%) is kept", "You can switch insurer and keep your NCB"], note: INS_NOTE },
+      ]), href: "/insurance?need=renew#quote" },
+      { ...v("expired", "Policy expired", "पॉलिसी खत्म हो गई", "পলিসির মেয়াদ শেষ", [
+        { heading: "Bring", items: ["RC (registration certificate)", "Old policy copy (if you have it)", "Valid PUC certificate", "Aadhaar or PAN for KYC, and your mobile number", "Vehicle available for inspection (photos or visit), if the insurer asks"] },
+        { heading: "Good to know", items: ["Don't drive until it's renewed: no cover, and fines apply", "Renew within 90 days of expiry to keep your NCB", "Third-party-only cover may not need an inspection"], note: INS_NOTE },
+      ]), href: "/insurance?need=expired#quote" },
+      { ...v("claim", "Claim help", "क्लेम सहायता", "ক্লেম সহায়তা", [
+        { heading: "Bring", items: ["Policy copy and RC", "Driving licence of the person driving at the time", "Photos of the damage and the spot", "FIR copy for theft, injury or third-party damage", "Workshop estimate and original repair bills", "Signed claim form (we help you fill it) and a cancelled cheque"] },
+        { heading: "Steps", items: ["Tell the insurer straight away (we can register it for you)", "Don't repair before the surveyor inspects", "Use a network garage for a cashless claim", "Theft: FIR first, then the insurer; keep both keys"], note: INS_NOTE },
+      ]), href: "/insurance?need=claim#quote" },
     ],
   },
   {
@@ -196,7 +209,7 @@ export function findVariant(guide: HelpGuide, text: string) {
   const hints: Record<string, string[]> = {
     name: ["name", "naam", "नाम", "নাম"], address: ["address", "shift", "pata", "पता", "ঠিকানা"], dob: ["birth", "dob", "age", "जन्म", "জন্ম"],
     gender: ["gender", "lost", "replace", "लिंग"], correction: ["correction", "correct", "change", "update", "सुधार", "সংশোধন"],
-    claim: ["claim", "accident", "क्लेम"], abha: ["abha", "आभा"], obc: ["obc", "bc 1", "bc 2", "bc-i"], central: ["central"], family: ["family", "head", "मुखिया"],
+    claim: ["claim", "accident", "क्लेम"], new: [" new ", "brand new", "nayi", "नई"], expired: ["expired", "expire", "lapsed", "khatam", "समाप्त", "खत्म"], renew: ["renew", "रिन्यू"], abha: ["abha", "आभा"], obc: ["obc", "bc 1", "bc 2", "bc-i"], central: ["central"], family: ["family", "head", "मुखिया"],
   };
   return guide.variants.find((variant) => (hints[variant.id] ?? []).some((word) => clean.includes(word))) ?? guide.variants[0];
 }

@@ -44,6 +44,7 @@ export function publicRoutes(): PublicRoute[] {
     { path: "/contact", lastModified: SITE_CONTENT_DATE, priority: 0.8, changeFrequency: "monthly" },
     { path: "/areas-we-serve", lastModified: SITE_CONTENT_DATE, priority: 0.7, changeFrequency: "monthly" },
     { path: "/pan", lastModified: SITE_CONTENT_DATE, priority: 0.8, changeFrequency: "monthly" },
+    { path: "/insurance", lastModified: SITE_CONTENT_DATE, priority: 0.9, changeFrequency: "monthly" },
     { path: "/print", lastModified: SITE_CONTENT_DATE, priority: 0.7, changeFrequency: "monthly" },
     { path: "/blog", lastModified: SITE_CONTENT_DATE, priority: 0.8, changeFrequency: "weekly" },
     { path: "/faq", lastModified: SITE_CONTENT_DATE, priority: 0.6, changeFrequency: "monthly" },

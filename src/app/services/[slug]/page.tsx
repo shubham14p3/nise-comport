@@ -22,6 +22,7 @@ import { translatedSlugs } from "@/lib/translated-slugs";
 import { SITE_CONTENT_DATE } from "@/lib/routes";
 import { pageMetadata } from "@/lib/seo";
 import { serviceEditorial } from "@/lib/service-editorial";
+import { FACILITATOR_NOTE } from "@/lib/motor-insurance";
 import { categoryFor, findService, isServiceDetail, publishedServiceDetails, requestHrefFor, serviceCatalog, serviceSeoDescription, serviceSeoTitle, shortServiceName } from "@/lib/services";
 import { site, whatsappLink } from "@/lib/site";
 import { itemListLd, serviceLd } from "@/lib/structured-data";
@@ -29,6 +30,13 @@ import { itemListLd, serviceLd } from "@/lib/structured-data";
 // Services added in Admin → Site content are rendered on first visit.
 export const dynamicParams = true;
 export const revalidate = 3600;
+
+/** Motor-insurance pages send people to the full quote form. */
+const MOTOR_LINKS: Record<string, string> = {
+  insurance: "/insurance#quote",
+  "bike-insurance-jamshedpur": "/insurance?vehicle=bike#quote",
+  "car-insurance-jamshedpur": "/insurance?vehicle=car#quote",
+};
 
 export function generateStaticParams() { return [...serviceCatalog, ...publishedServiceDetails].map((service) => ({ slug: service.slug })); }
 
@@ -73,6 +81,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
   const categorySlug = detail ? detail.categorySlug : service.slug;
   const meta = categoryMetaFor(categorySlug);
   const startHref = requestHrefFor(service.slug);
+  const motor = MOTOR_LINKS[service.slug];
   const offers = offersFor(categorySlug, new Date(), liveOfferCodes(await getLivePromos())).slice(0, 2);
   const bengali = translatedSlugs.bn.includes(service.slug);
   const reviewed = new Date(`${SITE_CONTENT_DATE}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
@@ -89,10 +98,12 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
           <p className="page-hero__lead">{service.description}</p>
           {editorial?.audience && <p className="page-hero__audience"><b>For:</b> {editorial.audience}</p>}
           <div className="page-hero__ctas">
-            <Link className="btn btn--primary btn--lg" href={detail ? startHref : `/request?category=${service.slug}`}>Start in 4 steps <ArrowRight size={18}/></Link>
+            {motor ? <Link className="btn btn--primary btn--lg" href={motor}>Get insurance quotes <ArrowRight size={18}/></Link>
+              : <Link className="btn btn--primary btn--lg" href={detail ? startHref : `/request?category=${service.slug}`}>Start in 4 steps <ArrowRight size={18}/></Link>}
             <a className="btn btn--wa btn--lg" href={enquiry} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> WhatsApp</a>
             <a className="btn btn--glass btn--lg" href={`tel:${site.phones.primary.e164}`}><Phone size={18}/> Call</a>
           </div>
+          {categorySlug === "insurance" && <p className="page-hero__audience"><b>Please note:</b> {FACILITATOR_NOTE}</p>}
           <p className="page-hero__meta"><MapPin size={16}/> {site.address.oneLine}{hindi && <> · <Link href={`/hi/services/${service.slug}`} hrefLang="hi-IN" lang="hi">हिन्दी में पढ़ें</Link></>}{bengali && <> · <Link href={`/bn/services/${service.slug}`} hrefLang="bn-IN" lang="bn">বাংলায় পড়ুন</Link></>}</p>
         </div>
         <div className="page-hero__art"><Image src={posterFor(service.slug, categorySlug)} alt={editorial?.imageAlt ?? `${title} illustration`} width={1200} height={900} priority sizes="(max-width: 900px) 100vw, 44vw"/></div>

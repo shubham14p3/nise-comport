@@ -72,20 +72,24 @@ export const serviceEditorial: Record<string, ServiceEditorial> = {
   },
   "bike-insurance-jamshedpur": {
     image: "/images/service/two-wheeler.png", imageAlt: "Two-wheeler insurance enquiry artwork",
-    audience: "Bike and scooter owners checking an eligible new-policy or renewal enquiry with a participating insurer.",
-    beforeYouStart: ["Keep the vehicle registration and existing policy details handy.", "Check policy dates, coverage, exclusions and add-ons in the insurer's documents.", "Confirm the final premium and insurer directly before payment."],
+    audience: "Bike and scooter owners buying a new policy, renewing (even after expiry), switching insurer or making a claim.",
+    beforeYouStart: ["Keep your RC and last policy copy handy; the NCB on it lowers your premium.", "Renew before the end date: an expired policy loses cover, may need an inspection and loses NCB after 90 days.", "Check IDV, add-ons and exclusions on the quote; a very low IDV means a smaller payout.", "NISE COMPORT arranges the policy with the insurer. The insurer issues it and settles claims; we help you until the claim is closed."],
     faqs: [
-      { question: "Can you guarantee a premium or claim?", answer: "No. The insurer decides eligibility, premium, coverage, exclusions and claim outcomes." },
-      { question: "What should I compare before renewing?", answer: "Review the insured vehicle details, policy dates, coverage, exclusions, add-ons and the insurer's claim process. A quote is not a policy until the insurer confirms it." },
+      { question: "Can you guarantee a premium or claim?", answer: "No. The insurer decides eligibility, premium, coverage, exclusions and claim outcomes. We help with the paperwork and follow-up all the way." },
+      { question: "What should I compare before renewing?", answer: "Premium, IDV, NCB applied, add-ons (zero depreciation, roadside help), cashless garages nearby and the insurer's claim record." },
+      { question: "My bike policy expired. Can I still renew?", answer: "Yes. Don't ride until it's renewed. The insurer may ask for an inspection. Renew within 90 days of expiry to keep your NCB." },
+      { question: "Which insurers can you quote?", answer: "We compare from the insurers we're tied up with at the time, which can include public and private general insurers. Ask us for the current list." },
     ],
   },
   "car-insurance-jamshedpur": {
     image: "/images/blog/insurance.png", imageAlt: "Motor insurance preparation artwork",
-    audience: "Car owners who want help preparing a new-policy or renewal enquiry through a participating provider.",
-    beforeYouStart: ["Keep registration and existing policy details ready.", "Review cover, deductibles, exclusions and optional add-ons with the insurer.", "Check the final premium and proposal details before making a payment."],
+    audience: "Car owners buying a new policy, renewing before or after expiry, switching insurer with their NCB, or making a claim.",
+    beforeYouStart: ["Keep your RC and last policy copy ready; your NCB moves with you to any insurer.", "Renew up to 45 days before expiry: no inspection, no gap in cover, NCB kept.", "Decide on add-ons: zero depreciation for cars up to 5 years, engine protect in flood-prone areas, return to invoice for new cars.", "NISE COMPORT arranges the policy with the insurer. The insurer issues it and settles claims; we support you until the claim is closed."],
     faqs: [
       { question: "Does an online quote guarantee the final premium?", answer: "No. The insurer confirms eligibility, vehicle details, coverage and final premium before issuing a policy." },
-      { question: "Who decides whether a claim is paid?", answer: "The insurance provider applies the policy terms and makes claim decisions. NISE COMPORT does not underwrite policies or decide claims." },
+      { question: "Who decides whether a claim is paid?", answer: "The insurance company that issued your policy applies its terms and decides claims. NISE COMPORT does not underwrite policies or decide claims, and isn't liable for the insurer's decision, but we help you register, document and follow up the claim to the end." },
+      { question: "What is a cashless claim?", answer: "At the insurer's network garage, the insurer pays the garage directly. You pay only the deductible, depreciation (unless you have zero dep) and anything not covered." },
+      { question: "Can I keep my NCB if I sell the car?", answer: "Yes. Ask for an NCB certificate or retention letter; you can use it on your next car's policy, usually within 3 years." },
     ],
   },
   "health-life-insurance-help": {

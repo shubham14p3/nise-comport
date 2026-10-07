@@ -29,6 +29,7 @@ The demo uses the same editable profile layout as a real account. Changes are te
 ## Pages to check
 
 - `/` home page: hero with search, 8 category tiles, live offers, how-it-works, gallery, guides, FAQ
+- `/insurance` car & bike insurance: quote, renewal, expired policy and claim form plus NCB/IDV/add-on guide
 - `/services` every service with search and category filters (`/services?category=insurance`), plus each service page
 - `/request` the 4-step request flow (service → details → visit/doorstep → review) with the blinking offer rail
 - `/print` and `/pan/request` the same 4-step pattern for printing and PAN
@@ -126,6 +127,18 @@ Set `RECORDS_ENCRYPTION_KEY` (`openssl rand -base64 32`) and back it up before t
 - **Hide built-in services** you no longer offer (and show them again).
 
 Run `npm run db:migrate` for migration 0010.
+
+## Car & bike insurance (`/insurance`)
+
+One page for new policies, renewal before expiry, expired policies and claims, for cars and two-wheelers:
+
+- **Quote / claim form**: purpose, bike or car, vehicle number, make/model, current policy (insurer, end date, NCB, claim last year), cover and add-ons wanted (or what happened, for a claim), contact details. Signed-in customers can attach the RC, old policy, photos or FIR and get a tracked request (`NC-…`); guests become a call-back in **Admin → Inbox** with the full details. The policy end date is saved on the contact for the renewal reminder campaign.
+- **Knowledge**: policy types, what's covered and not, 10 add-ons, NCB slabs, IDV depreciation, bike third-party rates, renewal rules (45-day window, 90-day NCB rule, fines), premium factors, documents for new/renewal/claim, claim steps and common rejection reasons, FAQs. Content lives in `src/lib/motor-insurance.ts`.
+- **Facilitator wording** (page, form consent, chat, bike/car service pages): NISE COMPORT arranges the policy and supports the customer until the claim is settled; the insurance company issues the policy and decides/pays claims, and NISE COMPORT is not liable for the insurer's decisions. Check this text and add your registration line (e.g. POSP / corporate agent / broker code) as your insurer or broker requires.
+- **Insurer logos**: none are bundled. Upload a logo in **Admin → Site content → Banners** with placement **Insurer logo**, only for insurers you're authorised to sell through. Without uploads the page shows insurer names as text, with a "names belong to their owners" note.
+- The chat's insurance guide has New vehicle / Renew / Expired / Claim, each linking to the form. Bike and car service pages link to `/insurance`.
+
+Run `npm run db:migrate` for migration 0011 (adds `leads.details`).
 
 ## WhatsApp campaigns
 

@@ -55,6 +55,7 @@ const OPS = {
   "Y2n6R9tC4vK7": { method: "POST", path: "/api/admin/contacts" },
   "J7t1P5xW3qM9": { method: "PATCH", path: "/api/admin/contacts" },
   "Q3n7B1xK5vR8": { method: "POST", path: "/api/leads" },
+  "M9q2X5wJ8tB3": { method: "POST", path: "/api/insurance" },
   "F6t1W8kN3pQ2": { method: "POST", path: "/api/admin/coupon-batches" },
   "C8m3J6xR1vT4": { method: "GET", path: "/api/admin/site-content" },
   "K1w5Y9pB3nD7": { method: "POST", path: "/api/admin/site-content" },

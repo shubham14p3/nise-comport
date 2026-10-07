@@ -252,6 +252,8 @@ export const campaignMessages = pgTable("campaign_messages", {
 export const leads = pgTable("leads", {
   id: uuid("id").defaultRandom().primaryKey(), name: text("name").notNull(), phone: text("phone").notNull(),
   topic: text("topic").notNull(), message: text("message"), source: text("source").notNull().default("chat"), page: text("page"),
+  /** Structured answers, e.g. the car/bike insurance form. */
+  details: jsonb("details"),
   locale: text("locale").notNull().default("en"), status: text("status").notNull().default("new"),
   handledBy: uuid("handled_by").references(() => users.id, { onDelete: "set null" }), handledAt: timestamp("handled_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

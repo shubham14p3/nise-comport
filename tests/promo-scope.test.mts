@@ -39,5 +39,5 @@ test("site content permission and migration 0010", () => {
   const sql = readFileSync(new URL("../drizzle/0010_coupon_scope_batches.sql", import.meta.url), "utf8");
   for (const part of ['"applies_to" jsonb', '"max_discount"', 'CREATE TABLE "coupon_batches"', 'CREATE TABLE "site_banners"', 'CREATE TABLE "custom_services"']) assert.ok(sql.includes(part), part);
   const journal = JSON.parse(readFileSync(new URL("../drizzle/meta/_journal.json", import.meta.url), "utf8")) as { entries: { tag: string }[] };
-  assert.equal(journal.entries.at(-1)?.tag, "0010_coupon_scope_batches");
+  assert.ok(journal.entries.some((entry: { tag: string }) => entry.tag === "0010_coupon_scope_batches"));
 });

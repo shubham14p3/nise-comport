@@ -15,7 +15,7 @@ import { findService, publishedServiceDetails, serviceCatalog, type ServiceDetai
  */
 
 type Text3 = { en: string; hi: string; bn: string };
-export const BANNER_PLACEMENTS = ["strip", "home", "services", "service-page"] as const;
+export const BANNER_PLACEMENTS = ["strip", "home", "services", "service-page", "insurer"] as const;
 export type BannerPlacement = (typeof BANNER_PLACEMENTS)[number];
 export type Banner = {
   id: string; placement: BannerPlacement; title: Text3; text: Text3 | null; cta: Text3 | null; href: string | null;

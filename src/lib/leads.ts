@@ -9,7 +9,7 @@ import { staffAlertEmail } from "@/lib/notifications";
 import { site } from "@/lib/site";
 import { formatPhone, normalizePhone } from "@/lib/validation";
 
-export type LeadInput = { name?: string; phone: string; topic?: string; message?: string; page?: string; locale?: string; source?: string };
+export type LeadInput = { name?: string; phone: string; topic?: string; message?: string; page?: string; locale?: string; source?: string; details?: Record<string, unknown> };
 export const LEAD_STATUSES = ["new", "called", "done", "spam"] as const;
 
 /** A customer asked to be contacted. Saved, shown in the admin inbox and emailed to the shop. */
@@ -18,9 +18,9 @@ export async function createLead(input: LeadInput) {
   if (!phone) throw new PublicError("Please enter a valid 10-digit mobile number.", 400, { fields: { phone: "Check the number." } });
   const name = (input.name ?? "").replace(/[^\p{L}\p{M}\s.'-]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 80) || "Customer";
   const topic = (input.topic ?? "").replace(/\s+/g, " ").trim().slice(0, 80) || "General enquiry";
-  const message = (input.message ?? "").replace(/\s+/g, " ").trim().slice(0, 500) || null;
+  const message = (input.message ?? "").replace(/[ \t]+/g, " ").trim().slice(0, 1500) || null;
   const locale = ["en", "hi", "bn"].includes(input.locale ?? "") ? input.locale! : "en";
-  const [row] = await db.insert(leads).values({ name, phone, topic, message, page: input.page?.slice(0, 200) || null, locale, source: input.source === "form" ? "form" : "chat" }).returning();
+  const [row] = await db.insert(leads).values({ name, phone, topic, message, page: input.page?.slice(0, 200) || null, locale, source: input.source === "form" ? "form" : "chat", details: input.details ?? null }).returning();
   // Keep the number for WhatsApp follow-up without changing an existing YES/STOP.
   await db.insert(contacts).values({ name, phone, locale, source: "enquiry", services: [] }).onConflictDoNothing();
   await logActivity({ kind: "lead", permission: "requests", category: "leads", title: `Call back ${name} · ${formatPhone(phone)}`, detail: `${topic}${message ? ` — ${message}` : ""}`, refType: "lead", refId: row.id });

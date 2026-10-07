@@ -194,9 +194,10 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
     botSay({ text, actions, visit: topic === "visit" });
   }
 
-  function guideActions(guide: HelpGuide, label: string): Action[] {
+  function guideActions(guide: HelpGuide, label: string, href?: string): Action[] {
     const actions: Action[] = [];
-    if (guide.service) actions.push({ label: t.startRequest, href: `/request?service=${guide.service}`, kind: "link" });
+    if (href) actions.push({ label: t.startRequest, href, kind: "link" });
+    else if (guide.service) actions.push({ label: t.startRequest, href: `/request?service=${guide.service}`, kind: "link" });
     actions.push({ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${label}`), kind: "wa" });
     actions.push({ label: t.callUs, href: `tel:${phone}`, kind: "tel" });
     return actions;
@@ -207,7 +208,7 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
     const label = guide.variants.length > 1 ? `${guide.title[locale]} · ${variant.label[locale]}` : guide.title[locale];
     setMessages((list) => [...list, { id: newId(), from: "user", text: userText ?? label }]);
     setContext(label);
-    botSay({ text: `${t.docsFor} ${label}`, guide: { id: guide.id, variant: variant.id }, actions: guideActions(guide, label) });
+    botSay({ text: `${t.docsFor} ${label}`, guide: { id: guide.id, variant: variant.id }, actions: guideActions(guide, label, variant.href) });
   }
 
   function askDocs() {
