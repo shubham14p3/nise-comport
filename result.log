@@ -1,0 +1,1026 @@
+=== npm ci
+npm warn deprecated rimraf@2.7.1: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated lodash.isequal@4.5.0: This package is deprecated. Use require('node:util').isDeepStrictEqual instead.
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.hirok.io
+npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.hirok.io
+npm warn deprecated fstream@1.0.12: This package is no longer supported.
+npm warn deprecated uuid@8.3.2: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+
+added 510 packages in 16s
+=== exit 0
+=== db:migrate
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/home/runner/work/nise-comport/nise-comport/drizzle.config.ts'
+Using 'pg' driver for database querying
+[⣷] applying migrations...[2K[1G[⣯] applying migrations...[2K[1G[⣟] applying migrations...[2K[1G[✓] migrations applied successfully!=== exit 0
+=== security:check
+
+> nise-comport@1.0.0 security:check
+> node scripts/security-check.mjs
+
+✓ Opaque transport security checks passed
+  Private browser APIs: guarded
+  Private record URLs: absent from client components
+  RSC private-data checks: passed
+  Transport placeholders: present in .env.example
+=== exit 0
+=== test
+
+> nise-comport@1.0.0 test
+> node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/*.test.mts
+
+TAP version 13
+# Subtest: pacing is clamped to at most 10 per round and a sane window
+ok 1 - pacing is clamped to at most 10 per round and a sane window
+  ---
+  duration_ms: 2.717446
+  type: 'test'
+  ...
+# Subtest: gaps between rounds are random within 10–30 minutes plus under a minute
+ok 2 - gaps between rounds are random within 10–30 minutes plus under a minute
+  ---
+  duration_ms: 0.740213
+  type: 'test'
+  ...
+# Subtest: a round sends up to 10 messages 25–90 s apart, then waits 10–30 min
+ok 3 - a round sends up to 10 messages 25–90 s apart, then waits 10–30 min
+  ---
+  duration_ms: 0.504663
+  type: 'test'
+  ...
+# Subtest: outside 9–8 IST and after the daily limit, sending waits for the next morning
+ok 4 - outside 9–8 IST and after the daily limit, sending waits for the next morning
+  ---
+  duration_ms: 0.364491
+  type: 'test'
+  ...
+# Subtest: a simulated 45-message campaign respects every rule
+ok 5 - a simulated 45-message campaign respects every rule
+  ---
+  duration_ms: 1.621389
+  type: 'test'
+  ...
+# Subtest: messages are filled in each language and end with a STOP line
+ok 6 - messages are filled in each language and end with a STOP line
+  ---
+  duration_ms: 29.720391
+  type: 'test'
+  ...
+# Subtest: STOP and YES replies are understood in three languages
+ok 7 - STOP and YES replies are understood in three languages
+  ---
+  duration_ms: 3.698198
+  type: 'test'
+  ...
+# Subtest: staff permissions: owner can do everything, staff only what was ticked, customers nothing
+ok 8 - staff permissions: owner can do everything, staff only what was ticked, customers nothing
+  ---
+  duration_ms: 0.378227
+  type: 'test'
+  ...
+# Subtest: poster library files exist and only library or uploaded posters are accepted
+ok 9 - poster library files exist and only library or uploaded posters are accepted
+  ---
+  duration_ms: 1.430602
+  type: 'test'
+  ...
+# Subtest: WhatsApp webhook: signature, replies, receipts and template payloads
+ok 10 - WhatsApp webhook: signature, replies, receipts and template payloads
+  ---
+  duration_ms: 1.943611
+  type: 'test'
+  ...
+# Subtest: migration 0007 adds staff permissions and the dummy test campaign
+ok 11 - migration 0007 adds staff permissions and the dummy test campaign
+  ---
+  duration_ms: 1.777922
+  type: 'test'
+  ...
+# Subtest: Hindi and Bengali interface text covers every English key
+ok 12 - Hindi and Bengali interface text covers every English key
+  ---
+  duration_ms: 11.946458
+  type: 'test'
+  ...
+# Subtest: language menu keeps people on the same service when a translation exists
+ok 13 - language menu keeps people on the same service when a translation exists
+  ---
+  duration_ms: 1.558271
+  type: 'test'
+  ...
+# Subtest: translated slug list matches the Hindi and Bengali content
+ok 14 - translated slug list matches the Hindi and Bengali content
+  ---
+  duration_ms: 0.436746
+  type: 'test'
+  ...
+# Subtest: Bengali pages are in the sitemap with hreflang to English and Hindi
+ok 15 - Bengali pages are in the sitemap with hreflang to English and Hindi
+  ---
+  duration_ms: 2.322989
+  type: 'test'
+  ...
+# Subtest: offers switch on and off by date and apply only where they should
+ok 16 - offers switch on and off by date and apply only where they should
+  ---
+  duration_ms: 1.198128
+  type: 'test'
+  ...
+# Subtest: every category has visuals, and gallery images exist
+ok 17 - every category has visuals, and gallery images exist
+  ---
+  duration_ms: 0.402121
+  type: 'test'
+  ...
+# Subtest: no opening hours configured means no hours text (never 'closed all week')
+ok 18 - no opening hours configured means no hours text (never 'closed all week')
+  ---
+  duration_ms: 2.293946
+  type: 'test'
+  ...
+# Subtest: opening hours text is parsed and summarised
+ok 19 - opening hours text is parsed and summarised
+  ---
+  duration_ms: 10.004349
+  type: 'test'
+  ...
+# Subtest: bad hours text is rejected instead of guessed
+ok 20 - bad hours text is rejected instead of guessed
+  ---
+  duration_ms: 0.565035
+  type: 'test'
+  ...
+# Subtest: open/closed is calculated in India time
+ok 21 - open/closed is calculated in India time
+  ---
+  duration_ms: 0.705949
+  type: 'test'
+  ...
+# Subtest: insurance form: renewal is cleaned and summarised
+ok 22 - insurance form: renewal is cleaned and summarised
+  ---
+  duration_ms: 3.421131
+  type: 'test'
+  ...
+# Subtest: insurance form: problems for bad input
+ok 23 - insurance form: problems for bad input
+  ---
+  duration_ms: 0.551971
+  type: 'test'
+  ...
+# Subtest: motor insurance facts and facilitator wording
+ok 24 - motor insurance facts and facilitator wording
+  ---
+  duration_ms: 3.307639
+  type: 'test'
+  ...
+# Subtest: migration 0011 adds lead details
+ok 25 - migration 0011 adds lead details
+  ---
+  duration_ms: 0.633844
+  type: 'test'
+  ...
+# Subtest: migration 0012 adds request drafts
+ok 26 - migration 0012 adds request drafts
+  ---
+  duration_ms: 0.494604
+  type: 'test'
+  ...
+# Subtest: form translations: every option has en/hi/bn and values stay English
+ok 27 - form translations: every option has en/hi/bn and values stay English
+  ---
+  duration_ms: 27.448076
+  type: 'test'
+  ...
+# Subtest: gallery photos: files exist, categories are known, inbox folders match
+ok 28 - gallery photos: files exist, categories are known, inbox folders match
+  ---
+  duration_ms: 20.860961
+  type: 'test'
+  ...
+# Subtest: iCalendar parser handles all-day dates, folded lines and escapes
+ok 29 - iCalendar parser handles all-day dates, folded lines and escapes
+  ---
+  duration_ms: 2.924133
+  type: 'test'
+  ...
+# Subtest: feed titles match the right festivals only
+ok 30 - feed titles match the right festivals only
+  ---
+  duration_ms: 3.235955
+  type: 'test'
+  ...
+# Subtest: feed dates correct fallback dates only when they are close
+ok 31 - feed dates correct fallback dates only when they are close
+  ---
+  duration_ms: 20.451518
+  type: 'test'
+  ...
+# Subtest: festival codes go live 30 days before and end on the day
+ok 32 - festival codes go live 30 days before and end on the day
+  ---
+  duration_ms: 5.050062
+  type: 'test'
+  ...
+# Subtest: every festival has dates through 2028 and labels in three languages
+ok 33 - every festival has dates through 2028 and labels in three languages
+  ---
+  duration_ms: 1.350633
+  type: 'test'
+  ...
+# Subtest: sports codes cover India's events and run until the final
+ok 34 - sports codes cover India's events and run until the final
+  ---
+  duration_ms: 4.082124
+  type: 'test'
+  ...
+# Subtest: the full calendar has unique codes through December 2028
+ok 35 - the full calendar has unique codes through December 2028
+  ---
+  duration_ms: 4.108825
+  type: 'test'
+  ...
+# Subtest: India-time day boundaries
+ok 36 - India-time day boundaries
+  ---
+  duration_ms: 0.29443
+  type: 'test'
+  ...
+# Subtest: database rows: upsert parameters line up and the seed is safe SQL
+ok 37 - database rows: upsert parameters line up and the seed is safe SQL
+  ---
+  duration_ms: 2.134677
+  type: 'test'
+  ...
+# Subtest: the migration seeds every code once and adds the redemptions table
+ok 38 - the migration seeds every code once and adds the redemptions table
+  ---
+  duration_ms: 2.07725
+  type: 'test'
+  ...
+# Subtest: sync upserts every promo and reports code conflicts
+ok 39 - sync upserts every promo and reports code conflicts
+  ---
+  duration_ms: 5.137886
+  type: 'test'
+  ...
+# Subtest: the Google feed is used when it answers
+ok 40 - the Google feed is used when it answers
+  ---
+  duration_ms: 5.58432
+  type: 'test'
+  ...
+# Subtest: welcome codes are readable and random
+ok 41 - welcome codes are readable and random
+  ---
+  duration_ms: 0.363469
+  type: 'test'
+  ...
+# Subtest: promo banners translate and link to the request flow
+ok 42 - promo banners translate and link to the request flow
+  ---
+  duration_ms: 4.758638
+  type: 'test'
+  ...
+# Subtest: Google Calendar, iCalendar and CSV exports
+ok 43 - Google Calendar, iCalendar and CSV exports
+  ---
+  duration_ms: 52.269156
+  type: 'test'
+  ...
+# Subtest: promo interface text exists in every language, including the chat topic
+ok 44 - promo interface text exists in every language, including the chat topic
+  ---
+  duration_ms: 1.474183
+  type: 'test'
+  ...
+# Subtest: valid common request; impossible and future dates rejected
+ok 45 - valid common request; impossible and future dates rejected
+  ---
+  duration_ms: 7.305765
+  type: 'test'
+  ...
+# Subtest: duplicate new PAN, missing consent and incorrect PIN rejected
+ok 46 - duplicate new PAN, missing consent and incorrect PIN rejected
+  ---
+  duration_ms: 1.760488
+  type: 'test'
+  ...
+# Subtest: corrections require selected changes and an existing PAN
+ok 47 - corrections require selected changes and an existing PAN
+  ---
+  duration_ms: 1.170266
+  type: 'test'
+  ...
+# Subtest: entity requires entity type and representative; minor requires guardian
+ok 48 - entity requires entity type and representative; minor requires guardian
+  ---
+  duration_ms: 0.796678
+  type: 'test'
+  ...
+# Subtest: form category follows citizenship, tracking only validates format
+ok 49 - form category follows citizenship, tracking only validates format
+  ---
+  duration_ms: 0.41749
+  type: 'test'
+  ...
+# Subtest: black-and-white price uses the applicable total-order tier
+ok 50 - black-and-white price uses the applicable total-order tier
+  ---
+  duration_ms: 1.540187
+  type: 'test'
+  ...
+# Subtest: page selection counts exact numbers and ranges
+ok 51 - page selection counts exact numbers and ranges
+  ---
+  duration_ms: 0.49795
+  type: 'test'
+  ...
+# Subtest: page selection rejects duplicate, malformed, and out-of-bounds pages
+ok 52 - page selection rejects duplicate, malformed, and out-of-bounds pages
+  ---
+  duration_ms: 0.814722
+  type: 'test'
+  ...
+# Subtest: coupon amounts are rounded and cannot exceed the subtotal
+ok 53 - coupon amounts are rounded and cannot exceed the subtotal
+  ---
+  duration_ms: 0.330867
+  type: 'test'
+  ...
+# Subtest: a code works only on the services it was made for
+ok 54 - a code works only on the services it was made for
+  ---
+  duration_ms: 2.824025
+  type: 'test'
+  ...
+# Subtest: percent codes can be capped, and never exceed the bill
+ok 55 - percent codes can be capped, and never exceed the bill
+  ---
+  duration_ms: 0.28896
+  type: 'test'
+  ...
+# Subtest: personal codes are long, unambiguous and random
+ok 56 - personal codes are long, unambiguous and random
+  ---
+  duration_ms: 10.406747
+  type: 'test'
+  ...
+# Subtest: site content permission and migration 0010
+ok 57 - site content permission and migration 0010
+  ---
+  duration_ms: 0.798071
+  type: 'test'
+  ...
+# Subtest: fixed windows line up on every server
+ok 58 - fixed windows line up on every server
+  ---
+  duration_ms: 7.963314
+  type: 'test'
+  ...
+# Subtest: rules with the same name but different windows get different keys
+ok 59 - rules with the same name but different windows get different keys
+  ---
+  duration_ms: 0.338973
+  type: 'test'
+  ...
+# Subtest: cells, mobiles, dates and ID numbers are read the way registers write them
+ok 60 - cells, mobiles, dates and ID numbers are read the way registers write them
+  ---
+  duration_ms: 2.561354
+  type: 'test'
+  ...
+# Subtest: every sheet is read: header found, service worked out, passwords dropped, accounts skipped
+ok 61 - every sheet is read: header found, service worked out, passwords dropped, accounts skipped
+  ---
+  duration_ms: 8.509496
+  type: 'test'
+  ...
+# Subtest: insurance renewals, unlabelled name columns and in-file duplicates
+ok 62 - insurance renewals, unlabelled name columns and in-file duplicates
+  ---
+  duration_ms: 4.389619
+  type: 'test'
+  ...
+# Subtest: records are sealed with AES-GCM and indexed without the raw values
+ok 63 - records are sealed with AES-GCM and indexed without the raw values
+  ---
+  duration_ms: 2.475954
+  type: 'test'
+  ...
+# Subtest: help chat finds the right document checklist and never sends people to other websites
+ok 64 - help chat finds the right document checklist and never sends people to other websites
+  ---
+  duration_ms: 5.090288
+  type: 'test'
+  ...
+# Subtest: migration 0008 adds leads, the activity log and encrypted customer records
+ok 65 - migration 0008 adds leads, the activity log and encrypted customer records
+  ---
+  duration_ms: 1.342007
+  type: 'test'
+  ...
+# Subtest: contact details: WhatsApp, other mobiles, email and address are picked up
+ok 66 - contact details: WhatsApp, other mobiles, email and address are picked up
+  ---
+  duration_ms: 2.134426
+  type: 'test'
+  ...
+# Subtest: same-site paths are kept, including query and hash
+ok 67 - same-site paths are kept, including query and hash
+  ---
+  duration_ms: 3.238018
+  type: 'test'
+  ...
+# Subtest: open redirects and unsafe targets fall back to /profile
+ok 68 - open redirects and unsafe targets fall back to /profile
+  ---
+  duration_ms: 0.473625
+  type: 'test'
+  ...
+# Subtest: every public URL is listed once
+ok 69 - every public URL is listed once
+  ---
+  duration_ms: 1.696649
+  type: 'test'
+  ...
+# Subtest: slugs are unique across services and guides
+ok 70 - slugs are unique across services and guides
+  ---
+  duration_ms: 0.216875
+  type: 'test'
+  ...
+# Subtest: service search titles and descriptions fit in Google results
+ok 71 - service search titles and descriptions fit in Google results
+  ---
+  duration_ms: 0.69075
+  type: 'test'
+  ...
+# Subtest: tab titles start with the brand and Pragya Kendra
+ok 72 - tab titles start with the brand and Pragya Kendra
+  ---
+  duration_ms: 0.451574
+  type: 'test'
+  ...
+# Subtest: old long service addresses redirect to the short ones
+ok 73 - old long service addresses redirect to the short ones
+  ---
+  duration_ms: 1.032578
+  type: 'test'
+  ...
+# Subtest: guide titles, dates and links are valid
+ok 74 - guide titles, dates and links are valid
+  ---
+  duration_ms: 0.885524
+  type: 'test'
+  ...
+# Subtest: social previews use a raster Open Graph endpoint
+ok 75 - social previews use a raster Open Graph endpoint
+  ---
+  duration_ms: 0.228597
+  type: 'test'
+  ...
+# Subtest: legacy redirects point at pages that exist
+ok 76 - legacy redirects point at pages that exist
+  ---
+  duration_ms: 0.494143
+  type: 'test'
+  ...
+# Subtest: Hindi pages mirror existing English services and have reciprocal hreflang
+ok 77 - Hindi pages mirror existing English services and have reciprocal hreflang
+  ---
+  duration_ms: 0.666294
+  type: 'test'
+  ...
+# Subtest: service editorial, categories and PAN guides are consistent
+ok 78 - service editorial, categories and PAN guides are consistent
+  ---
+  duration_ms: 0.639695
+  type: 'test'
+  ...
+# Subtest: no placeholder text reaches the site
+ok 79 - no placeholder text reaches the site
+  ---
+  duration_ms: 1.033992
+  type: 'test'
+  ...
+# Subtest: structured data is safe and well-formed
+ok 80 - structured data is safe and well-formed
+  ---
+  duration_ms: 1.507515
+  type: 'test'
+  ...
+# Subtest: Indian phone numbers in any common format become +91 E.164
+ok 81 - Indian phone numbers in any common format become +91 E.164
+  ---
+  duration_ms: 1.740291
+  type: 'test'
+  ...
+# Subtest: impossible phone numbers are rejected
+ok 82 - impossible phone numbers are rejected
+  ---
+  duration_ms: 0.46075
+  type: 'test'
+  ...
+# Subtest: password rules block weak and personal passwords
+ok 83 - password rules block weak and personal passwords
+  ---
+  duration_ms: 0.615229
+  type: 'test'
+  ...
+# Subtest: emails are normalised and sanity-checked
+ok 84 - emails are normalised and sanity-checked
+  ---
+  duration_ms: 0.388526
+  type: 'test'
+  ...
+# Subtest: names lose control characters and extra spaces; PIN codes are validated
+ok 85 - names lose control characters and extra spaces; PIN codes are validated
+  ---
+  duration_ms: 0.48181
+  type: 'test'
+  ...
+1..85
+# tests 85
+# suites 0
+# pass 85
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1108.903192
+=== exit 0
+=== lint
+
+> nise-comport@1.0.0 lint
+> eslint src --max-warnings=0
+
+=== exit 0
+=== tsc
+=== exit 0
+=== data:check
+
+> nise-comport@1.0.0 data:check
+> node scripts/data-check.mjs
+
+
+Migrations applied: 15 (this code has 13: 0000–0012)
+
+Excel registers (Admin → Records)
+  Files imported                     0
+  Rows saved (encrypted)             0 (≈ 0 people)
+  Duplicates skipped / rows skipped  0 / 0
+  Added to WhatsApp contacts         0
+  Last import                        never
+  → Nothing imported yet. Upload the .xlsx in Admin → Records (needs the Records permission).
+
+Contacts for WhatsApp
+  Contacts / said YES / said STOP    1 / 1 / 0
+
+WhatsApp
+  Automatic sending (Cloud API)      off → campaigns use one-tap sending in /admin
+  Request copy templates             not set → customers get a one-tap ‘Send on WhatsApp’ button
+  Campaign messages by status        none yet
+
+=== exit 0
+=== photos
+
+> nise-comport@1.0.0 photos
+> node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types scripts/photos.mjs --no-git
+
+  + counter.webp → nise-comport-pragya-kendra-telco-jamshedpur-28.webp (900×900, 2 KB)
+  + IMG_1.jpg → pan-card-telco-jamshedpur-6.webp (1600×1200, 3 KB)
+
+Added 2, already there 0, failed 0. Gallery now has 124 photos.
+Not saved to GitHub (--no-git). Commit public/images/gallery/photos/ and src/lib/gallery-photos.ts when ready.
+=== exit 0
+total 10808
+drwxr-xr-x 2 runner runner  12288 Oct  7 22:34 .
+drwxr-xr-x 3 runner runner   4096 Oct  7 22:34 ..
+-rw-r--r-- 1 runner runner  16406 Oct  7 22:34 aadhaar-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  50302 Oct  7 22:34 aadhaar-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner  16142 Oct  7 22:34 aadhaar-telco-jamshedpur-3.webp
+-rw-r--r-- 1 runner runner  12854 Oct  7 22:34 aadhaar-telco-jamshedpur-4.webp
+-rw-r--r-- 1 runner runner  85698 Oct  7 22:34 aeps-money-transfer-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  97160 Oct  7 22:34 ayushman-card-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  35042 Oct  7 22:34 ayushman-card-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner 158930 Oct  7 22:34 ayushman-card-telco-jamshedpur-3.webp
+-rw-r--r-- 1 runner runner 123502 Oct  7 22:34 ayushman-card-telco-jamshedpur-4.webp
+-rw-r--r-- 1 runner runner 131424 Oct  7 22:34 ayushman-card-telco-jamshedpur-5.webp
+-rw-r--r-- 1 runner runner  83336 Oct  7 22:34 ayushman-card-telco-jamshedpur-6.webp
+-rw-r--r-- 1 runner runner 166332 Oct  7 22:34 bike-insurance-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  77580 Oct  7 22:34 bike-insurance-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner 137100 Oct  7 22:34 bike-insurance-telco-jamshedpur-3.webp
+-rw-r--r-- 1 runner runner  90662 Oct  7 22:34 bike-insurance-telco-jamshedpur-4.webp
+-rw-r--r-- 1 runner runner 222426 Oct  7 22:34 bike-insurance-telco-jamshedpur-5.webp
+-rw-r--r-- 1 runner runner 301220 Oct  7 22:34 bike-insurance-telco-jamshedpur-6.webp
+-rw-r--r-- 1 runner runner 259670 Oct  7 22:34 bike-insurance-telco-jamshedpur-7.webp
+-rw-r--r-- 1 runner runner  32036 Oct  7 22:34 birth-death-certificate-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner 191396 Oct  7 22:34 camps-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner 143568 Oct  7 22:34 camps-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner 198690 Oct  7 22:34 camps-telco-jamshedpur-3.webp
+-rw-r--r-- 1 runner runner 229722 Oct  7 22:34 camps-telco-jamshedpur-4.webp
+-rw-r--r-- 1 runner runner 189302 Oct  7 22:34 camps-telco-jamshedpur-5.webp
+-rw-r--r-- 1 runner runner  33934 Oct  7 22:34 car-insurance-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  97004 Oct  7 22:34 car-insurance-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner 231086 Oct  7 22:34 car-insurance-telco-jamshedpur-3.webp
+-rw-r--r-- 1 runner runner 157930 Oct  7 22:34 car-insurance-telco-jamshedpur-4.webp
+-rw-r--r-- 1 runner runner 118414 Oct  7 22:34 christmas-nise-comport-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  96286 Oct  7 22:34 christmas-nise-comport-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner 168878 Oct  7 22:34 christmas-nise-comport-telco-jamshedpur-3.webp
+-rw-r--r-- 1 runner runner  97716 Oct  7 22:34 christmas-nise-comport-telco-jamshedpur-4.webp
+-rw-r--r-- 1 runner runner 118350 Oct  7 22:34 christmas-nise-comport-telco-jamshedpur-5.webp
+-rw-r--r-- 1 runner runner  78680 Oct  7 22:34 computer-repair-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  29674 Oct  7 22:34 computer-repair-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner  15976 Oct  7 22:34 computer-repair-telco-jamshedpur-3.webp
+-rw-r--r-- 1 runner runner 183944 Oct  7 22:34 computer-repair-telco-jamshedpur-4.webp
+-rw-r--r-- 1 runner runner  21096 Oct  7 22:34 computer-repair-telco-jamshedpur-5.webp
+-rw-r--r-- 1 runner runner  29346 Oct  7 22:34 computer-repair-telco-jamshedpur-6.webp
+-rw-r--r-- 1 runner runner  72476 Oct  7 22:34 diwali-nise-comport-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  91368 Oct  7 22:34 diwali-nise-comport-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner  88108 Oct  7 22:34 diwali-nise-comport-telco-jamshedpur-3.webp
+-rw-r--r-- 1 runner runner  92226 Oct  7 22:34 diwali-nise-comport-telco-jamshedpur-4.webp
+-rw-r--r-- 1 runner runner  63800 Oct  7 22:34 diwali-nise-comport-telco-jamshedpur-5.webp
+-rw-r--r-- 1 runner runner 119306 Oct  7 22:34 diwali-nise-comport-telco-jamshedpur-6.webp
+-rw-r--r-- 1 runner runner  48526 Oct  7 22:34 diwali-nise-comport-telco-jamshedpur-7.webp
+-rw-r--r-- 1 runner runner  79402 Oct  7 22:34 ganesh-puja-nise-comport-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  46874 Oct  7 22:34 holi-nise-comport-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  67208 Oct  7 22:34 holi-nise-comport-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner  22562 Oct  7 22:34 holi-nise-comport-telco-jamshedpur-3.webp
+-rw-r--r-- 1 runner runner 100486 Oct  7 22:34 income-caste-residence-certificate-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  58744 Oct  7 22:34 income-caste-residence-certificate-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner  70100 Oct  7 22:34 income-caste-residence-certificate-telco-jamshedpur-3.webp
+-rw-r--r-- 1 runner runner  67638 Oct  7 22:34 independence-day-nise-comport-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  68600 Oct  7 22:34 independence-day-nise-comport-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner  75096 Oct  7 22:34 independence-day-nise-comport-telco-jamshedpur-3.webp
+-rw-r--r-- 1 runner runner  60052 Oct  7 22:34 independence-day-nise-comport-telco-jamshedpur-4.webp
+-rw-r--r-- 1 runner runner  73398 Oct  7 22:34 independence-day-nise-comport-telco-jamshedpur-5.webp
+-rw-r--r-- 1 runner runner  79688 Oct  7 22:34 independence-day-nise-comport-telco-jamshedpur-6.webp
+-rw-r--r-- 1 runner runner  61948 Oct  7 22:34 independence-day-nise-comport-telco-jamshedpur-7.webp
+-rw-r--r-- 1 runner runner  33788 Oct  7 22:34 itr-gst-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  41184 Oct  7 22:34 itr-gst-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner  69768 Oct  7 22:34 jeevan-pramaan-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  64564 Oct  7 22:34 jeevan-pramaan-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner  44760 Oct  7 22:34 makar-sankranti-nise-comport-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  93636 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  77746 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-10.webp
+-rw-r--r-- 1 runner runner  65280 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-11.webp
+-rw-r--r-- 1 runner runner  13934 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-12.webp
+-rw-r--r-- 1 runner runner  16118 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-13.webp
+-rw-r--r-- 1 runner runner  14048 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-14.webp
+-rw-r--r-- 1 runner runner  66972 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-15.webp
+-rw-r--r-- 1 runner runner  61378 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-16.webp
+-rw-r--r-- 1 runner runner 100668 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-17.webp
+-rw-r--r-- 1 runner runner 149078 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-18.webp
+-rw-r--r-- 1 runner runner  51658 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-19.webp
+-rw-r--r-- 1 runner runner  43520 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner 157648 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-20.webp
+-rw-r--r-- 1 runner runner 160710 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-21.webp
+-rw-r--r-- 1 runner runner 169838 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-22.webp
+-rw-r--r-- 1 runner runner 156954 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-23.webp
+-rw-r--r-- 1 runner runner  70358 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-24.webp
+-rw-r--r-- 1 runner runner 102418 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-25.webp
+-rw-r--r-- 1 runner runner  14332 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-26.webp
+-rw-r--r-- 1 runner runner  38712 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-27.webp
+-rw-r--r-- 1 runner runner   1564 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-28.webp
+-rw-r--r-- 1 runner runner 103350 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-3.webp
+-rw-r--r-- 1 runner runner  87342 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-4.webp
+-rw-r--r-- 1 runner runner 143020 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-5.webp
+-rw-r--r-- 1 runner runner  50662 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-6.webp
+-rw-r--r-- 1 runner runner 128996 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-7.webp
+-rw-r--r-- 1 runner runner  31202 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-8.webp
+-rw-r--r-- 1 runner runner  27454 Oct  7 22:34 nise-comport-pragya-kendra-telco-jamshedpur-9.webp
+-rw-r--r-- 1 runner runner  17436 Oct  7 22:34 pan-card-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  56430 Oct  7 22:34 pan-card-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner  71466 Oct  7 22:34 pan-card-telco-jamshedpur-3.webp
+-rw-r--r-- 1 runner runner  43086 Oct  7 22:34 pan-card-telco-jamshedpur-4.webp
+-rw-r--r-- 1 runner runner  79264 Oct  7 22:34 pan-card-telco-jamshedpur-5.webp
+-rw-r--r-- 1 runner runner   3500 Oct  7 22:34 pan-card-telco-jamshedpur-6.webp
+-rw-r--r-- 1 runner runner  13092 Oct  7 22:34 passport-driving-licence-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  44980 Oct  7 22:34 passport-driving-licence-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner 251434 Oct  7 22:34 printing-scanning-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  84564 Oct  7 22:34 printing-scanning-telco-jamshedpur-10.webp
+-rw-r--r-- 1 runner runner 229376 Oct  7 22:34 printing-scanning-telco-jamshedpur-11.webp
+-rw-r--r-- 1 runner runner 260780 Oct  7 22:34 printing-scanning-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner   9636 Oct  7 22:34 printing-scanning-telco-jamshedpur-3.webp
+-rw-r--r-- 1 runner runner  17694 Oct  7 22:34 printing-scanning-telco-jamshedpur-4.webp
+-rw-r--r-- 1 runner runner  79126 Oct  7 22:34 printing-scanning-telco-jamshedpur-5.webp
+-rw-r--r-- 1 runner runner 129232 Oct  7 22:34 printing-scanning-telco-jamshedpur-6.webp
+-rw-r--r-- 1 runner runner  16876 Oct  7 22:34 printing-scanning-telco-jamshedpur-7.webp
+-rw-r--r-- 1 runner runner  23776 Oct  7 22:34 printing-scanning-telco-jamshedpur-8.webp
+-rw-r--r-- 1 runner runner  23494 Oct  7 22:34 printing-scanning-telco-jamshedpur-9.webp
+-rw-r--r-- 1 runner runner  14402 Oct  7 22:34 ration-card-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner 129684 Oct  7 22:34 rent-agreement-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  39342 Oct  7 22:34 republic-day-nise-comport-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  35692 Oct  7 22:34 training-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  52950 Oct  7 22:34 training-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner 121898 Oct  7 22:34 training-telco-jamshedpur-3.webp
+-rw-r--r-- 1 runner runner  42544 Oct  7 22:34 voter-id-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner 158848 Oct  7 22:34 voter-id-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner  12916 Oct  7 22:34 voter-id-telco-jamshedpur-3.webp
+-rw-r--r-- 1 runner runner  97576 Oct  7 22:34 website-design-telco-jamshedpur-1.webp
+-rw-r--r-- 1 runner runner  74840 Oct  7 22:34 website-design-telco-jamshedpur-2.webp
+-rw-r--r-- 1 runner runner  76844 Oct  7 22:34 website-design-telco-jamshedpur-3.webp
+/** Your own photos, added by `npm run photos` (scripts/photos.mjs). You can edit titles and alt text here. */
+export type GalleryPhoto = { src: string; width: number; height: number; title: string; alt: string; service: string; hash: string; addedOn: string; hidden?: boolean };
+
+export const galleryPhotos: GalleryPhoto[] = [
+  {
+    "src": "/images/gallery/photos/nise-comport-pragya-kendra-telco-jamshedpur-1.webp",
+    "width": 1253,
+    "height": 941,
+    "title": "NISE COMPORT, Kharangajhar, Telco",
+    "alt": "NISE COMPORT Pragya Kendra, Kharangajhar, Telco, Jamshedpur (photo 1)",
+    "service": "shop",
+    "hash": "33d503a18529a8f6",
+    "addedOn": "2026-10-07"
+  },
+=== dev first (like your machine: dev files exist before build)
+200 200 200 200 
+total 72
+drwxr-xr-x 2 runner runner  4096 Oct  7 22:34 .
+drwxr-xr-x 9 runner runner  4096 Oct  7 22:35 ..
+-rw-r--r-- 1 runner runner  5905 Oct  7 22:34 cache-life.d.ts
+-rw-r--r-- 1 runner runner   101 Oct  7 22:34 root-params.d.ts
+-rw-r--r-- 1 runner runner 15146 Oct  7 22:34 routes.d.ts
+-rw-r--r-- 1 runner runner 33116 Oct  7 22:34 validator.ts
+=== build
+
+> nise-comport@1.0.0 build
+> next build --webpack
+
+▲ Next.js 16.3.6 (webpack)
+- Environments: .env.local
+✓ Running next.config.ts took 29ms
+⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 21.5s
+  Running TypeScript ...
+  Finished TypeScript in 13.2s ...
+  Collecting page data using 3 workers ...
+  Generating static pages using 3 workers (0/157) ...
+  Generating static pages using 3 workers (39/157) 
+  Generating static pages using 3 workers (78/157) 
+  Generating static pages using 3 workers (117/157) 
+✓ Generating static pages using 3 workers (157/157) in 3.9s
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)                                                 Revalidate  Expire
+┌ ○ /                                                               5m      1y
+├ ○ /_not-found                                                     5m      1y
+├ ○ /about                                                          5m      1y
+├ ƒ /admin
+├ ƒ /admin/requests/[id]
+├ ƒ /api/account/delete
+├ ƒ /api/account/email
+├ ƒ /api/account/email/confirm
+├ ƒ /api/account/password
+├ ƒ /api/account/sessions
+├ ƒ /api/addresses
+├ ƒ /api/admin/campaigns
+├ ƒ /api/admin/campaigns/queue
+├ ƒ /api/admin/contacts
+├ ƒ /api/admin/coupon-batches
+├ ƒ /api/admin/gallery
+├ ƒ /api/admin/gallery/upload
+├ ƒ /api/admin/inbox
+├ ƒ /api/admin/jobs/[id]
+├ ƒ /api/admin/jobs/[id]/file
+├ ƒ /api/admin/leads
+├ ƒ /api/admin/media
+├ ƒ /api/admin/pan-imports
+├ ƒ /api/admin/promotions
+├ ƒ /api/admin/promotions/sync
+├ ƒ /api/admin/records
+├ ƒ /api/admin/requests/[id]/file
+├ ƒ /api/admin/site-content
+├ ƒ /api/admin/staff
+├ ƒ /api/admin/wallet-credit
+├ ƒ /api/auth/password
+├ ƒ /api/auth/password-reset/confirm
+├ ƒ /api/auth/password-reset/request
+├ ƒ /api/auth/request-otp
+├ ƒ /api/auth/session
+├ ƒ /api/auth/verify-otp
+├ ƒ /api/coupons/validate
+├ ƒ /api/cron/cleanup
+├ ƒ /api/cron/offers
+├ ƒ /api/cron/whatsapp
+├ ƒ /api/gallery/photo/[index]
+├ ƒ /api/health
+├ ƒ /api/insurance
+├ ƒ /api/internal/admin-request-detail
+├ ƒ /api/internal/admin-snapshot
+├ ƒ /api/internal/profile-snapshot
+├ ƒ /api/internal/request-detail
+├ ƒ /api/leads
+├ ƒ /api/og
+├ ƒ /api/pan/requests
+├ ƒ /api/places/autocomplete
+├ ƒ /api/places/details
+├ ƒ /api/places/reverse
+├ ƒ /api/print-jobs
+├ ƒ /api/profile
+├ ƒ /api/requests
+├ ƒ /api/requests/[reference]/cancel
+├ ƒ /api/requests/draft
+├ ƒ /api/uploads
+├ ƒ /api/whatsapp/webhook
+├ ƒ /api/x7q9m2
+├ ○ /apple-icon.png
+├ ○ /areas-we-serve                                                 5m      1y
+├ ○ /blog                                                           5m      1y
+├   /blog/[slug]
+│ ├ ● /blog/pan-card-application-and-correction-jamshedpur          5m      1y
+│ ├ ● /blog/aadhaar-update-help-jamshedpur                          5m      1y
+│ ├ ● /blog/jharkhand-income-caste-residence-certificates           5m      1y
+│ └ ● [+18 more paths]
+├ ○ /blog/feed.xml
+├ ○ /bn                                                             5m      1y
+├   /bn/services/[slug]
+│ ├ ● /bn/services/pan-card                                         5m      1y
+│ ├ ● /bn/services/aadhaar                                          5m      1y
+│ ├ ● /bn/services/income-caste-residence-certificate               5m      1y
+│ └ ● [+9 more paths]
+├ ○ /contact                                                        5m      1y
+├ ○ /faq                                                            5m      1y
+├ ○ /forgot-password                                                5m      1y
+├ ○ /gallery                                                        5m      1y
+├ ƒ /gallery/photo/[name]
+├ ○ /hi                                                             5m      1y
+├   /hi/services/[slug]
+│ ├ ● /hi/services/pan-card                                         5m      1y
+│ ├ ● /hi/services/aadhaar                                          5m      1y
+│ ├ ● /hi/services/income-caste-residence-certificate               5m      1y
+│ └ ● [+9 more paths]
+├ ○ /icon.png
+├ ƒ /indexnow-key.txt
+├ ƒ /insurance
+├ ○ /llms.txt
+├ ƒ /login
+├ ○ /manifest.webmanifest
+├ ƒ /media/[id]
+├ ○ /offers                                                         5m      1y
+├ ƒ /offers/calendar.ics
+├ ƒ /offers/offers.csv
+├ ○ /pan                                                            5m      1y
+├   /pan/[topic]
+│ ├ ● /pan/application                                              5m      1y
+│ ├ ● /pan/correction                                               5m      1y
+│ ├ ● /pan/aadhaar-linking                                          5m      1y
+│ └ ● [+5 more paths]
+├ ƒ /pan/request
+├ ○ /print                                                          5m      1y
+├ ○ /privacy                                                        5m      1y
+├ ƒ /profile
+├ ƒ /profile/requests/[reference]
+├ ƒ /request
+├ ○ /robots.txt
+├ ○ /services                                                       5m      1y
+├   /services/[slug]
+│ ├ ● /services/banking                                             5m      1y
+│ ├ ● /services/government-services                                 5m      1y
+│ ├ ● /services/insurance                                           5m      1y
+│ └ ● [+35 more paths]
+├ ƒ /signup
+├ ○ /sitemap.xml                                                    5m      1y
+├ ○ /social                                                         5m      1y
+├ ○ /team                                                           5m      1y
+└ ○ /terms                                                          5m      1y
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+
+=== exit 0
+=== pages (next start)
+200  /
+200  /services
+200  /services/car-insurance
+200  /services/health-life-insurance
+200  /services/lic-policy
+200  /services/pan-card
+200  /services/voter-id
+200  /services/abua-awas-yojana
+200  /services/ration-card
+200  /services/ayushman-card
+200  /hi/services/pan-card
+200  /pan/request
+200  /request?service=voter-id
+200  /request?service=voter-id-services-jamshedpur
+200  /insurance
+200  /services/insurance
+308 http://localhost:3100/services/car-insurance /services/car-insurance-jamshedpur
+308 http://localhost:3100/hi/services/pan-card /hi/services/pan-card-jamshedpur
+--- photo strip
+photo-strip__item
+photo-strip__item
+pan-card-telco-jamshedpur-1.webp
+pan-card-telco-jamshedpur-2.webp
+pan-card-telco-jamshedpur-3.webp
+pan-card-telco-jamshedpur-4.webp
+pan-card-telco-jamshedpur-5.webp
+pan-card-telco-jamshedpur-6.webp
+gallery-photo-missing 404
+Festivals
+--- titles
+<title>NISE COMPORT - Pragya Kendra - CSC &amp; Digital Services in Telco, Jamshedpur</title>
+<title>NISE COMPORT - Pragya Kendra - PAN Card Apply &amp; Correction in Jamshedpur</title>
+<title>NISE COMPORT - Pragya Kendra - Car &amp; Bike Insurance – New, Renewal &amp; Claims in Jamshedpur</title>
+<title>NISE COMPORT - Pragya Kendra - जमशेदपुर में CSC और प्रज्ञा केंद्र सेवाएँ</title>
+▲ Next.js 16.3.6
+- Local:         http://localhost:3100
+- Network:       http://10.1.0.221:3100
+✓ Ready in 131ms
+✓ Running next.config.ts took 41ms
+=== pages (next dev)
+200 /services/car-insurance
+200 /services/pan-card
+200 /services/voter-id
+200 /pan/request
+200 /request?service=voter-id-services-jamshedpur
+200 /insurance
+200 /
+200 /services
+200 /gallery
+200 /offers
+200 /contact
+200 /about
+200 /faq
+200 /blog
+200 /pan
+200 /print
+200 /login
+200 /signup
+307 /profile
+307 /admin
+200 /hi
+200 /bn
+200 /hi/services/pan-card
+200 /bn/services/voter-id
+200 /services/insurance
+200 /services/bike-insurance
+200 /services/ration-card
+200 /areas-we-serve
+200 /team
+200 /privacy
+200 /terms
+200 /sitemap.xml
+200 /robots.txt
+200 /llms.txt
+--- dev log errors/warnings
+▲ Next.js 16.3.6 (Turbopack)
+- Local:         http://localhost:3200
+- Network:       http://10.1.0.221:3200
+- Environments: .env.local
+✓ Ready in 380ms
+✓ Running next.config.ts took 39ms
+
+○ Compiling /services/[slug] ...
+ GET /services/car-insurance 200 in 4.6s (next.js: 3.2s, proxy.ts: 166ms, generate-params: 570ms, application-code: 730ms)
+ GET /services/pan-card 200 in 212ms (next.js: 10ms, proxy.ts: 7ms, generate-params: 9ms, application-code: 187ms)
+ GET /services/voter-id 200 in 176ms (next.js: 5ms, proxy.ts: 4ms, generate-params: 0.0ms, application-code: 167ms)
+ GET /pan/request 200 in 1056ms (next.js: 867ms, proxy.ts: 4ms, application-code: 185ms)
+ GET /request?service=voter-id-services-jamshedpur 200 in 478ms (next.js: 352ms, proxy.ts: 4ms, application-code: 122ms)
+ GET /insurance 200 in 619ms (next.js: 297ms, proxy.ts: 3ms, application-code: 319ms)
+ GET / 200 in 543ms (next.js: 311ms, proxy.ts: 4ms, application-code: 228ms)
+ GET /services 200 in 457ms (next.js: 312ms, proxy.ts: 4ms, application-code: 141ms)
+ GET /gallery 200 in 393ms (next.js: 257ms, proxy.ts: 4ms, application-code: 131ms)
+ GET /offers 200 in 468ms (next.js: 280ms, proxy.ts: 3ms, application-code: 184ms)
+ GET /contact 200 in 331ms (next.js: 219ms, proxy.ts: 3ms, application-code: 110ms)
+ GET /about 200 in 325ms (next.js: 215ms, proxy.ts: 3ms, application-code: 107ms)
+ GET /faq 200 in 324ms (next.js: 225ms, proxy.ts: 3ms, application-code: 96ms)
+ GET /blog 200 in 353ms (next.js: 203ms, proxy.ts: 3ms, application-code: 148ms)
+ GET /pan 200 in 630ms (next.js: 504ms, proxy.ts: 4ms, application-code: 121ms)
+ GET /print 200 in 366ms (next.js: 267ms, proxy.ts: 3ms, application-code: 96ms)
+ GET /login 200 in 397ms (next.js: 277ms, proxy.ts: 3ms, application-code: 117ms)
+ GET /signup 200 in 357ms (next.js: 245ms, proxy.ts: 3ms, application-code: 110ms)
+ GET /profile 307 in 491ms (next.js: 388ms, proxy.ts: 3ms, application-code: 101ms)
+ GET /admin 307 in 682ms (next.js: 576ms, proxy.ts: 3ms, application-code: 103ms)
+ GET /hi 200 in 437ms (next.js: 257ms, proxy.ts: 3ms, application-code: 178ms)
+ GET /bn 200 in 407ms (next.js: 236ms, proxy.ts: 3ms, application-code: 169ms)
+ GET /hi/services/pan-card 200 in 971ms (next.js: 277ms, proxy.ts: 3ms, generate-params: 559ms, application-code: 132ms)
+ GET /bn/services/voter-id 200 in 947ms (next.js: 255ms, proxy.ts: 3ms, generate-params: 571ms, application-code: 118ms)
+ GET /services/insurance 200 in 150ms (next.js: 4ms, proxy.ts: 3ms, generate-params: 12ms, application-code: 131ms)
+ GET /services/bike-insurance 200 in 128ms (next.js: 7ms, proxy.ts: 5ms, generate-params: 0.0ms, application-code: 116ms)
+ GET /services/ration-card 200 in 209ms (next.js: 4ms, proxy.ts: 3ms, generate-params: 0.0ms, application-code: 203ms)
+ GET /areas-we-serve 200 in 405ms (next.js: 290ms, proxy.ts: 4ms, application-code: 111ms)
+ GET /team 200 in 290ms (next.js: 199ms, proxy.ts: 2ms, application-code: 89ms)
+ GET /privacy 200 in 304ms (next.js: 201ms, proxy.ts: 2ms, application-code: 100ms)
+ GET /terms 200 in 309ms (next.js: 217ms, proxy.ts: 2ms, application-code: 89ms)
+ GET /sitemap.xml 200 in 869ms (next.js: 759ms, proxy.ts: 2ms, application-code: 108ms)
+ GET /robots.txt 200 in 106ms (next.js: 96ms, proxy.ts: 3ms, application-code: 8ms)
+ GET /llms.txt 200 in 128ms (next.js: 117ms, proxy.ts: 4ms, application-code: 8ms)
