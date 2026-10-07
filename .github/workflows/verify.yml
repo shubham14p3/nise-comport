@@ -43,6 +43,15 @@ jobs:
             run "lint" npm run lint
             run "tsc" npx tsc --noEmit -p tsconfig.json
             run "build" npm run build
+            echo "=== pages (next start)"
+            (npx next start -p 3100 > out/start.log 2>&1 &) ; sleep 8
+            for u in / /services /services/car-insurance-jamshedpur /services/health-life-insurance-help /services/lic-policy-assistance-jamshedpur /services/pan-card-jamshedpur /services/voter-id-services-jamshedpur /services/abua-awas-yojana-help-jamshedpur /services/ration-card-help-jamshedpur /services/ayushman-card-abha-jamshedpur /pan/request "/request?service=voter-id-services-jamshedpur" /insurance /services/insurance; do echo "$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:3100$u") $u"; done
+            tail -c 20000 out/start.log
+            pkill -f "next start" ; sleep 2
+            echo "=== pages (next dev)"
+            (npx next dev -p 3200 > out/dev.log 2>&1 &) ; sleep 10
+            for u in /services/car-insurance-jamshedpur /services/pan-card-jamshedpur /services/voter-id-services-jamshedpur /pan/request "/request?service=voter-id-services-jamshedpur" /insurance; do echo "$(curl -s -m 120 -o /dev/null -w '%{http_code}' "http://localhost:3200$u") $u"; done
+            tail -c 30000 out/dev.log
           } > out/result.log 2>&1
           grep '^=== ' out/result.log
       - name: Save log
