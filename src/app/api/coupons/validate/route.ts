@@ -25,8 +25,7 @@ export async function POST(request: NextRequest) {
     const who = identity("user", user.id);
     await enforceRate(RATE_RULES.couponChecksPerUserHour, who, "Too many coupon attempts. Please try again in a little while.");
     for (const rule of [RATE_RULES.couponFailuresPerUserHour, RATE_RULES.couponFailuresPerUserDay]) {
-      const state = await peekRate(rule, who);
-      if (state.count >= rule.limit) throw new PublicError("Too many wrong codes. Please try again later, or ask us on WhatsApp for a valid code.", 429, { code: "coupon_locked" });
+      if (await peekRate(rule, who) >= rule.limit) throw new PublicError("Too many wrong codes. Please try again later, or ask us on WhatsApp for a valid code.", 429, { code: "coupon_locked" });
     }
     const input = schema.parse(await readJson(request));
     const found = input.service && input.service !== "print" && input.service !== "pan" ? await resolveService(input.service) : null;
