@@ -105,9 +105,11 @@ Posters come from the built-in library (`public/promos/insurance/`, 20 insurance
 - Rows need a name plus a mobile, PAN or Aadhaar. Columns with portal **passwords, PINs and user IDs are never imported**. Everything is encrypted (AES-256-GCM with `RECORDS_ENCRYPTION_KEY`); mobile/PAN/Aadhaar also get keyed hashes so people can be searched and counted without decrypting. Aadhaar stays masked. The uploaded workbook is deleted after import.
 - Upload the same or an overlapping file again and only new rows are added.
 - The list shows one row per person (by mobile, else PAN) with **how many times they appear** across all registers, their services, last date and next insurance renewal (policy date + 1 year when the sheet has no renewal column). Search by name, mobile, PAN, Aadhaar or the last 4 digits; sort by most repeated, most recent or next renewal.
+- Contact details are picked up wherever a sheet has them: main mobile, other mobiles ("L.Mob"), WhatsApp number, email and address/locality. Search works on any of those numbers and on email. Customers can also add a separate WhatsApp number in their profile; staff see Call / WhatsApp / Email buttons on every request.
+- Abuse limits: 150 record opens and 600 searches per staff member per hour, 20 imports per hour, at most 100,000 rows / 40 sheets per workbook. The raw upload is deleted even if an import fails.
 - Optionally the mobile numbers are added to WhatsApp contacts (as "not asked yet", with the service and renewal date), ready for renewal campaigns. Existing YES/STOP answers are kept.
 
-Set `RECORDS_ENCRYPTION_KEY` (`openssl rand -base64 32`) and back it up before the first import; `npm run db:migrate` adds the tables (migration 0008).
+Set `RECORDS_ENCRYPTION_KEY` (`openssl rand -base64 32`) and back it up before the first import; `npm run db:migrate` adds the tables (migrations 0008 and 0009).
 
 ## WhatsApp campaigns
 

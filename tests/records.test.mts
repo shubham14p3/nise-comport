@@ -77,5 +77,20 @@ test("migration 0008 adds leads, the activity log and encrypted customer records
   assert.match(sql, /CREATE UNIQUE INDEX "customer_records_row_hash_unique"/);
   assert.doesNotMatch(sql, /"pan" text|"aadhaar" text|"mobile" text/, "no plain ID columns");
   const journal = JSON.parse(readFileSync(new URL("../drizzle/meta/_journal.json", import.meta.url), "utf8")) as { entries: { tag: string }[] };
-  assert.equal(journal.entries.at(-1)?.tag, "0008_records_inbox_leads");
+  assert.ok(journal.entries.some((entry) => entry.tag === "0008_records_inbox_leads"));
+});
+
+test("contact details: WhatsApp, other mobiles, email and address are picked up", () => {
+  const result = parseWorkbook("Customers", [{ name: "PAN DETAIL", rows: [
+    ["Name", "Mob", "L.Mob", "WhatsApp", "Email", "Locality", "PAN"],
+    ["Rina Devi", "9876500021", "9876500022", "9876500023", "Rina@Example.com", "Kharangajhar", "ABCDE1234F"],
+    ["Mohan Lal", "9876500031", "", "9876500031", "", "", ""],
+  ] }]);
+  const [rina, mohan] = result.records;
+  assert.equal(rina.mobile, "+919876500021");
+  assert.deepEqual(rina.altMobiles, ["+919876500022"]);
+  assert.equal(rina.whatsapp, "+919876500023");
+  assert.equal(rina.email, "rina@example.com");
+  assert.equal(rina.address, "Kharangajhar");
+  assert.equal(mohan.whatsapp, null, "a WhatsApp number equal to the mobile isn't repeated");
 });

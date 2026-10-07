@@ -14,6 +14,8 @@ export type SheetInput = { name: string; rows: unknown[][] };
 export type ParsedRecord = {
   service: string; source: string; name: string;
   mobile: string | null; pan: string | null; aadhaar: string | null;
+  /** WhatsApp number when the sheet has its own column, other mobiles (e.g. "L.Mob"), email and address. */
+  whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null;
   recordDate: string | null; renewalOn: string | null;
   fields: Record<string, string>;
   /** Stable text for duplicate detection (hashed before storage). */
@@ -55,12 +57,15 @@ function serviceFor(fileName: string, sheetName: string, headers: string[]): str
   return "other";
 }
 
-type Role = "name" | "mobile" | "pan" | "aadhaar" | "dob" | "date" | "renewal" | "secret";
+type Role = "name" | "mobile" | "whatsapp" | "email" | "address" | "pan" | "aadhaar" | "dob" | "date" | "renewal" | "secret";
 function roleOf(header: string): Role | null {
   const h = normal(header);
   if (!h) return null;
   if (h.includes("pass") || h === "pin" || h === "userid" || h === "password" || h === "mpin") return "secret";
-  if (["mob", "mobile", "mobileno", "mobilenumber", "phone", "phoneno", "lmob", "contact", "contactno", "whatsapp"].includes(h)) return "mobile";
+  if (["whatsapp", "whatsappno", "whatsappnumber", "wano", "wpno", "wa"].includes(h)) return "whatsapp";
+  if (["mob", "mobile", "mobileno", "mobilenumber", "phone", "phoneno", "lmob", "contact", "contactno", "altmobile", "mob2", "mobile2", "phone2", "alternatemobile"].includes(h)) return "mobile";
+  if (["email", "emailid", "mail", "mailid", "gmail", "emailaddress"].includes(h)) return "email";
+  if (["address", "addr", "fulladdress", "locality", "area", "village", "vill", "location", "place"].includes(h)) return "address";
   if (["pan", "panno", "pannumber", "pancard"].includes(h)) return "pan";
   if (h.startsWith("aadhaar") || h.startsWith("aadhar") || h === "uid" || h.startsWith("studentsaadhaar")) return "aadhaar";
   if (["dob", "dateofbirth", "birthdate"].includes(h)) return "dob";
@@ -129,7 +134,7 @@ function findHeader(rows: string[][]) {
   rows.slice(0, 8).forEach((row, index) => {
     const roles = row.map(roleOf);
     const score = roles.filter((role) => role && role !== "secret").length + (roles.includes("name") ? 2 : 0);
-    const usable = roles.includes("mobile") || roles.includes("pan") || roles.includes("aadhaar");
+    const usable = roles.includes("mobile") || roles.includes("whatsapp") || roles.includes("pan") || roles.includes("aadhaar");
     if (usable && score > bestScore) { best = index; bestScore = score; }
   });
   return best;
@@ -177,7 +182,14 @@ export function parseWorkbook(fileName: string, sheets: SheetInput[]): { records
       const at = (role: Role) => { const index = column(role); return index >= 0 ? row[index] ?? "" : ""; };
       const name = cleanName(at("name"));
       // A mobile may sit in any column when the header is missing; only look at the mobile column.
-      const mobile = mobileFrom(at("mobile"));
+      // Several mobile columns ("L.Mob", "Mob"): the first number found is the main one, the rest are kept too.
+      const mobiles = [...new Set(roles.flatMap((role, index) => role === "mobile" ? row[index] ? [row[index]] : [] : []).flatMap((value) => value.split(/[/,;|&]| or /i).map(mobileFrom).filter((item): item is string => Boolean(item))))];
+      const whatsapp = mobileFrom(at("whatsapp"));
+      const mobile = mobiles[0] ?? whatsapp;
+      const altMobiles = mobiles.slice(1, 4);
+      const emailCell = at("email") || row.find((value, index) => roles[index] !== "secret" && /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(value)) || "";
+      const email = /^[^\s@]{1,64}@[^\s@]{1,190}\.[a-z]{2,}$/i.test(emailCell.trim()) ? emailCell.trim().toLowerCase() : null;
+      const address = at("address").replace(/\s+/g, " ").trim().slice(0, 200) || null;
       const pan = panFrom(at("pan"));
       const aadhaar = aadhaarFrom(at("aadhaar"));
       if (!name || (!mobile && !pan && !aadhaar)) { report.skipped++; continue; }
@@ -192,7 +204,7 @@ export function parseWorkbook(fileName: string, sheets: SheetInput[]): { records
       const dedupeKey = [service, name.toLowerCase(), mobile, pan, aadhaar, recordDate, JSON.stringify(Object.entries(fields).sort())].join("|");
       if (seen.has(dedupeKey)) { report.skipped++; continue; }
       seen.add(dedupeKey);
-      records.push({ service, source: `${fileName} › ${sheet.name.trim()}`, name, mobile, pan, aadhaar, recordDate, renewalOn, fields, dedupeKey });
+      records.push({ service, source: `${fileName} › ${sheet.name.trim()}`, name, mobile, pan, aadhaar, whatsapp: whatsapp && whatsapp !== mobile ? whatsapp : null, altMobiles, email, address, recordDate, renewalOn, fields, dedupeKey });
       report.records++;
     }
   }

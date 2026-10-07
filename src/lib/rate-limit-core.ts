@@ -47,4 +47,8 @@ export const RATE_RULES = {
   /** "Call me back" requests from the chat: enough for real people, useless for spam. */
   leadsPerIpHour: { name: "lead-ip", limit: 5, windowSeconds: 3600 },
   leadsPerPhoneDay: { name: "lead-phone", limit: 3, windowSeconds: 86400 },
+  /** Staff browsing customer records: plenty for real work, stops bulk copying with a stolen session. */
+  recordOpensPerUserHour: { name: "record-open", limit: 150, windowSeconds: 3600 },
+  recordPagesPerUserHour: { name: "record-page", limit: 600, windowSeconds: 3600 },
+  recordImportsPerUserHour: { name: "record-import", limit: 20, windowSeconds: 3600 },
 } as const satisfies Record<string, RateRule>;

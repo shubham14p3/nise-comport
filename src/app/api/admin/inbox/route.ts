@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { inbox, markInboxSeen, unreadCount } from "@/lib/activity";
+import { inbox, inboxSummary, markInboxSeen } from "@/lib/activity";
 import { getCurrentUser } from "@/lib/auth";
 import { apiError } from "@/lib/http";
 import { PublicError } from "@/lib/errors";
@@ -14,11 +14,11 @@ async function staff() {
   return user;
 }
 
-/** ?count=1 returns only the unread number (for the badge); otherwise the inbox. */
+/** ?count=1 returns only the summary numbers (badge and cards); otherwise the inbox. */
 export async function GET(request: NextRequest) {
   try {
     const user = await staff();
-    if (request.nextUrl.searchParams.get("count")) return NextResponse.json({ unread: await unreadCount(user) });
+    if (request.nextUrl.searchParams.get("count")) return NextResponse.json(await inboxSummary(user));
     return NextResponse.json(await inbox(user, { category: request.nextUrl.searchParams.get("category") || undefined }));
   } catch (error) { return apiError(error); }
 }

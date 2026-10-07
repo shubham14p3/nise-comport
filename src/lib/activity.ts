@@ -66,10 +66,19 @@ export async function inbox(user: Inboxer, options: { category?: string; limit?:
   return { items: rows, unread: unread.total, seenAt, pending, leads: newLeads };
 }
 
-export async function unreadCount(user: Inboxer) {
+/** Numbers for the dashboard cards: unread activity, open requests and people waiting for a call. */
+export async function inboxSummary(user: Inboxer) {
+  const visible = audiences(user);
   const [me] = await db.select({ seen: users.inboxSeenAt }).from(users).where(eq(users.id, user.id)).limit(1);
-  const [row] = await db.select({ total: count() }).from(activityLog).where(and(inArray(activityLog.permission, audiences(user)), gt(activityLog.createdAt, me?.seen ?? new Date(0))));
-  return row.total;
+  const [row] = await db.select({ total: count() }).from(activityLog).where(and(inArray(activityLog.permission, visible), gt(activityLog.createdAt, me?.seen ?? new Date(0))));
+  let waiting = 0; let callbacks = 0;
+  if (visible.includes("requests")) {
+    const [open] = await db.select({ total: count() }).from(serviceRequests).where(notInArray(serviceRequests.status, [...CLOSED_STATUSES]));
+    const [prints] = await db.select({ total: count() }).from(printJobs).where(notInArray(printJobs.status, [...CLOSED_STATUSES]));
+    const [calls] = await db.select({ total: count() }).from(leads).where(eq(leads.status, "new"));
+    waiting = open.total + prints.total; callbacks = calls.total;
+  }
+  return { unread: row.total, waiting, callbacks };
 }
 
 export async function markInboxSeen(userId: string) {

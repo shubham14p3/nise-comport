@@ -24,7 +24,7 @@ export async function GET() {
     ]);
     return NextResponse.json({
       user: {
-        name: user.name, email: user.email, phone: user.phone, emailVerified: Boolean(user.emailVerifiedAt),
+        name: user.name, email: user.email, phone: user.phone, whatsapp: user.whatsapp ?? null, emailVerified: Boolean(user.emailVerifiedAt),
         city: user.city ?? "", state: user.state ?? "", postalCode: user.postalCode ?? "", profileSummary: user.profileSummary ?? "",
         preferredContact: user.preferredContact === "phone" || user.preferredContact === "whatsapp" ? user.preferredContact : "email",
         updatedAt: user.updatedAt.toISOString(),

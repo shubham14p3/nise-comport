@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     if (!/^[a-f0-9-]{36}$/i.test(id)) return NextResponse.json({ error: "Not found." }, { status: 404 });
     const [row] = await db.select({
       request: serviceRequests,
-      customer: { name: users.name, email: users.email, phone: users.phone, preferredContact: users.preferredContact },
+      customer: { name: users.name, email: users.email, phone: users.phone, whatsapp: users.whatsapp, preferredContact: users.preferredContact },
     }).from(serviceRequests).innerJoin(users, eq(serviceRequests.userId, users.id)).where(eq(serviceRequests.id, id)).limit(1);
     if (!row) return NextResponse.json({ error: "Not found." }, { status: 404 });
     const events = await db.select({

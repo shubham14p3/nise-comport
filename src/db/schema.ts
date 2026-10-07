@@ -6,7 +6,7 @@ type Text3 = { en: string; hi: string; bn: string };
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(), name: text("name").notNull(), email: text("email").notNull(),
-  phone: text("phone"), passwordHash: text("password_hash").notNull(), emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+  phone: text("phone"), whatsapp: text("whatsapp"), passwordHash: text("password_hash").notNull(), emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
   city: text("city"), state: text("state"), postalCode: text("postal_code"), profileSummary: text("profile_summary"), preferredContact: text("preferred_contact").notNull().default("email"),
   role: text("role").notNull().default("customer"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -266,6 +266,10 @@ export const customerRecords = pgTable("customer_records", {
   service: text("service").notNull(), source: text("source").notNull(), name: text("name").notNull(),
   mobileHash: text("mobile_hash"), mobileEnc: text("mobile_enc"), mobileLast4: text("mobile_last4"),
   panHash: text("pan_hash"), aadhaarHash: text("aadhaar_hash"),
+  /** Keyed hashes of every number on the row (main, WhatsApp, alternate) and of the email, for search. */
+  phoneHashes: text("phone_hashes").array().notNull().default(sql`'{}'::text[]`), emailHash: text("email_hash"),
+  /** Sealed { whatsapp, altMobiles, email, address } for the people list. */
+  contactEnc: text("contact_enc"),
   recordDate: date("record_date"), renewalOn: date("renewal_on"),
   payloadEnc: text("payload_enc").notNull(), rowHash: text("row_hash").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -276,4 +280,6 @@ export const customerRecords = pgTable("customer_records", {
   index("customer_records_service_idx").on(table.service),
   index("customer_records_name_idx").on(table.name),
   index("customer_records_renewal_idx").on(table.renewalOn),
+  index("customer_records_phones_idx").using("gin", table.phoneHashes),
+  index("customer_records_email_idx").on(table.emailHash),
 ]);

@@ -22,7 +22,7 @@ type RequestItem = { reference: string; serviceSlug: string; serviceName: string
 type WalletItem = { amount: string; kind: string; description: string; reference: string | null; createdAt: string };
 type PrintItem = { reference: string; status: string; total: string; fulfillment: string; createdAt: string };
 type ProfileUser = {
-  name: string; email: string; phone: string | null; emailVerified: boolean;
+  name: string; email: string; phone: string | null; whatsapp?: string | null; emailVerified: boolean;
   city: string; state: string; postalCode: string; profileSummary: string;
   preferredContact: "email" | "phone" | "whatsapp";
   updatedAt?: string;
@@ -116,6 +116,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
   const section = chosenSection ?? urlSection;
   const [name, setName] = useState(user.name);
   const [phone, setPhone] = useState(user.phone ?? "");
+  const [whatsapp, setWhatsapp] = useState(user.whatsapp ?? "");
   const [city, setCity] = useState(user.city);
   const [state, setState] = useState(user.state);
   const [postalCode, setPostalCode] = useState(user.postalCode);
@@ -142,7 +143,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
     if (demoMode) { setProfileBusy(false); setProfileMessage("Demo preview only — these changes are temporary and are not sent to the server."); return; }
     try {
       const result = await secureApi<{ user?: { phone?: string | null; updatedAt?: string }; fields?: Record<string, string> }>("T2f9K4pW7cL1", {
-        name, phone, city, state, postalCode, profileSummary, preferredContact, ...(updatedAt ? { expectedUpdatedAt: updatedAt } : {}),
+        name, phone, whatsapp, city, state, postalCode, profileSummary, preferredContact, ...(updatedAt ? { expectedUpdatedAt: updatedAt } : {}),
       });
       if (result.user?.phone !== undefined) setPhone(result.user.phone ?? "");
       if (result.user?.updatedAt) setUpdatedAt(result.user.updatedAt);
@@ -232,6 +233,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
           <label className="field"><span className="field__label">Full name</span><input required minLength={2} maxLength={100} autoComplete="name" value={name} onChange={(event) => setName(event.target.value)}/></label>
           <label className="field"><span className="field__label">Email address</span><input value={user.email} readOnly/><span className="field__hint">Change it under “Sign-in &amp; privacy”.</span></label>
           <label className="field"><span className="field__label">Mobile number</span><input type="tel" inputMode="tel" maxLength={20} autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} aria-invalid={Boolean(profileFieldErrors.phone)}/><span className={profileFieldErrors.phone ? "field__error" : "field__hint"}>{profileFieldErrors.phone ?? "Needed for phone or WhatsApp updates."}</span></label>
+          <label className="field"><span className="field__label">WhatsApp number <em>if different</em></span><input type="tel" inputMode="tel" maxLength={20} autoComplete="tel" value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} placeholder="Same as mobile" aria-invalid={Boolean(profileFieldErrors.whatsapp)}/><span className={profileFieldErrors.whatsapp ? "field__error" : "field__hint"}>{profileFieldErrors.whatsapp ?? "We send updates and offers here only if you choose WhatsApp."}</span></label>
           <label className="field"><span className="field__label">Preferred update channel</span><select value={preferredContact} onChange={(event) => setPreferredContact(event.target.value as ProfileUser["preferredContact"])}><option value="email">Email</option><option value="phone">Phone call</option><option value="whatsapp">WhatsApp</option></select>{profileFieldErrors.preferredContact && <span className="field__error">{profileFieldErrors.preferredContact}</span>}</label>
           <label className="field"><span className="field__label">City</span><input maxLength={100} autoComplete="address-level2" value={city} onChange={(event) => setCity(event.target.value)}/></label>
           <label className="field"><span className="field__label">State</span><input maxLength={100} autoComplete="address-level1" value={state} onChange={(event) => setState(event.target.value)}/></label>

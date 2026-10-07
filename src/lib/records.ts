@@ -8,7 +8,8 @@ import { normalizePhone } from "@/lib/validation";
 import { blindIndex, open, seal } from "@/lib/vault";
 
 type Actor = { id: string; name: string };
-type Sealed = { mobile: string | null; pan: string | null; aadhaar: string | null; fields: Record<string, string> };
+type Sealed = { mobile: string | null; pan: string | null; aadhaar: string | null; whatsapp?: string | null; altMobiles?: string[]; email?: string | null; address?: string | null; fields: Record<string, string> };
+type ContactInfo = { whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null };
 
 /** Which WhatsApp-contact service an imported register belongs to. */
 const CONTACT_SERVICE: Record<string, string> = {
@@ -25,7 +26,7 @@ export async function importRecords(fileName: string, sheets: SheetInput[], acto
   const parsed = parseWorkbook(fileName.replace(/\.(xlsx|xlsm|csv)$/i, ""), sheets);
   const [batch] = await db.insert(recordImports).values({ fileName: fileName.slice(0, 200), uploadedBy: actor.id, sheets: parsed.sheets }).returning({ id: recordImports.id });
   let imported = 0;
-  const people = new Map<string, { name: string; services: Map<string, string | null> }>();
+  const people = new Map<string, { name: string; services: Map<string, string | null>; area?: string | null }>();
   for (let offset = 0; offset < parsed.records.length; offset += 400) {
     const values = parsed.records.slice(offset, offset + 400).map((record) => ({
       importId: batch.id, service: record.service, source: record.source.slice(0, 200), name: record.name,
@@ -33,19 +34,24 @@ export async function importRecords(fileName: string, sheets: SheetInput[], acto
       mobileEnc: record.mobile ? seal(record.mobile) : null, mobileLast4: record.mobile ? record.mobile.slice(-4) : null,
       panHash: record.pan ? blindIndex("pan", record.pan) : null, aadhaarHash: record.aadhaar ? blindIndex("aadhaar", record.aadhaar) : null,
       recordDate: record.recordDate, renewalOn: record.renewalOn,
-      payloadEnc: seal({ mobile: record.mobile, pan: record.pan, aadhaar: record.aadhaar, fields: record.fields } satisfies Sealed),
+      phoneHashes: [...new Set([record.mobile, record.whatsapp, ...record.altMobiles].filter((value): value is string => Boolean(value)))].map((value) => blindIndex("mobile", value)),
+      emailHash: record.email ? blindIndex("email", record.email) : null,
+      contactEnc: record.whatsapp || record.altMobiles.length || record.email || record.address ? seal({ whatsapp: record.whatsapp, altMobiles: record.altMobiles, email: record.email, address: record.address } satisfies ContactInfo) : null,
+      payloadEnc: seal({ mobile: record.mobile, pan: record.pan, aadhaar: record.aadhaar, whatsapp: record.whatsapp, altMobiles: record.altMobiles, email: record.email, address: record.address, fields: record.fields } satisfies Sealed),
       rowHash: blindIndex("row", record.dedupeKey),
     }));
     imported += (await db.insert(customerRecords).values(values).onConflictDoNothing().returning({ id: customerRecords.id })).length;
     for (const record of parsed.records.slice(offset, offset + 400)) {
-      if (!record.mobile) continue;
-      const person = people.get(record.mobile) ?? { name: record.name, services: new Map() };
+      // WhatsApp campaigns go to the WhatsApp number when the sheet has one.
+      const phone = record.whatsapp ?? record.mobile;
+      if (!phone) continue;
+      const person = people.get(phone) ?? { name: record.name, services: new Map(), area: record.address };
       const service = CONTACT_SERVICE[record.service];
       if (service) {
         const previous = person.services.get(service);
         if (!previous || (record.renewalOn && record.renewalOn > previous)) person.services.set(service, record.renewalOn ?? previous ?? null);
       }
-      people.set(record.mobile, person);
+      people.set(phone, person);
     }
   }
   const contactsAdded = options.addContacts ? await addContacts(people, fileName) : 0;
@@ -58,7 +64,7 @@ export async function importRecords(fileName: string, sheets: SheetInput[], acto
 }
 
 /** Adds imported people to WhatsApp contacts (consent "not asked"). Existing contacts keep their YES/STOP and gain the new services. */
-async function addContacts(people: Map<string, { name: string; services: Map<string, string | null> }>, fileName: string) {
+async function addContacts(people: Map<string, { name: string; services: Map<string, string | null>; area?: string | null }>, fileName: string) {
   let added = 0;
   const entries = [...people.entries()];
   for (let offset = 0; offset < entries.length; offset += 300) {
@@ -70,7 +76,7 @@ async function addContacts(people: Map<string, { name: string; services: Map<str
       const fresh = [...person.services.entries()].map(([service, renewalOn]) => ({ service, renewalOn, note: null }));
       const current = known.get(phone);
       if (!current) {
-        const result = await db.insert(contacts).values({ name: person.name.slice(0, 100), phone, services: fresh, source: `import: ${fileName}`.slice(0, 40) }).onConflictDoNothing().returning({ id: contacts.id });
+        const result = await db.insert(contacts).values({ name: person.name.slice(0, 100), phone, services: fresh, area: person.area?.slice(0, 80) || null, source: `import: ${fileName}`.slice(0, 40) }).onConflictDoNothing().returning({ id: contacts.id });
         added += result.length;
       } else {
         const merged = [...current];
@@ -95,7 +101,9 @@ export async function listPeople(options: { q?: string; service?: string; sort?:
     const phone = normalizePhone(query);
     const pan = /^[A-Za-z]{5}\d{4}[A-Za-z]$/.test(query) ? query.toUpperCase() : null;
     const aadhaar = /^\d{12}$/.test(query.replace(/\s/g, "")) ? query.replace(/\s/g, "") : null;
-    if (phone) filters.push(eq(customerRecords.mobileHash, blindIndex("mobile", phone)));
+    const email = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(query) ? query.toLowerCase() : null;
+    if (phone) filters.push(sql`${customerRecords.phoneHashes} @> ARRAY[${blindIndex("mobile", phone)}]::text[]`);
+    else if (email) filters.push(eq(customerRecords.emailHash, blindIndex("email", email)));
     else if (pan) filters.push(eq(customerRecords.panHash, blindIndex("pan", pan)));
     else if (aadhaar) filters.push(eq(customerRecords.aadhaarHash, blindIndex("aadhaar", aadhaar)));
     else if (/^\d{4}$/.test(query)) filters.push(eq(customerRecords.mobileLast4, query));
@@ -111,7 +119,8 @@ export async function listPeople(options: { q?: string; service?: string; sort?:
   const keys = db.select({ key: personKey.as("key") }).from(customerRecords).where(where).groupBy(personKey);
   const rows = await db.select({
     key: personKey, name: sql<string>`(array_agg(${customerRecords.name} order by ${customerRecords.recordDate} desc nulls last))[1]`,
-    mobileEnc: sql<string | null>`max(${customerRecords.mobileEnc})`, total: sql<number>`count(*)::int`,
+    mobileEnc: sql<string | null>`max(${customerRecords.mobileEnc})`,
+    contacts: sql<string[] | null>`(array_agg(${customerRecords.contactEnc}) filter (where ${customerRecords.contactEnc} is not null))[1:5]`, total: sql<number>`count(*)::int`,
     services: sql<string[]>`array_agg(distinct ${customerRecords.service})`,
     lastDate: sql<string | null>`max(${customerRecords.recordDate})::text`,
     nextRenewal: sql<string | null>`(min(${customerRecords.renewalOn}) filter (where ${customerRecords.renewalOn} >= current_date))::text`,
@@ -120,7 +129,7 @@ export async function listPeople(options: { q?: string; service?: string; sort?:
     repeat: sql<number>`(select count(*)::int from (select 1 from ${customerRecords} group by coalesce(mobile_hash, pan_hash, id::text) having count(*) > 1) as r)` }).from(customerRecords).where(where);
   const byService = await db.select({ service: customerRecords.service, total: sql<number>`count(*)::int` }).from(customerRecords).groupBy(customerRecords.service);
   return {
-    people: rows.map((row) => ({ key: row.key, name: row.name, mobile: row.mobileEnc ? open<string>(row.mobileEnc) : null, total: row.total, services: row.services, lastDate: row.lastDate, nextRenewal: row.nextRenewal })),
+    people: rows.map((row) => ({ key: row.key, name: row.name, mobile: row.mobileEnc ? open<string>(row.mobileEnc) : null, ...mergeContacts(row.contacts), total: row.total, services: row.services, lastDate: row.lastDate, nextRenewal: row.nextRenewal })),
     totals, byService, services: RECORD_SERVICES,
   };
 }
@@ -135,7 +144,7 @@ export async function personRecords(key: string, actor: Actor) {
   const records = rows.map((row) => {
     const data = open<Sealed>(row.payloadEnc);
     return { id: row.id, service: row.service, source: row.source, name: row.name, recordDate: row.recordDate, renewalOn: row.renewalOn,
-      mobile: data.mobile, pan: data.pan, panMasked: maskPan(data.pan), aadhaarMasked: maskAadhaar(data.aadhaar), fields: maskIds(data.fields) };
+      mobile: data.mobile, whatsapp: data.whatsapp ?? null, altMobiles: data.altMobiles ?? [], email: data.email ?? null, address: data.address ?? null, pan: data.pan, panMasked: maskPan(data.pan), aadhaarMasked: maskAadhaar(data.aadhaar), fields: maskIds(data.fields) };
   });
   await logActivity({ kind: "record_view", permission: "records", category: "records", title: `${actor.name} opened the records of ${rows[0].name}`, detail: `${rows.length} record${rows.length === 1 ? "" : "s"} · ${[...new Set(rows.map((row) => RECORD_SERVICES[row.service] ?? row.service))].join(", ")}`, refType: "person", refId: key, actorId: actor.id });
   return { name: rows[0].name, records };
@@ -148,4 +157,15 @@ export async function recentImports() {
 /** Aadhaar numbers stay masked even in the detail view; staff see the last four digits. */
 function maskIds(fields: Record<string, string>) {
   return Object.fromEntries(Object.entries(fields).map(([label, value]) => [label, /aadha|uid/i.test(label) ? value.replace(/\d[\d\s-]{7,}(\d{4})/g, "XXXX XXXX $1") : value]));
+}
+
+/** Combines the contact details found on a person's rows (WhatsApp, other mobiles, email, address). */
+function mergeContacts(sealed: string[] | null) {
+  const merged = { whatsapp: null as string | null, altMobiles: [] as string[], email: null as string | null, address: null as string | null };
+  for (const item of sealed ?? []) {
+    const info = open<ContactInfo>(item);
+    merged.whatsapp ??= info.whatsapp; merged.email ??= info.email; merged.address ??= info.address;
+    for (const phone of info.altMobiles ?? []) if (!merged.altMobiles.includes(phone) && merged.altMobiles.length < 3) merged.altMobiles.push(phone);
+  }
+  return merged;
 }

@@ -22,9 +22,9 @@ export async function GET(request: NextRequest) {
       requestFilters.push(or(ilike(serviceRequests.reference, like), ilike(users.email, like), ilike(users.name, like), ilike(users.phone, like), ilike(serviceRequests.serviceName, like))!);
     }
     const [jobs, requests] = await Promise.all([
-      db.select({ id: printJobs.id, reference: printJobs.reference, name: users.name, email: users.email, phone: users.phone, fileName: printJobs.fileName, pageCount: printJobs.pageCount, total: printJobs.total, fulfillment: printJobs.fulfillment, status: printJobs.status, createdAt: printJobs.createdAt, scheduledAt: printJobs.scheduledAt })
+      db.select({ id: printJobs.id, reference: printJobs.reference, name: users.name, email: users.email, phone: users.phone, whatsapp: users.whatsapp, fileName: printJobs.fileName, pageCount: printJobs.pageCount, total: printJobs.total, fulfillment: printJobs.fulfillment, status: printJobs.status, createdAt: printJobs.createdAt, scheduledAt: printJobs.scheduledAt })
         .from(printJobs).innerJoin(users, eq(printJobs.userId, users.id)).where(printFilters.length ? and(...printFilters) : undefined).orderBy(desc(printJobs.createdAt)).limit(100),
-      db.select({ id: serviceRequests.id, reference: serviceRequests.reference, name: users.name, email: users.email, phone: users.phone, serviceName: serviceRequests.serviceName, status: serviceRequests.status, createdAt: serviceRequests.createdAt, fileName: storedFiles.originalName })
+      db.select({ id: serviceRequests.id, reference: serviceRequests.reference, name: users.name, email: users.email, phone: users.phone, whatsapp: users.whatsapp, serviceName: serviceRequests.serviceName, status: serviceRequests.status, createdAt: serviceRequests.createdAt, fileName: storedFiles.originalName })
         .from(serviceRequests).innerJoin(users, eq(serviceRequests.userId, users.id)).leftJoin(storedFiles, eq(storedFiles.requestId, serviceRequests.id)).where(requestFilters.length ? and(...requestFilters) : undefined).orderBy(desc(serviceRequests.createdAt)).limit(100),
     ]);
     return NextResponse.json({

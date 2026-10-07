@@ -1821,3 +1821,36 @@ a.pan-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
   .records .promo-admin__stats b { font-size: 1.15rem; }
   .records .promo-admin__stats div { padding: 10px; }
 }
+
+/* ---------- Admin desk (same look as the customer dashboard) ---------- */
+.admin-desk .profile__avatar--staff { background: var(--grad); }
+.admin-desk .profile__hello .eyebrow { display: inline-flex; align-items: center; gap: 6px; }
+.admin-desk .profile__main.admin-page { padding: 0; gap: 18px; }
+.admin-desk .admin-queue, .admin-desk .admin-filters, .admin-desk .pan-import, .admin-desk .wallet-admin { box-shadow: var(--shadow-sm); border-radius: var(--r-lg); }
+.admin-desk .admin-filters { display: grid; grid-template-columns: 220px minmax(0, 1fr) auto auto; align-items: end; gap: 12px; }
+.admin-desk .admin-filters .btn { min-height: 48px; }
+.admin-desk .metric-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.admin-row { gap: 14px; }
+.contact-links { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
+.contact-links a { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; background: var(--tint); color: var(--blue-700); font-size: .8125rem; font-weight: 600; overflow-wrap: anywhere; }
+.contact-links a:hover { background: #dcebff; }
+.contact-links .contact-links__wa { background: #e5f8ee; color: #128c4b; }
+.status-select { min-width: 190px; font-weight: 600; }
+.status-select--submitted { background: #fff6e0 !important; border-color: #ffd27a !important; }
+.status-select--reviewing, .status-select--waiting_for_customer { background: #eef5ff !important; border-color: #b9d6ff !important; }
+.status-select--ready_for_pickup, .status-select--out_for_delivery { background: #f2edff !important; border-color: #d4c6ff !important; }
+.status-select--completed { background: #e8f8ef !important; border-color: #a8e3c2 !important; }
+.status-select--cancelled { background: #f4f4f6 !important; color: var(--muted); }
+@media (max-width: 960px) {
+  .admin-desk .admin-filters { grid-template-columns: minmax(0, 1fr); }
+  .status-select { min-width: 0; width: 100%; }
+}
+.admin-note { display: flex; gap: 6px; align-items: flex-start; } .admin-note svg { flex: none; margin-top: 4px; }
+@media (max-width: 640px) {
+  .metric-grid, .admin-desk .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .metric { flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px; }
+  .metric > svg { display: none; }
+  .metric b { font-size: 1.35rem; }
+  .metric small { font-size: .8125rem; line-height: 1.3; }
+  .metric__icon { width: 40px; height: 40px; border-radius: 13px; }
+}

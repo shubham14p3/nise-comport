@@ -5,12 +5,12 @@ import { ChevronLeft, ChevronRight, Database, Eye, Phone, Search, Upload, X } fr
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
 
-type Person = { key: string; name: string; mobile: string | null; total: number; services: string[]; lastDate: string | null; nextRenewal: string | null };
+type Person = { key: string; name: string; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; total: number; services: string[]; lastDate: string | null; nextRenewal: string | null };
 type Listing = { people: Person[]; totals: { people: number; records: number; repeat: number }; byService: { service: string; total: number }[]; services: Record<string, string> };
 type SheetReport = { sheet: string; service: string | null; rows: number; records: number; skipped: number; reason?: string; droppedColumns?: string[] };
 type ImportResult = { imported: number; duplicates: number; skipped: number; contactsAdded: number; totalRows: number; sheets: SheetReport[] };
 type ImportRow = { id: string; fileName: string; imported: number; duplicates: number; contactsAdded: number; createdAt: string };
-type Detail = { name: string; records: { id: string; service: string; source: string; recordDate: string | null; renewalOn: string | null; mobile: string | null; pan: string | null; aadhaarMasked: string | null; fields: Record<string, string> }[] };
+type Detail = { name: string; records: { id: string; service: string; source: string; recordDate: string | null; renewalOn: string | null; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; pan: string | null; aadhaarMasked: string | null; fields: Record<string, string> }[] };
 
 const day = (iso: string | null) => iso ? new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "—";
 const pretty = (phone: string) => phone.replace(/^\+91(\d{5})(\d{5})$/, "+91 $1 $2");
@@ -98,7 +98,7 @@ export default function RecordsPanel() {
     </div>}
 
     <form className="promo-admin__bar" role="search" onSubmit={(event) => { event.preventDefault(); setPage(0); void load({ page: 0 }); }}>
-      <label className="input-wrap"><Search size={16}/><input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Name, mobile, PAN, Aadhaar or last 4 digits" aria-label="Search customers"/></label>
+      <label className="input-wrap"><Search size={16}/><input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Name, mobile, WhatsApp, email, PAN, Aadhaar or last 4 digits" aria-label="Search customers"/></label>
       <select value={sort} onChange={(event) => { const next = event.target.value as typeof sort; setSort(next); setPage(0); void load({ sort: next, page: 0 }); }} aria-label="Sort">
         <option value="repeat">Most repeated first</option><option value="recent">Most recent first</option><option value="renewal">Next renewal first</option>
       </select>
@@ -108,12 +108,13 @@ export default function RecordsPanel() {
     <div className="people-list">{(data?.people ?? []).map((person) => <article key={person.key} className="person-row">
       <div className="person-row__main">
         <span><b>{person.name}</b>{person.total > 1 && <span className="repeat-badge" title="How many times this person appears across your registers">{person.total}×</span>}</span>
-        <small>{person.mobile ? pretty(person.mobile) : "no mobile"} · last {day(person.lastDate)}{person.nextRenewal ? ` · renewal ${day(person.nextRenewal)}` : ""}</small>
+        <small>{person.mobile ? pretty(person.mobile) : "no mobile"}{person.whatsapp ? ` · WhatsApp ${pretty(person.whatsapp)}` : ""}{person.altMobiles.length ? ` · also ${person.altMobiles.map(pretty).join(", ")}` : ""} · last {day(person.lastDate)}{person.nextRenewal ? ` · renewal ${day(person.nextRenewal)}` : ""}</small>
+        {(person.email || person.address) && <small>{person.email && <a href={`mailto:${person.email}`}>{person.email}</a>}{person.email && person.address ? " · " : ""}{person.address}</small>}
         <span className="contact-row__services">{person.services.map((item) => <em key={item}>{names[item] ?? item}</em>)}</span>
       </div>
       <div className="person-row__actions">
         {person.mobile && <a className="icon-btn" href={`tel:${person.mobile}`} aria-label={`Call ${person.name}`}><Phone size={16}/></a>}
-        {person.mobile && <a className="icon-btn" href={`https://wa.me/${person.mobile.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp ${person.name}`}><WhatsAppIcon size={16}/></a>}
+        {(person.whatsapp ?? person.mobile) && <a className="icon-btn" href={`https://wa.me/${(person.whatsapp ?? person.mobile ?? "").replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp ${person.name}`}><WhatsAppIcon size={16}/></a>}
         <button type="button" className="btn btn--ghost btn--sm" disabled={busy === person.key} onClick={() => void openPerson(person)}><Eye size={14}/>Open</button>
       </div>
     </article>)}</div>
@@ -134,6 +135,10 @@ export default function RecordsPanel() {
           <header><b>{names[record.service] ?? record.service}</b><small>{day(record.recordDate)}{record.renewalOn ? ` · renewal ${day(record.renewalOn)}` : ""} · {record.source}</small></header>
           <dl>
             {record.mobile && <><dt>Mobile</dt><dd><a href={`tel:${record.mobile}`}>{pretty(record.mobile)}</a></dd></>}
+            {record.whatsapp && <><dt>WhatsApp</dt><dd><a href={`https://wa.me/${record.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">{pretty(record.whatsapp)}</a></dd></>}
+            {record.altMobiles.length > 0 && <><dt>Other mobiles</dt><dd>{record.altMobiles.map((phone) => <a key={phone} href={`tel:${phone}`}>{pretty(phone)} </a>)}</dd></>}
+            {record.email && <><dt>Email</dt><dd><a href={`mailto:${record.email}`}>{record.email}</a></dd></>}
+            {record.address && <><dt>Address</dt><dd>{record.address}</dd></>}
             {record.pan && <><dt>PAN</dt><dd>{record.pan}</dd></>}
             {record.aadhaarMasked && <><dt>Aadhaar</dt><dd>{record.aadhaarMasked}</dd></>}
             {Object.entries(record.fields).map(([label, value]) => <div key={label} className="record-card__field"><dt>{label}</dt><dd>{value}</dd></div>)}
