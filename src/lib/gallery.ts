@@ -6,6 +6,8 @@
  * public/images/gallery/ and add an entry with tag "shop". Your own photos cost nothing to show and
  * never expire.
  */
+import { galleryPhotos, type GalleryPhoto } from "./gallery-photos.ts";
+
 export type GalleryTag = "shop" | "services";
 export type LocalGalleryItem = { src: string; width: number; height: number; title: string; alt: string; tag: GalleryTag; href?: string };
 
@@ -39,4 +41,12 @@ const SERVICE_POSTER: Record<string, string> = {
 
 export function posterFor(slug: string, category?: string) {
   return SERVICE_POSTER[slug] ?? CATEGORY_POSTER[category ?? slug] ?? "/images/gallery/track-live.webp";
+}
+
+/** Your own photos (npm run photos), newest first. */
+export const ownPhotos: GalleryPhoto[] = [...galleryPhotos].reverse();
+
+/** Your photos for one service page (newest first). */
+export function photosForService(slug: string) {
+  return ownPhotos.filter((photo) => photo.service === slug);
 }

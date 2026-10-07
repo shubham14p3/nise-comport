@@ -2033,3 +2033,8 @@ a.site-banner:hover { transform: translateY(-3px); }
   .help-dialog { align-items: end; padding: 0; }
   .help-dialog__card { border-radius: 22px 22px 0 0; max-height: 92dvh; }
 }
+.photo-strip { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 12px 0 14px; }
+.photo-strip__item { display: block; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 14px; background: var(--tint); }
+.photo-strip__item img { width: 100%; height: 100%; object-fit: cover; transition: transform .25s ease; }
+.photo-strip__item:hover img { transform: scale(1.04); }
+@media (max-width: 640px) { .photo-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
