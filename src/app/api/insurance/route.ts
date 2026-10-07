@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, kind: "lead", id: lead.id }, { status: 201 });
     }
 
-    const service = findService(form.vehicle === "car" ? "car-insurance-jamshedpur" : "bike-insurance-jamshedpur")!;
+    const service = findService(form.vehicle === "car" ? "car-insurance" : "bike-insurance")!;
     const fileIds = input.fileIds ?? [];
     if (fileIds.length) {
       const files = await db.select({ id: storedFiles.id }).from(storedFiles).where(and(inArray(storedFiles.id, fileIds), eq(storedFiles.userId, user.id), isNull(storedFiles.requestId)));

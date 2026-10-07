@@ -35,8 +35,8 @@ export const revalidate = 3600;
 /** Motor-insurance pages send people to the full quote form. */
 const MOTOR_LINKS: Record<string, string> = {
   insurance: "/insurance#quote",
-  "bike-insurance-jamshedpur": "/insurance?vehicle=bike#quote",
-  "car-insurance-jamshedpur": "/insurance?vehicle=car#quote",
+  "bike-insurance": "/insurance?vehicle=bike#quote",
+  "car-insurance": "/insurance?vehicle=car#quote",
 };
 
 export function generateStaticParams() { return [...serviceCatalog, ...publishedServiceDetails].map((service) => ({ slug: service.slug })); }

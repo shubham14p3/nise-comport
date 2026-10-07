@@ -33,13 +33,13 @@ test("Hindi and Bengali interface text covers every English key", () => {
 });
 
 test("language menu keeps people on the same service when a translation exists", () => {
-  assert.equal(localeFromPath("/hi/services/pan-card-jamshedpur"), "hi");
+  assert.equal(localeFromPath("/hi/services/pan-card"), "hi");
   assert.equal(localeFromPath("/bn"), "bn");
   assert.equal(localeFromPath("/blog"), "en");
   assert.equal(basePath("/bn/services/x"), "/services/x");
-  assert.equal(localizedHref("/services/pan-card-jamshedpur", "bn", translatedSlugs), "/bn/services/pan-card-jamshedpur");
-  assert.equal(localizedHref("/hi/services/pan-card-jamshedpur", "en", translatedSlugs), "/services/pan-card-jamshedpur");
-  assert.equal(localizedHref("/services/car-insurance-jamshedpur", "hi", translatedSlugs), "/hi");
+  assert.equal(localizedHref("/services/pan-card", "bn", translatedSlugs), "/bn/services/pan-card");
+  assert.equal(localizedHref("/hi/services/pan-card", "en", translatedSlugs), "/services/pan-card");
+  assert.equal(localizedHref("/services/car-insurance", "hi", translatedSlugs), "/hi");
   assert.equal(localizedHref("/", "hi", translatedSlugs), "/hi");
   assert.equal(localizedHref("/bn", "en", translatedSlugs), "/");
   // App screens (sign-in, profile, step flows) switch text in place instead of navigating.
@@ -66,8 +66,8 @@ test("Bengali pages are in the sitemap with hreflang to English and Hindi", () =
   const paths = new Set(routes.map((route) => route.path));
   assert.ok(paths.has("/bn"));
   for (const service of bengaliServices) assert.ok(paths.has(`/bn/services/${service.slug}`), service.slug);
-  const pan = routes.find((route) => route.path === "/services/pan-card-jamshedpur");
-  assert.deepEqual(pan?.alternates, { "hi-IN": "/hi/services/pan-card-jamshedpur", "bn-IN": "/bn/services/pan-card-jamshedpur" });
+  const pan = routes.find((route) => route.path === "/services/pan-card");
+  assert.deepEqual(pan?.alternates, { "hi-IN": "/hi/services/pan-card", "bn-IN": "/bn/services/pan-card" });
   const home = routes.find((route) => route.path === "/");
   assert.equal(home?.alternates?.["bn-IN"], "/bn");
 });

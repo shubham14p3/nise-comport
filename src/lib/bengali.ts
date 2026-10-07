@@ -37,7 +37,7 @@ export const bengaliHome = {
 
 export const bengaliServices: BengaliService[] = [
   {
-    slug: "pan-card-jamshedpur",
+    slug: "pan-card",
     title: "জামশেদপুরে প্যান কার্ডের আবেদন ও সংশোধন",
     seoTitle: "জামশেদপুরে প্যান কার্ড আবেদন ও সংশোধন",
     description: "নতুন প্যান কার্ড, প্যানে নাম বা জন্মতারিখ সংশোধন, হারানো প্যানের রিপ্রিন্ট ও আবেদন ট্র্যাকিংয়ে সাহায্য – খরংগাঝাড়, টেলকো, জামশেদপুর।",
@@ -50,7 +50,7 @@ export const bengaliServices: BengaliService[] = [
     ],
   },
   {
-    slug: "aadhaar-assistance-jamshedpur",
+    slug: "aadhaar",
     title: "জামশেদপুরে আধার আপডেটের তথ্য ও সাহায্য",
     seoTitle: "আধার আপডেটের তথ্য, টেলকো জামশেদপুর",
     description: "আধারে নাম, ঠিকানা, জন্মতারিখ বা মোবাইল নম্বর বদলানোর সঠিক উপায়, প্রয়োজনীয় কাগজপত্র ও স্ট্যাটাস ট্র্যাকিং – খরংগাঝাড়, টেলকোর কাছে।",
@@ -63,7 +63,7 @@ export const bengaliServices: BengaliService[] = [
     ],
   },
   {
-    slug: "jharkhand-certificates-jamshedpur",
+    slug: "income-caste-residence-certificate",
     title: "আয়, জাতি, বাসস্থান ও EWS শংসাপত্রে সাহায্য",
     seoTitle: "আয়, জাতি, বাসস্থান শংসাপত্র – জামশেদপুর",
     description: "ঝাড়খণ্ডের আয়, জাতি, বাসস্থান ও EWS শংসাপত্রের অনলাইন আবেদনে (JharSewa) সাহায্য – কাগজপত্রের তালিকা, ফর্ম যাচাই ও স্ট্যাটাস।",
@@ -76,7 +76,7 @@ export const bengaliServices: BengaliService[] = [
     ],
   },
   {
-    slug: "voter-id-services-jamshedpur",
+    slug: "voter-id",
     title: "জামশেদপুরে ভোটার আইডি: নতুন আবেদন ও সংশোধন",
     seoTitle: "ভোটার আইডি নতুন আবেদন ও সংশোধন, জামশেদপুর",
     description: "নতুন ভোটার রেজিস্ট্রেশন, ভোটার আইডিতে নাম বা ঠিকানা সংশোধন ও e-EPIC ডাউনলোডে সাহায্য – খরংগাঝাড়, টেলকো, জামশেদপুর।",
@@ -86,7 +86,7 @@ export const bengaliServices: BengaliService[] = [
     faqs: [{ question: "আপনারা কি ভোটার কার্ড ইস্যু করেন?", answer: "না। যাচাই ও কার্ড ইস্যু করা নির্বাচন কমিশনের কাজ। আমরা আবেদনে সাহায্য করি।" }],
   },
   {
-    slug: "banking-aeps-money-transfer",
+    slug: "aeps-money-transfer",
     title: "টেলকোতে ব্যাঙ্কিং, AEPS ও মানি ট্রান্সফার",
     seoTitle: "AEPS, মানি ট্রান্সফার ও ব্যাঙ্কিং, টেলকো",
     description: "বিজনেস করেসপন্ডেন্ট (BC)-এর মাধ্যমে AEPS দিয়ে টাকা তোলা, ব্যালান্স দেখা, জমা ও মানি ট্রান্সফার – খরংগাঝাড়, টেলকো, জামশেদপুর।",
@@ -96,7 +96,7 @@ export const bengaliServices: BengaliService[] = [
     faqs: [{ question: "প্রতারণা হলে কী করব?", answer: "সঙ্গে সঙ্গে নিজের ব্যাঙ্কের সঙ্গে যোগাযোগ করুন। সাইবার প্রতারণার জন্য 1930-এ ফোন করুন বা cybercrime.gov.in-এ অভিযোগ জানান।" }],
   },
   {
-    slug: "printing-scanning-jamshedpur",
+    slug: "printing-scanning",
     title: "জামশেদপুরে অনলাইন প্রিন্টিং, স্ক্যানিং ও ফটোকপি",
     seoTitle: "অনলাইন প্রিন্টিং ও ফটোকপি, জামশেদপুর",
     description: "PDF, Word বা ছবি আপলোড করুন, পেজ ও কপি বেছে নিন, আর খরংগাঝাড়, টেলকো থেকে পিকআপ বা ডেলিভারির অনুরোধ পাঠান।",
@@ -106,7 +106,7 @@ export const bengaliServices: BengaliService[] = [
     faqs: [{ question: "অনলাইনে কি টাকা দিতে হবে?", answer: "না। অনুরোধ পাঠানোর সময় অনলাইনে কোনো পেমেন্ট নেওয়া হয় না; টিম চূড়ান্ত দাম নিশ্চিত করে।" }],
   },
   {
-    slug: "student-scholarship-forms-jamshedpur",
+    slug: "scholarship-forms",
     title: "স্কলারশিপ ও ভর্তির ফর্মে সাহায্য",
     seoTitle: "স্কলারশিপ ও ভর্তির ফর্ম, জামশেদপুর",
     description: "ই-কল্যাণ স্কলারশিপ, ভর্তি ও ছাত্রছাত্রীদের অন্যান্য ফর্মে সাহায্য – কাগজপত্র আপলোড, শেষ তারিখ ও অ্যাকনলেজমেন্ট।",
@@ -116,7 +116,7 @@ export const bengaliServices: BengaliService[] = [
     faqs: [{ question: "আপনারা কি যোগ্যতা ঠিক করেন?", answer: "না। যোগ্যতা ঠিক করে সংশ্লিষ্ট দপ্তর বা প্রতিষ্ঠান। আমরা বিজ্ঞপ্তি বুঝতে ও ফর্ম পূরণ করতে সাহায্য করি।" }],
   },
   {
-    slug: "exam-form-filling-jamshedpur",
+    slug: "exam-forms",
     title: "পরীক্ষা, নিয়োগ ও অনলাইন ফর্ম পূরণ",
     seoTitle: "অনলাইন পরীক্ষা ও চাকরির ফর্ম, জামশেদপুর",
     description: "পরীক্ষা, নিয়োগ ও অন্যান্য অনলাইন ফর্ম সাবধানে পূরণ করতে সাহায্য – ছবি, সই ও কাগজপত্র আপলোড যাচাই।",
@@ -126,7 +126,7 @@ export const bengaliServices: BengaliService[] = [
     faqs: [{ question: "ফর্মের তথ্যের দায়িত্ব কি আপনাদের?", answer: "তথ্য সঠিক হওয়ার দায়িত্ব আবেদনকারীর, তাই জমা দেওয়ার আগে আপনি নিজে প্রতিটি এন্ট্রি যাচাই করে নেন।" }],
   },
   {
-    slug: "passport-driving-licence-help",
+    slug: "passport-driving-licence",
     title: "পাসপোর্ট ও ড্রাইভিং লাইসেন্সের ফর্মে সাহায্য",
     seoTitle: "পাসপোর্ট ও ড্রাইভিং লাইসেন্স, জামশেদপুর",
     description: "পাসপোর্ট সেবা ও পরিবহণ সারথি পোর্টালে আবেদন, কাগজপত্রের তালিকা ও অ্যাপয়েন্টমেন্ট বুকিংয়ে সাহায্য – জামশেদপুর।",
@@ -136,7 +136,7 @@ export const bengaliServices: BengaliService[] = [
     faqs: [{ question: "আপনারা কি পাসপোর্ট বা লাইসেন্স ইস্যু করেন?", answer: "না। যাচাই, টেস্ট ও ইস্যু করা সংশ্লিষ্ট কর্তৃপক্ষের কাজ।" }],
   },
   {
-    slug: "jeevan-pramaan-life-certificate-jamshedpur",
+    slug: "jeevan-pramaan",
     title: "জীবন প্রমাণ (ডিজিটাল লাইফ সার্টিফিকেট) জমা দিতে সাহায্য",
     seoTitle: "লাইফ সার্টিফিকেট (জীবন প্রমাণ), জামশেদপুর",
     description: "পেনশনভোগীদের জন্য জীবন প্রমাণ ডিজিটাল লাইফ সার্টিফিকেট – কী আনতে হবে, প্রক্রিয়া ও অ্যাকনলেজমেন্ট। খরংগাঝাড়, টেলকো।",
@@ -146,7 +146,7 @@ export const bengaliServices: BengaliService[] = [
     faqs: [{ question: "পেনশনভোগীকে কি নিজে আসতেই হবে?", answer: "হ্যাঁ। অথেন্টিকেশন পেনশনভোগীকে নিজেকেই করতে হয়।" }],
   },
   {
-    slug: "land-mutation-jharbhoomi-help",
+    slug: "land-mutation",
     title: "দাখিল-খারিজ (মিউটেশন) ও ঝারভূমিতে সাহায্য",
     seoTitle: "দাখিল-খারিজ (মিউটেশন) ও ঝারভূমি, জামশেদপুর",
     description: "জমির দাখিল-খারিজ বা মিউটেশনের অনলাইন আবেদন, খতিয়ান/রেজিস্টার-II দেখা এবং ঝারভূমিতে স্ট্যাটাস – জামশেদপুর।",
@@ -156,7 +156,7 @@ export const bengaliServices: BengaliService[] = [
     faqs: [{ question: "রেজিস্ট্রি হলেই কি মিউটেশন নিজে থেকে হয়ে যায়?", answer: "না। রেজিস্ট্রিতে হস্তান্তর নথিভুক্ত হয়; মিউটেশনে রাজস্ব রেকর্ড আপডেট হয়।" }],
   },
   {
-    slug: "birth-death-certificate-help-jamshedpur",
+    slug: "birth-death-certificate",
     title: "জন্ম ও মৃত্যু শংসাপত্রের আবেদনে সাহায্য",
     seoTitle: "জন্ম ও মৃত্যু শংসাপত্র, জামশেদপুর",
     description: "জন্ম বা মৃত্যু শংসাপত্রের নতুন আবেদন, দেরিতে রেজিস্ট্রেশন ও সংশোধন – কাগজপত্রের তালিকা ও প্রক্রিয়া, জামশেদপুর।",

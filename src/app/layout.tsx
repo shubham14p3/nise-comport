@@ -21,7 +21,7 @@ const hindSiliguri = Hind_Siliguri({ subsets: ["bengali"], weight: ["400", "500"
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
-  title: { default: "NISE COMPORT | CSC & Pragya Kendra in Telco, Jamshedpur", template: "%s | NISE COMPORT" },
+  title: { default: "NISE COMPORT - Pragya Kendra - CSC & Digital Services in Telco, Jamshedpur", template: "NISE COMPORT - Pragya Kendra - %s" },
   description: "Independent CSC and Pragya Kendra in Kharangajhar, Telco, Jamshedpur: PAN, Aadhaar guidance, Jharkhand certificates, banking, insurance, forms, bill payments and printing.",
   applicationName: site.name,
   authors: [{ name: site.name, url: site.url }],

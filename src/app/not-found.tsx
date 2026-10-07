@@ -5,9 +5,9 @@ import { site } from "@/lib/site";
 
 const shortcuts = [
   { href: "/services", label: "All services" },
-  { href: "/services/pan-card-jamshedpur", label: "PAN card help" },
-  { href: "/services/aadhaar-assistance-jamshedpur", label: "Aadhaar update help" },
-  { href: "/services/jharkhand-certificates-jamshedpur", label: "Income, caste & residence certificates" },
+  { href: "/services/pan-card", label: "PAN card help" },
+  { href: "/services/aadhaar", label: "Aadhaar update help" },
+  { href: "/services/income-caste-residence-certificate", label: "Income, caste & residence certificates" },
   { href: "/print", label: "Online printing" },
   { href: "/blog", label: "Local guides" },
   { href: "/contact", label: "Contact & directions" },

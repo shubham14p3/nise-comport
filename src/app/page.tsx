@@ -28,7 +28,7 @@ export const revalidate = 43200;
 
 export const metadata: Metadata = {
   ...pageMetadata(
-    "NISE COMPORT | CSC & Pragya Kendra in Telco, Jamshedpur",
+    "CSC & Digital Services in Telco, Jamshedpur",
     "PAN card, Aadhaar update help, income/caste/residence certificates, AEPS banking, insurance, online forms, bills and printing at NISE COMPORT, Kharangajhar, Telco, Jamshedpur.",
     "/",
     { languages: { "hi-IN": "/hi", "bn-IN": "/bn" }, keywords: ["CSC centre Jamshedpur", "Pragya Kendra Telco", "Pragya Kendra Kharangajhar", "PAN card Jamshedpur", "Aadhaar update Jamshedpur", "income certificate Jamshedpur", "caste certificate Jharkhand", "AEPS Telco", "bike insurance Jamshedpur", "online form filling Jamshedpur", "printing Telco", "प्रज्ञा केंद्र जमशेदपुर", "सीएससी सेंटर टेल्को", "জামশেদপুর প্রজ্ঞা কেন্দ্র"] },
@@ -36,10 +36,10 @@ export const metadata: Metadata = {
 };
 
 const popular = [
-  { label: "PAN card", href: "/services/pan-card-jamshedpur" },
-  { label: "Income certificate", href: "/services/jharkhand-certificates-jamshedpur" },
-  { label: "Bike insurance", href: "/services/bike-insurance-jamshedpur" },
-  { label: "AEPS", href: "/services/banking-aeps-money-transfer" },
+  { label: "PAN card", href: "/services/pan-card" },
+  { label: "Income certificate", href: "/services/income-caste-residence-certificate" },
+  { label: "Bike insurance", href: "/services/bike-insurance" },
+  { label: "AEPS", href: "/services/aeps-money-transfer" },
   { label: "Print", href: "/print" },
 ];
 

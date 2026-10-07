@@ -16,11 +16,11 @@ export const metadata: Metadata = pageMetadata(
 );
 
 const popular = [
-  { href: "/services/pan-card-jamshedpur", label: "PAN card" },
-  { href: "/services/aadhaar-assistance-jamshedpur", label: "Aadhaar update help" },
-  { href: "/services/jharkhand-certificates-jamshedpur", label: "Income, caste & residence certificates" },
-  { href: "/services/banking-aeps-money-transfer", label: "AEPS & money transfer" },
-  { href: "/services/printing-scanning-jamshedpur", label: "Printing & photocopy" },
+  { href: "/services/pan-card", label: "PAN card" },
+  { href: "/services/aadhaar", label: "Aadhaar update help" },
+  { href: "/services/income-caste-residence-certificate", label: "Income, caste & residence certificates" },
+  { href: "/services/aeps-money-transfer", label: "AEPS & money transfer" },
+  { href: "/services/printing-scanning", label: "Printing & photocopy" },
 ];
 
 export default function AreasPage() {

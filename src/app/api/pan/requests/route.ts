@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     try {
       created = await withUniqueReference("PAN", async (reference) => {
         const [row] = await db.insert(serviceRequests).values({
-          reference, userId: user.id, serviceSlug: "pan-card-jamshedpur", serviceName: label,
+          reference, userId: user.id, serviceSlug: "pan-card", serviceName: label,
           details: { kind: "pan", description: pan.notes || label, pan }, serviceFee: "0.00", externalFee: "0.00", idempotencyKey: idempotencyKey ?? null,
         }).returning({ id: serviceRequests.id, reference: serviceRequests.reference });
         return row;
