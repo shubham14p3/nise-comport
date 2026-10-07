@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { ArrowRight, Search, X } from "lucide-react";
 import { CategoryIcon } from "@/components/icons";
+import ShowMore, { useShowMore } from "@/components/show-more";
 import { categoryMeta } from "@/lib/categories";
 
 export type BrowserService = { slug: string; title: string; name: string; description: string; category: string; keywords: string[]; requestHref: string };
@@ -43,6 +44,8 @@ export default function ServiceBrowser({ services }: { services: BrowserService[
     return words.every((word) => haystack.includes(word));
   });
 
+  const paging = useShowMore(12, `${query}|${category}`);
+
   return <div className="browser">
     <div className="browser__controls">
       <label className="browser__search">
@@ -60,14 +63,14 @@ export default function ServiceBrowser({ services }: { services: BrowserService[
       </div>
     </div>
     <p className="browser__count" role="status">{results.length} {results.length === 1 ? "service" : "services"}{query ? ` for “${query}”` : ""}</p>
-    {results.length ? <div className="svc-grid">{results.map((service) => {
+    {results.length ? <><div className="svc-grid">{results.map((service, index) => {
       const meta = categoryMeta.find((item) => item.slug === service.category);
-      return <article key={service.slug} className={`svc-card tone-${meta?.tone ?? "blue"}`}>
+      return <article key={service.slug} className={`svc-card tone-${meta?.tone ?? "blue"}`} hidden={index >= paging.count}>
         <div className="svc-card__top"><span className="svc-card__icon">{meta && <CategoryIcon icon={meta.icon} size={22}/>}</span><span className="chip chip--soft">{meta?.short.en}</span></div>
         <h3><Link href={`/services/${service.slug}`}>{service.name}</Link></h3>
         <p>{service.description}</p>
         <div className="svc-card__actions"><Link className="btn btn--primary btn--sm" href={service.requestHref}>Start <ArrowRight size={16}/></Link><Link className="btn btn--ghost btn--sm" href={`/services/${service.slug}`}>Details</Link></div>
       </article>;
-    })}</div> : <div className="empty-state"><h3>No match for “{query}”</h3><p>Try another word, pick “All”, or ask us directly. We help with many things that aren’t listed.</p><div className="empty-state__actions"><button type="button" className="btn btn--ghost" onClick={() => { setTyped(""); setPicked("all"); syncUrl("", "all"); }}>Clear filters</button><Link className="btn btn--primary" href={`/request?note=${encodeURIComponent(query)}`}>Ask us about it <ArrowRight size={16}/></Link></div></div>}
+    })}</div><ShowMore shown={Math.min(paging.count, results.length)} total={results.length} onMore={paging.more} label="services"/></> : <div className="empty-state"><h3>No match for “{query}”</h3><p>Try another word, pick “All”, or ask us directly. We help with many things that aren’t listed.</p><div className="empty-state__actions"><button type="button" className="btn btn--ghost" onClick={() => { setTyped(""); setPicked("all"); syncUrl("", "all"); }}>Clear filters</button><Link className="btn btn--primary" href={`/request?note=${encodeURIComponent(query)}`}>Ask us about it <ArrowRight size={16}/></Link></div></div>}
   </div>;
 }

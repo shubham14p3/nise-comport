@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 const schema = z.object({
   name: z.string().max(120).optional(), phone: z.string().min(6).max(30), topic: z.string().max(120).optional(),
   message: z.string().max(800).optional(), page: z.string().max(300).optional(), locale: z.string().max(5).optional(),
-  source: z.enum(["chat", "form"]).optional(),
+  source: z.enum(["chat", "form", "wizard"]).optional(),
 });
 
 /** "Please call me": public, rate-limited per IP and per number. */

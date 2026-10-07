@@ -41,6 +41,7 @@ export const RATE_RULES = {
   printJobsPerUserHour: { name: "print-job", limit: 15, windowSeconds: 3600 },
   cancelPerUserHour: { name: "cancel-request", limit: 10, windowSeconds: 3600 },
   couponChecksPerUserHour: { name: "coupon-check", limit: 40, windowSeconds: 3600 },
+  draftSavesPerUserHour: { name: "draft-save", limit: 120, windowSeconds: 3600 },
   /** Wrong codes: a few typos are fine, guessing codes is not. */
   couponFailuresPerUserHour: { name: "coupon-fail", limit: 8, windowSeconds: 3600 },
   couponFailuresPerUserDay: { name: "coupon-fail", limit: 20, windowSeconds: 86400 },

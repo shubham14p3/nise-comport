@@ -41,5 +41,13 @@ test("migration 0011 adds lead details", () => {
   const sql = readFileSync(new URL("../drizzle/0011_insurance_leads.sql", import.meta.url), "utf8");
   assert.match(sql, /ALTER TABLE "leads" ADD COLUMN IF NOT EXISTS "details" jsonb/);
   const journal = JSON.parse(readFileSync(new URL("../drizzle/meta/_journal.json", import.meta.url), "utf8"));
-  assert.equal(journal.entries.at(-1)?.tag, "0011_insurance_leads");
+  assert.ok(journal.entries.some((entry: { tag: string }) => entry.tag === "0011_insurance_leads"));
+});
+
+test("migration 0012 adds request drafts", () => {
+  const sql = readFileSync(new URL("../drizzle/0012_request_drafts.sql", import.meta.url), "utf8");
+  assert.match(sql, /CREATE TABLE IF NOT EXISTS "request_drafts"/);
+  assert.match(sql, /ON DELETE cascade/);
+  const journal = JSON.parse(readFileSync(new URL("../drizzle/meta/_journal.json", import.meta.url), "utf8"));
+  assert.equal(journal.entries.at(-1)?.tag, "0012_request_drafts");
 });

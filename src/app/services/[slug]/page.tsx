@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { ArrowRight, ArrowUpRight, CircleCheck, ExternalLink, MapPin, Phone, ShieldCheck } from "lucide-react";
 import Breadcrumbs from "@/components/breadcrumbs";
 import FaqSection from "@/components/faq-section";
+import FloatingStart from "@/components/floating-start";
 import JsonLd from "@/components/json-ld";
 import { CategoryIcon, WhatsAppIcon } from "@/components/icons";
 import OfferCard from "@/components/offer-card";
@@ -62,8 +63,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function ServiceDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const service = await resolveService(slug);
-  if (!service) notFound();
+  if (!service) {
+    if (findService(slug)) console.warn(`[services] "${slug}" is hidden in Admin → Site content, so its page shows 404.`);
+    notFound();
+  }
   const detail = isServiceDetail(service) ? service : null;
+  // Services added in the admin area without details yet: show the page, but as "coming soon".
+  const comingSoon = Boolean(detail && !detail.highlights?.length && !detail.documents?.length && !detail.steps?.length);
   const category = detail ? categoryFor(detail) : undefined;
   const editorial = detail ? serviceEditorial[detail.slug] : undefined;
   const children = detail ? [] : await servicesInCategoryAll(service.slug);
@@ -99,10 +105,11 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
           {editorial?.audience && <p className="page-hero__audience"><b>For:</b> {editorial.audience}</p>}
           <div className="page-hero__ctas">
             {motor ? <Link className="btn btn--primary btn--lg" href={motor}>Get insurance quotes <ArrowRight size={18}/></Link>
-              : <Link className="btn btn--primary btn--lg" href={detail ? startHref : `/request?category=${service.slug}`}>Start in 4 steps <ArrowRight size={18}/></Link>}
+              : !comingSoon && <Link className="btn btn--primary btn--lg" href={detail ? startHref : `/request?category=${service.slug}`}>Start in 4 steps <ArrowRight size={18}/></Link>}
             <a className="btn btn--wa btn--lg" href={enquiry} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> WhatsApp</a>
             <a className="btn btn--glass btn--lg" href={`tel:${site.phones.primary.e164}`}><Phone size={18}/> Call</a>
           </div>
+          {comingSoon && <p className="coming-soon"><b>Coming soon online.</b> Full details for this service are being added. Call or WhatsApp us and we’ll help you today.</p>}
           {categorySlug === "insurance" && <p className="page-hero__audience"><b>Please note:</b> {FACILITATOR_NOTE}</p>}
           <p className="page-hero__meta"><MapPin size={16}/> {site.address.oneLine}{hindi && <> · <Link href={`/hi/services/${service.slug}`} hrefLang="hi-IN" lang="hi">हिन्दी में पढ़ें</Link></>}{bengali && <> · <Link href={`/bn/services/${service.slug}`} hrefLang="bn-IN" lang="bn">বাংলায় পড়ুন</Link></>}</p>
         </div>
@@ -181,5 +188,6 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
     <section className="section section--flush">
       <div className="container"><div className="note-card"><ShieldCheck size={22}/><p>NISE COMPORT is an independent service facilitator, not a government authority, bank or insurer. The applicant is responsible for accurate information. Approval, issuance, processing times and decisions rest with the relevant authority or provider. Our service charge is separate from any official or third-party fee.</p></div></div>
     </section>
+    {!comingSoon && <FloatingStart href={motor ?? (detail ? startHref : `/request?category=${service.slug}`)} label={motor ? "Get quotes" : "Start now"}/>}
   </main>;
 }

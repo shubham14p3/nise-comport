@@ -116,7 +116,11 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<{ reference: string; offerNote?: string; couponNote?: string; couponOk?: boolean } | null>(null);
+  const [done, setDone] = useState<{ reference: string; offerNote?: string; couponNote?: string; couponOk?: boolean; whatsappSent?: boolean; summary: string } | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
+  const leadSent = useRef<string | null>(null);
+  const draftRef = useRef<Draft | null>(null);
+  const [restored, setRestored] = useState(false);
   const idempotencyKey = useRef<string | null>(null);
   const cardTop = useRef<HTMLDivElement>(null);
 
@@ -127,7 +131,19 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     ? chosenOffer
     : activeCategory ? offersFor(activeCategory).find((item) => item.categories !== "all") : undefined;
 
-  useEffect(() => { saveDraft(draft); }, [draft]);
+  useEffect(() => { saveDraft(draft); draftRef.current = draft; }, [draft]);
+
+  // Signed in: keep the half-filled request on the server too, so it's there next time.
+  useEffect(() => {
+    if (!user || user.role === "demo" || done) return;
+    if (!draft.serviceSlug && !draft.name && !draft.description) return;
+    const timer = window.setTimeout(() => {
+      const { consent: _consent, ...rest } = draft;
+      void _consent;
+      void secureApi("D4r8F2kW6nQ1", { action: "save", draft: rest }).catch(() => undefined);
+    }, 2000);
+    return () => window.clearTimeout(timer);
+  }, [draft, user, done]);
 
   useEffect(() => {
     let active = true;
@@ -135,11 +151,20 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       if (!active) return;
       setUser(session.user);
       if (!session.user || session.user.role === "demo") return;
-      const [profile, saved] = await Promise.all([
+      const [profile, saved, server] = await Promise.all([
         secureApi<{ user: { name: string; phone: string | null; preferredContact: Contact }; coupons?: Voucher[] }>("P8a2N5dK1vR7").catch(() => null),
         secureApi<{ addresses: SavedAddress[] }>("P3v8F1qL6sM4").catch(() => null),
+        secureApi<{ draft: Partial<Draft> | null }>("D9k3W7pR2xN5").catch(() => null),
       ]);
       if (!active) return;
+      // A half-filled request saved from another visit or device.
+      const now = draftRef.current;
+      const fresh = !now || (!now.serviceSlug && !now.description.trim());
+      if (fresh && server?.draft && (server.draft.serviceSlug || server.draft.description)) {
+        const back = server.draft;
+        setDraft((current) => ({ ...current, ...back, consent: false, address: { ...EMPTY_ADDRESS, ...(back.address ?? {}) } }));
+        setRestored(true);
+      }
       if (profile?.coupons) setVouchers(profile.coupons);
       if (profile) setDraft((current) => ({ ...current, name: current.name || profile.user.name, phone: current.phone || (profile.user.phone ?? "").replace(/^\+91/, ""), contact: current.contact || profile.user.preferredContact }));
       if (saved) {
@@ -153,7 +178,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
 
   function update(patch: Partial<Draft>) { setError(""); setDraft((current) => ({ ...current, ...patch })); }
   function goTo(step: number) {
-    setError(""); setDraft((current) => ({ ...current, step }));
+    setError(""); setShowErrors(false); setDraft((current) => ({ ...current, step }));
     requestAnimationFrame(() => cardTop.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
   }
 
@@ -174,9 +199,22 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     return "";
   }
 
+  /** As soon as we have a name and number, the shop gets a call-back (closed again when the request is sent). */
+  function captureLead() {
+    if (draft.name.trim().length < 2 || !validPhone(draft.phone)) return;
+    const key = `${draft.phone.replace(/\D/g, "").slice(-10)}|${draft.serviceSlug}`;
+    if (leadSent.current === key) return;
+    leadSent.current = key;
+    void secureApi("Q3n7B1xK5vR8", {
+      name: draft.name.trim(), phone: draft.phone.trim(), topic: `Started a request: ${service?.name ?? "General enquiry"}`.slice(0, 120),
+      message: draft.description.trim().slice(0, 800) || undefined, page: "/request", locale, source: "wizard",
+    }).catch(() => undefined);
+  }
+
   function next() {
+    if (draft.step === 1) captureLead();
     const problem = validate(draft.step);
-    if (problem) { setError(problem); return; }
+    if (problem) { setError(problem); setShowErrors(true); return; }
     goTo(Math.min(3, draft.step + 1));
   }
 
@@ -195,7 +233,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       let fileId: string | undefined;
       if (file) fileId = (await secureUpload<{ file: { id: string } }>("U7b3R8mQ4zL1", file)).file.id;
       const saved = addresses.find((item) => item.id === draft.addressId);
-      const result = await secureApi<{ request: { reference: string }; offer?: { applied: boolean; reason?: string }; coupon?: { applied: boolean; code?: string; reason?: string } }>("S5w2J9nF3kL7", {
+      const result = await secureApi<{ request: { reference: string }; whatsappSent?: boolean; offer?: { applied: boolean; reason?: string }; coupon?: { applied: boolean; code?: string; reason?: string } }>("S5w2J9nF3kL7", {
         serviceSlug: draft.serviceSlug,
         description: draft.description.trim(),
         preferredContact: draft.contact,
@@ -213,7 +251,10 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         idempotencyKey: idempotencyKey.current,
       });
       clearDraft();
+      void secureApi("D4r8F2kW6nQ1", { action: "clear" }).catch(() => undefined);
       setDone({
+        whatsappSent: Boolean(result.whatsappSent),
+        summary: [`Service: ${service?.name ?? t.somethingElse}`, `Name: ${draft.name.trim()}`, `Mobile: +91 ${draft.phone.trim()}`, `Need: ${draft.description.trim()}`, `Visit: ${visitSummary}`].join("\n"),
         reference: result.request.reference, offerNote: result.offer && !result.offer.applied ? result.offer.reason : undefined,
         couponOk: Boolean(result.coupon?.applied), couponNote: result.coupon ? result.coupon.applied ? fill(p.promoAppliedDone, { code: result.coupon.code ?? draft.coupon }) : `${p.promoNotApplied} ${result.coupon.reason ?? ""}` : undefined,
       });
@@ -228,7 +269,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const whatsappText = `Hi NISE COMPORT, I need help with ${service?.name ?? "a service"}.`;
 
   if (done) {
-    const share = `Hi NISE COMPORT, I just sent a request online. Reference: ${done.reference} (${service?.name ?? "General enquiry"}).`;
+    const share = `Hi NISE COMPORT, I just sent a request online.\nReference: ${done.reference}\n${done.summary}`;
     return <div className="wizard wizard--done"><div className="container">
       <div className="success-card">
         <div className="confetti" aria-hidden="true">{Array.from({ length: 18 }, (_, index) => <i key={index} style={{ left: `${(index * 53) % 100}%`, animationDelay: `${(index % 6) * 0.12}s` }}/>)}</div>
@@ -237,6 +278,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         <p>{t.successSub}</p>
         <strong className="success-card__ref">{done.reference}</strong>
         <p>{t.successNext}</p>
+        <p className="muted">{done.whatsappSent ? "We’ve also sent a copy to your WhatsApp." : "Tap “" + t.shareWa + "” to keep a copy in your WhatsApp chat with us."}</p>
         {done.offerNote && <p className="alert alert--info">{t.offerNotApplied} {done.offerNote}</p>}
         {done.couponNote && <p className={done.couponOk ? "alert alert--success" : "alert alert--info"}>{done.couponNote}</p>}
         <div className="success-card__actions">
@@ -271,6 +313,9 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       .filter((item) => item.code && fitsService(item.appliesTo) && !vouchers.some((voucher) => voucher.code === item.code && voucher.used))
       .map((item) => ({ code: item.code!, emoji: item.emoji, label: item.title[locale] })),
   ];
+  const nameBad = showErrors && draft.step === 1 && draft.name.trim().length < 2;
+  const phoneBad = showErrors && draft.step === 1 && !validPhone(draft.phone);
+  const describeBad = showErrors && draft.step === 1 && draft.description.trim().length < 8;
   const picks = QUICK_PICKS[service?.category ?? (draft.serviceSlug === "other" ? "other" : draft.category)] ?? QUICK_PICKS.other;
 
   return <WizardFrame
@@ -282,6 +327,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     rail={<OfferRail category={activeCategory} locale={locale} whatsappText={whatsappText} appliedOfferId={offer?.id} appliedCode={applied?.code ?? (draft.coupon || null)}/>}
   >
     <div ref={cardTop} className="wizard__anchor"/>
+    {restored && <p className="alert alert--info wizard-restored">We kept your unfinished request from last time. <button type="button" className="text-link" onClick={() => { setRestored(false); clearDraft(); void secureApi("D4r8F2kW6nQ1", { action: "clear" }).catch(() => undefined); setDraft(initialDraft(services, {})); }}>Start fresh</button></p>}
     <form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (draft.step === 3) void submit(); else next(); }}>
       {draft.step === 0 && <section>
         <h2>{t.s1Title}</h2><p className="wizard-form__sub">{t.s1Sub}</p>
@@ -312,13 +358,13 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         <h2>{t.s2Title}</h2><p className="wizard-form__sub">{t.s2Sub}</p>
         {service && <div className="picked"><span>{service.name}</span><button type="button" onClick={() => goTo(0)}>{t.edit}</button></div>}
         <div className="form-grid">
-          <label className="field"><span className="field__label">{t.name}</span><input value={draft.name} onChange={(event) => update({ name: event.target.value })} autoComplete="name" maxLength={100} required/></label>
-          <label className="field"><span className="field__label">{t.phone}</span><span className="input-wrap"><span className="input-prefix">+91</span><input value={draft.phone} onChange={(event) => update({ phone: event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16) })} inputMode="tel" autoComplete="tel-national" placeholder="98765 43210" required/></span><span className="field__hint">{t.phoneHint}</span></label>
+          <label className="field"><span className="field__label">{t.name}</span><input value={draft.name} onChange={(event) => update({ name: event.target.value.replace(/[^\p{L}\p{M}\s.'-]/gu, "") })} onBlur={captureLead} autoComplete="name" maxLength={100} required aria-invalid={nameBad}/>{nameBad && <span className="field__error">{t.errName}</span>}</label>
+          <label className="field"><span className="field__label">{t.phone}</span><span className="input-wrap"><span className="input-prefix">+91</span><input value={draft.phone} onChange={(event) => update({ phone: event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16) })} inputMode="tel" autoComplete="tel-national" placeholder="98765 43210" required onBlur={captureLead} aria-invalid={phoneBad}/></span>{phoneBad ? <span className="field__error">{t.errPhone}</span> : <span className="field__hint">{t.phoneHint}</span>}</label>
         </div>
         <fieldset className="field"><legend className="field__label">{t.contactVia}</legend><div className="seg">
           {(["whatsapp", "phone", "email"] as Contact[]).map((option) => <button key={option} type="button" className={draft.contact === option ? "is-active" : undefined} aria-pressed={draft.contact === option} onClick={() => update({ contact: option })}>{option === "whatsapp" ? <WhatsAppIcon size={16}/> : null}{option === "whatsapp" ? t.viaWhatsapp : option === "phone" ? t.viaPhone : t.viaEmail}</button>)}
         </div></fieldset>
-        <label className="field"><span className="field__label">{t.describe}</span><textarea value={draft.description} onChange={(event) => update({ description: event.target.value.slice(0, 1500) })} rows={4} maxLength={1500} required/><span className="field__hint">{t.describeHint} · {draft.description.length}/1500</span></label>
+        <label className="field"><span className="field__label">{t.describe}</span><textarea value={draft.description} onChange={(event) => update({ description: event.target.value.slice(0, 1500) })} rows={4} maxLength={1500} required aria-invalid={describeBad}/>{describeBad && <span className="field__error">{t.errDescribe}</span>}<span className="field__hint">{t.describeHint} · {draft.description.length}/1500</span></label>
         <div className="quick-picks"><span>{t.quickPicks}</span>{picks.map((pick) => <button key={pick} type="button" className="chip-btn chip-btn--sm" onClick={() => update({ description: draft.description.includes(pick) ? draft.description : `${draft.description ? `${draft.description.trim()} ` : ""}${pick}.`.slice(0, 1500) })}>+ {pick}</button>)}</div>
         <div className="field"><span className="field__label">{t.attach}</span>
           {user ? file ? <div className="file-pill"><FileText size={18}/><span>{file.name}<small>{(file.size / 1024 / 1024).toFixed(1)} MB</small></span><button type="button" className="icon-btn" onClick={() => { setFile(null); idempotencyKey.current = null; }} aria-label={t.remove}><X size={16}/></button></div>
@@ -355,7 +401,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         {offer && <div className={`applied-offer tone-${offer.tone}`}><span className="badge badge--live"><i/>{dict(locale).ticker.live}</span><div><b>{offer.highlight[locale]} · {offer.title[locale]}</b><small>{t.offerApplied}. {offer.firstTimeOnly ? t.offerCheck : ""}</small></div></div>}
         <PromoCodeField locale={locale} value={draft.coupon} applied={applied} signedIn={Boolean(user && user.role !== "demo")} suggestions={suggestions} service={draft.serviceSlug || undefined}
           onChange={(coupon) => update({ coupon })} onApplied={setApplied}/>
-        <label className="check"><input type="checkbox" checked={draft.consent} onChange={(event) => update({ consent: event.target.checked })}/><span>{t.consent}</span></label>
+        <label className="check check--agree"><input type="checkbox" checked={draft.consent} onChange={(event) => update({ consent: event.target.checked })}/><span>{t.consent} <Link href="/terms" target="_blank">Terms</Link> · <Link href="/privacy" target="_blank">Privacy</Link></span></label>
         {user === null && <p className="alert alert--info">{t.signInNote}</p>}
       </section>}
 
