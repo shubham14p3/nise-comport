@@ -7,7 +7,7 @@
  */
 import { articleDates, articles } from "./content.ts";
 import { bengaliServices } from "./bengali.ts";
-import { localGallery } from "./gallery.ts";
+import { localGallery, ownPhotos, photosForService } from "./gallery.ts";
 import { hindiServices } from "./hindi.ts";
 import { panGuides } from "./pan-content.ts";
 import { publishedServiceDetails, serviceCatalog } from "./services.ts";
@@ -50,7 +50,7 @@ export function publicRoutes(): PublicRoute[] {
     { path: "/faq", lastModified: SITE_CONTENT_DATE, priority: 0.6, changeFrequency: "monthly" },
     { path: "/about", lastModified: SITE_CONTENT_DATE, priority: 0.6, changeFrequency: "yearly" },
     { path: "/team", lastModified: SITE_CONTENT_DATE, priority: 0.5, changeFrequency: "yearly" },
-    { path: "/gallery", lastModified: SITE_CONTENT_DATE, priority: 0.5, changeFrequency: "monthly", images: localGallery.map((item) => item.src) },
+    { path: "/gallery", lastModified: SITE_CONTENT_DATE, priority: 0.5, changeFrequency: "monthly", images: [...ownPhotos.map((photo) => photo.src), ...localGallery.map((item) => item.src)] },
     { path: "/offers", lastModified: SITE_CONTENT_DATE, priority: 0.5, changeFrequency: "weekly" },
     { path: "/social", lastModified: SITE_CONTENT_DATE, priority: 0.4, changeFrequency: "monthly" },
     { path: "/privacy", lastModified: SITE_CONTENT_DATE, priority: 0.2, changeFrequency: "yearly" },
@@ -60,7 +60,8 @@ export function publicRoutes(): PublicRoute[] {
   ];
   for (const group of serviceCatalog) routes.push({ path: `/services/${group.slug}`, lastModified: SITE_CONTENT_DATE, priority: 0.8, changeFrequency: "monthly" });
   for (const service of publishedServiceDetails) {
-    routes.push({ path: `/services/${service.slug}`, lastModified: SITE_CONTENT_DATE, priority: 0.8, changeFrequency: "monthly", ...serviceAlternates(service.slug, "en") });
+    const photos = photosForService(service.slug).map((photo) => photo.src);
+    routes.push({ path: `/services/${service.slug}`, lastModified: SITE_CONTENT_DATE, priority: 0.8, changeFrequency: "monthly", ...serviceAlternates(service.slug, "en"), ...(photos.length ? { images: photos } : {}) });
   }
   for (const service of hindiServices) routes.push({ path: `/hi/services/${service.slug}`, lastModified: SITE_CONTENT_DATE, priority: 0.7, changeFrequency: "monthly", ...serviceAlternates(service.slug, "hi") });
   for (const service of bengaliServices) routes.push({ path: `/bn/services/${service.slug}`, lastModified: SITE_CONTENT_DATE, priority: 0.7, changeFrequency: "monthly", ...serviceAlternates(service.slug, "bn") });

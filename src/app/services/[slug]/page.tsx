@@ -15,7 +15,7 @@ import SiteBanners from "@/components/site-banners";
 import { resolveService, servicesInCategoryAll } from "@/lib/site-content";
 import { articlesForService } from "@/lib/content";
 import { categoryMetaFor } from "@/lib/categories";
-import { posterFor } from "@/lib/gallery";
+import { photosForService, posterFor } from "@/lib/gallery";
 import { findHindiService } from "@/lib/hindi";
 import { offersFor } from "@/lib/offers";
 import { getLivePromos } from "@/lib/promotions";
@@ -89,6 +89,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
   const meta = categoryMetaFor(categorySlug);
   const startHref = requestHrefFor(service.slug);
   const motor = MOTOR_LINKS[service.slug];
+  const photos = detail ? photosForService(service.slug) : [];
   const offers = offersFor(categorySlug, new Date(), liveOfferCodes(await getLivePromos())).slice(0, 2);
   const bengali = translatedSlugs.bn.includes(service.slug);
   const reviewed = new Date(`${SITE_CONTENT_DATE}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
@@ -147,6 +148,14 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
           <p className="muted">Official sites set the current documents, appointments and fees. We help you navigate them.</p>
           <OfficialLinks links={officialLinks} service={{ slug: service.slug, title: shortServiceName(title), documents: detail?.documents ?? [] }}/>
         </section> : null}
+        {photos.length > 0 && <section className="detail__block">
+          <span className="eyebrow">FROM OUR DESK</span>
+          <h2>Photos: {shortServiceName(title)} at NISE COMPORT</h2>
+          <div className="photo-strip">{photos.slice(0, 6).map((photo) => <Link key={photo.src} href={`/gallery?service=${service.slug}`} className="photo-strip__item">
+            <Image src={photo.src} alt={photo.alt} width={photo.width} height={photo.height} sizes="(max-width: 700px) 50vw, 240px"/>
+          </Link>)}</div>
+          <Link className="text-link" href={`/gallery?service=${service.slug}`}>See all {photos.length} photos <ArrowRight size={16}/></Link>
+        </section>}
         <p className="fine">Page reviewed: {reviewed}</p>
       </div>
       <aside className="detail__aside">

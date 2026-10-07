@@ -2,25 +2,34 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Expand, X } from "lucide-react";
 import ShowMore, { useShowMore } from "@/components/show-more";
 
-export type GalleryEntry = { key: string; src: string; width: number; height: number; title: string; alt: string; tag: "google" | "shop" | "services"; author?: string; authorUri?: string | null; href?: string };
+export type GalleryEntry = { key: string; src: string; width: number; height: number; title: string; alt: string; tag: "google" | "shop" | "services"; author?: string; authorUri?: string | null; href?: string; service?: string; serviceLabel?: string };
 
 const FILTERS: { id: "all" | GalleryEntry["tag"]; label: string }[] = [
   { id: "all", label: "All" },
   { id: "google", label: "From Google" },
-  { id: "shop", label: "Our desk" },
+  { id: "shop", label: "Our photos" },
   { id: "services", label: "Service artwork" },
 ];
 
 /** Masonry gallery with filters and a keyboard-friendly lightbox. */
+const subscribe = (callback: () => void) => { window.addEventListener("popstate", callback); return () => window.removeEventListener("popstate", callback); };
+const readSearch = () => window.location.search;
+
 export default function GalleryGrid({ items }: { items: GalleryEntry[] }) {
-  const [filter, setFilter] = useState<(typeof FILTERS)[number]["id"]>("all");
+  const search = useSyncExternalStore(subscribe, readSearch, () => "");
+  const fromUrl = new URLSearchParams(search).get("service");
+  const [picked, setPicked] = useState<string | null>(null);
+  // "all", a tag ("shop", "google", "services") or "svc:<service>" for one service's photos.
+  const filter = picked ?? (fromUrl && items.some((item) => item.service === fromUrl) ? `svc:${fromUrl}` : "all");
+  const setFilter = (value: string) => setPicked(value);
   const [open, setOpen] = useState<number | null>(null);
-  const visible = items.filter((item) => filter === "all" || item.tag === filter);
-  const available = FILTERS.filter((option) => option.id === "all" || items.some((item) => item.tag === option.id));
+  const visible = items.filter((item) => filter === "all" || item.tag === filter || (filter.startsWith("svc:") && item.service === filter.slice(4)));
+  const serviceChips = [...new Map(items.filter((item) => item.service && item.serviceLabel).map((item) => [item.service!, { id: `svc:${item.service}`, label: item.serviceLabel! }])).values()];
+  const available = [...FILTERS.filter((option) => option.id === "all" || items.some((item) => item.tag === option.id)), ...serviceChips];
   const current = open === null ? null : visible[open];
   const paging = useShowMore(12, filter);
 
@@ -37,7 +46,7 @@ export default function GalleryGrid({ items }: { items: GalleryEntry[] }) {
   }, [open, visible.length]);
 
   return <>
-    {available.length > 2 && <div className="chip-row chip-row--center" role="group" aria-label="Filter photos">{available.map((option) => <button key={option.id} type="button" className={filter === option.id ? "chip-btn is-active" : "chip-btn"} aria-pressed={filter === option.id} onClick={() => { setFilter(option.id); setOpen(null); }}>{option.label}</button>)}</div>}
+    {available.length > 1 && <div className="chip-row chip-row--center" role="group" aria-label="Filter photos">{available.map((option) => <button key={option.id} type="button" className={filter === option.id ? "chip-btn is-active" : "chip-btn"} aria-pressed={filter === option.id} onClick={() => { setFilter(option.id); setOpen(null); }}>{option.label}</button>)}</div>}
     <div className="masonry">{visible.slice(0, paging.count).map((item, index) => <figure key={item.key} className="masonry__item">
       <button type="button" className="masonry__open" onClick={() => setOpen(index)} aria-label={`View larger: ${item.title}`}>
         <Image src={item.src} alt={item.alt} width={item.width} height={item.height} sizes="(max-width: 600px) 100vw, (max-width: 1000px) 50vw, 33vw" unoptimized={item.tag === "google"}/>

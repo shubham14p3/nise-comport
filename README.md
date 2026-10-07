@@ -128,6 +128,16 @@ Set `RECORDS_ENCRYPTION_KEY` (`openssl rand -base64 32`) and back it up before t
 
 Run `npm run db:migrate` for migration 0010.
 
+## Your photos (gallery and service pages)
+
+1. Put photos (JPG, PNG, WebP, HEIC…) in `photo-inbox/<service>/`, e.g. `photo-inbox/pan-card/`, `photo-inbox/aadhaar/`, or `photo-inbox/shop/` for the counter and team. Folder names are listed in `photo-inbox/README.md`.
+2. Run `npm run photos`. Each photo is turned upright, stripped of GPS/camera data, resized to 1600 px and saved as WebP with an SEO name (`public/images/gallery/photos/pan-card-telco-jamshedpur-1.webp`), title and alt text in `src/lib/gallery-photos.ts`. Originals move to `photo-inbox/_done/` (never uploaded to GitHub). Running it again skips photos already added.
+3. Commit `public/images/gallery/photos/` and `src/lib/gallery-photos.ts`, then deploy.
+
+Other ways: `npm run photos -- "C:\path\to\folder"`, `npm run photos -- --service voter-id photo1.jpg photo2.jpg`, or `npm run photos -- https://…/photo.jpg` (your own photos only).
+
+Photos appear on `/gallery` (filter chips per service, `/gallery?service=pan-card` opens one service), as a "From our desk" strip on that service's page, on the home page, in the image sitemap and as ImageObject data for Google Images.
+
 ## Car & bike insurance (`/insurance`)
 
 One page for new policies, renewal before expiry, expired policies and claims, for cars and two-wheelers:

@@ -31,3 +31,7 @@ coverage/
 # Keep curated legacy brand and gallery assets available to Next.js.
 /public/csc/
 /public/nise-logo.png
+
+# Photo inbox: originals stay on your computer (npm run photos)
+/photo-inbox/*
+!/photo-inbox/README.md

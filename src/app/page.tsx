@@ -12,7 +12,7 @@ import JsonLd from "@/components/json-ld";
 import OfferCard from "@/components/offer-card";
 import OpenStatus from "@/components/open-status";
 import { articles } from "@/lib/content";
-import { localGallery } from "@/lib/gallery";
+import { localGallery, ownPhotos } from "@/lib/gallery";
 import { getPlaceSummary } from "@/lib/google-places";
 import { summarizeHours } from "@/lib/hours";
 import { liveOffers } from "@/lib/offers";
@@ -64,6 +64,7 @@ export default async function HomePage() {
   const offers = [...liveOfferCodes(await getLivePromos()).slice(0, 3), ...liveOffers()];
   const place = await getPlaceSummary();
   const galleryPreview = [
+    ...ownPhotos.slice(0, 4).map((photo) => ({ key: photo.src, src: photo.src, alt: photo.alt, title: photo.title, google: false })),
     ...(place?.photos.slice(0, 3).map((photo) => ({ key: `g${photo.index}`, src: `/api/gallery/photo/${photo.index}`, alt: `Photo of NISE COMPORT by ${photo.author}`, title: `Photo · ${photo.author}`, google: true })) ?? []),
     ...localGallery.slice(0, 6).map((item) => ({ key: item.src, src: item.src, alt: item.alt, title: item.title, google: false })),
   ].slice(0, 6);
