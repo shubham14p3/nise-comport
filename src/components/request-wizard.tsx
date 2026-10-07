@@ -20,6 +20,7 @@ import { secureApi, secureUpload, SecureApiError } from "@/lib/secure-api-client
 import { useLocale } from "@/lib/use-locale";
 import { whatsappHref } from "@/lib/public-contact";
 import { rememberReturn } from "@/lib/after-login";
+import { serviceName, WIZARD_EXTRA as X } from "@/lib/i18n-forms";
 
 export type WizardService = { slug: string; name: string; category: string; description: string };
 type Mode = "walkin" | "callback" | "doorstep" | "online";
@@ -254,7 +255,8 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       void secureApi("D4r8F2kW6nQ1", { action: "clear" }).catch(() => undefined);
       setDone({
         whatsappSent: Boolean(result.whatsappSent),
-        summary: [`Service: ${service?.name ?? t.somethingElse}`, `Name: ${draft.name.trim()}`, `Mobile: +91 ${draft.phone.trim()}`, `Need: ${draft.description.trim()}`, `Visit: ${visitSummary}`].join("\n"),
+        // Always English: this text goes to the shop on WhatsApp.
+        summary: [`Service: ${service?.name ?? "Not sure"}`, `Name: ${draft.name.trim()}`, `Mobile: +91 ${draft.phone.trim()}`, `Need: ${draft.description.trim()}`, `Visit: ${[{ walkin: "Walk-in", callback: "Call me back", doorstep: "Doorstep", online: "Online" }[draft.mode as Mode] ?? "", draft.day, draft.slot].filter(Boolean).join(" · ")}`].join("\n"),
         reference: result.request.reference, offerNote: result.offer && !result.offer.applied ? result.offer.reason : undefined,
         couponOk: Boolean(result.coupon?.applied), couponNote: result.coupon ? result.coupon.applied ? fill(p.promoAppliedDone, { code: result.coupon.code ?? draft.coupon }) : `${p.promoNotApplied} ${result.coupon.reason ?? ""}` : undefined,
       });
@@ -278,7 +280,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         <p>{t.successSub}</p>
         <strong className="success-card__ref">{done.reference}</strong>
         <p>{t.successNext}</p>
-        <p className="muted">{done.whatsappSent ? "We’ve also sent a copy to your WhatsApp." : "Tap “" + t.shareWa + "” to keep a copy in your WhatsApp chat with us."}</p>
+        <p className="muted">{done.whatsappSent ? X.waSent[locale] : X.waTap[locale]}</p>
         {done.offerNote && <p className="alert alert--info">{t.offerNotApplied} {done.offerNote}</p>}
         {done.couponNote && <p className={done.couponOk ? "alert alert--success" : "alert alert--info"}>{done.couponNote}</p>}
         <div className="success-card__actions">
@@ -293,7 +295,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const filtered = services.filter((item) => {
     if (draft.category !== "all" && item.category !== draft.category) return false;
     const words = draft.query.toLowerCase().split(/\s+/).filter(Boolean);
-    return words.every((word) => `${item.name} ${item.description}`.toLowerCase().includes(word));
+    return words.every((word) => `${item.name} ${serviceName(item.slug, item.name, locale)} ${item.description}`.toLowerCase().includes(word));
   });
   const savedAddress = addresses.find((item) => item.id === draft.addressId);
   const modeCards: { id: Mode; icon: typeof Store; title: string; sub: string }[] = [
@@ -319,15 +321,15 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const picks = QUICK_PICKS[service?.category ?? (draft.serviceSlug === "other" ? "other" : draft.category)] ?? QUICK_PICKS.other;
 
   return <WizardFrame
-    kicker="4 quick steps · takes about 2 minutes"
-    title={<>Start your request, <span className="grad-text">we’ll handle the rest.</span></>}
-    lead="Tell us what you need. We confirm documents, fees and timing before any work begins."
+    kicker={X.kicker[locale]}
+    title={<>{X.titleA[locale]} <span className="grad-text">{X.titleB[locale]}</span></>}
+    lead={X.lead[locale]}
     steps={t.steps} current={draft.step} onJump={goTo} locale={locale}
     strip={<OfferStrip category={activeCategory} locale={locale}/>}
     rail={<OfferRail category={activeCategory} locale={locale} whatsappText={whatsappText} appliedOfferId={offer?.id} appliedCode={applied?.code ?? (draft.coupon || null)}/>}
   >
     <div ref={cardTop} className="wizard__anchor"/>
-    {restored && <p className="alert alert--info wizard-restored">We kept your unfinished request from last time. <button type="button" className="text-link" onClick={() => { setRestored(false); clearDraft(); void secureApi("D4r8F2kW6nQ1", { action: "clear" }).catch(() => undefined); setDraft(initialDraft(services, {})); }}>Start fresh</button></p>}
+    {restored && <p className="alert alert--info wizard-restored">{X.restored[locale]} <button type="button" className="text-link" onClick={() => { setRestored(false); clearDraft(); void secureApi("D4r8F2kW6nQ1", { action: "clear" }).catch(() => undefined); setDraft(initialDraft(services, {})); }}>{X.startFresh[locale]}</button></p>}
     <form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (draft.step === 3) void submit(); else next(); }}>
       {draft.step === 0 && <section>
         <h2>{t.s1Title}</h2><p className="wizard-form__sub">{t.s1Sub}</p>
@@ -342,7 +344,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
             const selected = draft.serviceSlug === item.slug;
             return <button type="button" role="radio" aria-checked={selected} key={item.slug} className={`choice tone-${meta?.tone ?? "blue"}${selected ? " is-selected" : ""}`} onClick={() => update({ serviceSlug: item.slug })}>
               <span className="choice__icon">{meta && <CategoryIcon icon={meta.icon} size={20}/>}</span>
-              <span className="choice__text"><b>{item.name}</b><small>{meta?.short[locale]}</small></span>
+              <span className="choice__text"><b>{serviceName(item.slug, item.name, locale)}</b><small>{meta?.short[locale]}</small></span>
               <span className="choice__check" aria-hidden="true">{selected && <Check size={16}/>}</span>
             </button>;
           })}
@@ -356,7 +358,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
 
       {draft.step === 1 && <section>
         <h2>{t.s2Title}</h2><p className="wizard-form__sub">{t.s2Sub}</p>
-        {service && <div className="picked"><span>{service.name}</span><button type="button" onClick={() => goTo(0)}>{t.edit}</button></div>}
+        {service && <div className="picked"><span>{serviceName(service.slug, service.name, locale)}</span><button type="button" onClick={() => goTo(0)}>{t.edit}</button></div>}
         <div className="form-grid">
           <label className="field"><span className="field__label">{t.name}</span><input value={draft.name} onChange={(event) => update({ name: event.target.value.replace(/[^\p{L}\p{M}\s.'-]/gu, "") })} onBlur={captureLead} autoComplete="name" maxLength={100} required aria-invalid={nameBad}/>{nameBad && <span className="field__error">{t.errName}</span>}</label>
           <label className="field"><span className="field__label">{t.phone}</span><span className="input-wrap"><span className="input-prefix">+91</span><input value={draft.phone} onChange={(event) => update({ phone: event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16) })} inputMode="tel" autoComplete="tel-national" placeholder="98765 43210" required onBlur={captureLead} aria-invalid={phoneBad}/></span>{phoneBad ? <span className="field__error">{t.errPhone}</span> : <span className="field__hint">{t.phoneHint}</span>}</label>
@@ -392,7 +394,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       {draft.step === 3 && <section>
         <h2>{t.s4Title}</h2><p className="wizard-form__sub">{t.s4Sub}</p>
         <dl className="summary">
-          <div><dt>{t.summaryService}</dt><dd>{service?.name ?? t.somethingElse}</dd><button type="button" onClick={() => goTo(0)}>{t.edit}</button></div>
+          <div><dt>{t.summaryService}</dt><dd>{service ? serviceName(service.slug, service.name, locale) : t.somethingElse}</dd><button type="button" onClick={() => goTo(0)}>{t.edit}</button></div>
           <div><dt>{t.summaryContact}</dt><dd>{draft.name} · +91 {draft.phone} · {draft.contact === "whatsapp" ? t.viaWhatsapp : draft.contact === "phone" ? t.viaPhone : t.viaEmail}</dd><button type="button" onClick={() => goTo(1)}>{t.edit}</button></div>
           <div><dt>{t.summaryNote}</dt><dd>{draft.description}</dd><button type="button" onClick={() => goTo(1)}>{t.edit}</button></div>
           {file && <div><dt>{t.summaryFile}</dt><dd>{file.name}</dd><button type="button" onClick={() => goTo(1)}>{t.edit}</button></div>}
@@ -401,7 +403,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         {offer && <div className={`applied-offer tone-${offer.tone}`}><span className="badge badge--live"><i/>{dict(locale).ticker.live}</span><div><b>{offer.highlight[locale]} · {offer.title[locale]}</b><small>{t.offerApplied}. {offer.firstTimeOnly ? t.offerCheck : ""}</small></div></div>}
         <PromoCodeField locale={locale} value={draft.coupon} applied={applied} signedIn={Boolean(user && user.role !== "demo")} suggestions={suggestions} service={draft.serviceSlug || undefined}
           onChange={(coupon) => update({ coupon })} onApplied={setApplied}/>
-        <label className="check check--agree"><input type="checkbox" checked={draft.consent} onChange={(event) => update({ consent: event.target.checked })}/><span>{t.consent} <Link href="/terms" target="_blank">Terms</Link> · <Link href="/privacy" target="_blank">Privacy</Link></span></label>
+        <label className="check check--agree"><input type="checkbox" checked={draft.consent} onChange={(event) => update({ consent: event.target.checked })}/><span>{t.consent} <Link href="/terms" target="_blank">{X.terms[locale]}</Link> · <Link href="/privacy" target="_blank">{X.privacy[locale]}</Link></span></label>
         {user === null && <p className="alert alert--info">{t.signInNote}</p>}
       </section>}
 
