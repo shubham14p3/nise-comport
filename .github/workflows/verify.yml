@@ -42,6 +42,7 @@ jobs:
             run "test" npm test
             run "lint" npm run lint
             run "tsc" npx tsc --noEmit -p tsconfig.json
+            run "data:check" npm run data:check
             run "build" npm run build
             echo "=== pages (next start)"
             (npx next start -p 3100 > out/start.log 2>&1 &) ; sleep 8
