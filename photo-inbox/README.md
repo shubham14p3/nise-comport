@@ -1,20 +1,17 @@
 # Photo inbox
 
-Drop photos here, then run `npm run photos`. They are resized, converted to WebP, cleaned of
-location (GPS) data, given SEO-friendly names and added to the gallery and service pages.
+Drop photos (JPG, PNG, WebP, HEIC…) into a folder here, then run `npm run photos`.
 
-Put each photo in a folder named after the service it shows, for example:
+- **Not sure which service a photo belongs to?** Put it in `all-photos/`. It goes into the
+  gallery as a general NISE COMPORT photo. You can sort it later (see below).
+- **Know the service?** Put it in that service's folder (`pan-card/`, `aadhaar/`, `voter-id/` …).
+  It then also shows on that service's page.
+- `shop/` = shop front and counter, `team/` = staff photos.
 
-    photo-inbox/pan-card/IMG_1234.jpg
-    photo-inbox/aadhaar/counter.webp
-    photo-inbox/shop/front-of-shop.jpg      (shop, counter, team: shown in the gallery only)
+What `npm run photos` does: turns each photo upright, removes GPS/camera data, resizes to
+1600 px, saves a small WebP with a search-friendly name in public/images/gallery/photos/,
+and lists it in src/lib/gallery-photos.ts. Originals move to `_done/`. Photos are never
+uploaded to GitHub from this folder (only the empty folders are).
 
-Service folder names: pan-card, aadhaar, income-caste-residence-certificate, voter-id,
-passport-driving-licence, aeps-money-transfer, bike-insurance, car-insurance, health-life-insurance,
-scholarship-forms, exam-forms, bill-payment-recharge, itr-gst, printing-scanning, computer-repair,
-website-design, ticket-booking, lic-policy, mutual-fund-sip, rent-agreement, fssai-license,
-udyam-registration, jeevan-pramaan, birth-death-certificate, land-mutation, aadhaar-pvc-card,
-bank-account-opening, ayushman-card, ration-card, abua-awas-yojana — or shop / team.
-
-Photos dropped straight into photo-inbox/ (no folder) count as "shop".
-Processed originals move to photo-inbox/_done/. Nothing in this folder is uploaded to GitHub.
+**Sorting later:** open src/lib/gallery-photos.ts, find the photo and change
+`"service": "shop"` to the folder name, e.g. `"service": "pan-card"`. Save, commit, done.
