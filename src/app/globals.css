@@ -2013,3 +2013,23 @@ a.site-banner:hover { transform: translateY(-3px); }
 .show-more__count { margin: 18px 0 0; text-align: center; color: var(--muted); font-size: .875rem; }
 .show-more .show-more__count { margin: 0; }
 [hidden] { display: none !important; }
+
+/* ---------- "Get it done by us" with official links ---------- */
+.do-it-for-you { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: center; margin: 14px 0; padding: 16px 18px; border-radius: var(--r); background: var(--tint); border: 1px solid var(--line); }
+.do-it-for-you > svg { color: var(--blue); }
+.do-it-for-you b { display: block; margin-bottom: 2px; }
+.do-it-for-you p { margin: 0; color: var(--ink-2); font-size: .9375rem; line-height: 1.5; }
+.help-dialog { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; padding: 16px; background: rgb(7 11 31 / .55); }
+.help-dialog__card { position: relative; width: min(520px, 100%); max-height: calc(100dvh - 32px); overflow: auto; padding: 24px; border-radius: 22px; background: var(--surface); box-shadow: var(--shadow-lg); }
+.help-dialog__card h2 { margin: 0 32px 6px 0; font-size: 1.25rem; }
+.help-dialog__close { position: absolute; top: 12px; right: 12px; }
+.help-dialog__docs { margin: 12px 0; padding: 12px 14px; border-radius: 14px; background: var(--tint); font-size: .9375rem; }
+.help-dialog__docs ol { margin: 6px 0 0; padding-left: 20px; display: grid; gap: 4px; list-style: decimal; }
+.help-dialog__form { display: grid; gap: 12px; margin-top: 12px; }
+.help-dialog__more { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); font-size: .875rem; }
+@media (max-width: 640px) {
+  .do-it-for-you { grid-template-columns: auto minmax(0, 1fr); }
+  .do-it-for-you .btn { grid-column: 1 / -1; justify-content: center; }
+  .help-dialog { align-items: end; padding: 0; }
+  .help-dialog__card { border-radius: 22px 22px 0 0; max-height: 92dvh; }
+}
