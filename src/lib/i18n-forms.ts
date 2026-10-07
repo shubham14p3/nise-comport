@@ -212,3 +212,27 @@ export const SERVICE_NAMES: Record<string, { hi: string; bn: string }> = {
 export function serviceName(slug: string, english: string, locale: Locale) {
   return locale === "en" ? english : SERVICE_NAMES[slug]?.[locale] ?? english;
 }
+
+/** "Do it yourself, or let us do it" box shown with official links. */
+export const OFFICIAL_TEXT = {
+  boxTitle: t3("Prefer we do it for you?", "क्या हम आपके लिए कर दें?", "আমরা কি আপনার হয়ে করে দেব?"),
+  boxText: t3("Leave your name and number. We check your documents, fill the form correctly and keep you updated. Our service charge is told before we start.", "अपना नाम और नंबर छोड़ें। हम दस्तावेज़ जाँचकर सही फ़ॉर्म भरेंगे और आपको अपडेट देंगे। सेवा शुल्क काम शुरू होने से पहले बताया जाएगा।", "নাম ও নম্বর দিন। আমরা কাগজপত্র দেখে সঠিক ফর্ম পূরণ করব এবং আপডেট দেব। পরিষেবা খরচ কাজ শুরুর আগে জানানো হবে।"),
+  boxButton: t3("Get it done by us", "हमसे करवाएँ", "আমাদের দিয়ে করান"),
+  dialogTitle: t3("Get {service} done by NISE COMPORT", "{service} NISE COMPORT से करवाएँ", "{service} NISE COMPORT দিয়ে করান"),
+  leaving: t3("You were opening {site}. You can do it there yourself, or let us handle it.", "आप {site} खोल रहे थे। आप वहाँ खुद कर सकते हैं, या यह काम हमें सौंप सकते हैं।", "আপনি {site} খুলছিলেন। নিজে করতে পারেন, অথবা কাজটা আমাদের দিন।"),
+  docs: t3("Documents usually needed", "आमतौर पर ज़रूरी दस्तावेज़", "সাধারণত দরকারি কাগজপত্র"),
+  name: t3("Your name", "आपका नाम", "আপনার নাম"),
+  phone: t3("Mobile / WhatsApp number", "मोबाइल / व्हाट्सऐप नंबर", "মোবাইল / হোয়াটসঅ্যাপ নম্বর"),
+  note: t3("Anything we should know? (optional)", "कुछ और बताना है? (वैकल्पिक)", "আর কিছু জানাতে চান? (ঐচ্ছিক)"),
+  send: t3("Call me back", "मुझे कॉल करें", "আমাকে কল করুন"),
+  sending: t3("Sending…", "भेज रहे हैं…", "পাঠানো হচ্ছে…"),
+  privacy: t3("We use your number only to help with this request. Never share OTPs or PINs.", "आपका नंबर सिर्फ़ इसी काम के लिए इस्तेमाल होगा। OTP या पिन कभी साझा न करें।", "আপনার নম্বর শুধু এই কাজের জন্য ব্যবহার হবে। OTP বা PIN কখনো শেয়ার করবেন না।"),
+  thanks: t3("Thank you, {name}! We’ll call you on {phone} soon. Keep the documents above ready.", "धन्यवाद, {name}! हम जल्द ही {phone} पर कॉल करेंगे। ऊपर दिए दस्तावेज़ तैयार रखें।", "ধন্যবাদ, {name}! শিগগিরই {phone} নম্বরে কল করব। উপরের কাগজপত্র তৈরি রাখুন।"),
+  whatsapp: t3("Chat on WhatsApp now", "अभी व्हाट्सऐप पर बात करें", "এখনই হোয়াটসঅ্যাপে কথা বলুন"),
+  continue: t3("No thanks, open {site}", "नहीं, {site} खोलें", "না, {site} খুলুন"),
+  close: t3("Close", "बंद करें", "বন্ধ করুন"),
+  errName: t3("Please enter your name.", "कृपया अपना नाम लिखें।", "আপনার নাম লিখুন।"),
+  errPhone: t3("Enter a valid 10-digit mobile number.", "सही 10 अंकों का मोबाइल नंबर डालें।", "সঠিক ১০ সংখ্যার মোবাইল নম্বর দিন।"),
+  errSend: t3("Could not send. Please WhatsApp or call us.", "नहीं भेजा जा सका। कृपया व्हाट्सऐप या कॉल करें।", "পাঠানো গেল না। হোয়াটসঅ্যাপ বা কল করুন।"),
+  official: t3("Official site", "आधिकारिक साइट", "সরকারি সাইট"),
+};

@@ -1,9 +1,10 @@
 import SiteHeader from "@/components/site-header";
+import OfficialLinks from "@/components/official-links";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { ArrowRight, ArrowUpRight, CircleCheck, ExternalLink, MapPin, Phone, ShieldCheck } from "lucide-react";
+import { ArrowRight, ArrowUpRight, CircleCheck, MapPin, Phone, ShieldCheck } from "lucide-react";
 import Breadcrumbs from "@/components/breadcrumbs";
 import FaqSection from "@/components/faq-section";
 import FloatingStart from "@/components/floating-start";
@@ -144,7 +145,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
           <span className="eyebrow">OFFICIAL SOURCES</span>
           <h2>Check the latest rules</h2>
           <p className="muted">Official sites set the current documents, appointments and fees. We help you navigate them.</p>
-          <div className="link-list">{officialLinks.map((link) => <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer external"><span>{link.label}</span><ExternalLink size={18}/></a>)}</div>
+          <OfficialLinks links={officialLinks} service={{ slug: service.slug, title: shortServiceName(title), documents: detail?.documents ?? [] }}/>
         </section> : null}
         <p className="fine">Page reviewed: {reviewed}</p>
       </div>
