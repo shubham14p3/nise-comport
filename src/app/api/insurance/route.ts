@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { apiError, clientIp, readJson } from "@/lib/http";
 import { createLead } from "@/lib/leads";
+import { sendRequestWhatsApp } from "@/lib/whatsapp-alerts";
 import { checkInsuranceForm, PURPOSES, renewalDate, summariseInsurance } from "@/lib/motor-insurance";
 import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
 import { notifyNewRequest, recordEvent, withUniqueReference } from "@/lib/requests";
@@ -67,6 +68,7 @@ export async function POST(request: NextRequest) {
     if (fileIds.length) await db.update(storedFiles).set({ requestId: created.id }).where(and(inArray(storedFiles.id, fileIds), eq(storedFiles.userId, user.id)));
     await recordEvent("service", created.id, user.id, null, "submitted", "Insurance form");
     await notifyNewRequest(user, created.reference, topic, summary, "insurance");
+    sendRequestWhatsApp({ name: form.name, phone: whatsapp ?? phone, reference: created.reference, service: topic, details: summary.join(" · ") });
     return NextResponse.json({ ok: true, kind: "request", request: created }, { status: 201 });
   } catch (error) { return apiError(error); }
 }

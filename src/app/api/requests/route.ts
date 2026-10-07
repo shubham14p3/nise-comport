@@ -14,6 +14,8 @@ import { resolveService } from "@/lib/site-content";
 import type { ScopeContext } from "@/lib/promo-scope";
 import { isServiceDetail, serviceCatalog, servicesInCategory } from "@/lib/services";
 import { normalizePhone } from "@/lib/validation";
+import { closeWizardLeads } from "@/lib/leads";
+import { sendRequestWhatsApp, whatsappAlertsEnabled } from "@/lib/whatsapp-alerts";
 
 const schema = z.object({
   serviceSlug: z.string().min(2).max(80),
@@ -135,8 +137,12 @@ export async function POST(request: NextRequest) {
       ...(offer.applied ? [`Offer claimed: ${offer.title}`] : []),
       ...(coupon.applied ? [`Coupon: ${coupon.code} (₹${coupon.value} off the service charge if it is ₹${coupon.minimum} or more)`] : []),
     ], found && "categorySlug" in found ? String(found.categorySlug) : undefined);
+    const replyTo = contactPhone ?? user.whatsapp ?? user.phone ?? null;
+    sendRequestWhatsApp({ name: input.contactName ?? user.name, phone: replyTo, reference: created.reference, service: service.title, details: input.description });
+    // They finished the form: the "started a request" call-back is no longer needed.
+    if (replyTo) await closeWizardLeads(replyTo).catch(() => undefined);
     return NextResponse.json({
-      ok: true, request: created,
+      ok: true, request: created, whatsappSent: whatsappAlertsEnabled(),
       ...(input.offerId ? { offer: { applied: offer.applied, ...(offer.reason ? { reason: offer.reason } : {}) } } : {}),
       ...(input.couponCode ? { coupon: { applied: coupon.applied, ...(coupon.applied ? { code: coupon.code } : { reason: coupon.reason }) } } : {}),
     }, { status: 201 });

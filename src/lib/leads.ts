@@ -1,5 +1,5 @@
 import { after } from "next/server";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { contacts, leads } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import { db } from "@/lib/db";
@@ -20,7 +20,7 @@ export async function createLead(input: LeadInput) {
   const topic = (input.topic ?? "").replace(/\s+/g, " ").trim().slice(0, 80) || "General enquiry";
   const message = (input.message ?? "").replace(/[ \t]+/g, " ").trim().slice(0, 1500) || null;
   const locale = ["en", "hi", "bn"].includes(input.locale ?? "") ? input.locale! : "en";
-  const [row] = await db.insert(leads).values({ name, phone, topic, message, page: input.page?.slice(0, 200) || null, locale, source: input.source === "form" ? "form" : "chat", details: input.details ?? null }).returning();
+  const [row] = await db.insert(leads).values({ name, phone, topic, message, page: input.page?.slice(0, 200) || null, locale, source: input.source === "form" || input.source === "wizard" ? input.source : "chat", details: input.details ?? null }).returning();
   // Keep the number for WhatsApp follow-up without changing an existing YES/STOP.
   await db.insert(contacts).values({ name, phone, locale, source: "enquiry", services: [] }).onConflictDoNothing();
   await logActivity({ kind: "lead", permission: "requests", category: "leads", title: `Call back ${name} · ${formatPhone(phone)}`, detail: `${topic}${message ? ` — ${message}` : ""}`, refType: "lead", refId: row.id });
@@ -30,6 +30,13 @@ export async function createLead(input: LeadInput) {
     catch (error) { console.error("[leads] alert email failed", error); }
   });
   return row;
+}
+
+/** Closes "started a request" call-backs once that number has sent the full request. */
+export async function closeWizardLeads(phone: string) {
+  const normal = normalizePhone(phone);
+  if (!normal) return;
+  await db.update(leads).set({ status: "done", handledAt: new Date() }).where(and(eq(leads.phone, normal), eq(leads.source, "wizard"), eq(leads.status, "new")));
 }
 
 export async function updateLead(id: string, status: (typeof LEAD_STATUSES)[number], actor: { id: string; name: string }) {
