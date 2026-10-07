@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Check, FileText, Headphones, House, Laptop, MapPin, PartyPopper, Search, Store, Upload, X } from "lucide-react";
 import AddressPicker, { addressProblem, EMPTY_ADDRESS, formatAddress, type AddressValue } from "@/components/address-picker";
@@ -122,11 +122,10 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
 
   const service = services.find((item) => item.slug === draft.serviceSlug);
   const activeCategory = service?.category ?? (draft.serviceSlug === "other" && draft.category !== "all" ? draft.category : null);
-  const offer = useMemo(() => {
-    const chosen = findOffer(draft.offerId);
-    if (chosen && isOfferLive(chosen) && (!activeCategory || offerAppliesTo(chosen, activeCategory))) return chosen;
-    return activeCategory ? offersFor(activeCategory).find((item) => item.categories !== "all") : undefined;
-  }, [draft.offerId, activeCategory]);
+  const chosenOffer = findOffer(draft.offerId);
+  const offer = chosenOffer && isOfferLive(chosenOffer) && (!activeCategory || offerAppliesTo(chosenOffer, activeCategory))
+    ? chosenOffer
+    : activeCategory ? offersFor(activeCategory).find((item) => item.categories !== "all") : undefined;
 
   useEffect(() => { saveDraft(draft); }, [draft]);
 
