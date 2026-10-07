@@ -20,7 +20,7 @@ import { secureApi, secureUpload, SecureApiError } from "@/lib/secure-api-client
 import { useLocale } from "@/lib/use-locale";
 import { whatsappHref } from "@/lib/public-contact";
 import { rememberReturn } from "@/lib/after-login";
-import { serviceName, WIZARD_EXTRA as X } from "@/lib/i18n-forms";
+import { serviceName, WIZARD_EXTRA as WX } from "@/lib/i18n-forms";
 
 export type WizardService = { slug: string; name: string; category: string; description: string };
 type Mode = "walkin" | "callback" | "doorstep" | "online";
@@ -280,7 +280,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         <p>{t.successSub}</p>
         <strong className="success-card__ref">{done.reference}</strong>
         <p>{t.successNext}</p>
-        <p className="muted">{done.whatsappSent ? X.waSent[locale] : X.waTap[locale]}</p>
+        <p className="muted">{done.whatsappSent ? WX.waSent[locale] : WX.waTap[locale]}</p>
         {done.offerNote && <p className="alert alert--info">{t.offerNotApplied} {done.offerNote}</p>}
         {done.couponNote && <p className={done.couponOk ? "alert alert--success" : "alert alert--info"}>{done.couponNote}</p>}
         <div className="success-card__actions">
@@ -321,15 +321,15 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const picks = QUICK_PICKS[service?.category ?? (draft.serviceSlug === "other" ? "other" : draft.category)] ?? QUICK_PICKS.other;
 
   return <WizardFrame
-    kicker={X.kicker[locale]}
-    title={<>{X.titleA[locale]} <span className="grad-text">{X.titleB[locale]}</span></>}
-    lead={X.lead[locale]}
+    kicker={WX.kicker[locale]}
+    title={<>{WX.titleA[locale]} <span className="grad-text">{WX.titleB[locale]}</span></>}
+    lead={WX.lead[locale]}
     steps={t.steps} current={draft.step} onJump={goTo} locale={locale}
     strip={<OfferStrip category={activeCategory} locale={locale}/>}
     rail={<OfferRail category={activeCategory} locale={locale} whatsappText={whatsappText} appliedOfferId={offer?.id} appliedCode={applied?.code ?? (draft.coupon || null)}/>}
   >
     <div ref={cardTop} className="wizard__anchor"/>
-    {restored && <p className="alert alert--info wizard-restored">{X.restored[locale]} <button type="button" className="text-link" onClick={() => { setRestored(false); clearDraft(); void secureApi("D4r8F2kW6nQ1", { action: "clear" }).catch(() => undefined); setDraft(initialDraft(services, {})); }}>{X.startFresh[locale]}</button></p>}
+    {restored && <p className="alert alert--info wizard-restored">{WX.restored[locale]} <button type="button" className="text-link" onClick={() => { setRestored(false); clearDraft(); void secureApi("D4r8F2kW6nQ1", { action: "clear" }).catch(() => undefined); setDraft(initialDraft(services, {})); }}>{WX.startFresh[locale]}</button></p>}
     <form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (draft.step === 3) void submit(); else next(); }}>
       {draft.step === 0 && <section>
         <h2>{t.s1Title}</h2><p className="wizard-form__sub">{t.s1Sub}</p>
@@ -403,7 +403,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         {offer && <div className={`applied-offer tone-${offer.tone}`}><span className="badge badge--live"><i/>{dict(locale).ticker.live}</span><div><b>{offer.highlight[locale]} · {offer.title[locale]}</b><small>{t.offerApplied}. {offer.firstTimeOnly ? t.offerCheck : ""}</small></div></div>}
         <PromoCodeField locale={locale} value={draft.coupon} applied={applied} signedIn={Boolean(user && user.role !== "demo")} suggestions={suggestions} service={draft.serviceSlug || undefined}
           onChange={(coupon) => update({ coupon })} onApplied={setApplied}/>
-        <label className="check check--agree"><input type="checkbox" checked={draft.consent} onChange={(event) => update({ consent: event.target.checked })}/><span>{t.consent} <Link href="/terms" target="_blank">{X.terms[locale]}</Link> · <Link href="/privacy" target="_blank">{X.privacy[locale]}</Link></span></label>
+        <label className="check check--agree"><input type="checkbox" checked={draft.consent} onChange={(event) => update({ consent: event.target.checked })}/><span>{t.consent} <Link href="/terms" target="_blank">{WX.terms[locale]}</Link> · <Link href="/privacy" target="_blank">{WX.privacy[locale]}</Link></span></label>
         {user === null && <p className="alert alert--info">{t.signInNote}</p>}
       </section>}
 
