@@ -44,7 +44,7 @@ jobs:
             run "tsc" npx tsc --noEmit -p tsconfig.json
             run "data:check" npm run data:check
             mkdir -p photo-inbox/pan-card && node -e "require('sharp')({create:{width:2400,height:1800,channels:3,background:'#c33'}}).jpeg().withMetadata().toFile('photo-inbox/pan-card/IMG_1.jpg').then(()=>require('sharp')({create:{width:900,height:900,channels:3,background:'#3c3'}}).webp({quality:100}).toFile('photo-inbox/counter.webp'))"
-            run "photos" npm run photos
+            run "photos" npm run photos -- --no-git
             ls -la public/images/gallery/photos; cat src/lib/gallery-photos.ts | head -14
             echo "=== dev first (like your machine: dev files exist before build)"
             (npx next dev -p 3300 > out/dev0.log 2>&1 &) ; sleep 10
@@ -56,7 +56,7 @@ jobs:
             echo "=== pages (next start)"
             (npx next start -p 3100 > out/start.log 2>&1 &) ; sleep 8
             for u in / /services /services/car-insurance /services/health-life-insurance /services/lic-policy /services/pan-card /services/voter-id /services/abua-awas-yojana /services/ration-card /services/ayushman-card /hi/services/pan-card /pan/request "/request?service=voter-id" "/request?service=voter-id-services-jamshedpur" /insurance /services/insurance /services/car-insurance-jamshedpur /hi/services/pan-card-jamshedpur; do echo "$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' "http://localhost:3100$u") $u"; done
-            echo "--- photo strip"; curl -s http://localhost:3100/services/pan-card | grep -o 'photo-strip__item' | head -2; curl -s http://localhost:3100/sitemap.xml | grep -o 'pan-card-telco-jamshedpur-1.webp' | head -2
+            echo "--- photo strip"; curl -s http://localhost:3100/services/pan-card | grep -o 'photo-strip__item' | head -2; curl -s http://localhost:3100/sitemap.xml | grep -o 'pan-card-telco-jamshedpur-[0-9]*.webp' | sort -u | head -8; curl -s -o /dev/null -w 'gallery-photo-missing %{http_code}\n' http://localhost:3100/gallery/photo/nope-1.webp; curl -s http://localhost:3100/gallery | grep -o 'Festivals' | head -1
             echo "--- titles"; for u in / /services/pan-card /insurance /hi; do curl -s "http://localhost:3100$u" | grep -o '<title>[^<]*</title>'; done
             tail -c 20000 out/start.log
             pkill -f "next start" ; sleep 2
