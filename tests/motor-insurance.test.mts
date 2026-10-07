@@ -63,3 +63,17 @@ test("form translations: every option has en/hi/bn and values stay English", asy
   for (const service of publishedServiceDetails) assert.ok(SERVICE_NAMES[service.slug]?.hi && SERVICE_NAMES[service.slug]?.bn, `${service.slug} needs Hindi/Bengali names`);
   assert.equal(statusText("ready_for_pickup", "hi"), "लेने के लिए तैयार");
 });
+
+test("gallery photos: files exist, categories are known, inbox folders match", async () => {
+  const { existsSync, readdirSync } = await import("node:fs");
+  const { galleryPhotos } = await import("../src/lib/gallery-photos.ts");
+  const { isGalleryTag } = await import("../src/lib/gallery-tags.ts");
+  for (const photo of galleryPhotos) {
+    assert.ok(isGalleryTag(photo.service), `${photo.src}: unknown category ${photo.service}`);
+    assert.ok(existsSync(new URL(`../public${photo.src}`, import.meta.url)), `${photo.src} is missing`);
+    assert.ok(photo.alt.length > 20, `${photo.src} needs alt text`);
+  }
+  for (const folder of readdirSync(new URL("../photo-inbox/", import.meta.url), { withFileTypes: true }).filter((entry) => entry.isDirectory() && !entry.name.startsWith("_"))) {
+    assert.ok(folder.name === "all-photos" || isGalleryTag(folder.name), `photo-inbox/${folder.name} isn't a known category`);
+  }
+});

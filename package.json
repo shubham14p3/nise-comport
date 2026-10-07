@@ -16,7 +16,7 @@
     "seo:check": "node scripts/seo-check.mjs",
     "db:check": "node scripts/db-check.mjs",
     "data:check": "node scripts/data-check.mjs",
-    "photos": "node scripts/photos.mjs",
+    "photos": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types scripts/photos.mjs",
     "db:setup": "npm run db:check && npm run db:migrate && npm run db:check && npm run offers:sync",
     "smtp:check": "node scripts/smtp-check.mjs",
     "offers:sync": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/sync-offers.mts",

@@ -44,7 +44,7 @@ export function posterFor(slug: string, category?: string) {
 }
 
 /** Your own photos (npm run photos), newest first. */
-export const ownPhotos: GalleryPhoto[] = [...galleryPhotos].reverse();
+export const ownPhotos: GalleryPhoto[] = galleryPhotos.filter((photo) => !photo.hidden).reverse();
 
 /** Your photos for one service page (newest first). */
 export function photosForService(slug: string) {

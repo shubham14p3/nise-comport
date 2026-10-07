@@ -7,11 +7,13 @@
  *   npm run photos -- --service pan-card "D:\pan.jpg" → put these under a service
  *   npm run photos -- https://example.com/photo.jpg  → download links (your own photos only)
  *   npm run photos -- --title "Our new counter" counter.jpg
+ *   npm run photos -- --no-git                       → convert only; don't commit and push
  *
  * For each photo: rotates it upright, removes GPS/camera data, resizes to max 1600 px, saves a
  * WebP (quality 82, looks the same and is ~10x smaller than quality 100) as
  * public/images/gallery/photos/<service>-telco-jamshedpur-<n>.webp, and records it in
- * src/lib/gallery-photos.ts with a title and alt text. Re-running skips photos already added.
+ * src/lib/gallery-photos.ts with a title and alt text, then commits and pushes just those files.
+ * Re-running skips photos already added.
  */
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
@@ -21,24 +23,13 @@ const ROOT = process.cwd();
 const INBOX = join(ROOT, "photo-inbox");
 const OUT_DIR = join(ROOT, "public", "images", "gallery", "photos");
 const MANIFEST = join(ROOT, "src", "lib", "gallery-photos.ts");
-const HEADER = "/** Your own photos, added by `npm run photos` (scripts/photos.mjs). You can edit titles and alt text here. */\nexport type GalleryPhoto = { src: string; width: number; height: number; title: string; alt: string; service: string; hash: string; addedOn: string };\n\nexport const galleryPhotos: GalleryPhoto[] = ";
+const HEADER = "/** Your own photos, added by `npm run photos` (scripts/photos.mjs). You can edit titles and alt text here. */\nexport type GalleryPhoto = { src: string; width: number; height: number; title: string; alt: string; service: string; hash: string; addedOn: string; hidden?: boolean };\n\nexport const galleryPhotos: GalleryPhoto[] = ";
 const IMAGE_EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".avif", ".heic", ".heif", ".tif", ".tiff", ".bmp", ".gif"]);
 const MAX_BYTES = 30 * 1024 * 1024;
 
-// Service folder → name used in titles. Unknown folders are treated as "shop".
-const SERVICES = {
-  "pan-card": "PAN card", aadhaar: "Aadhaar update", "income-caste-residence-certificate": "Income, caste & residence certificate",
-  "voter-id": "Voter ID", "passport-driving-licence": "Passport & driving licence", "aeps-money-transfer": "AEPS & money transfer",
-  "bike-insurance": "Bike insurance", "car-insurance": "Car insurance", "health-life-insurance": "Health & life insurance",
-  "scholarship-forms": "Scholarship forms", "exam-forms": "Exam & job forms", "bill-payment-recharge": "Bill payment & recharge",
-  "itr-gst": "ITR & GST", "printing-scanning": "Printing & scanning", "computer-repair": "Computer & printer service",
-  "website-design": "Website design", "ticket-booking": "Ticket booking", "lic-policy": "LIC policy service",
-  "mutual-fund-sip": "SIP & mutual fund", "rent-agreement": "Rent agreement", "fssai-license": "FSSAI licence",
-  "udyam-registration": "Udyam registration", "jeevan-pramaan": "Jeevan Pramaan", "birth-death-certificate": "Birth & death certificate",
-  "land-mutation": "Land mutation", "aadhaar-pvc-card": "Aadhaar PVC card", "bank-account-opening": "Bank account opening",
-  "ayushman-card": "Ayushman card", "ration-card": "Ration card", "abua-awas-yojana": "Abua Awas Yojana",
-  shop: "Our desk", team: "Our team",
-};
+// Folder names: services, festivals and shop tags (shared with the website and admin gallery).
+const { describePhoto, isGalleryTag, photoFileBase } = await import("../src/lib/gallery-tags.ts");
+const SERVICES = new Proxy({}, { get: (_target, key) => (typeof key === "string" && isGalleryTag(key) ? key : undefined) });
 
 let sharp;
 try { sharp = (await import("sharp")).default; }
@@ -49,15 +40,16 @@ catch {
 
 // ------------------------------------------------------------------ arguments
 const args = process.argv.slice(2);
-let forcedService = null, forcedTitle = null;
+let forcedService = null, forcedTitle = null, git = true;
 const inputs = [];
 for (let i = 0; i < args.length; i++) {
   if (args[i] === "--service") forcedService = args[++i];
   else if (args[i] === "--title") forcedTitle = args[++i];
+  else if (args[i] === "--no-git") git = false;
   else inputs.push(args[i]);
 }
 if (forcedService && !SERVICES[forcedService]) {
-  console.error(`Unknown service "${forcedService}". Use one of:\n  ${Object.keys(SERVICES).join(", ")}`);
+  console.error(`Unknown category "${forcedService}". Use a folder name from photo-inbox/ (e.g. pan-card, diwali, shop).`);
   process.exit(1);
 }
 
@@ -67,6 +59,7 @@ const isImage = (path) => IMAGE_EXT.has(extname(path).toLowerCase());
 function addFolder(folder, service, fromInbox) {
   for (const name of readdirSync(folder)) {
     if (name.startsWith(".") || name === "_done" || name === "README.md") continue;
+    // "all-photos" (or any unknown folder) = general photos of the centre.
     const path = join(folder, name);
     if (statSync(path).isDirectory()) addFolder(path, forcedService ?? (SERVICES[name] ? name : service), fromInbox);
     else if (isImage(path)) jobs.push({ file: path, service: forcedService ?? service, fromInbox });
@@ -105,13 +98,14 @@ async function bytesFor(job) {
 }
 
 function nextName(service) {
-  const base = `${service === "shop" ? "nise-comport-pragya-kendra" : service}-telco-jamshedpur`;
+  const base = photoFileBase(service);
   let n = manifest.filter((item) => item.src.includes(`/${base}-`)).length + 1;
   while (existsSync(join(OUT_DIR, `${base}-${n}.webp`))) n++;
   return `${base}-${n}.webp`;
 }
 
 let added = 0, skipped = 0, failed = 0;
+const added_files = [];
 for (const job of jobs) {
   const label = job.file ? basename(job.file) : job.url;
   try {
@@ -125,14 +119,13 @@ for (const job of jobs) {
       .webp({ quality: 82, effort: 5 })           // metadata (GPS, camera) is not copied
       .toBuffer({ resolveWithObject: true });
     writeFileSync(join(OUT_DIR, name), data);
-    const what = SERVICES[job.service] ?? "Our desk";
-    const number = name.match(/-(\d+)\.webp$/)[1];
-    const title = forcedTitle ?? (job.service === "shop" ? "NISE COMPORT, Kharangajhar, Telco" : job.service === "team" ? "The NISE COMPORT team" : `${what} at NISE COMPORT`);
+    const number = Number(name.match(/-(\d+)\.webp$/)[1]);
+    const text = describePhoto(job.service, number);
     manifest.push({
-      src: `/images/gallery/photos/${name}`, width: info.width, height: info.height, title,
-      alt: `${job.service === "shop" || job.service === "team" ? what : `${what} help`} at NISE COMPORT Pragya Kendra, Kharangajhar, Telco, Jamshedpur (photo ${number})`,
+      src: `/images/gallery/photos/${name}`, width: info.width, height: info.height, title: forcedTitle ?? text.title, alt: text.alt,
       service: job.service, hash, addedOn: new Date().toISOString().slice(0, 10),
     });
+    added_files.push(join(OUT_DIR, name));
     known.add(hash);
     added++;
     console.log(`  + ${label} → ${name} (${info.width}×${info.height}, ${(data.length / 1024).toFixed(0)} KB)`);
@@ -153,4 +146,17 @@ function moveDone(file) {
 
 writeFileSync(MANIFEST, `${HEADER}${JSON.stringify(manifest, null, 2)};\n`);
 console.log(`\nAdded ${added}, already there ${skipped}, failed ${failed}. Gallery now has ${manifest.length} photos.`);
-console.log("Edit titles in src/lib/gallery-photos.ts if you like, then commit the new files in public/images/gallery/photos/ and that file.");
+
+// Save to GitHub: add only the new photos and the photo list, commit them, push.
+if (added && git) {
+  const { execFileSync } = await import("node:child_process");
+  const run = (...cmd) => execFileSync("git", cmd, { cwd: ROOT, stdio: "inherit" });
+  try {
+    run("add", "--", MANIFEST, ...added_files);
+    run("commit", "-m", `Add ${added} photo${added === 1 ? "" : "s"} to the gallery`, "--", MANIFEST, ...added_files);
+    try { run("push"); console.log("Pushed to GitHub. The website shows them after the next deploy."); }
+    catch { console.warn("Committed, but the push didn't work (no internet or not signed in?). Run: git push"); }
+  } catch { console.warn("Couldn't commit automatically. Run: git add public/images/gallery/photos src/lib/gallery-photos.ts && git commit -m \"Add photos\" && git push"); }
+} else if (added) {
+  console.log("Not saved to GitHub (--no-git). Commit public/images/gallery/photos/ and src/lib/gallery-photos.ts when ready.");
+}

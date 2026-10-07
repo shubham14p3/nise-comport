@@ -35,3 +35,7 @@ coverage/
 # Photo inbox: originals stay on your computer (npm run photos)
 /photo-inbox/*
 !/photo-inbox/README.md
+!/photo-inbox/*/
+/photo-inbox/*/*
+!/photo-inbox/*/.gitkeep
+/photo-inbox/_done/

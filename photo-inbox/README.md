@@ -1,20 +1,22 @@
 # Photo inbox
 
-Drop photos here, then run `npm run photos`. They are resized, converted to WebP, cleaned of
-location (GPS) data, given SEO-friendly names and added to the gallery and service pages.
+Drop photos (JPG, PNG, WebP, HEIC…) into a folder here and run `npm run photos`.
+That's all: the photos are converted, added to the website and saved to GitHub (commit + push).
 
-Put each photo in a folder named after the service it shows, for example:
+**Which folder?**
+- `all-photos/` – not sure? Put it here. It shows as a general photo of the centre; you can move
+  it to the right category later in Admin → Gallery photos.
+- Our centre: `shop/`, `team/`, `camps/` (service camps), `training/` (computer classes).
+- Festivals & days: `diwali/`, `holi/`, `durga-puja/`, `ganesh-puja/`, `chhath-puja/`, `christmas/`,
+  `independence-day/`, `republic-day/`, `makar-sankranti/`, `saraswati-puja/`, `raksha-bandhan/`,
+  `eid/`, `new-year/`, `karma-puja/`, `sarhul/` … (one folder each).
+- Services (photo also shows on that service's page): `pan-card/`, `aadhaar/`, `voter-id/`,
+  `bike-insurance/`, `printing-scanning/`, `computer-repair/`, `jeevan-pramaan/` … (one folder each).
 
-    photo-inbox/pan-card/IMG_1234.jpg
-    photo-inbox/aadhaar/counter.webp
-    photo-inbox/shop/front-of-shop.jpg      (shop, counter, team: shown in the gallery only)
+**What happens:** each photo is turned upright, GPS/camera data removed, resized to 1600 px and
+saved as a small WebP with a search-friendly name (e.g. `diwali-nise-comport-telco-jamshedpur-3.webp`).
+Originals move to `_done/`. Running it again skips photos already added.
+Add `-- --no-git` to convert without committing.
 
-Service folder names: pan-card, aadhaar, income-caste-residence-certificate, voter-id,
-passport-driving-licence, aeps-money-transfer, bike-insurance, car-insurance, health-life-insurance,
-scholarship-forms, exam-forms, bill-payment-recharge, itr-gst, printing-scanning, computer-repair,
-website-design, ticket-booking, lic-policy, mutual-fund-sip, rent-agreement, fssai-license,
-udyam-registration, jeevan-pramaan, birth-death-certificate, land-mutation, aadhaar-pvc-card,
-bank-account-opening, ayushman-card, ration-card, abua-awas-yojana — or shop / team.
-
-Photos dropped straight into photo-inbox/ (no folder) count as "shop".
-Processed originals move to photo-inbox/_done/. Nothing in this folder is uploaded to GitHub.
+**Without the PC:** staff with the "Site content" permission can upload from any computer or phone
+in Admin → Gallery photos (also converted to WebP automatically) and change any photo's category.

@@ -2038,3 +2038,21 @@ a.site-banner:hover { transform: translateY(-3px); }
 .photo-strip__item img { width: 100%; height: 100%; object-fit: cover; transition: transform .25s ease; }
 .photo-strip__item:hover img { transform: scale(1.04); }
 @media (max-width: 640px) { .photo-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.chip-count { font-size: .75rem; opacity: .65; margin-left: 2px; }
+.chip-row--sub { margin-top: -6px; }
+
+/* ---------- Admin → Gallery photos ---------- */
+.gallery-admin__upload { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: end; padding: 16px; border-radius: var(--r); background: var(--tint); margin-bottom: 14px; }
+.gallery-admin__upload .field { min-width: 240px; flex: 1 1 260px; }
+.gallery-admin__upload .field__hint { flex-basis: 100%; margin: 0; }
+.gallery-admin__filters { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: end; margin: 16px 0 12px; }
+.gallery-admin__filters .field { min-width: 220px; }
+.gallery-admin__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.gallery-admin__card { display: grid; gap: 8px; padding: 10px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); }
+.gallery-admin__card.is-hidden { opacity: .55; }
+.gallery-admin__card select, .gallery-admin__card input { width: 100%; min-height: 36px; padding: 6px 8px; border-radius: 10px; border: 1px solid var(--line-2); font: inherit; font-size: .8125rem; background: var(--surface); }
+.gallery-admin__thumb { display: block; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 10px; background: var(--tint); }
+.gallery-admin__thumb img { width: 100%; height: 100%; object-fit: cover; }
+.gallery-admin__actions { display: flex; gap: 6px; align-items: center; }
+.gallery-admin__actions small { flex: 1; font-size: .75rem; }
+.gallery-admin__upload .btn { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; white-space: nowrap; cursor: pointer; }
