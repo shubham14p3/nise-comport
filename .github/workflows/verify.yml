@@ -1,0 +1,58 @@
+name: verify
+on:
+  push:
+    branches: ["ci/verify"]
+permissions:
+  contents: write
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: ci, POSTGRES_DB: nise }
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Run checks
+        shell: bash
+        run: |
+          set +e
+          mkdir -p out
+          node scripts/generate-api-transport-key.mjs | grep '=' > keys.txt
+          {
+            echo "DATABASE_URL=postgres://postgres:ci@localhost:5432/nise"
+            echo "DATABASE_SSL=false"
+            echo "NEXT_PUBLIC_SITE_URL=https://www.nisecomport.com"
+            echo "OTP_SECRET=$(openssl rand -hex 32)"
+            echo "CRON_SECRET=$(openssl rand -hex 16)"
+            echo "PAN_ENCRYPTION_KEY=$(openssl rand -base64 32)"
+            echo "RECORDS_ENCRYPTION_KEY=$(openssl rand -base64 32)"
+            echo "PRIVATE_UPLOAD_DIR=/tmp/uploads"
+            cat keys.txt
+          } > .env.local
+          run() { echo "=== $1"; shift; "$@" > out/step.log 2>&1; code=$?; tail -c 60000 out/step.log; echo "=== exit $code"; }
+          {
+            run "npm ci" npm ci --no-audit --no-fund
+            run "db:migrate" npx drizzle-kit migrate
+            run "security:check" npm run security:check
+            run "test" npm test
+            run "lint" npm run lint
+            run "tsc" npx tsc --noEmit -p tsconfig.json
+            run "build" npm run build
+          } > out/result.log 2>&1
+          grep '^=== ' out/result.log
+      - name: Save log
+        if: always()
+        shell: bash
+        run: |
+          cp out/result.log /tmp/result.log
+          git config user.name ci && git config user.email ci@users.noreply.github.com
+          git checkout --orphan ci/verify-log
+          git rm -rfq .
+          cp /tmp/result.log result.log
+          git add result.log && git commit -qm "verify log $GITHUB_SHA"
+          git push -f origin ci/verify-log
