@@ -51,3 +51,15 @@ test("migration 0012 adds request drafts", () => {
   const journal = JSON.parse(readFileSync(new URL("../drizzle/meta/_journal.json", import.meta.url), "utf8"));
   assert.ok(journal.entries.some((entry: { tag: string }) => entry.tag === "0012_request_drafts"));
 });
+
+test("form translations: every option has en/hi/bn and values stay English", async () => {
+  const { INSURANCE_TEXT, SERVICE_NAMES, statusText } = await import("../src/lib/i18n-forms.ts");
+  const { FUELS, INCIDENTS, ADD_ONS, COVER_CHOICES } = await import("../src/lib/motor-insurance.ts");
+  for (const fuel of FUELS) assert.ok(INSURANCE_TEXT.fuels[fuel]?.hi, fuel);
+  for (const incident of INCIDENTS) assert.ok(INSURANCE_TEXT.incidents[incident]?.bn, incident);
+  for (const addOn of ADD_ONS) assert.ok(INSURANCE_TEXT.addOnNames[addOn.id]?.hi && INSURANCE_TEXT.addOnTexts[addOn.id]?.bn, addOn.id);
+  for (const id of Object.keys(COVER_CHOICES)) assert.ok(INSURANCE_TEXT.covers[id]?.hi, id);
+  const { publishedServiceDetails } = await import("../src/lib/services.ts");
+  for (const service of publishedServiceDetails) assert.ok(SERVICE_NAMES[service.slug]?.hi && SERVICE_NAMES[service.slug]?.bn, `${service.slug} needs Hindi/Bengali names`);
+  assert.equal(statusText("ready_for_pickup", "hi"), "लेने के लिए तैयार");
+});

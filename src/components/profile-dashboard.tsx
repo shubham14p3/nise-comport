@@ -1,5 +1,7 @@
 "use client";
 
+import { serviceName, statusText } from "@/lib/i18n-forms";
+import { useLocale } from "@/lib/use-locale";
 import SiteHeader from "@/components/site-header";
 import AddressManager from "@/components/address-manager";
 import AccountSecurityPanel from "@/components/account-security-panel";
@@ -110,6 +112,7 @@ function sectionFromUrl(): Section {
 }
 
 function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; reload: () => Promise<void>; demoMode: boolean }) {
+  const locale = useLocale();
   const { user, requests, jobs, wallet, coupons, activeSessions, openWork } = snapshot;
   const urlSection = useSyncExternalStore(subscribeHash, sectionFromUrl, () => "overview" as Section);
   const [chosenSection, setSection] = useState<Section | null>(null);
@@ -176,8 +179,8 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
     if (!rows.length) return <EmptyState icon={<FileText size={22}/>} title="No requests here yet" text="Send your first request in four quick steps. Its reference number and live status will appear here." action={<Link className="btn btn--primary" href="/request">Start a request <ArrowRight size={16}/></Link>} />;
     return <div className="record-list">{rows.map((item) => <article className="record" key={item.reference}>
       <span className="record__icon"><FileText size={20}/></span>
-      <div className="record__body"><b>{item.serviceName}</b><small>{item.reference} · {dateLabel(item.createdAt)}</small>{item.description && <p>{item.description}</p>}</div>
-      <span className={statusClass(item.status)}>{item.status.replaceAll("_", " ")}</span>
+      <div className="record__body"><b>{serviceName(item.serviceSlug, item.serviceName, locale)}</b><small>{item.reference} · {dateLabel(item.createdAt)}</small>{item.description && <p>{item.description}</p>}</div>
+      <span className={statusClass(item.status)}>{statusText(item.status, locale)}</span>
       <button className="btn btn--ghost btn--sm" type="button" onClick={() => void viewRequest(item.reference)}>Details <ArrowRight size={15}/></button>
     </article>)}</div>;
   }
@@ -223,7 +226,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
         </article>}
         <RequestRows rows={activeRequests}/></div>;
       case "history": return <div className="panel"><SectionHeading eyebrow="COMPLETED & CLOSED" title="Request history" text="Completed, cancelled and otherwise closed requests."/><RequestRows rows={historyRequests}/>{!historyRequests.length && requests.length > 0 && <p className="muted">Your requests are still in progress. They move here once the team closes them.</p>}</div>;
-      case "prints": return <div className="panel"><SectionHeading eyebrow="DOCUMENT SERVICES" title="Print orders" text="Your print requests, pickup or delivery choice, the estimate and the latest status." />{jobs.length ? <div className="record-list">{jobs.map((job) => <article className="record" key={job.reference}><span className="record__icon"><Printer size={20}/></span><div className="record__body"><b>Print order · {job.fulfillment}</b><small>{job.reference} · {dateLabel(job.createdAt)}</small><p>Estimate: {rupees(Number(job.total))}</p></div><span className={statusClass(job.status)}>{job.status.replaceAll("_", " ")}</span></article>)}</div> : <EmptyState icon={<Printer size={22}/>} title="No print orders yet" text="Upload a document, choose options and request an estimate. The team confirms the final cost before printing." action={<Link href="/print" className="btn btn--primary">Start a print request <ArrowRight size={16}/></Link>}/>}</div>;
+      case "prints": return <div className="panel"><SectionHeading eyebrow="DOCUMENT SERVICES" title="Print orders" text="Your print requests, pickup or delivery choice, the estimate and the latest status." />{jobs.length ? <div className="record-list">{jobs.map((job) => <article className="record" key={job.reference}><span className="record__icon"><Printer size={20}/></span><div className="record__body"><b>Print order · {job.fulfillment}</b><small>{job.reference} · {dateLabel(job.createdAt)}</small><p>Estimate: {rupees(Number(job.total))}</p></div><span className={statusClass(job.status)}>{statusText(job.status, locale)}</span></article>)}</div> : <EmptyState icon={<Printer size={22}/>} title="No print orders yet" text="Upload a document, choose options and request an estimate. The team confirms the final cost before printing." action={<Link href="/print" className="btn btn--primary">Start a print request <ArrowRight size={16}/></Link>}/>}</div>;
       case "wallet": return <div className="panel"><SectionHeading eyebrow="CUSTOMER REWARDS" title="Wallet & credits" text="Credits and adjustments posted by the team, with date and reference."/><div className="wallet-hero"><span>AVAILABLE BALANCE</span><strong>{rupees(balance)}</strong><small>Top-up and online wallet payment are not enabled.</small></div>{wallet.length ? <div className="ledger">{wallet.map((entry, index) => <article key={`${entry.createdAt}-${index}`}><div><b>{entry.description}</b><small>{dateLabel(entry.createdAt)}{entry.reference ? ` · ${entry.reference}` : ""}</small></div><strong className={entry.kind.toLowerCase() === "debit" ? "is-debit" : "is-credit"}>{entry.kind.toLowerCase() === "debit" ? "−" : "+"}{rupees(Number(entry.amount))}</strong></article>)}</div> : <EmptyState icon={<WalletCards size={22}/>} title="No wallet activity yet" text="Eligible promotional credits or adjustments will appear here."/>}</div>;
       case "vouchers": return <div className="panel"><SectionHeading eyebrow="SAVINGS" title="Vouchers & offers" text="Your ₹50 welcome coupon and the festival and Team India codes live today. Each code can be used once." /><VoucherBoard vouchers={coupons}/></div>;
       case "addresses": return <div className="panel"><SectionHeading eyebrow="DELIVERY & CONTACT" title="Saved addresses" text="Search with Google, use your current location or type it. Used for print delivery and doorstep help."/>{demoMode ? <EmptyState icon={<MapPin size={22}/>} title="Demo preview" text="Saved addresses are available after creating a real account."/> : <AddressManager/>}</div>;
