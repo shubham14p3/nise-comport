@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
       ...(visit ? [`Visit: ${[visit.mode, visit.day, visit.slot, visit.address].filter(Boolean).join(" · ")}`] : []),
       ...(offer.applied ? [`Offer claimed: ${offer.title}`] : []),
       ...(coupon.applied ? [`Coupon: ${coupon.code} (₹${coupon.value} off the service charge if it is ₹${coupon.minimum} or more)`] : []),
-    ]);
+    ], found && "categorySlug" in found ? String(found.categorySlug) : undefined);
     return NextResponse.json({
       ok: true, request: created,
       ...(input.offerId ? { offer: { applied: offer.applied, ...(offer.reason ? { reason: offer.reason } : {}) } } : {}),

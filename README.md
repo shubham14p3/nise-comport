@@ -91,6 +91,24 @@ In **Admin → Promotions** staff see every code with its dates and how often it
 
 Posters come from the built-in library (`public/promos/insurance/`, 20 insurance posters, see `src/lib/poster-library.ts`) or are uploaded (JPEG/PNG up to 5 MB, stored privately under `PRIVATE_UPLOAD_DIR/media/`, served at `/media/<id>`). Library posters that say "Confirm discount" or "Lowest price guarantee" carry a warning in the picker: on an insurance advert those read as a discount on the premium. Prefer the three "Get your quote" posters or corrected versions.
 
+## Inbox, call-backs and customer records
+
+**Admin → Inbox** (every staff member; owner sees everything) shows:
+
+- **Waiting** counts per service (PAN, government services, insurance, print orders…) from open requests. Tap one to filter the activity.
+- **Call these people back**: everyone who left a number in the "NISE COMPORT Help" chat ("Call me back", or simply typing a mobile number). Call / WhatsApp / mark Called, Done or Spam. A staff alert email goes out too.
+- **Activity**: new requests and print orders, status changes (who moved what), imports, team changes (owner only), and every time someone opened a customer's records. The tab shows a red count of new items.
+
+**Admin → Records** (permission "Customer records") imports the shop's Excel registers:
+
+- Upload an `.xlsx`; **every sheet** is read. The header row and the service (PAN, insurance, passport, ITR, DL, Aadhaar, Ayushman, income/caste/residence/EWS certificates, bank account…) are worked out from the file and sheet names. Sheets that are the shop's own accounts (expenses, rates, trading, transactions) are skipped and listed in the report.
+- Rows need a name plus a mobile, PAN or Aadhaar. Columns with portal **passwords, PINs and user IDs are never imported**. Everything is encrypted (AES-256-GCM with `RECORDS_ENCRYPTION_KEY`); mobile/PAN/Aadhaar also get keyed hashes so people can be searched and counted without decrypting. Aadhaar stays masked. The uploaded workbook is deleted after import.
+- Upload the same or an overlapping file again and only new rows are added.
+- The list shows one row per person (by mobile, else PAN) with **how many times they appear** across all registers, their services, last date and next insurance renewal (policy date + 1 year when the sheet has no renewal column). Search by name, mobile, PAN, Aadhaar or the last 4 digits; sort by most repeated, most recent or next renewal.
+- Optionally the mobile numbers are added to WhatsApp contacts (as "not asked yet", with the service and renewal date), ready for renewal campaigns. Existing YES/STOP answers are kept.
+
+Set `RECORDS_ENCRYPTION_KEY` (`openssl rand -base64 32`) and back it up before the first import; `npm run db:migrate` adds the tables (migration 0008).
+
 ## WhatsApp campaigns
 
 **Admin → Contacts** holds everyone the shop may message: name, mobile (stored once, however many lists it appears in), language, services with renewal/expiry dates, and whether they said YES or STOP. **Admin → WhatsApp campaigns** sends to them.
@@ -190,6 +208,7 @@ Open `/admin` after signing in. The workspace has tabs, and each person only see
 | Tab | Permission | What it allows |
 | --- | --- | --- |
 | Requests | `requests` | the request and print queue, customer files, status changes |
+| Customer records | `records` | importing Excel registers and looking customers up (every view is logged) |
 | PAN data | `pan` | importing PAN lists and looking up records |
 | Promotions | `promotions` | creating codes by hand, posters, switching codes on or off, date fixes |
 | WhatsApp campaigns, Contacts | `campaigns` | contacts, campaigns and the send queue |

@@ -3,6 +3,7 @@ import { hash } from "@node-rs/argon2";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { sessions, users } from "@/db/schema";
 import { db } from "@/lib/db";
+import { logActivity } from "@/lib/activity";
 import { PublicError } from "@/lib/errors";
 import { deliverNotifications, queueNotification } from "@/lib/notifications";
 import { sanitizePermissions, type Permission } from "@/lib/permissions";
@@ -61,10 +62,11 @@ export async function addStaff(input: { email: string; name: string; permissions
     });
     await deliverNotifications([id]).catch(() => undefined);
   } catch (error) { console.error("[staff] invite email failed", error); }
+  await logActivity({ kind: "staff", permission: "team", title: `${actor.name} added ${existing?.name ?? input.name ?? email} to the team`, detail: permissions.join(", "), refType: "user", refId: userId, actorId: actor.id });
   return { id: userId, created };
 }
 
-export async function updateStaff(id: string, patch: { permissions?: string[]; remove?: boolean }, actor: { id: string }) {
+export async function updateStaff(id: string, patch: { permissions?: string[]; remove?: boolean }, actor: { id: string; name?: string }) {
   if (id === actor.id) throw new PublicError("You can’t change your own access here.", 400);
   const [member] = await db.select().from(users).where(eq(users.id, id)).limit(1);
   if (!member || member.role !== "staff") throw new PublicError("Staff member not found.", 404, { code: "not_found" });
@@ -72,10 +74,12 @@ export async function updateStaff(id: string, patch: { permissions?: string[]; r
     await db.update(users).set({ role: "customer", permissions: [], updatedAt: new Date() }).where(eq(users.id, id));
     // Sign them out everywhere so the removal takes effect immediately.
     await db.delete(sessions).where(eq(sessions.userId, id));
+    await logActivity({ kind: "staff", permission: "team", title: `${actor.name ?? "Owner"} removed ${member.name} from the team`, refType: "user", refId: id, actorId: actor.id });
     return { removed: true };
   }
   const permissions = sanitizePermissions(patch.permissions);
   if (!permissions.length) throw new PublicError("Keep at least one permission, or remove the person from the team.", 400);
   await db.update(users).set({ permissions, updatedAt: new Date() }).where(eq(users.id, id));
+  await logActivity({ kind: "staff", permission: "team", title: `${actor.name ?? "Owner"} changed ${member.name}'s access`, detail: permissions.join(", "), refType: "user", refId: id, actorId: actor.id });
   return { removed: false };
 }

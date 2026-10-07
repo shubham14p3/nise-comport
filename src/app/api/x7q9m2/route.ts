@@ -54,6 +54,10 @@ const OPS = {
   "L9c3X6vH1tB8": { method: "PATCH", path: "/api/admin/campaigns/queue" },
   "Y2n6R9tC4vK7": { method: "POST", path: "/api/admin/contacts" },
   "J7t1P5xW3qM9": { method: "PATCH", path: "/api/admin/contacts" },
+  "Q3n7B1xK5vR8": { method: "POST", path: "/api/leads" },
+  "O9c4V7mB2pL5": { method: "POST", path: "/api/admin/inbox" },
+  "E3h8K1tW6qZ9": { method: "PATCH", path: "/api/admin/leads" },
+  "B4j9D6sX2mH7": { method: "POST", path: "/api/admin/records" },
 } as const;
 
 /** Encrypted file uploads: customer documents, and posters in the admin area. */
@@ -95,6 +99,17 @@ function targetFor(operation: string, input: Record<string, unknown>) {
       const q = stringValue(input, "q", 80);
       const status = stringValue(input, "status", 40);
       return { method: "GET", path: `/api/internal/admin-snapshot?q=${encodeURIComponent(q)}&status=${encodeURIComponent(status)}` };
+    }
+    case "I5x2N8kQ3wT6": {
+      const category = stringValue(input, "category", 40);
+      return { method: "GET", path: `/api/admin/inbox?category=${encodeURIComponent(category)}${input.count ? "&count=1" : ""}` };
+    }
+    case "W8r2T5yN1cF6": {
+      const params = new URLSearchParams();
+      for (const key of ["q", "service", "sort", "key"]) { const value = stringValue(input, key, 80); if (value) params.set(key, value); }
+      if (input.imports) params.set("imports", "1");
+      if (typeof input.page === "number") params.set("page", String(Math.max(0, Math.floor(input.page))));
+      return { method: "GET", path: `/api/admin/records?${params.toString()}` };
     }
     case "D4q8M2wS7kF1": {
       const q = stringValue(input, "q", 80);

@@ -158,5 +158,5 @@ test("migration 0007 adds staff permissions and the dummy test campaign", () => 
   assert.match(sql, /'\["\+918092766575"\]'::jsonb/);
   assert.match(sql, /WHERE "campaign_messages"\."test" = false/);
   const journal = JSON.parse(readFileSync(new URL("../drizzle/meta/_journal.json", import.meta.url), "utf8")) as { entries: { tag: string }[] };
-  assert.equal(journal.entries.at(-1)?.tag, "0007_staff_campaigns");
+  assert.ok(journal.entries.some((entry) => entry.tag === "0007_staff_campaigns"));
 });

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ArrowRight, MapPin, MessageCircle, Phone, RotateCcw, Send, Sparkles, X } from "lucide-react";
+import { ArrowRight, CircleCheck, FileText, MapPin, MessageCircle, Phone, PhoneCall, RotateCcw, Send, Sparkles, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
 import OpenStatus from "@/components/open-status";
 import type { OpeningHoursRule } from "@/lib/hours";
@@ -11,11 +11,13 @@ import { dict, type Dictionary, type Locale } from "@/lib/i18n";
 import { useLiveCodes } from "@/components/offers-provider";
 import { liveOffers } from "@/lib/offers";
 import { useLocale } from "@/lib/use-locale";
+import { findGuide, findVariant, HELP_GUIDES, type HelpGuide } from "@/lib/help-docs";
+import { secureApi } from "@/lib/secure-api-client";
 
 export type ChatService = { slug: string; title: string; category: string; keywords: string[] };
 type TopicId = keyof Dictionary["chat"]["topics"];
 type Action = { label: string; href: string; kind: "link" | "wa" | "tel" | "external" };
-type Message = { id: number; from: "bot" | "user"; text: string; actions?: Action[]; chips?: boolean; services?: ChatService[]; visit?: boolean };
+type Message = { id: number; from: "bot" | "user"; text: string; actions?: Action[]; chips?: boolean; services?: ChatService[]; visit?: boolean; guide?: { id: string; variant: string }; guideList?: boolean; callback?: boolean };
 
 /** What each quick topic links to. */
 const TOPIC_LINKS: Record<TopicId, { details?: string; request?: string }> = {
@@ -81,6 +83,12 @@ function matchServices(text: string, services: ChatService[]) {
     .sort((a, b) => b.score - a.score)
     .slice(0, 3)
     .map((item) => item.service);
+}
+
+/** A mobile number typed into the chat ("call me on 98765 43210"). */
+function phoneIn(text: string) {
+  const match = text.match(/(?:\+?91[\s-]?|0)?([6-9]\d{4})[\s-]?(\d{5})(?!\d)/);
+  return match ? `${match[1]}${match[2]}` : null;
 }
 
 let messageSeq = 0;
@@ -186,18 +194,64 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
     botSay({ text, actions, visit: topic === "visit" });
   }
 
+  function guideActions(guide: HelpGuide, label: string): Action[] {
+    const actions: Action[] = [];
+    if (guide.service) actions.push({ label: t.startRequest, href: `/request?service=${guide.service}`, kind: "link" });
+    actions.push({ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${label}`), kind: "wa" });
+    actions.push({ label: t.callUs, href: `tel:${phone}`, kind: "tel" });
+    return actions;
+  }
+
+  function showGuide(guide: HelpGuide, variantId: string, userText?: string) {
+    const variant = guide.variants.find((item) => item.id === variantId) ?? guide.variants[0];
+    const label = guide.variants.length > 1 ? `${guide.title[locale]} · ${variant.label[locale]}` : guide.title[locale];
+    setMessages((list) => [...list, { id: newId(), from: "user", text: userText ?? label }]);
+    setContext(label);
+    botSay({ text: `${t.docsFor} ${label}`, guide: { id: guide.id, variant: variant.id }, actions: guideActions(guide, label) });
+  }
+
+  function askDocs() {
+    setMessages((list) => [...list, { id: newId(), from: "user", text: t.docsLabel }]);
+    botSay({ text: t.docsPick, guideList: true });
+  }
+
+  function askCallback() {
+    setMessages((list) => [...list, { id: newId(), from: "user", text: t.callbackLabel }]);
+    botSay({ text: t.callbackAsk, callback: true });
+  }
+
+  async function sendLead(details: { name?: string; phone: string; message?: string }) {
+    try {
+      await secureApi("Q3n7B1xK5vR8", { name: details.name ?? "", phone: details.phone, topic: context || "Chat enquiry", message: details.message ?? "", page: window.location.pathname, locale, source: "chat" });
+      const pretty = details.phone.replace(/^(\d{5})(\d{5})$/, "$1 $2");
+      botSay({ text: t.callbackThanks.replace("{name}", details.name ? `, ${details.name}` : "").replace("{phone}", pretty), actions: [{ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${context || "…"}`), kind: "wa" }] });
+      return true;
+    } catch (reason) {
+      botSay({ text: reason instanceof Error && reason.message ? reason.message : t.callbackError });
+      return false;
+    }
+  }
+
   function submit(event: FormEvent) {
     event.preventDefault();
     const text = input.trim().slice(0, 400);
     if (!text) return;
     setInput("");
+    const number = phoneIn(text);
+    if (number) {
+      setMessages((list) => [...list, { id: newId(), from: "user", text }]);
+      void sendLead({ phone: number, message: text });
+      return;
+    }
+    const guide = findGuide(text);
+    if (guide) { showGuide(guide, findVariant(guide, text).id, text); return; }
     const topic = matchTopic(text);
     if (topic) { answerTopic(topic, text); return; }
     setMessages((list) => [...list, { id: newId(), from: "user", text }]);
     setContext(text);
     const found = matchServices(text, services);
     if (found.length) botSay({ text: t.matches, services: found, actions: [{ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${text}`), kind: "wa" }] });
-    else botSay({ text: t.noMatch, actions: [{ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${text}`), kind: "wa" }, { label: t.callUs, href: `tel:${phone}`, kind: "tel" }] });
+    else botSay({ text: t.noMatch, callback: true, actions: [{ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${text}`), kind: "wa" }, { label: t.callUs, href: `tel:${phone}`, kind: "tel" }] });
   }
 
   function restart() {
@@ -217,7 +271,14 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
         <p>{message.text}</p>
         {message.visit && <div className="chat__visit"><MapPin size={15}/><OpenStatus rules={hours} language={locale}/></div>}
         {message.services && <div className="chat__services">{message.services.map((service) => <Link key={service.slug} href={`/services/${service.slug}`} onClick={onClose}><span>{service.title}</span><ArrowRight size={15}/></Link>)}</div>}
-        {message.chips && <div className="chat__chips">{TOPICS.map((topic) => <button key={topic} type="button" onClick={() => answerTopic(topic)}>{t.topics[topic].label}</button>)}</div>}
+        {message.chips && <div className="chat__chips">
+          <button type="button" className="chat__chip--main" onClick={askDocs}><FileText size={14}/>{t.docsLabel}</button>
+          <button type="button" className="chat__chip--main" onClick={askCallback}><PhoneCall size={14}/>{t.callbackLabel}</button>
+          {TOPICS.map((topic) => <button key={topic} type="button" onClick={() => answerTopic(topic)}>{t.topics[topic].label}</button>)}
+        </div>}
+        {message.guideList && <div className="chat__chips">{HELP_GUIDES.map((guide) => <button key={guide.id} type="button" onClick={() => showGuide(guide, guide.variants[0].id)}>{guide.title[locale]}</button>)}</div>}
+        {message.guide && <GuideCard guideId={message.guide.id} variantId={message.guide.variant} locale={locale} t={t} onVariant={(guide, variant) => showGuide(guide, variant)}/>}
+        {message.callback && <CallbackForm t={t} onSend={sendLead}/>}
         {message.actions && <div className="chat__actions">{message.actions.map((action) => action.kind === "link"
           ? <Link key={action.label} href={action.href} className="chat__action" onClick={onClose}>{action.label}<ArrowRight size={14}/></Link>
           : <a key={action.label} href={action.href} className={action.kind === "wa" ? "chat__action chat__action--wa" : "chat__action"} {...(action.kind === "tel" ? {} : { target: "_blank", rel: "noopener noreferrer" })}>{action.kind === "wa" ? <WhatsAppIcon size={15}/> : action.kind === "tel" ? <Phone size={14}/> : <MapPin size={14}/>}{action.label}</a>)}</div>}
@@ -230,4 +291,41 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
     </form>
     <a className="chat__wa" href={waLink(whatsapp, context ? `${t.waPrefix} ${context}` : `${t.waPrefix} …`)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/>{t.continueWa}</a>
   </section>;
+}
+
+function GuideCard({ guideId, variantId, locale, t, onVariant }: { guideId: string; variantId: string; locale: Locale; t: Dictionary["chat"]; onVariant: (guide: HelpGuide, variant: string) => void }) {
+  const guide = HELP_GUIDES.find((item) => item.id === guideId);
+  if (!guide) return null;
+  const variant = guide.variants.find((item) => item.id === variantId) ?? guide.variants[0];
+  const others = guide.variants.filter((item) => item.id !== variant.id);
+  return <div className="chat__guide">
+    <p className="chat__guide-intro">{guide.intro}</p>
+    {variant.sections.map((section) => <div key={section.heading} className="chat__guide-section">
+      <b>{section.heading}</b>
+      <ul>{section.items.map((item) => <li key={item}><CircleCheck size={13}/>{item}</li>)}</ul>
+      {section.note && <small>{section.note}</small>}
+    </div>)}
+    <small className="chat__guide-note">{t.bringNote}</small>
+    {others.length > 0 && <div className="chat__guide-more"><span>{t.otherCases}</span>{others.map((item) => <button key={item.id} type="button" onClick={() => onVariant(guide, item.id)}>{item.label[locale]}</button>)}</div>}
+  </div>;
+}
+
+function CallbackForm({ t, onSend }: { t: Dictionary["chat"]; onSend: (details: { name?: string; phone: string }) => Promise<boolean> }) {
+  const [name, setName] = useState("");
+  const [number, setNumber] = useState("");
+  const [state, setState] = useState<"idle" | "busy" | "sent" | "bad">("idle");
+  if (state === "sent") return null;
+  async function send(event: FormEvent) {
+    event.preventDefault();
+    const digits = phoneIn(number);
+    if (!digits) { setState("bad"); return; }
+    setState("busy");
+    setState(await onSend({ name: name.trim(), phone: digits }) ? "sent" : "idle");
+  }
+  return <form className="chat__callback" onSubmit={send}>
+    <input value={name} onChange={(event) => setName(event.target.value)} placeholder={t.namePlaceholder} maxLength={60} aria-label={t.namePlaceholder} autoComplete="name"/>
+    <input value={number} onChange={(event) => { setNumber(event.target.value); if (state === "bad") setState("idle"); }} placeholder={t.phonePlaceholder} inputMode="tel" maxLength={16} aria-label={t.phonePlaceholder} autoComplete="tel" required/>
+    {state === "bad" && <small role="alert">{t.callbackError}</small>}
+    <button type="submit" className="chat__action chat__action--wa" disabled={state === "busy"}><Phone size={14}/>{t.callbackSend}</button>
+  </form>;
 }

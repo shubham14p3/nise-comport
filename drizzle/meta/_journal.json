@@ -57,6 +57,13 @@
       "when": 1790990000000,
       "tag": "0007_staff_campaigns",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791600000000,
+      "tag": "0008_records_inbox_leads",
+      "breakpoints": true
     }
   ]
 }

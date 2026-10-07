@@ -15,7 +15,7 @@ export const CAMPAIGN_KINDS: Record<CampaignKind, { label: string; detail: strin
   optin: { label: "Ask permission (YES/STOP)", detail: "One message asking if they want offers and reminders. Goes only to people never asked before." },
 };
 
-export const CAMPAIGN_SERVICES = ["insurance", "pan", "voter-id", "residence", "income-caste", "aadhaar", "banking", "education", "print", "other"] as const;
+export const CAMPAIGN_SERVICES = ["insurance", "pan", "voter-id", "residence", "income-caste", "aadhaar", "ayushman", "passport", "driving-licence", "itr", "banking", "education", "print", "other"] as const;
 
 /** Default message text per campaign kind. Placeholders: {name} {code} {service} {date} {shop} {phone}. */
 export const DEFAULT_MESSAGES: Record<CampaignKind, Text3> = {
@@ -43,6 +43,10 @@ export const SERVICE_NAMES: Record<string, Text3> = {
   residence: { en: "residence certificate", hi: "निवास प्रमाण पत्र", bn: "বাসস্থান সার্টিফিকেট" },
   "income-caste": { en: "income / caste certificate", hi: "आय / जाति प्रमाण पत्र", bn: "আয় / জাতি সার্টিফিকেট" },
   aadhaar: { en: "Aadhaar update", hi: "आधार अपडेट", bn: "আধার আপডেট" },
+  ayushman: { en: "Ayushman card", hi: "आयुष्मान कार्ड", bn: "আয়ুষ্মান কার্ড" },
+  passport: { en: "passport", hi: "पासपोर्ट", bn: "পাসপোর্ট" },
+  "driving-licence": { en: "driving licence", hi: "ड्राइविंग लाइसेंस", bn: "ড্রাইভিং লাইসেন্স" },
+  itr: { en: "income tax return", hi: "आयकर रिटर्न (ITR)", bn: "আয়কর রিটার্ন (ITR)" },
   banking: { en: "banking service", hi: "बैंकिंग सेवा", bn: "ব্যাংকিং পরিষেবা" },
   education: { en: "form", hi: "फ़ॉर्म", bn: "ফর্ম" },
   print: { en: "printing", hi: "प्रिंटिंग", bn: "প্রিন্টিং" },

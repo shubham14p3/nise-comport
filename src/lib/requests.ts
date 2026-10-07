@@ -6,6 +6,7 @@ import type { User } from "@/lib/auth";
 import { isUniqueViolation, postgresCode, PublicError } from "@/lib/errors";
 import { makeReference } from "@/lib/http";
 import { deliverNotifications, queueNotification, staffAlertEmail } from "@/lib/notifications";
+import { logActivity } from "@/lib/activity";
 import { releaseRedemptions } from "@/lib/promotions";
 
 export const REQUEST_STATUSES = ["submitted", "reviewing", "waiting_for_customer", "ready_for_pickup", "out_for_delivery", "completed", "cancelled"] as const;
@@ -48,8 +49,10 @@ export async function recordEvent(kind: "service" | "print", requestId: string, 
 }
 
 /** Queues the customer confirmation and the staff alert, then tries to send both right after the response. */
-export async function notifyNewRequest(user: User, reference: string, label: string, extraLines: string[] = []) {
+export async function notifyNewRequest(user: User, reference: string, label: string, extraLines: string[] = [], categorySlug?: string) {
   const ids: string[] = [];
+  const category = label === "print order" ? "print" : label.startsWith("PAN") ? "pan" : categorySlug ?? null;
+  await logActivity({ kind: label === "print order" ? "print" : "request", permission: "requests", category, title: `New ${label === "print order" ? "print order" : "request"} ${reference}: ${label}`, detail: `${user.name}${user.phone ? ` · ${user.phone}` : ""} — waiting for review`, refType: "request", refId: reference, actorId: null });
   try {
     ids.push(await queueNotification(user.id, "request_received", { name: user.name, email: user.email, reference, label }));
     ids.push(await queueNotification(user.id, "staff_alert", {

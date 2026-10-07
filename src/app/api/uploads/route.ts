@@ -8,6 +8,7 @@ import { promisify } from "node:util";
 import { and, eq } from "drizzle-orm";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { getCurrentUser } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 import { db } from "@/lib/db";
 import { printJobs, storedFiles } from "@/db/schema";
 import { apiError } from "@/lib/http";
@@ -82,10 +83,10 @@ export async function POST(request: NextRequest) {
       mimeType = "application/pdf";
       pageCount = await pdfPageCount(content);
       if (pageCount < 1 || pageCount > 1000) return NextResponse.json({ error: "Converted files can contain up to 1,000 pages." }, { status: 400 });
-    } else if (spreadsheetTypes.has(file.type) && [".csv", ".xlsx"].includes(extension) && user.role === "admin") {
+    } else if (spreadsheetTypes.has(file.type) && [".csv", ".xlsx"].includes(extension) && (hasPermission(user, "records") || hasPermission(user, "pan"))) {
       pageCount = null;
     } else {
-      return NextResponse.json({ error: "Upload a valid PDF, DOC, DOCX, JPG, PNG, or WEBP file. Admins may also upload CSV/XLSX data files." }, { status: 400 });
+      return NextResponse.json({ error: "Upload a valid PDF, DOC, DOCX, JPG, PNG, or WEBP file. Staff with data access may also upload CSV/XLSX files." }, { status: 400 });
     }
 
     if (content.byteLength > MAX_FILE_SIZE) return NextResponse.json({ error: "The converted PDF is larger than 20 MB. Please compress the document and try again." }, { status: 400 });

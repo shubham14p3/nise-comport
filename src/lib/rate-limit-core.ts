@@ -44,4 +44,7 @@ export const RATE_RULES = {
   /** Google address search (each call costs money): generous for people, tight for scripts. */
   placesPerIpHour: { name: "places-ip", limit: 150, windowSeconds: 3600 },
   placesPerIpDay: { name: "places-ip", limit: 600, windowSeconds: 86400 },
+  /** "Call me back" requests from the chat: enough for real people, useless for spam. */
+  leadsPerIpHour: { name: "lead-ip", limit: 5, windowSeconds: 3600 },
+  leadsPerPhoneDay: { name: "lead-phone", limit: 3, windowSeconds: 86400 },
 } as const satisfies Record<string, RateRule>;

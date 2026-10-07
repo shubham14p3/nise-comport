@@ -1,17 +1,19 @@
 "use client";
 
-import { FormEvent, useEffect, useState, useSyncExternalStore } from "react";
+import { FormEvent, useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import SiteHeader from "@/components/site-header";
 import PanImportPanel from "@/components/pan-import-panel";
 import WalletCreditForm from "@/components/wallet-credit-form";
 import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
-import { ClipboardList, Contact, Database, FileText, Megaphone, RefreshCw, Search, ShieldCheck, TicketPercent, UsersRound, WalletCards } from "lucide-react";
+import { Bell, ClipboardList, Contact, Database, FolderLock, FileText, Megaphone, RefreshCw, Search, ShieldCheck, TicketPercent, UsersRound, WalletCards } from "lucide-react";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
 import PromotionsPanel from "@/components/promotions-panel";
 import CampaignsPanel from "@/components/campaigns-panel";
 import ContactsPanel from "@/components/contacts-panel";
 import TeamPanel from "@/components/team-panel";
+import InboxPanel from "@/components/inbox-panel";
+import RecordsPanel from "@/components/records-panel";
 import type { Permission } from "@/lib/permissions";
 
 type Row = { id: string; reference: string; name: string; email: string; phone: string | null; status: string; createdAt: string };
@@ -151,11 +153,13 @@ function RequestQueue() {
   </>;
 }
 
-type Tab = "requests" | "promotions" | "campaigns" | "contacts" | "team" | "pan" | "wallet";
-const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | "admin" }[] = [
+type Tab = "inbox" | "requests" | "records" | "promotions" | "campaigns" | "contacts" | "team" | "pan" | "wallet";
+const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | "admin" | "staff" }[] = [
+  { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
   { id: "requests", label: "Requests", icon: ClipboardList, needs: "requests" },
+  { id: "records", label: "Records", icon: FolderLock, needs: "records" },
   { id: "promotions", label: "Promotions", icon: TicketPercent, needs: "promotions" },
-  { id: "campaigns", label: "WhatsApp campaigns", icon: Megaphone, needs: "campaigns" },
+  { id: "campaigns", label: "WhatsApp", icon: Megaphone, needs: "campaigns" },
   { id: "contacts", label: "Contacts", icon: Contact, needs: "campaigns" },
   { id: "team", label: "Team", icon: UsersRound, needs: "admin" },
   { id: "pan", label: "PAN data", icon: Database, needs: "pan" },
@@ -170,19 +174,30 @@ const subscribeHash = (callback: () => void) => { window.addEventListener("hashc
  * of them plus Team, where staff are added and their access is set.
  */
 export default function AdminDashboard({ me }: { me: { name: string; role: string; permissions: Permission[] } }) {
-  const tabs = TABS.filter((tab) => tab.needs === "admin" ? me.role === "admin" : me.permissions.includes(tab.needs));
+  const tabs = TABS.filter((tab) => tab.needs === "staff" ? true : tab.needs === "admin" ? me.role === "admin" : me.permissions.includes(tab.needs));
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    let active = true;
+    const check = () => secureApi<{ unread: number }>("I5x2N8kQ3wT6", { count: true }).then((result) => { if (active) setUnread(result.unread); }).catch(() => undefined);
+    void check();
+    const timer = window.setInterval(() => void check(), 60_000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, []);
   const hash = useSyncExternalStore(subscribeHash, readHash, () => "");
   const [picked, setPicked] = useState<Tab | null>(null);
   const fromHash = tabs.find((tab) => tab.id === hash)?.id;
   const active = picked ?? fromHash ?? tabs[0]?.id;
+  const clearUnread = useCallback(() => setUnread(0), []);
   function choose(tab: Tab) { setPicked(tab); window.history.replaceState(null, "", `#${tab}`); }
   return <main className="content-page"><SiteHeader/><section className="container admin-page">
     <span className="eyebrow eyebrow-muted"><ShieldCheck size={14}/> TEAM WORKSPACE · {me.role === "admin" ? "Owner" : "Staff"}</span>
     <h1>Hello {me.name.split(/\s+/)[0]}, <em>here’s the desk.</em></h1>
     <p>Private data, uploads and changes travel over the encrypted staff channel. You only see the areas the owner has given you.</p>
-    {tabs.length ? <nav className="admin-tabs" aria-label="Admin sections">{tabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={active === id ? "is-active" : undefined} aria-current={active === id ? "page" : undefined} onClick={() => choose(id)}><Icon size={16}/>{label}</button>)}</nav>
+    {tabs.length ? <nav className="admin-tabs" aria-label="Admin sections">{tabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={active === id ? "is-active" : undefined} aria-current={active === id ? "page" : undefined} onClick={() => choose(id)}><Icon size={16}/>{label}{id === "inbox" && unread > 0 && <span className="tab-badge" aria-label={`${unread} new`}>{unread > 99 ? "99+" : unread}</span>}</button>)}</nav>
       : <p className="alert alert--info">Your account doesn’t have access to any admin area yet. Ask the owner to add it in Team.</p>}
+    {active === "inbox" && <InboxPanel onSeen={clearUnread}/>}
     {active === "requests" && <RequestQueue/>}
+    {active === "records" && <RecordsPanel/>}
     {active === "promotions" && <PromotionsPanel canEdit/>}
     {active === "campaigns" && <CampaignsPanel/>}
     {active === "contacts" && <ContactsPanel/>}

@@ -15,6 +15,8 @@ export const users = pgTable("users", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   /** What a staff member may do in the admin area (see src/lib/permissions.ts). Admins can do everything. */
   permissions: jsonb("permissions").$type<string[]>().notNull().default([]),
+  /** When this staff member last opened the admin inbox (unread count = newer activity). */
+  inboxSeenAt: timestamp("inbox_seen_at", { withTimezone: true }),
 }, (table) => [uniqueIndex("users_email_unique").on(table.email)]);
 
 export const emailOtps = pgTable("email_otps", {
@@ -221,4 +223,57 @@ export const campaignMessages = pgTable("campaign_messages", {
   uniqueIndex("campaign_messages_campaign_phone_unique").on(table.campaignId, table.phone).where(sql`${table.test} = false`),
   index("campaign_messages_status_scheduled_idx").on(table.status, table.scheduledAt),
   index("campaign_messages_provider_idx").on(table.providerMessageId),
+]);
+
+/** Customers who left their number (chat "call me back", enquiry forms) so the shop can contact them. */
+export const leads = pgTable("leads", {
+  id: uuid("id").defaultRandom().primaryKey(), name: text("name").notNull(), phone: text("phone").notNull(),
+  topic: text("topic").notNull(), message: text("message"), source: text("source").notNull().default("chat"), page: text("page"),
+  locale: text("locale").notNull().default("en"), status: text("status").notNull().default("new"),
+  handledBy: uuid("handled_by").references(() => users.id, { onDelete: "set null" }), handledAt: timestamp("handled_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("leads_status_created_idx").on(table.status, table.createdAt), index("leads_phone_idx").on(table.phone)]);
+
+/**
+ * What happened in the shop: new requests and leads, status changes, imports, and every time a
+ * staff member opened customer records. `permission` decides which staff see the entry.
+ */
+export const activityLog = pgTable("activity_log", {
+  id: uuid("id").defaultRandom().primaryKey(), kind: text("kind").notNull(), permission: text("permission").notNull(),
+  category: text("category"), title: text("title").notNull(), detail: text("detail"),
+  refType: text("ref_type"), refId: text("ref_id"),
+  actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("activity_log_created_idx").on(table.createdAt), index("activity_log_permission_created_idx").on(table.permission, table.createdAt)]);
+
+/** One uploaded Excel register and what came out of each sheet. */
+export const recordImports = pgTable("record_imports", {
+  id: uuid("id").defaultRandom().primaryKey(), fileName: text("file_name").notNull(),
+  uploadedBy: uuid("uploaded_by").references(() => users.id, { onDelete: "set null" }),
+  sheets: jsonb("sheets").notNull().default([]), totalRows: integer("total_rows").notNull().default(0),
+  imported: integer("imported").notNull().default(0), duplicates: integer("duplicates").notNull().default(0),
+  skipped: integer("skipped").notNull().default(0), contactsAdded: integer("contacts_added").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * A customer row from an imported register. Everything personal is encrypted (AES-256-GCM);
+ * mobile and PAN also get keyed hashes so people can be found and counted without decrypting.
+ */
+export const customerRecords = pgTable("customer_records", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  importId: uuid("import_id").references(() => recordImports.id, { onDelete: "set null" }),
+  service: text("service").notNull(), source: text("source").notNull(), name: text("name").notNull(),
+  mobileHash: text("mobile_hash"), mobileEnc: text("mobile_enc"), mobileLast4: text("mobile_last4"),
+  panHash: text("pan_hash"), aadhaarHash: text("aadhaar_hash"),
+  recordDate: date("record_date"), renewalOn: date("renewal_on"),
+  payloadEnc: text("payload_enc").notNull(), rowHash: text("row_hash").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("customer_records_row_hash_unique").on(table.rowHash),
+  index("customer_records_mobile_idx").on(table.mobileHash),
+  index("customer_records_pan_idx").on(table.panHash),
+  index("customer_records_service_idx").on(table.service),
+  index("customer_records_name_idx").on(table.name),
+  index("customer_records_renewal_idx").on(table.renewalOn),
 ]);

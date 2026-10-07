@@ -43,7 +43,7 @@ export async function saveContact(input: ContactInput) {
     target: contacts.phone,
     // Merging duplicates: keep the stronger "no" (a STOP always wins over a later import).
     set: { name: values.name, locale: values.locale, area: values.area, services: values.services, notes: values.notes, updatedAt: values.updatedAt,
-      consent: sql`CASE WHEN ${contacts.consent} = 'opted_out' THEN 'opted_out' ELSE ${values.consent} END`, consentAt: sql`coalesce(${contacts.consentAt}, now())` },
+      consent: sql`CASE WHEN ${contacts.consent} = 'opted_out' THEN 'opted_out' WHEN ${values.consent} = 'unknown' THEN ${contacts.consent} ELSE ${values.consent} END`, consentAt: sql`coalesce(${contacts.consentAt}, now())` },
   }).returning();
   return row;
 }

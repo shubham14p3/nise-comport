@@ -230,7 +230,7 @@ function CampaignEditor({ draft, setDraft, onSubmit, busy, cloudApi, liveCodes }
         <small className="field__hint">{"{date}"} becomes “on 12 October” and {"{code}"} a whole “Use code … for ₹50 off” sentence; each disappears when a contact has no date or the campaign has no code.</small>
         <button type="button" className="profile-text-button" onClick={() => update({ message: { ...draft.message, [lang]: DEFAULT_MESSAGES[draft.kind][lang] } })}>Reset to the default wording</button>
       </label>
-      <div className="wa-preview" aria-label="Preview"><span className="wa-preview__label">Preview</span><div className="wa-bubble">{draft.posters[lang] || draft.posters.en ? /* eslint-disable-next-line @next/next/no-img-element -- admin preview */ <img src={draft.posters[lang] || draft.posters.en} alt=""/> : null}<p>{sample}</p></div></div>
+      <div className="wa-preview" aria-label="Preview"><span className="wa-preview__label">Preview</span><div className="wa-bubble">{draft.posters[lang] || draft.posters.en ? <PosterThumb src={draft.posters[lang] || draft.posters.en || ""}/> : null}<p>{sample}</p></div></div>
     </div>
 
     <div className="form-grid form-grid--3">
@@ -260,4 +260,9 @@ function CampaignEditor({ draft, setDraft, onSubmit, busy, cloudApi, liveCodes }
     </div>
     <div className="promo-editor__actions"><button className="btn btn--primary" disabled={busy}>{busy ? "Saving…" : "Save campaign"}</button><button type="button" className="btn btn--ghost" onClick={() => setDraft(null)}>Cancel</button></div>
   </form>;
+}
+
+function PosterThumb({ src }: { src: string }) {
+  // eslint-disable-next-line @next/next/no-img-element -- admin-only preview of a local or uploaded poster
+  return <img src={src} alt=""/>;
 }
