@@ -8,10 +8,10 @@ test("a code works only on the services it was made for", () => {
   assert.ok(scopeAllows(null, { service: "print" }), "unrestricted codes work everywhere");
   const printOnly = cleanScope({ categories: [], services: ["print"] });
   assert.ok(scopeAllows(printOnly, { service: "print" }));
-  assert.ok(!scopeAllows(printOnly, { service: "bike-insurance-jamshedpur", category: "insurance" }));
+  assert.ok(!scopeAllows(printOnly, { service: "bike-insurance", category: "insurance" }));
   const insurance = cleanScope({ categories: ["insurance"], services: ["pan"] });
-  assert.ok(scopeAllows(insurance, { service: "car-insurance-jamshedpur", category: "insurance" }), "a category covers its services");
-  assert.ok(scopeAllows(insurance, { service: "pan-card-jamshedpur", category: "government-services" }), "\"pan\" covers the PAN service");
+  assert.ok(scopeAllows(insurance, { service: "car-insurance", category: "insurance" }), "a category covers its services");
+  assert.ok(scopeAllows(insurance, { service: "pan-card", category: "government-services" }), "\"pan\" covers the PAN service");
   assert.ok(!scopeAllows(insurance, { service: "print" }));
   assert.equal(cleanScope({ categories: [], services: [] }), null);
   assert.deepEqual(cleanScope({ categories: ["insurance", "insurance", "<script>"], services: [7] }), { categories: ["insurance"], services: [] });

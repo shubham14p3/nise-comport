@@ -3,6 +3,7 @@ import RequestWizard from "@/components/request-wizard";
 import { privateMetadata } from "@/lib/seo";
 import { shortServiceName } from "@/lib/services";
 import { allServices } from "@/lib/site-content";
+import { currentServiceSlug } from "@/lib/slug-renames";
 import { site } from "@/lib/site";
 
 export const metadata = privateMetadata("Start a request", "Send a service request to NISE COMPORT in four quick steps.");
@@ -15,6 +16,6 @@ export default async function RequestPage({ searchParams }: { searchParams: Sear
   const params = await searchParams;
   const services = (await allServices()).map((service) => ({ slug: service.slug, name: shortServiceName(service.title), category: service.categorySlug, description: service.description }));
   return <main className="page page--app"><SiteHeader/>
-    <RequestWizard services={services} hours={site.openingHours} initial={{ service: one(params.service), category: one(params.category), offer: one(params.offer), note: one(params.note), coupon: one(params.coupon), resume: one(params.resume) === "1" }}/>
+    <RequestWizard services={services} hours={site.openingHours} initial={{ service: one(params.service) ? currentServiceSlug(one(params.service)!) : undefined, category: one(params.category), offer: one(params.offer), note: one(params.note), coupon: one(params.coupon), resume: one(params.resume) === "1" }}/>
   </main>;
 }

@@ -1,4 +1,5 @@
 import { revalidateTag, unstable_cache } from "next/cache";
+import { currentServiceSlug } from "@/lib/slug-renames";
 import { asc, desc, eq } from "drizzle-orm";
 import { customServices, siteBanners } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
@@ -66,7 +67,8 @@ export async function allServices(): Promise<ServiceDetail[]> {
 }
 
 /** A service or category by slug, including admin-added services; null when missing or hidden. */
-export async function resolveService(slug: string) {
+export async function resolveService(requested: string) {
+  const slug = currentServiceSlug(requested);
   const extra = await cachedServices();
   if (extra.some((item) => item.hidden && item.slug === slug)) return null;
   const builtIn = findService(slug);

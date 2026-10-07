@@ -109,7 +109,7 @@ function BannerForm({ value, categories, onCancel, onSave }: { value: Partial<Ba
     <Text3Fields label="Short text" value={draft.text} onChange={(text) => update({ text })} max={260} hint="Bring Aadhaar and the linked mobile."/>
     <Text3Fields label="Button" value={draft.cta} onChange={(cta) => update({ cta })} max={40} hint="Start now"/>
     <div className="form-grid form-grid--3">
-      <label className="field"><span className="field__label">Link <em>optional</em></span><input value={draft.href ?? ""} onChange={(event) => update({ href: event.target.value })} placeholder="/services/ayushman-card-abha-jamshedpur"/></label>
+      <label className="field"><span className="field__label">Link <em>optional</em></span><input value={draft.href ?? ""} onChange={(event) => update({ href: event.target.value })} placeholder="/services/ayushman-card"/></label>
       <label className="field"><span className="field__label">From <em>optional</em></span><input type="date" value={draft.startsOn ?? ""} onChange={(event) => update({ startsOn: event.target.value || null })}/></label>
       <label className="field"><span className="field__label">Until <em>optional</em></span><input type="date" value={draft.endsOn ?? ""} onChange={(event) => update({ endsOn: event.target.value || null })}/></label>
     </div>

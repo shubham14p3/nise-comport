@@ -4,7 +4,7 @@ import { safeNextPath } from "../src/lib/safe-redirect.ts";
 
 test("same-site paths are kept, including query and hash", () => {
   assert.equal(safeNextPath("/pan/request?type=minor"), "/pan/request?type=minor");
-  assert.equal(safeNextPath("/services/pan-card-jamshedpur#request-form"), "/services/pan-card-jamshedpur#request-form");
+  assert.equal(safeNextPath("/services/pan-card#request-form"), "/services/pan-card#request-form");
   assert.equal(safeNextPath("%2Fprofile%3Fsection%3Drequests"), "/profile?section=requests");
 });
 

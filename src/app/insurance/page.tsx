@@ -111,7 +111,7 @@ export default async function InsurancePage({ searchParams }: { searchParams: Se
         <article className="ins-card"><h3>How a claim works</h3><ol>{CLAIM_STEPS.map((item) => <li key={item}>{item}</li>)}</ol><p className="muted">We help at every step; the insurer’s surveyor and claims team decide the amount.</p></article>
         <article className="ins-card"><h3>Common reasons claims are refused</h3><ul className="is-no">{REJECTION_REASONS.map((item) => <li key={item}><CircleX size={15}/>{item}</li>)}</ul></article>
       </div>
-      <p className="ins-cta"><a className="btn btn--primary" href="#quote">Get my quotes <ArrowRight size={16}/></a> <Link className="btn btn--ghost" href="/services/health-life-insurance-help">Health &amp; life insurance help</Link></p>
+      <p className="ins-cta"><a className="btn btn--primary" href="#quote">Get my quotes <ArrowRight size={16}/></a> <Link className="btn btn--ghost" href="/services/health-life-insurance">Health &amp; life insurance help</Link></p>
       <p className="fine">{SOLICITATION_NOTE} {FACILITATOR_NOTE}</p>
     </section>
     <FaqSection faqs={FAQS} title="Motor insurance questions"/>

@@ -18,7 +18,7 @@ export type PublicRoute = {
   priority: number;
   changeFrequency: "daily" | "weekly" | "monthly" | "yearly";
   images?: string[];
-  /** hreflang alternates, e.g. { "hi-IN": "/hi/services/pan-card-jamshedpur" } */
+  /** hreflang alternates, e.g. { "hi-IN": "/hi/services/pan-card" } */
   alternates?: Record<string, string>;
 };
 

@@ -24,7 +24,7 @@ const v = (id: string, en: string, hi: string, bn: string, sections: HelpSection
 
 export const HELP_GUIDES: HelpGuide[] = [
   {
-    id: "voter", title: { en: "Voter ID (EPIC)", hi: "वोटर आईडी", bn: "ভোটার আইডি" }, service: "voter-id-services-jamshedpur",
+    id: "voter", title: { en: "Voter ID (EPIC)", hi: "वोटर आईडी", bn: "ভোটার আইডি" }, service: "voter-id",
     words: ["voter", "voter id", "epic", "election card", "matdata", "वोटर", "मतदाता", "ভোটার"],
     intro: "We fill the voter forms for you. Bring originals; we scan and return them.",
     variants: [
@@ -41,7 +41,7 @@ export const HELP_GUIDES: HelpGuide[] = [
     ],
   },
   {
-    id: "passport", title: { en: "Passport", hi: "पासपोर्ट", bn: "পাসপোর্ট" }, service: "passport-driving-licence-help",
+    id: "passport", title: { en: "Passport", hi: "पासपोर्ट", bn: "পাসপোর্ট" }, service: "passport-driving-licence",
     words: ["passport", "पासपोर्ट", "পাসপোর্ট"],
     intro: "We fill the form and book the appointment. Carry originals plus one set of self-attested photocopies to the appointment.",
     variants: [v("fresh", "Fresh passport", "नया पासपोर्ट", "নতুন পাসপোর্ট", [
@@ -52,7 +52,7 @@ export const HELP_GUIDES: HelpGuide[] = [
     ])],
   },
   {
-    id: "dl", title: { en: "Driving licence", hi: "ड्राइविंग लाइसेंस", bn: "ড্রাইভিং লাইসেন্স" }, service: "passport-driving-licence-help",
+    id: "dl", title: { en: "Driving licence", hi: "ड्राइविंग लाइसेंस", bn: "ড্রাইভিং লাইসেন্স" }, service: "passport-driving-licence",
     words: ["driving licence", "driving license", "dl", "learner", "licence", "license", "ड्राइविंग", "लाइसेंस", "লাইসেন্স"],
     intro: "Learner's licence first, then the driving test. We fill the forms and book your slot.",
     variants: [v("new", "Learner / new licence", "लर्नर / नया लाइसेंस", "লার্নার / নতুন লাইসেন্স", [
@@ -62,7 +62,7 @@ export const HELP_GUIDES: HelpGuide[] = [
     ])],
   },
   {
-    id: "residence", title: { en: "Residence certificate (Jharkhand)", hi: "आवासीय प्रमाण पत्र", bn: "বাসস্থান সার্টিফিকেট" }, service: "jharkhand-certificates-jamshedpur",
+    id: "residence", title: { en: "Residence certificate (Jharkhand)", hi: "आवासीय प्रमाण पत्र", bn: "বাসস্থান সার্টিফিকেট" }, service: "income-caste-residence-certificate",
     words: ["residence", "residential", "domicile", "local resident", "niwas", "awasiya", "आवासीय", "निवास", "স্থানীয়", "বাসস্থান"],
     intro: "We apply online for you and give you the acknowledgement to track it.",
     variants: [v("apply", "Apply", "आवेदन", "আবেদন", [
@@ -72,7 +72,7 @@ export const HELP_GUIDES: HelpGuide[] = [
     ])],
   },
   {
-    id: "caste", title: { en: "Caste certificate (Jharkhand)", hi: "जाति प्रमाण पत्र", bn: "জাতি সার্টিফিকেট" }, service: "jharkhand-certificates-jamshedpur",
+    id: "caste", title: { en: "Caste certificate (Jharkhand)", hi: "जाति प्रमाण पत्र", bn: "জাতি সার্টিফিকেট" }, service: "income-caste-residence-certificate",
     words: ["caste", "jati", "sc", "st", "obc", "bc", "जाति", "জাতি"],
     intro: "Bring these and we file the application for you.",
     variants: [
@@ -84,7 +84,7 @@ export const HELP_GUIDES: HelpGuide[] = [
     ],
   },
   {
-    id: "income", title: { en: "Income certificate", hi: "आय प्रमाण पत्र", bn: "আয় সার্টিফিকেট" }, service: "jharkhand-certificates-jamshedpur",
+    id: "income", title: { en: "Income certificate", hi: "आय प्रमाण पत्र", bn: "আয় সার্টিফিকেট" }, service: "income-caste-residence-certificate",
     words: ["income certificate", "income", "aay", "आय", "আয়"],
     intro: "An income affidavit is compulsory; we help you prepare it.",
     variants: [v("apply", "Apply", "आवेदन", "আবেদন", [
@@ -93,7 +93,7 @@ export const HELP_GUIDES: HelpGuide[] = [
     ])],
   },
   {
-    id: "insurance", title: { en: "Car & bike insurance", hi: "कार और बाइक बीमा", bn: "গাড়ি ও বাইকের বিমা" }, service: "bike-insurance-jamshedpur",
+    id: "insurance", title: { en: "Car & bike insurance", hi: "कार और बाइक बीमा", bn: "গাড়ি ও বাইকের বিমা" }, service: "bike-insurance",
     words: ["insurance", "bima", "policy", "renew", "renewal", "bike insurance", "car insurance", "two wheeler", "scooter", "claim", "ncb", "no claim", "idv", "zero dep", "third party", "expired", "बीमा", "বিমা"],
     intro: "We compare quotes from several insurers and do the paperwork. The insurer issues the policy and settles claims; we stay with you until it's done.",
     variants: [
@@ -117,7 +117,7 @@ export const HELP_GUIDES: HelpGuide[] = [
     ],
   },
   {
-    id: "ayushman", title: { en: "Ayushman card (PM-JAY) & ABHA", hi: "आयुष्मान कार्ड और आभा", bn: "আয়ুষ্মান কার্ড ও আভা" }, service: "ayushman-card-abha-jamshedpur",
+    id: "ayushman", title: { en: "Ayushman card (PM-JAY) & ABHA", hi: "आयुष्मान कार्ड और आभा", bn: "আয়ুষ্মান কার্ড ও আভা" }, service: "ayushman-card",
     words: ["ayushman", "pmjay", "pm jay", "golden card", "abha", "health card", "आयुष्मान", "आभा", "আয়ুষ্মান"],
     intro: "We check eligibility and make the card with your Aadhaar verification.",
     variants: [
@@ -130,13 +130,13 @@ export const HELP_GUIDES: HelpGuide[] = [
     ],
   },
   {
-    id: "udyam", title: { en: "Udyam (MSME) registration", hi: "उद्यम (MSME) पंजीकरण", bn: "উদ্যম (MSME) রেজিস্ট্রেশন" }, service: "udyam-msme-registration-help-jamshedpur",
+    id: "udyam", title: { en: "Udyam (MSME) registration", hi: "उद्यम (MSME) पंजीकरण", bn: "উদ্যম (MSME) রেজিস্ট্রেশন" }, service: "udyam-registration",
     words: ["udyam", "msme", "udyog", "business registration", "उद्यम", "উদ্যম"],
     intro: "Paperless — no documents to upload, just these details.",
     variants: [v("apply", "Register", "पंजीकरण", "রেজিস্ট্রেশন", [{ heading: "Bring", items: ["Owner's Aadhaar number and the linked mobile (OTP)", "PAN of the business or proprietor", "GSTIN, if you have one", "Bank account number and IFSC", "What the business does (manufacturing, trading or services)", "Investment in machinery and yearly turnover (your own estimate)"] }])],
   },
   {
-    id: "bank", title: { en: "Bank account opening", hi: "बैंक खाता खोलना", bn: "ব্যাংক অ্যাকাউন্ট খোলা" }, service: "bank-account-opening-bc-jamshedpur",
+    id: "bank", title: { en: "Bank account opening", hi: "बैंक खाता खोलना", bn: "ব্যাংক অ্যাকাউন্ট খোলা" }, service: "bank-account-opening",
     words: ["bank account", "savings account", "open account", "khata", "बैंक खाता", "खाता", "অ্যাকাউন্ট"],
     intro: "Open a savings account at our banking correspondent point.",
     variants: [v("savings", "Savings account", "बचत खाता", "সেভিংস অ্যাকাউন্ট", [
@@ -146,13 +146,13 @@ export const HELP_GUIDES: HelpGuide[] = [
     ])],
   },
   {
-    id: "abua", title: { en: "Abua Awas Yojana", hi: "अबुआ आवास योजना", bn: "আবুয়া আবাস যোজনা" }, service: "abua-awas-yojana-help-jamshedpur",
+    id: "abua", title: { en: "Abua Awas Yojana", hi: "अबुआ आवास योजना", bn: "আবুয়া আবাস যোজনা" }, service: "abua-awas-yojana",
     words: ["abua", "awas", "housing", "ghar", "pm awas", "आवास", "अबुआ", "আবাস"],
     intro: "Jharkhand's housing scheme. We help you get the papers ready for the block/panchayat.",
     variants: [v("apply", "Apply", "आवेदन", "আবেদন", [{ heading: "Bring", items: ["Aadhaar card", "Aadhaar-linked bank passbook", "Income certificate", "Jharkhand residence certificate", "Caste certificate (if applicable)", "Ration card / BPL card", "MGNREGA job card (if you have one)", "Land document for the house site (if applicable)", "1 passport-size photo and your mobile number"] }])],
   },
   {
-    id: "ration", title: { en: "Ration card", hi: "राशन कार्ड", bn: "রেশন কার্ড" }, service: "ration-card-help-jamshedpur",
+    id: "ration", title: { en: "Ration card", hi: "राशन कार्ड", bn: "রেশন কার্ড" }, service: "ration-card",
     words: ["ration", "rashan", "pds", "food card", "राशन", "রেশন"],
     intro: "New card, adding a member or correction — we prepare the application.",
     variants: [v("new", "New ration card", "नया राशन कार्ड", "নতুন রেশন কার্ড", [
@@ -162,7 +162,7 @@ export const HELP_GUIDES: HelpGuide[] = [
     ])],
   },
   {
-    id: "aadhaar", title: { en: "Aadhaar card", hi: "आधार कार्ड", bn: "আধার কার্ড" }, service: "aadhaar-assistance-jamshedpur",
+    id: "aadhaar", title: { en: "Aadhaar card", hi: "आधार कार्ड", bn: "আধার কার্ড" }, service: "aadhaar",
     words: ["aadhaar", "aadhar", "adhar", "uid", "आधार", "আধার"],
     intro: "Originals are needed for Aadhaar. Children under 5 need only a birth certificate and a parent's Aadhaar.",
     variants: [
@@ -178,7 +178,7 @@ export const HELP_GUIDES: HelpGuide[] = [
     ],
   },
   {
-    id: "pan", title: { en: "PAN card", hi: "पैन कार्ड", bn: "প্যান কার্ড" }, service: "pan-card-jamshedpur",
+    id: "pan", title: { en: "PAN card", hi: "पैन कार्ड", bn: "প্যান কার্ড" }, service: "pan-card",
     words: ["pan", "pan card", "पैन", "প্যান"],
     intro: "New PAN or correction — Aadhaar-based in most cases.",
     variants: [

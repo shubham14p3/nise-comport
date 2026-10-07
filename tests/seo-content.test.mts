@@ -1,4 +1,6 @@
 import { test } from "node:test";
+import { brandTitle } from "../src/lib/seo.ts";
+import { SERVICE_SLUG_RENAMES } from "../src/lib/slug-renames.ts";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { articleDates, articles } from "../src/lib/content.ts";
@@ -11,7 +13,7 @@ import { allServiceItems, findService, publishedServiceDetails, serviceCatalog, 
 import { breadcrumbLd, faqLd, localBusinessLd, serializeJsonLd } from "../src/lib/structured-data.ts";
 import { site } from "../src/lib/site.ts";
 
-const BRAND = " | NISE COMPORT";
+const PREFIX = "NISE COMPORT - Pragya Kendra - ";
 const routes = publicRoutes();
 const routePaths = new Set(routes.map((route) => route.path));
 
@@ -34,8 +36,8 @@ test("slugs are unique across services and guides", () => {
 test("service search titles and descriptions fit in Google results", () => {
   const titles = new Set<string>();
   for (const service of allServiceItems) {
-    const title = serviceSeoTitle(service) + BRAND;
-    assert.ok(title.length <= 66, `${service.slug}: title is ${title.length} chars: ${title}`);
+    const title = PREFIX + serviceSeoTitle(service);
+    assert.ok(title.length <= 82, `${service.slug}: title is ${title.length} chars: ${title}`);
     assert.ok(!/jamshedpur.*jamshedpur/i.test(serviceSeoTitle(service)), `${service.slug}: repeats Jamshedpur`);
     assert.ok(!titles.has(title), `duplicate title ${title}`);
     titles.add(title);
@@ -44,10 +46,25 @@ test("service search titles and descriptions fit in Google results", () => {
   }
 });
 
+test("tab titles start with the brand and Pragya Kendra", () => {
+  assert.equal(brandTitle("PAN Card Help in Jamshedpur"), "NISE COMPORT - Pragya Kendra - PAN Card Help in Jamshedpur");
+  assert.equal(brandTitle("जमशेदपुर में सेवाएँ | NISE COMPORT"), "NISE COMPORT - Pragya Kendra - जमशेदपुर में सेवाएँ");
+  assert.equal(brandTitle("NISE COMPORT"), "NISE COMPORT - Pragya Kendra");
+});
+
+test("old long service addresses redirect to the short ones", () => {
+  const redirects = legacyRedirects();
+  for (const [old, slug] of Object.entries(SERVICE_SLUG_RENAMES)) {
+    assert.ok(findService(slug), `missing service ${slug}`);
+    assert.ok(redirects.some((item) => item.source === `/services/${old}` && item.destination === `/services/${slug}`), old);
+    assert.ok(slug.length <= 34, `${slug} is long`);
+  }
+});
+
 test("guide titles, dates and links are valid", () => {
   for (const article of articles) {
-    const title = (article.seoTitle ?? article.title) + BRAND;
-    assert.ok(title.length <= 70, `${article.slug}: title is ${title.length} chars`);
+    const title = PREFIX + (article.seoTitle ?? article.title);
+    assert.ok(title.length <= 86, `${article.slug}: title is ${title.length} chars`);
     assert.ok(article.excerpt.length >= 60 && article.excerpt.length <= 170, `${article.slug}: excerpt is ${article.excerpt.length} chars`);
     assert.ok(findService(article.serviceSlug), `${article.slug}: links to missing service ${article.serviceSlug}`);
     const { publishedAt, updatedAt } = articleDates(article);
@@ -106,7 +123,7 @@ test("structured data is safe and well-formed", () => {
   assert.deepEqual(crumbs.itemListElement.map((item) => item.position), [1, 2]);
   assert.match(crumbs.itemListElement[1].item, /^https:\/\/.+\/services$/);
   assert.equal(faqLd([]), null);
-  const business = localBusinessLd([{ name: "PAN", path: "/services/pan-card-jamshedpur" }]) as Record<string, unknown>;
+  const business = localBusinessLd([{ name: "PAN", path: "/services/pan-card" }]) as Record<string, unknown>;
   assert.equal((business.address as Record<string, string>).postalCode, "831004");
   assert.ok(!("openingHoursSpecification" in business) || Array.isArray(business.openingHoursSpecification));
 });

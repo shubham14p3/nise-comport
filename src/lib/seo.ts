@@ -7,7 +7,7 @@ type PageMetaOptions = {
   imageAlt?: string;
   /** Private or thin pages: keep out of search results but let crawlers follow links. */
   noindex?: boolean;
-  /** Language alternates, e.g. { "hi-IN": "/hi/services/pan-card-jamshedpur" }. The current page is added automatically. */
+  /** Language alternates, e.g. { "hi-IN": "/hi/services/pan-card" }. The current page is added automatically. */
   languages?: Record<string, string>;
   /** Language of this page. Defaults to en-IN. */
   locale?: "en-IN" | "hi-IN" | "bn-IN";
@@ -19,10 +19,10 @@ type PageMetaOptions = {
 
 /**
  * Builds consistent metadata: title, description, canonical URL, hreflang, Open Graph and Twitter.
- * Titles that already contain the brand are used as-is; others get " | NISE COMPORT" from the layout template.
+ * Every title starts with the brand, e.g. "NISE COMPORT - Pragya Kendra - PAN Card Help in Jamshedpur".
  */
 export function pageMetadata(title: string, description: string, path: string, options: PageMetaOptions = {}): Metadata {
-  const brandedTitle = title.includes(site.name) ? title : `${title} | ${site.name}`;
+  const brandedTitle = brandTitle(title);
   const locale = options.locale ?? "en-IN";
   const image = options.image?.startsWith("http") ? options.image : `/api/og?title=${encodeURIComponent(title)}&locale=${encodeURIComponent(locale)}`;
   const languages = options.languages ? { [locale]: path, ...options.languages } : undefined;
@@ -37,7 +37,7 @@ export function pageMetadata(title: string, description: string, path: string, o
     images: [{ url: image, width: 1200, height: 630, alt: options.imageAlt ?? `${site.name} – ${title}` }],
   };
   return {
-    title: title.includes(site.name) ? { absolute: title } : title,
+    title: { absolute: brandedTitle },
     description,
     ...(options.keywords?.length ? { keywords: options.keywords } : {}),
     alternates: { canonical: path, ...(languages ? { languages } : {}) },
@@ -47,6 +47,17 @@ export function pageMetadata(title: string, description: string, path: string, o
     twitter: { card: "summary_large_image", title: brandedTitle, description, images: [image] },
     ...(options.noindex ? { robots: { index: false, follow: true, googleBot: { index: false, follow: true } } } : {}),
   };
+}
+
+export const TITLE_PREFIX = "NISE COMPORT - Pragya Kendra";
+
+/** "PAN Card Help | NISE COMPORT" → "NISE COMPORT - Pragya Kendra - PAN Card Help". */
+export function brandTitle(title: string) {
+  const rest = title
+    .replace(/\s*[|–-]\s*NISE COMPORT\s*$/i, "")
+    .replace(/^\s*NISE COMPORT\s*(?:[|–-]\s*(?:Pragya Kendra\s*[|–-]\s*)?)?/i, "")
+    .trim();
+  return rest ? `${TITLE_PREFIX} - ${rest}` : TITLE_PREFIX;
 }
 
 /** Metadata for private pages (sign-in, profile, admin): never indexed, never followed. */

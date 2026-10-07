@@ -10,13 +10,13 @@ import { site, whatsappLink } from "@/lib/site";
 const YEAR = new Date().getFullYear();
 
 const popularServices = [
-  { href: "/services/pan-card-jamshedpur", label: "PAN card apply & correction" },
-  { href: "/services/aadhaar-assistance-jamshedpur", label: "Aadhaar update help" },
-  { href: "/services/jharkhand-certificates-jamshedpur", label: "Income, caste & residence certificates" },
-  { href: "/services/banking-aeps-money-transfer", label: "AEPS & money transfer" },
-  { href: "/services/bike-insurance-jamshedpur", label: "Bike insurance" },
-  { href: "/services/printing-scanning-jamshedpur", label: "Online printing & photocopy" },
-  { href: "/services/jeevan-pramaan-life-certificate-jamshedpur", label: "Jeevan Pramaan life certificate" },
+  { href: "/services/pan-card", label: "PAN card apply & correction" },
+  { href: "/services/aadhaar", label: "Aadhaar update help" },
+  { href: "/services/income-caste-residence-certificate", label: "Income, caste & residence certificates" },
+  { href: "/services/aeps-money-transfer", label: "AEPS & money transfer" },
+  { href: "/services/bike-insurance", label: "Bike insurance" },
+  { href: "/services/printing-scanning", label: "Online printing & photocopy" },
+  { href: "/services/jeevan-pramaan", label: "Jeevan Pramaan life certificate" },
 ];
 
 /**

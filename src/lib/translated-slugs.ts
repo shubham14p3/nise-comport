@@ -4,18 +4,18 @@
  * translated content. A unit test checks these lists match src/lib/hindi.ts and bengali.ts.
  */
 const TRANSLATED = [
-  "pan-card-jamshedpur",
-  "aadhaar-assistance-jamshedpur",
-  "jharkhand-certificates-jamshedpur",
-  "voter-id-services-jamshedpur",
-  "banking-aeps-money-transfer",
-  "printing-scanning-jamshedpur",
-  "student-scholarship-forms-jamshedpur",
-  "exam-form-filling-jamshedpur",
-  "passport-driving-licence-help",
-  "jeevan-pramaan-life-certificate-jamshedpur",
-  "land-mutation-jharbhoomi-help",
-  "birth-death-certificate-help-jamshedpur",
+  "pan-card",
+  "aadhaar",
+  "income-caste-residence-certificate",
+  "voter-id",
+  "aeps-money-transfer",
+  "printing-scanning",
+  "scholarship-forms",
+  "exam-forms",
+  "passport-driving-licence",
+  "jeevan-pramaan",
+  "land-mutation",
+  "birth-death-certificate",
 ] as const;
 
 export const translatedSlugs: { hi: readonly string[]; bn: readonly string[] } = { hi: TRANSLATED, bn: TRANSLATED };

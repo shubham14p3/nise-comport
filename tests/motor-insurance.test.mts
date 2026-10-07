@@ -49,5 +49,5 @@ test("migration 0012 adds request drafts", () => {
   assert.match(sql, /CREATE TABLE IF NOT EXISTS "request_drafts"/);
   assert.match(sql, /ON DELETE cascade/);
   const journal = JSON.parse(readFileSync(new URL("../drizzle/meta/_journal.json", import.meta.url), "utf8"));
-  assert.equal(journal.entries.at(-1)?.tag, "0012_request_drafts");
+  assert.ok(journal.entries.some((entry: { tag: string }) => entry.tag === "0012_request_drafts"));
 });

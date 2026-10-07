@@ -22,13 +22,13 @@ type Message = { id: number; from: "bot" | "user"; text: string; actions?: Actio
 /** What each quick topic links to. */
 const TOPIC_LINKS: Record<TopicId, { details?: string; request?: string }> = {
   pan: { details: "/pan", request: "/pan/request" },
-  aadhaar: { details: "/services/aadhaar-assistance-jamshedpur", request: "/request?service=aadhaar-assistance-jamshedpur" },
-  certificates: { details: "/services/jharkhand-certificates-jamshedpur", request: "/request?service=jharkhand-certificates-jamshedpur" },
+  aadhaar: { details: "/services/aadhaar", request: "/request?service=aadhaar" },
+  certificates: { details: "/services/income-caste-residence-certificate", request: "/request?service=income-caste-residence-certificate" },
   banking: { details: "/services/banking", request: "/request?category=banking" },
   offers: { details: "/offers" },
   insurance: { details: "/services/insurance", request: "/request?category=insurance" },
-  print: { details: "/services/printing-scanning-jamshedpur", request: "/print" },
-  bills: { details: "/services/fee-bill-recharge-jamshedpur", request: "/request?service=fee-bill-recharge-jamshedpur" },
+  print: { details: "/services/printing-scanning", request: "/print" },
+  bills: { details: "/services/bill-payment-recharge", request: "/request?service=bill-payment-recharge" },
   forms: { details: "/services/education", request: "/request?category=education" },
   track: { details: "/profile#requests" },
   visit: {},

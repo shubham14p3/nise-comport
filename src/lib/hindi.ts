@@ -32,7 +32,7 @@ export const hindiHome = {
 
 export const hindiServices: HindiService[] = [
   {
-    slug: "pan-card-jamshedpur",
+    slug: "pan-card",
     title: "जमशेदपुर में पैन कार्ड आवेदन और सुधार",
     seoTitle: "पैन कार्ड आवेदन और सुधार, जमशेदपुर",
     description: "नया पैन कार्ड, पैन में नाम या जन्मतिथि सुधार, खोए पैन का रीप्रिंट और आवेदन ट्रैकिंग में मदद – खरंगाझार, टेल्को, जमशेदपुर।",
@@ -45,7 +45,7 @@ export const hindiServices: HindiService[] = [
     ],
   },
   {
-    slug: "aadhaar-assistance-jamshedpur",
+    slug: "aadhaar",
     title: "जमशेदपुर में आधार अपडेट की जानकारी और मदद",
     seoTitle: "आधार अपडेट की जानकारी, टेल्को जमशेदपुर",
     description: "आधार में नाम, पता, जन्मतिथि या मोबाइल नंबर बदलने का सही तरीका, ज़रूरी दस्तावेज़ और स्टेटस ट्रैकिंग – खरंगाझार, टेल्को के पास।",
@@ -58,7 +58,7 @@ export const hindiServices: HindiService[] = [
     ],
   },
   {
-    slug: "jharkhand-certificates-jamshedpur",
+    slug: "income-caste-residence-certificate",
     title: "आय, जाति, निवास और EWS प्रमाण पत्र में मदद",
     seoTitle: "आय, जाति, निवास प्रमाण पत्र – जमशेदपुर",
     description: "झारखंड के आय, जाति, निवास और EWS प्रमाण पत्र के ऑनलाइन आवेदन (JharSewa) में मदद – दस्तावेज़ सूची, फ़ॉर्म जाँच और स्टेटस।",
@@ -71,7 +71,7 @@ export const hindiServices: HindiService[] = [
     ],
   },
   {
-    slug: "voter-id-services-jamshedpur",
+    slug: "voter-id",
     title: "जमशेदपुर में वोटर आईडी: नया आवेदन और सुधार",
     seoTitle: "वोटर आईडी नया आवेदन और सुधार, जमशेदपुर",
     description: "नया वोटर पंजीकरण, वोटर आईडी में नाम या पता सुधार और e-EPIC डाउनलोड में मदद – खरंगाझार, टेल्को, जमशेदपुर।",
@@ -81,7 +81,7 @@ export const hindiServices: HindiService[] = [
     faqs: [{ question: "क्या आप वोटर कार्ड जारी करते हैं?", answer: "नहीं। सत्यापन और कार्ड जारी करना चुनाव आयोग का काम है। हम आवेदन में मदद करते हैं।" }],
   },
   {
-    slug: "banking-aeps-money-transfer",
+    slug: "aeps-money-transfer",
     title: "टेल्को में बैंकिंग, AEPS और मनी ट्रांसफ़र",
     seoTitle: "AEPS, मनी ट्रांसफ़र और बैंकिंग, टेल्को",
     description: "बैंकिंग करेस्पोंडेंट (BC) के ज़रिए AEPS से नकद निकासी, बैलेंस जाँच, जमा और मनी ट्रांसफ़र – खरंगाझार, टेल्को, जमशेदपुर।",
@@ -91,7 +91,7 @@ export const hindiServices: HindiService[] = [
     faqs: [{ question: "धोखाधड़ी हो तो क्या करें?", answer: "तुरंत अपने बैंक से संपर्क करें। साइबर धोखाधड़ी के लिए 1930 पर कॉल करें या cybercrime.gov.in पर शिकायत करें।" }],
   },
   {
-    slug: "printing-scanning-jamshedpur",
+    slug: "printing-scanning",
     title: "जमशेदपुर में ऑनलाइन प्रिंटिंग, स्कैनिंग और फ़ोटोकॉपी",
     seoTitle: "ऑनलाइन प्रिंटिंग और फ़ोटोकॉपी, जमशेदपुर",
     description: "PDF, Word या फ़ोटो अपलोड करें, पेज और कॉपी चुनें, और खरंगाझार, टेल्को से पिकअप या डिलीवरी का अनुरोध भेजें।",
@@ -101,7 +101,7 @@ export const hindiServices: HindiService[] = [
     faqs: [{ question: "क्या ऑनलाइन भुगतान करना होगा?", answer: "नहीं। अनुरोध भेजने पर कोई ऑनलाइन भुगतान नहीं लिया जाता; टीम अंतिम कीमत की पुष्टि करती है।" }],
   },
   {
-    slug: "student-scholarship-forms-jamshedpur",
+    slug: "scholarship-forms",
     title: "छात्रवृत्ति और एडमिशन फ़ॉर्म में मदद",
     seoTitle: "छात्रवृत्ति और एडमिशन फ़ॉर्म, जमशेदपुर",
     description: "ई-कल्याण छात्रवृत्ति, एडमिशन और अन्य छात्र फ़ॉर्म में मदद – दस्तावेज़ अपलोड, अंतिम तिथि और पावती।",
@@ -111,7 +111,7 @@ export const hindiServices: HindiService[] = [
     faqs: [{ question: "क्या आप पात्रता तय करते हैं?", answer: "नहीं। पात्रता संबंधित विभाग या संस्थान तय करता है। हम सूचना समझने और फ़ॉर्म भरने में मदद करते हैं।" }],
   },
   {
-    slug: "exam-form-filling-jamshedpur",
+    slug: "exam-forms",
     title: "परीक्षा, भर्ती और ऑनलाइन फ़ॉर्म भरना",
     seoTitle: "ऑनलाइन परीक्षा और नौकरी फ़ॉर्म, जमशेदपुर",
     description: "परीक्षा, भर्ती और अन्य ऑनलाइन फ़ॉर्म सावधानी से भरने में मदद – फ़ोटो, हस्ताक्षर और दस्तावेज़ अपलोड की जाँच।",
@@ -121,7 +121,7 @@ export const hindiServices: HindiService[] = [
     faqs: [{ question: "क्या फ़ॉर्म की जानकारी की ज़िम्मेदारी आपकी है?", answer: "जानकारी सही होने की ज़िम्मेदारी आवेदक की है, इसलिए जमा करने से पहले आप हर प्रविष्टि जाँचते हैं।" }],
   },
   {
-    slug: "passport-driving-licence-help",
+    slug: "passport-driving-licence",
     title: "पासपोर्ट और ड्राइविंग लाइसेंस फ़ॉर्म में मदद",
     seoTitle: "पासपोर्ट और ड्राइविंग लाइसेंस, जमशेदपुर",
     description: "पासपोर्ट सेवा और परिवहन सारथी पोर्टल पर आवेदन, दस्तावेज़ सूची और अपॉइंटमेंट बुकिंग में मदद – जमशेदपुर।",
@@ -131,7 +131,7 @@ export const hindiServices: HindiService[] = [
     faqs: [{ question: "क्या आप पासपोर्ट या लाइसेंस जारी करते हैं?", answer: "नहीं। सत्यापन, टेस्ट और जारी करना संबंधित प्राधिकरण का काम है।" }],
   },
   {
-    slug: "jeevan-pramaan-life-certificate-jamshedpur",
+    slug: "jeevan-pramaan",
     title: "जीवन प्रमाण (डिजिटल जीवन प्रमाण पत्र) में मदद",
     seoTitle: "जीवन प्रमाण पत्र (जीवन प्रमाण), जमशेदपुर",
     description: "पेंशनभोगियों के लिए जीवन प्रमाण डिजिटल जीवन प्रमाण पत्र – क्या लाना है, प्रक्रिया और पावती। खरंगाझार, टेल्को।",
@@ -141,7 +141,7 @@ export const hindiServices: HindiService[] = [
     faqs: [{ question: "क्या पेंशनभोगी का आना ज़रूरी है?", answer: "हाँ। प्रमाणीकरण पेंशनभोगी को स्वयं करना होता है।" }],
   },
   {
-    slug: "land-mutation-jharbhoomi-help",
+    slug: "land-mutation",
     title: "दाखिल-ख़ारिज (म्यूटेशन) और झारभूमि में मदद",
     seoTitle: "दाखिल-ख़ारिज और झारभूमि मदद, जमशेदपुर",
     description: "ज़मीन के दाखिल-ख़ारिज (म्यूटेशन) का ऑनलाइन आवेदन, खतियान/रजिस्टर-II देखना और झारभूमि पर स्टेटस – जमशेदपुर।",
@@ -151,7 +151,7 @@ export const hindiServices: HindiService[] = [
     faqs: [{ question: "क्या रजिस्ट्री से म्यूटेशन अपने-आप हो जाता है?", answer: "नहीं। रजिस्ट्री हस्तांतरण दर्ज करती है; म्यूटेशन राजस्व रिकॉर्ड अपडेट करता है।" }],
   },
   {
-    slug: "birth-death-certificate-help-jamshedpur",
+    slug: "birth-death-certificate",
     title: "जन्म और मृत्यु प्रमाण पत्र आवेदन में मदद",
     seoTitle: "जन्म और मृत्यु प्रमाण पत्र, जमशेदपुर",
     description: "जन्म या मृत्यु प्रमाण पत्र का नया आवेदन, देर से पंजीकरण और सुधार – दस्तावेज़ सूची और प्रक्रिया, जमशेदपुर।",
