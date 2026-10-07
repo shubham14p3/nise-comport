@@ -43,6 +43,12 @@ jobs:
             run "lint" npm run lint
             run "tsc" npx tsc --noEmit -p tsconfig.json
             run "data:check" npm run data:check
+            echo "=== dev first (like your machine: dev files exist before build)"
+            (npx next dev -p 3300 > out/dev0.log 2>&1 &) ; sleep 10
+            for u in / /services /insurance /services/pan-card; do curl -s -m 120 -o /dev/null -w '%{http_code} ' "http://localhost:3300$u"; done; echo
+            # corrupt the dev route types the way an interrupted dev server can
+            pkill -f "next dev" ; sleep 2; f=.next/dev/types/routes.d.ts; ls -la .next/dev/types || true
+            [ -f $f ] && head -c 3000 $f > /tmp/r && tail -c 1500 $f >> /tmp/r && cp /tmp/r $f
             run "build" npm run build
             echo "=== pages (next start)"
             (npx next start -p 3100 > out/start.log 2>&1 &) ; sleep 8
@@ -53,7 +59,9 @@ jobs:
             echo "=== pages (next dev)"
             (npx next dev -p 3200 > out/dev.log 2>&1 &) ; sleep 10
             for u in /services/car-insurance /services/pan-card /services/voter-id /pan/request "/request?service=voter-id-services-jamshedpur" /insurance; do echo "$(curl -s -m 120 -o /dev/null -w '%{http_code}' "http://localhost:3200$u") $u"; done
-            tail -c 30000 out/dev.log
+            for u in / /services /gallery /offers /contact /about /faq /blog /pan /print /login /signup /profile /admin /hi /bn /hi/services/pan-card /bn/services/voter-id /services/insurance /services/bike-insurance /services/ration-card /areas-we-serve /team /privacy /terms /sitemap.xml /robots.txt /llms.txt; do echo "$(curl -s -m 120 -o /dev/null -w '%{http_code}' "http://localhost:3200$u") $u"; done
+            echo "--- dev log errors/warnings"; grep -iE "error|warn|⨯|failed" out/dev.log | grep -v "DeprecationWarning" | sort | uniq -c | head -60
+            tail -c 6000 out/dev.log
           } > out/result.log 2>&1
           grep '^=== ' out/result.log
       - name: Save log
