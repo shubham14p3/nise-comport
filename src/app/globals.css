@@ -2218,3 +2218,20 @@ a.site-banner:hover { transform: translateY(-3px); }
 .link-records__items dl > div { min-width: 0; }
 .link-records__items dt { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
 .link-records__items dd { margin: 2px 0 0; font-weight: 600; overflow-wrap: anywhere; }
+
+/* Follow-up thread on a record (icon, opens a small message list) */
+.followup { margin-top: 10px; }
+.followup__toggle { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: inherit; cursor: pointer; font: inherit; }
+.followup__toggle b { font-size: .75rem; background: var(--brand, #0b5fff); color: #fff; border-radius: 999px; padding: 0 6px; min-width: 18px; text-align: center; }
+.followup__panel { margin-top: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); display: grid; gap: 10px; }
+.followup__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.followup__list li { padding: 8px 10px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); max-width: 92%; }
+.followup__list li.is-staff { margin-left: auto; background: rgba(11, 95, 255, .08); }
+.followup__list small { color: var(--muted); }
+.followup__list p { margin: 2px 0 0; overflow-wrap: anywhere; }
+.followup form { display: grid; gap: 8px; justify-items: end; }
+.followup textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; resize: vertical; }
+.followup__error { color: #9b1c1c; }
+
+/* Refresh button above an admin area */
+.admin-refresh { display: flex; justify-content: flex-end; margin-bottom: 8px; }

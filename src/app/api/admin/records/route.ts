@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import { apiError } from "@/lib/http";
 import { PublicError } from "@/lib/errors";
 import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
+import { forgetRecordCache } from "@/lib/records-cache";
 import { importRecords, listPeople, personRecords, recentImports, serviceRecords, serviceYears, servicesSummary, stageCounts } from "@/lib/records";
 import type { SheetInput } from "@/lib/record-import";
 import { privateStoragePath } from "@/lib/storage";
@@ -29,6 +30,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(await personRecords(key, user));
     }
     await enforceRate(RATE_RULES.recordPagesPerUserHour, identity("user", user.id), "Too many record searches this hour.");
+    // The Refresh button: forget what the server kept, so the next reads come straight from the database.
+    if (params.get("view") === "refresh") { forgetRecordCache(); return NextResponse.json({ ok: true }); }
     const filters = { q: params.get("q") ?? "", status: params.get("status") ?? "", from: params.get("from") ?? "", to: params.get("to") ?? "" };
     if (params.get("view") === "years") return NextResponse.json(await serviceYears(params.get("service") ?? "", filters));
     if (params.get("view") === "records") {

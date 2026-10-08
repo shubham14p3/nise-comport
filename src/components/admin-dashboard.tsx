@@ -222,7 +222,20 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
     setOpenedTabs((current) => (current.includes(tab) ? current : [...current, tab]));
     window.history.replaceState(null, "", `#${tab}`);
   }
-  const keep = (id: Tab, node: React.ReactNode) => mountedTabs.has(id) ? <div key={id} style={{ display: active === id ? undefined : "none" }}>{node}</div> : null;
+  /** The Refresh button: the area starts again from the server (new key = fresh mount = fresh reads). */
+  const [refreshed, setRefreshed] = useState<Record<string, number>>({});
+  const [refreshing, setRefreshing] = useState(false);
+  async function refreshArea() {
+    if (!active) return;
+    setRefreshing(true);
+    try {
+      // Records areas keep answers in the browser and on the server, so both are cleared first.
+      if (active === "records" || active.startsWith("svc:")) await recordsClient.refresh();
+      setRefreshed((current) => ({ ...current, [active]: (current[active] ?? 0) + 1 }));
+    } catch { /* the loader and the area itself show any error */ }
+    finally { setRefreshing(false); }
+  }
+  const keep = (id: Tab, node: React.ReactNode) => mountedTabs.has(id) ? <div key={`${id}-${refreshed[id] ?? 0}`} style={{ display: active === id ? undefined : "none" }}>{node}</div> : null;
   function chooseService(service: string) {
     setPicked(`svc:${service}`);
     setVisited((current) => (current.includes(service) ? current : [...current, service]));
@@ -267,6 +280,7 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
         </button></Fragment>)}{!servicesBeforePan && serviceButtons}</nav>
       </aside>
       <section className="profile__main admin-page" aria-live="polite" aria-label={activeService ? serviceNames[activeService] ?? activeService : current?.label}>
+        {active && active !== "inbox" && <div className="admin-refresh"><button type="button" className="btn btn--ghost btn--sm" onClick={() => void refreshArea()} disabled={refreshing}><RefreshCw size={14}/>{refreshing ? "Refreshing…" : "Refresh"}</button></div>}
         {!tabs.length && <p className="alert alert--info">Your account doesn’t have access to any admin area yet. Ask the owner to add it in Team.</p>}
         {active === "inbox" && summary && <div className="metric-grid">
           {can("requests") && <AdminMetric tone="blue" icon={<ClipboardList size={22}/>} number={summary.waiting} label="Requests waiting" onClick={() => choose("requests")}/>}
@@ -277,7 +291,7 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
         {keep("inbox", <InboxPanel onSeen={clearUnread} active={active === "inbox"}/>)}
         {keep("requests", <RequestQueue/>)}
         {keep("records", <RecordsPanel key="all" service="" visible={active === "records"}/>)}
-        {mountedServices.map((service) => <div key={service} style={{ display: activeService === service ? undefined : "none" }}>
+        {mountedServices.map((service) => <div key={`${service}-${refreshed[`svc:${service}`] ?? 0}`} style={{ display: activeService === service ? undefined : "none" }}>
           <RecordsPanel service={service} serviceOnly visible={activeService === service}/>
         </div>)}
         {keep("email", <EmailCampaignsPanel/>)}

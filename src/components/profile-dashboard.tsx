@@ -1,5 +1,6 @@
 "use client";
 
+import FollowUp, { type FollowUpItem } from "@/components/follow-up";
 import { serviceName, statusText } from "@/lib/i18n-forms";
 import { useLocale } from "@/lib/use-locale";
 import SiteHeader from "@/components/site-header";
@@ -70,10 +71,10 @@ const dateLabel = (value: string) => new Date(value).toLocaleDateString("en-IN",
 const dateTime = (value: string) => new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 const rupees = (value: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(value);
 
-type PastRecord = { id: string; serviceLabel: string; recordDate: string | null; statusLabel: string; statusNote: string | null; fields: { label: string; value: string }[] };
+type PastRecord = { id: string; serviceLabel: string; recordDate: string | null; statusLabel: string; statusNote: string | null; fields: { label: string; value: string }[]; followups: FollowUpItem[] };
 
 /** Records made before, linked to this account (completed by the centre). One card per service, all its records inside. */
-function PastRecordList({ rows }: { rows: PastRecord[] }) {
+function PastRecordList({ rows, canWrite, onAdded }: { rows: PastRecord[]; canWrite: boolean; onAdded: (recordId: string, item: FollowUpItem) => void }) {
   const groups = new Map<string, PastRecord[]>();
   for (const row of rows) groups.set(row.serviceLabel, [...(groups.get(row.serviceLabel) ?? []), row]);
   return <div className="link-records__list"><h3>Past records linked to your account</h3>
@@ -83,6 +84,9 @@ function PastRecordList({ rows }: { rows: PastRecord[] }) {
         <span className="status-pill">{row.statusLabel}</span>
         <dl>{row.fields.map((field) => <div key={field.label}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl>
         {row.statusNote ? <p className="link-records__note">{row.statusNote}</p> : null}
+        <FollowUp recordId={row.id} items={row.followups ?? []} op="Fl0wUpC7mrAd" canWrite={canWrite} onAdded={(item) => onAdded(row.id, item)}
+          hint="Something not working or not right? Tell us here. The centre sees it and replies on this record."
+          placeholder="What is not working? e.g. the card has not arrived"/>
       </div>)}
     </li>)}</ul>
   </div>;
@@ -91,7 +95,7 @@ function PastRecordList({ rows }: { rows: PastRecord[] }) {
 /** Records made before, read from the server. */
 const fetchPastRecords = () => secureApi<{ records: PastRecord[] }>("Cl4imMine5Rz", {}).then((value) => value.records);
 
-export default function ProfileDashboard({ demoMode = false }: { demoMode?: boolean }) {
+export default function ProfileDashboard({ demoMode = false, readOnly = false }: { demoMode?: boolean; readOnly?: boolean }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(demoMode ? DEMO_SNAPSHOT : null);
   const [loadError, setLoadError] = useState("");
 
@@ -124,7 +128,7 @@ export default function ProfileDashboard({ demoMode = false }: { demoMode?: bool
     </div></main>;
   }
 
-  return <ProfileWorkspace snapshot={snapshot} reload={demoMode ? async () => undefined : load} demoMode={demoMode}/>;
+  return <ProfileWorkspace snapshot={snapshot} reload={demoMode ? async () => undefined : load} demoMode={demoMode} readOnly={readOnly}/>;
 }
 
 const subscribeHash = (callback: () => void) => { window.addEventListener("hashchange", callback); return () => window.removeEventListener("hashchange", callback); };
@@ -134,7 +138,7 @@ function sectionFromUrl(): Section {
   return navigation.some((item) => item.id === value) ? value as Section : "overview";
 }
 
-function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; reload: () => Promise<void>; demoMode: boolean }) {
+function ProfileWorkspace({ snapshot, reload, demoMode, readOnly }: { snapshot: Snapshot; reload: () => Promise<void>; demoMode: boolean; readOnly: boolean }) {
   const [pastRecords, setPastRecords] = useState<PastRecord[] | null>(demoMode ? [] : null);
   // Past records are read once; they are read again only after a link is approved.
   useEffect(() => {
@@ -266,7 +270,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
         </article>}
         <RequestRows rows={activeRequests}/></div>;
       case "history": return <div className="panel"><SectionHeading eyebrow="COMPLETED & CLOSED" title="Request history" text="Completed, cancelled and otherwise closed requests, and past records linked to your account."/>
-        {pastRecords && pastRecords.length > 0 && <PastRecordList rows={pastRecords}/>}
+        {pastRecords && pastRecords.length > 0 && <PastRecordList rows={pastRecords} canWrite={!readOnly && !demoMode} onAdded={(recordId, item) => setPastRecords((list) => list && list.map((row) => row.id === recordId ? { ...row, followups: [...(row.followups ?? []), item] } : row))}/>}
         <RequestRows rows={historyRequests}/>
         {!historyRequests.length && requests.length > 0 && <p className="muted">Your requests are still in progress. They move here once the team closes them.</p>}
         {!historyRequests.length && requests.length === 0 && pastRecords !== null && pastRecords.length === 0 && <p className="muted">No completed requests or linked records yet.</p>}

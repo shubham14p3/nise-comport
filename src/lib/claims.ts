@@ -11,6 +11,7 @@ import { blindIndex, open } from "@/lib/vault";
 import { customerFields } from "@/lib/record-services";
 import { RECORD_SERVICES } from "@/lib/record-import";
 import { RECORD_STATUSES } from "@/lib/record-status";
+import { followupsFor, type FollowUp } from "@/lib/followups";
 
 type Sealed = { mobile: string | null; pan: string | null; fields: Record<string, string> };
 export const CLAIM_METHODS = ["reference", "pan", "whatsapp", "staff"] as const;
@@ -109,7 +110,7 @@ export async function linkedRecords(userId: string) {
   }
   if (!people.size) return [];
   type Sealed = { mobile: string | null; whatsapp?: string | null; email?: string | null; address?: string | null; pan: string | null; fields?: Record<string, string> };
-  const rows: { id: string; service: string; serviceLabel: string; recordDate: string | null; status: string; statusLabel: string; statusNote: string | null; fields: { label: string; value: string }[] }[] = [];
+  const rows: { id: string; service: string; serviceLabel: string; recordDate: string | null; status: string; statusLabel: string; statusNote: string | null; fields: { label: string; value: string }[]; followups: FollowUp[] }[] = [];
   const seen = new Set<string>();
   for (const person of people.values()) {
     const found = await db.select({ id: customerRecords.id, service: customerRecords.service, name: customerRecords.name, recordDate: customerRecords.recordDate,
@@ -126,9 +127,12 @@ export async function linkedRecords(userId: string) {
         status: row.status, statusLabel: RECORD_STATUSES[row.status] ?? row.status, statusNote: row.statusNote ?? null,
         fields: customerFields(row.service, { name: row.name, mobile: data.mobile ?? null, whatsapp: data.whatsapp ?? null, email: data.email ?? null,
           address: data.address ?? null, pan: data.pan ?? null, statusLabel: RECORD_STATUSES[row.status] ?? row.status, statusNote: row.statusNote ?? null, fields: data.fields ?? {} }),
+        followups: [],
       });
     }
   }
+  const threads = await followupsFor(rows.map((row) => row.id), true);
+  for (const row of rows) row.followups = threads.get(row.id) ?? [];
   return rows.sort((a, b) => (a.recordDate ?? "") < (b.recordDate ?? "") ? 1 : (a.recordDate ?? "") > (b.recordDate ?? "") ? -1 : 0);
 }
 

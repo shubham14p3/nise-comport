@@ -327,6 +327,20 @@ export const customerRecords = pgTable("customer_records", {
   index("customer_records_email_idx").on(table.emailHash),
 ]);
 
+/**
+ * A short thread on one record: the customer says what is not working, staff reply.
+ * Both sides see it (the customer on their past records, staff on the record). The text is sealed like the rest.
+ */
+export const recordFollowups = pgTable("record_followups", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  recordId: uuid("record_id").notNull().references(() => customerRecords.id, { onDelete: "cascade" }),
+  authorId: uuid("author_id").references(() => users.id, { onDelete: "set null" }),
+  byStaff: boolean("by_staff").notNull().default(false),
+  authorName: text("author_name").notNull(),
+  bodyEnc: text("body_enc").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("record_followups_record_idx").on(table.recordId, table.createdAt), index("record_followups_author_idx").on(table.authorId, table.createdAt)]);
+
 /** Each time staff open a customer's WhatsApp chat from the records list. Keyed hash of the person, never the number. */
 /** Email campaigns: sent only to contacts who said YES and have an email address. */
 export const emailCampaigns = pgTable("email_campaigns", {

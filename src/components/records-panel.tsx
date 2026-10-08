@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import RecordsServiceBrowser from "@/components/records-service-browser";
+import FollowUp, { type FollowUpItem } from "@/components/follow-up";
 import ClaimsQueue from "@/components/claims-queue";
 import { RECORD_STATUSES, RECORD_STATUS_KEYS } from "@/lib/record-status";
 import { Check, ChevronLeft, ChevronRight, Copy, Database, Eye, FileText, Phone, Search, Upload, X } from "lucide-react";
@@ -17,7 +18,7 @@ type Listing = { people: Person[]; totals: { people: number; records: number; re
 type SheetReport = { sheet: string; service: string | null; rows: number; records: number; skipped: number; reason?: string; droppedColumns?: string[] };
 type ImportResult = { imported: number; duplicates: number; updated: number; removed: number; removalHeld: number; skipped: number; contactsAdded: number; totalRows: number; sheets: SheetReport[] };
 type ImportRow = { id: string; fileName: string; imported: number; duplicates: number; contactsAdded: number; createdAt: string };
-type Detail = { name: string; records: { id: string; removedAt: string | null; statusNote: string | null; status: string; service: string; source: string; recordDate: string | null; renewalOn: string | null; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; panMasked: string | null; hasPan: boolean; aadhaarMasked: string | null; fields: Record<string, string> }[] };
+type Detail = { name: string; records: { id: string; removedAt: string | null; statusNote: string | null; status: string; service: string; source: string; recordDate: string | null; renewalOn: string | null; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; panMasked: string | null; hasPan: boolean; aadhaarMasked: string | null; fields: Record<string, string>; followups: FollowUpItem[] }[] };
 
 const day = (iso: string | null) => iso ? new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "—";
 const pretty = (phone: string) => phone.replace(/^\+91(\d{5})(\d{5})$/, "+91 $1 $2");
@@ -254,6 +255,10 @@ export default function RecordsPanel({ service: chosen = "", serviceOnly = false
         {detail.records.map((record) => <article key={record.id} className="record-card">
           <header><b>{names[record.service] ?? record.service}</b>{record.removedAt ? <span className="repeat-badge">No longer in the register</span> : null}<small>{day(record.recordDate)}{record.renewalOn ? ` · renewal ${day(record.renewalOn)}` : ""} · {record.source}</small></header>
           <RecordStatus recordId={record.id} status={record.status} comment={record.statusNote} onSaved={(next, comment) => setDetail((current) => current && { ...current, records: current.records.map((item) => item.id === record.id ? { ...item, status: next, statusNote: comment } : item) })}/>
+          <FollowUp recordId={record.id} items={record.followups ?? []} op="Fl0wUpSt4ffRp" canWrite
+            hint="No messages from the customer yet. Anything you write here shows on their past records."
+            placeholder="Reply to the customer (they will see this)"
+            onAdded={(item) => setDetail((current) => current && { ...current, records: current.records.map((row) => row.id === record.id ? { ...row, followups: [...(row.followups ?? []), item] } : row) })}/>
           <dl>
             {record.mobile && <><dt>Mobile</dt><dd><a href={`tel:${record.mobile}`}>{pretty(record.mobile)}</a><CopyButton text={pretty(record.mobile)} label="Copy mobile"/></dd></>}
             {record.whatsapp && <><dt>WhatsApp</dt><dd><a href={`https://wa.me/${record.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">{pretty(record.whatsapp)}</a><CopyButton text={pretty(record.whatsapp)} label="Copy WhatsApp"/></dd></>}

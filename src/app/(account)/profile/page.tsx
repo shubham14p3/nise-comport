@@ -24,7 +24,7 @@ export default async function ProfilePage() {
         <div className="admin-entry"><Link className="btn btn--ghost" href="/admin">Open admin dashboard</Link></div>
       ) : null}
       {supportView ? null : <div className="link-records-slot"><LinkRecords/></div>}
-      <ProfileDashboard/>
+      <ProfileDashboard readOnly={supportView}/>
     </>
   );
 }

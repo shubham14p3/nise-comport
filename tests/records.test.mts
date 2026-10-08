@@ -133,3 +133,17 @@ test("the customer sees only the fields for their service, with the Go Digit ins
   assert.equal(customerFields("passport", base).map((item) => item.label).join("|"), "Name|Mobile number|Status|Comment");
 });
 
+
+test("migrations 0027 and 0028 add the record indexes and the follow-up thread", () => {
+  const journal = JSON.parse(readFileSync(new URL("../drizzle/meta/_journal.json", import.meta.url), "utf8")) as { entries: { idx: number; tag: string }[] };
+  const speed = readFileSync(new URL("../drizzle/0027_records_speed.sql", import.meta.url), "utf8");
+  assert.match(speed, /CREATE INDEX IF NOT EXISTS "customer_records_service_date_idx"/);
+  assert.match(speed, /CREATE INDEX IF NOT EXISTS "customer_records_service_status_idx"/);
+  const followups = readFileSync(new URL("../drizzle/0028_record_followups.sql", import.meta.url), "utf8");
+  assert.match(followups, /CREATE TABLE IF NOT EXISTS "record_followups"/);
+  assert.match(followups, /"body_enc" text NOT NULL/);
+  assert.match(followups, /REFERENCES "customer_records"\("id"\) ON DELETE cascade/);
+  const tags = journal.entries.map((entry) => entry.tag);
+  assert.ok(tags.includes("0027_records_speed") && tags.includes("0028_record_followups"));
+  assert.deepEqual(journal.entries.map((entry) => entry.idx), journal.entries.map((_, index) => index), "journal indexes are in order");
+});

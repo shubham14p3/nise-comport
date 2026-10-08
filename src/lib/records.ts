@@ -5,6 +5,7 @@ import { recordAccountRow } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { cachedRecords, forgetRecordCache } from "@/lib/records-cache";
+import { followupsFor } from "@/lib/followups";
 import { identityBase, identityKeys, maskAadhaar, maskPan, parseWorkbook, RECORD_SERVICES, type ParsedRecord, type SheetInput } from "@/lib/record-import";
 import { normalizePhone } from "@/lib/validation";
 import { COMPLETED_BEFORE, RECORD_STATUSES, RECORD_STATUS_KEYS } from "@/lib/record-status";
@@ -278,9 +279,10 @@ export async function personRecords(key: string, actor: Actor) {
     .where(personFilter(key))
     .orderBy(desc(customerRecords.recordDate)).limit(100);
   if (!rows.length) throw new PublicError("Unknown person.", 404);
+  const threads = await followupsFor(rows.map((row) => row.id), false);
   const records = rows.map((row) => {
     const data = open<Sealed>(row.payloadEnc);
-    return { id: row.id, service: row.service, source: row.source, name: row.name, recordDate: row.recordDate, renewalOn: row.renewalOn, status: row.status, statusNote: row.statusNote ?? null, removedAt: row.removedAt ? row.removedAt.toISOString() : null,
+    return { id: row.id, service: row.service, source: row.source, name: row.name, recordDate: row.recordDate, renewalOn: row.renewalOn, status: row.status, statusNote: row.statusNote ?? null, followups: threads.get(row.id) ?? [], removedAt: row.removedAt ? row.removedAt.toISOString() : null,
       mobile: data.mobile, whatsapp: data.whatsapp ?? null, altMobiles: data.altMobiles ?? [], email: data.email ?? null, address: data.address ?? null, pan: null, panMasked: maskPan(data.pan), hasPan: Boolean(data.pan), aadhaarMasked: maskAadhaar(data.aadhaar), fields: maskIds(data.fields) };
   });
   await logActivity({ kind: "record_view", permission: "records", category: "records", title: `${actor.name} opened the records of ${rows[0].name}`, detail: `${rows.length} record${rows.length === 1 ? "" : "s"} · ${[...new Set(rows.map((row) => RECORD_SERVICES[row.service] ?? row.service))].join(", ")}`, refType: "person", refId: key, actorId: actor.id });

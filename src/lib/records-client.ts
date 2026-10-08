@@ -93,6 +93,11 @@ export const recordsClient = {
     changed();
     return value;
   },
+  /** The Refresh button: the server forgets what it kept, then every screen reads again from the database. */
+  async refresh() {
+    await secureApi(RECORDS_OP, { view: "refresh" }, "Refreshing…");
+    changed();
+  },
   /** After an import: everything stored is out of date, so screens load again. */
   clearAll() {
     changed();

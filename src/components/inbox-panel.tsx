@@ -9,7 +9,7 @@ type Item = { id: string; kind: string; category: string | null; title: string; 
 type Lead = { id: string; name: string; phone: string; topic: string; message: string | null; status: string; page: string | null; createdAt: string };
 type Inbox = { items: Item[]; unread: number; seenAt: string; pending: { category: string; label: string; total: number }[]; leads: Lead[] };
 
-const ICON: Record<string, string> = { lead: "📞", request: "📝", print: "🖨️", status: "🔄", import: "📥", record_view: "👁️", staff: "👥", campaign: "📣", promotion: "🎟️" };
+const ICON: Record<string, string> = { lead: "📞", request: "📝", print: "🖨️", status: "🔄", import: "📥", record_view: "👁️", staff: "👥", campaign: "📣", promotion: "🎟️", followup: "💬" };
 const ago = (iso: string) => {
   const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
   if (minutes < 1) return "just now";
