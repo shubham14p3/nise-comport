@@ -16,8 +16,10 @@ Open **http://localhost:3000**. You do not need PostgreSQL or SMTP to explore th
 ### Local demo sign-in
 
 1. Click **Sign in** in the top navigation.
-2. In **Local preview login**, use **Fill demo details** (or enter the credentials below).
+2. Enter the credentials below (or set `NEXT_PUBLIC_SHOW_DEMO_CARD=true` to show the **Local preview login** card).
 3. Click **Sign in**. The app takes you to `/profile`.
+
+The demo card is hidden on the login page by default. To show it while testing locally, set `NEXT_PUBLIC_SHOW_DEMO_CARD=true` in `.env.local`. The demo login still works without it.
 
 ```text
 Email:    demo@nisecomport.test
