@@ -59,7 +59,7 @@ const blankDraft = (): Draft => ({
  * Admin → WhatsApp campaigns: build a campaign, send yourself a test, start it, and work through
  * the one-tap send queue. Rounds of up to 10 messages go out with random 10–30 minute gaps.
  */
-export default function CampaignsPanel() {
+export default function CampaignsPanel({ active: shown = true }: { active?: boolean }) {
   const [data, setData] = useState<Listing | null>(null);
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -80,10 +80,19 @@ export default function CampaignsPanel() {
       .then(([listing, pending]) => { if (active) { setData(listing); setQueue(pending.messages); } })
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load campaigns."); });
     void refresh();
-    // The queue fills over time (one round every 10–30 minutes), so keep it fresh while the tab is open.
-    const timer = window.setInterval(() => void refresh(), 60_000);
-    return () => { active = false; window.clearInterval(timer); };
+    return () => { active = false; };
   }, []);
+
+  // The queue fills over time (one round every 10–30 minutes), so keep it fresh, but only while this tab is on screen.
+  useEffect(() => {
+    if (!shown) return;
+    const timer = window.setInterval(() => {
+      if (document.hidden) return;
+      void Promise.all([secureApi<Listing>("S3k9V6nD2hQ8"), secureApi<{ messages: QueueItem[] }>("V1p7K4dZ8mR5")])
+        .then(([listing, pending]) => { setData(listing); setQueue(pending.messages); }).catch(() => undefined);
+    }, 120_000);
+    return () => window.clearInterval(timer);
+  }, [shown]);
 
   async function act(id: string, action: string, label: string) {
     if (action === "stop" && !window.confirm("Stop this campaign? Messages not yet sent will be skipped.")) return;

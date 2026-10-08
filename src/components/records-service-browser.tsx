@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { recordsClient, useRecordsVersion } from "@/lib/records-client";
+import { recordsClient, useRecordsVersionWhile } from "@/lib/records-client";
 import { RECORD_STATUSES } from "@/lib/record-status";
 
 type YearRow = { year: number | null; total: number };
@@ -16,7 +16,7 @@ const yearKey = (year: number | null) => (year === null ? "undated" : String(yea
  * One service at a time: filters (like Excel column filters) on top, then accordions
  * year → month → records, newest first. Filters run on the server, over the whole service.
  */
-export default function RecordsServiceBrowser({ service, label, onOpen, initialStatus = "" }: { service: string; label: string; onOpen: (key: string) => void; initialStatus?: string }) {
+export default function RecordsServiceBrowser({ service, label, onOpen, initialStatus = "", visible = true }: { service: string; label: string; onOpen: (key: string) => void; initialStatus?: string; visible?: boolean }) {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState(initialStatus);
   const [from, setFrom] = useState("");
@@ -27,7 +27,7 @@ export default function RecordsServiceBrowser({ service, label, onOpen, initialS
   const [pages, setPages] = useState<Record<string, Page>>({});
   const filters = { q: q.trim(), status, from, to };
   // Changes after a status is saved or an import: then the open list loads again once.
-  const version = useRecordsVersion();
+  const version = useRecordsVersionWhile(visible);
 
   // Reload the year counts whenever the service or a filter changes (typing waits a moment).
   useEffect(() => {

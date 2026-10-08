@@ -195,9 +195,12 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
   const unread = summary?.unread ?? 0;
   useEffect(() => {
     let active = true;
-    const check = () => secureApi<{ unread: number; waiting: number; callbacks: number }>("I5x2N8kQ3wT6", { count: true }).then((result) => { if (active) setSummary(result); }).catch(() => undefined);
+    const check = () => {
+      if (document.hidden) return; // nobody is looking, so don't ask
+      void secureApi<{ unread: number; waiting: number; callbacks: number }>("I5x2N8kQ3wT6", { count: true }).then((result) => { if (active) setSummary(result); }).catch(() => undefined);
+    };
     void check();
-    const timer = window.setInterval(() => void check(), 60_000);
+    const timer = window.setInterval(check, 120_000);
     return () => { active = false; window.clearInterval(timer); };
   }, []);
   const hash = useSyncExternalStore(subscribeHash, readHash, () => "");
@@ -211,7 +214,15 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
   const [visited, setVisited] = useState<string[]>([]);
   const mountedServices = [...new Set([...visited, ...(activeService ? [activeService] : [])])];
   const clearUnread = useCallback(() => setSummary((value) => value ? { ...value, unread: 0 } : value), []);
-  function choose(tab: Tab) { setPicked(tab); window.history.replaceState(null, "", `#${tab}`); }
+  /** Each area opened stays mounted (hidden when another is shown), so coming back shows it at once and asks the server for nothing. */
+  const [openedTabs, setOpenedTabs] = useState<string[]>([]);
+  const mountedTabs = new Set([...openedTabs, ...(active && !active.startsWith("svc:") ? [active] : [])]);
+  function choose(tab: Tab) {
+    setPicked(tab);
+    setOpenedTabs((current) => (current.includes(tab) ? current : [...current, tab]));
+    window.history.replaceState(null, "", `#${tab}`);
+  }
+  const keep = (id: Tab, node: React.ReactNode) => mountedTabs.has(id) ? <div key={id} style={{ display: active === id ? undefined : "none" }}>{node}</div> : null;
   function chooseService(service: string) {
     setPicked(`svc:${service}`);
     setVisited((current) => (current.includes(service) ? current : [...current, service]));
@@ -263,21 +274,21 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
           <AdminMetric tone="violet" icon={<Bell size={22}/>} number={summary.unread} label="New in the inbox" onClick={() => document.querySelector(".inbox__feed")?.scrollIntoView({ behavior: "smooth" })}/>
           {can("records") && <AdminMetric tone="green" icon={<FolderLock size={22}/>} number="Search" label="Customer records" onClick={() => choose("records")}/>}
         </div>}
-        {active === "inbox" && <InboxPanel onSeen={clearUnread}/>}
-        {active === "requests" && <RequestQueue/>}
-        {active === "records" && <RecordsPanel key="all" service=""/>}
+        {keep("inbox", <InboxPanel onSeen={clearUnread} active={active === "inbox"}/>)}
+        {keep("requests", <RequestQueue/>)}
+        {keep("records", <RecordsPanel key="all" service="" visible={active === "records"}/>)}
         {mountedServices.map((service) => <div key={service} style={{ display: activeService === service ? undefined : "none" }}>
-          <RecordsPanel service={service} serviceOnly/>
+          <RecordsPanel service={service} serviceOnly visible={activeService === service}/>
         </div>)}
-        {active === "email" && <EmailCampaignsPanel/>}
-        {active === "promotions" && <PromotionsPanel canEdit/>}
-        {active === "content" && <SiteContentPanel/>}
-        {active === "gallery" && <GalleryPanel/>}
-        {active === "campaigns" && <CampaignsPanel/>}
-        {active === "contacts" && <ContactsPanel/>}
-        {active === "team" && <TeamPanel meRole={me.role}/>}
-        {active === "pan" && <PanImportPanel/>}
-        {active === "wallet" && <WalletCreditForm/>}
+        {keep("email", <EmailCampaignsPanel/>)}
+        {keep("promotions", <PromotionsPanel canEdit/>)}
+        {keep("content", <SiteContentPanel/>)}
+        {keep("gallery", <GalleryPanel/>)}
+        {keep("campaigns", <CampaignsPanel active={active === "campaigns"}/>)}
+        {keep("contacts", <ContactsPanel/>)}
+        {keep("team", <TeamPanel meRole={me.role}/>)}
+        {keep("pan", <PanImportPanel/>)}
+        {keep("wallet", <WalletCreditForm/>)}
       </section>
     </div>
   </main>;

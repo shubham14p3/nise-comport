@@ -108,9 +108,37 @@ async function decryptJsonResponse<T>(response: Response, responseKey: CryptoKey
   return { status: Number(wrapped.z), data: wrapped.d as T };
 }
 
+/**
+ * Reads that every page asks for and that rarely change (who is signed in, the account snapshot,
+ * saved addresses). They are answered from memory for a short while and shared while running, so
+ * opening page after page does not ask the server again. They are forgotten the moment anything
+ * that could change them is done (signing in or out, saving the profile, placing a request…)
+ * and a hard refresh always starts clean.
+ */
+const SHARED_READS = new Set(["C4w7G2hN6kP9", "P8a2N5dK1vR7", "P3v8F1qL6sM4"]);
+const FORGET_AFTER = new Set([
+  "Q7m4kP2vL9sD", "H9d2M7qK4zF8", "Rec0rdLog1nQ", "L8t1B5rX9mQ4", "R6y0D3sJ8vM2", "H5w2Zc8nR3vK", "F2n8Vb6tW0xE",
+  "T2f9K4pW7cL1", "B7n3Q8xH5rV0", "M1z6P9dS4kJ7", "F8c2L5vN0qR3", "Y4h7T1mK6pD9", "J9r5W2bC8nX1",
+  "D6k0N9yR2tH5", "X1m7C4pV8qB3", "S5w2J9nF3kL7", "A4x8L1rN5vK3", "Z6m2C9pT4hQ7", "M9q2X5wJ8tB3", "G8q4T1vM6rC0",
+]);
+const SHARED_FOR_MS = 20_000;
+const shared = new Map<string, { at: number; value: Promise<unknown> }>();
+
 /** Every encrypted call shows a loading line while it runs. Pass a label to say what is loading. */
 export function secureApi<T>(operation: string, input: unknown = {}, label = "Loading…"): Promise<T> {
-  return trackApi(label, secureApiRaw<T>(operation, input));
+  if (SHARED_READS.has(operation)) {
+    const hit = shared.get(operation);
+    if (hit && Date.now() - hit.at < SHARED_FOR_MS) return hit.value as Promise<T>;
+    const value: Promise<T> = trackApi(label, secureApiRaw<T>(operation, input)).catch((reason) => {
+      if (shared.get(operation)?.value === value) shared.delete(operation); // a failed read is never kept
+      throw reason;
+    });
+    shared.set(operation, { at: Date.now(), value });
+    return value;
+  }
+  const work = trackApi(label, secureApiRaw<T>(operation, input));
+  if (!FORGET_AFTER.has(operation)) return work;
+  return work.finally(() => shared.clear());
 }
 
 async function secureApiRaw<T>(operation: string, input: unknown = {}): Promise<T> {

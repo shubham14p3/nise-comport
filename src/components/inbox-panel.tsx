@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bell, Check, Eye, Phone, RefreshCw, UserRound, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi } from "@/lib/secure-api-client";
@@ -23,7 +23,7 @@ const pretty = (phone: string) => phone.replace(/^\+91(\d{5})(\d{5})$/, "+91 $1 
  * Admin → Inbox: what's waiting per service, people who asked to be called back, and a feed of
  * what happened (new requests, status changes, imports, who opened which customer records).
  */
-export default function InboxPanel({ onSeen }: { onSeen?: () => void }) {
+export default function InboxPanel({ onSeen, active: shown = true }: { onSeen?: () => void; active?: boolean }) {
   const [data, setData] = useState<Inbox | null>(null);
   const [category, setCategory] = useState("");
   const [busy, setBusy] = useState("");
@@ -40,17 +40,34 @@ export default function InboxPanel({ onSeen }: { onSeen?: () => void }) {
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load the inbox."); }
   }
 
+  const unreadNow = useRef(0);
+  const loadedAt = useRef(0);
+  useEffect(() => { unreadNow.current = data?.unread ?? 0; }, [data]);
+
+  // Read once when first opened. The panel then stays mounted, so coming back shows it at once.
   useEffect(() => {
     let active = true;
-    const refresh = () => secureApi<Inbox>("I5x2N8kQ3wT6", { category: "" })
-      .then((result) => { if (active) setData(result); })
+    secureApi<Inbox>("I5x2N8kQ3wT6", { category: "" })
+      .then((result) => { if (active) { loadedAt.current = Date.now(); setData(result); } })
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load the inbox."); });
-    void refresh();
-    // Opening the inbox marks what's here as seen (after a moment, so the highlights are visible).
-    const seen = window.setTimeout(() => { void secureApi("O9c4V7mB2pL5").then(() => onSeen?.()).catch(() => undefined); }, 4000);
-    const timer = window.setInterval(() => void refresh(), 60_000);
+    return () => { active = false; };
+  }, []);
+
+  // While on screen: mark what is here as seen (after a moment, so the highlights are visible)
+  // and refresh every two minutes. Nothing runs while the tab is hidden or another area is open.
+  useEffect(() => {
+    if (!shown) return;
+    let active = true;
+    const seen = window.setTimeout(() => { if (unreadNow.current > 0) void secureApi("O9c4V7mB2pL5").then(() => onSeen?.()).catch(() => undefined); }, 4000);
+    const refresh = () => {
+      if (document.hidden) return;
+      void secureApi<Inbox>("I5x2N8kQ3wT6", { category: "" })
+        .then((result) => { if (active) { loadedAt.current = Date.now(); setData(result); } }).catch(() => undefined);
+    };
+    if (loadedAt.current && Date.now() - loadedAt.current > 120_000) refresh();
+    const timer = window.setInterval(refresh, 120_000);
     return () => { active = false; window.clearTimeout(seen); window.clearInterval(timer); };
-  }, [onSeen]);
+  }, [shown, onSeen]);
 
   async function lead(row: Lead, status: "called" | "done" | "spam") {
     setBusy(row.id);

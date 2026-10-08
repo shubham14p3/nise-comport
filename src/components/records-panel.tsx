@@ -8,7 +8,7 @@ import { RECORD_STATUSES, RECORD_STATUS_KEYS } from "@/lib/record-status";
 import { Check, ChevronLeft, ChevronRight, Copy, Database, Eye, FileText, Phone, Search, Upload, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
-import { recordsClient, useRecordsVersion } from "@/lib/records-client";
+import { recordsClient, useRecordsVersionWhile } from "@/lib/records-client";
 import { useRouter } from "next/navigation";
 
 type Person = { key: string; name: string; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; total: number; services: string[]; lastDate: string | null; nextRenewal: string | null; sentCount: number; lastSentAt: string | null; recentSends: string[] };
@@ -133,7 +133,7 @@ function RevealPan({ recordId, masked }: { recordId: string; masked: string | nu
  * Master records (all services, import, claims) when serviceOnly is false.
  * serviceOnly: one service from the sidebar. It loads only that service's stages and year list.
  */
-export default function RecordsPanel({ service: chosen = "", serviceOnly = false }: { service?: string; serviceOnly?: boolean }) {
+export default function RecordsPanel({ service: chosen = "", serviceOnly = false, visible = true }: { service?: string; serviceOnly?: boolean; visible?: boolean }) {
   const [data, setData] = useState<Listing | null>(null);
   const [imports, setImports] = useState<ImportRow[]>([]);
   const [q, setQ] = useState("");
@@ -185,7 +185,7 @@ export default function RecordsPanel({ service: chosen = "", serviceOnly = false
   }, [serviceOnly]);
 
   // Counts per stage for the chosen service (the row above its list).
-  const version = useRecordsVersion();
+  const version = useRecordsVersionWhile(visible);
   useEffect(() => {
     if (!service) return;
     let active = true;
@@ -244,7 +244,7 @@ export default function RecordsPanel({ service: chosen = "", serviceOnly = false
     <button type="button" className={`stage-chip${stage === "" ? " is-on" : ""}`} onClick={() => setStage("")}><b>{stages.total.toLocaleString("en-IN")}</b> All</button>
     {RECORD_STATUS_KEYS.map((key) => <button key={key} type="button" className={`stage-chip stage-chip--${key}${stage === key ? " is-on" : ""}`} onClick={() => setStage(key)}><b>{(stages.counts[key] ?? 0).toLocaleString("en-IN")}</b>{RECORD_STATUSES[key]}</button>)}
   </div> : null;
-  const serviceBrowser = service ? <RecordsServiceBrowser key={`${service}|${stage}`} service={service} initialStatus={stage} label={names[service] ?? service} onOpen={(key) => void openPerson({ key } as Person)}/> : null;
+  const serviceBrowser = service ? <RecordsServiceBrowser key={`${service}|${stage}`} visible={visible} service={service} initialStatus={stage} label={names[service] ?? service} onOpen={(key) => void openPerson({ key } as Person)}/> : null;
   const detailSheet = <>
     {detail && createPortal(<div className="record-sheet" role="dialog" aria-modal="true" aria-label={`Records of ${detail.name}`} onMouseDown={(event) => { if (event.target === event.currentTarget) setDetail(null); }}>
       <div className="record-sheet__panel">

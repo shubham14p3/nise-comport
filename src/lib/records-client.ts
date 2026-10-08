@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { secureApi } from "@/lib/secure-api-client";
 import { RECORD_SERVICES } from "@/lib/record-import";
 
@@ -37,6 +37,17 @@ export function getRecordsVersion(): number {
 /** Open screens use this to load again after a change, and not otherwise. */
 export function useRecordsVersion(): number {
   return useSyncExternalStore(subscribeRecordsVersion, getRecordsVersion, () => 0);
+}
+
+/**
+ * Like useRecordsVersion, but a screen that is hidden keeps the version it last showed.
+ * It then loads again only when it is on screen, not once for every hidden screen.
+ */
+export function useRecordsVersionWhile(visible: boolean): number {
+  const live = useRecordsVersion();
+  const [shown, setShown] = useState(live);
+  if (visible && shown !== live) setShown(live);
+  return shown;
 }
 
 /** Labels go to the shared loader (api-loading), so the screen shows what is being fetched. */
