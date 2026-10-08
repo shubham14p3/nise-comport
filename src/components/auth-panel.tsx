@@ -14,7 +14,7 @@ import { findOffer } from "@/lib/offers";
 import { promoDict, shortDate } from "@/lib/promo-i18n";
 import { useLocale } from "@/lib/use-locale";
 import { takeReturn } from "@/lib/after-login";
-import { emailProblem, nameProblem, normalizePhone, passwordProblem, PASSWORD_MIN } from "@/lib/validation";
+import { emailProblem, nameProblem, passwordProblem, PASSWORD_MIN, whatsappProblem } from "@/lib/validation";
 
 type Mode = "signin" | "signup";
 type WelcomeCoupon = { code: string; amount: number; minimum: number; expiresAt: string | null };
@@ -66,7 +66,7 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
     const first = nameProblem(firstName, 2, "first name"); if (first) found.firstName = first;
     const last = nameProblem(lastName, 1, "last name"); if (last) found.lastName = last;
     const mail = emailProblem(email); if (mail) found.email = mail;
-    if (!normalizePhone(phone)) found.phone = "Enter a valid 10-digit WhatsApp number, e.g. 98765 43210.";
+    const phoneProblem = whatsappProblem(phone); if (phoneProblem) found.phone = phoneProblem;
     return found;
   }
 
@@ -170,7 +170,7 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
           {mode === "signup" && <label className="field"><span className="field__label">{t.firstName}</span><span className="input-wrap"><UserRound size={18}/><input autoComplete="given-name" aria-required="true" maxLength={50} value={firstName} onChange={e => setFirstName(e.target.value)} placeholder={t.firstNamePh} aria-invalid={Boolean(fieldErrors.firstName)} aria-describedby={fieldErrors.firstName ? "firstName-error" : undefined}/></span>{fieldError("firstName")}</label>}
           {mode === "signup" && <label className="field"><span className="field__label">{t.lastName}</span><span className="input-wrap"><UserRound size={18}/><input autoComplete="family-name" aria-required="true" maxLength={50} value={lastName} onChange={e => setLastName(e.target.value)} placeholder={t.lastNamePh} aria-invalid={Boolean(fieldErrors.lastName)} aria-describedby={fieldErrors.lastName ? "lastName-error" : undefined}/></span>{fieldError("lastName")}</label>}
           <label className="field"><span className="field__label">{t.email}</span><span className="input-wrap"><Mail size={18}/><input type="email" autoComplete="email" inputMode="email" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? "email-error" : undefined}/></span>{fieldError("email")}</label>
-          {mode === "signup" && <label className="field"><span className="field__label">{t.whatsapp}</span><span className="input-wrap"><span className="input-prefix">+91</span><input type="tel" autoComplete="tel-national" inputMode="tel" aria-required="true" maxLength={20} value={phone} onChange={e => setPhone(e.target.value)} placeholder="98765 43210" aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? "phone-error" : undefined}/></span>{fieldError("phone")}</label>}
+          {mode === "signup" && <label className="field"><span className="field__label">{t.whatsapp}</span><span className="input-wrap"><span className="input-prefix">+91</span><input type="tel" autoComplete="tel-national" inputMode="numeric" aria-required="true" maxLength={20} value={phone} onChange={e => { let digits = e.target.value.replace(/\D/g, ""); if (digits.length === 12 && digits.startsWith("91")) digits = digits.slice(2); setPhone(digits.slice(0, 10)); }} placeholder="98765 43210" aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? "phone-error" : undefined}/></span>{fieldError("phone")}</label>}
           <label className="field"><span className="field__label">{t.password}</span><span className="input-wrap"><LockKeyhole size={18}/><input type={showPassword ? "text" : "password"} autoComplete={mode === "signup" ? "new-password" : "current-password"} required minLength={mode === "signup" ? PASSWORD_MIN : 1} maxLength={128} value={password} onChange={e => setPassword(e.target.value)} placeholder={mode === "signup" ? fill(t.newPasswordPh, { n: PASSWORD_MIN }) : t.passwordPh} aria-invalid={Boolean(fieldErrors.password)} aria-describedby={mode === "signup" ? "password-hint" : fieldErrors.password ? "password-error" : undefined}/><button type="button" className="icon-btn" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? t.hide : t.show}>{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button></span>
             {mode === "signup" && <span id="password-hint" className={passwordHint ? "field__hint field__hint--warn" : "field__hint"}>{passwordHint || fill(t.passwordHint, { n: PASSWORD_MIN })}</span>}
             {mode === "signin" && fieldError("password")}
