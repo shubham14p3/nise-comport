@@ -208,6 +208,8 @@ export const contacts = pgTable("contacts", {
   services: jsonb("services").$type<{ service: string; renewalOn?: string | null; note?: string | null }[]>().notNull().default([]),
   consent: text("consent").notNull().default("unknown"), consentAt: timestamp("consent_at", { withTimezone: true }),
   source: text("source"), notes: text("notes"), lastMessagedAt: timestamp("last_messaged_at", { withTimezone: true }),
+  /** When we last emailed asking for YES (at most once every 30 days). */
+  consentAskedAt: timestamp("consent_asked_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [uniqueIndex("contacts_phone_unique").on(table.phone), index("contacts_consent_idx").on(table.consent)]);
 
@@ -326,6 +328,8 @@ export const emailCampaigns = pgTable("email_campaigns", {
   imageType: text("image_type"), imageData: text("image_data"),
   /** draft | scheduled | sending | done | cancelled */
   status: text("status").notNull().default("draft"), sendAt: timestamp("send_at", { withTimezone: true }),
+  /** "yes" = everyone who said YES; "selected" = only audienceIds (still YES only). */
+  audience: text("audience").notNull().default("yes"), audienceIds: jsonb("audience_ids").$type<string[]>(),
   total: integer("total").notNull().default(0), sentCount: integer("sent_count").notNull().default(0), failedCount: integer("failed_count").notNull().default(0),
   createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

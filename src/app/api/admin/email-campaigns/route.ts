@@ -20,7 +20,8 @@ export async function POST(request: NextRequest) {
     const user = await requirePermission("campaigns");
     const body = z.discriminatedUnion("action", [
       z.object({ action: z.literal("create"), subject: z.string(), body: z.string(),
-        image: z.object({ type: z.string(), data: z.string().max(400_000) }).optional() }),
+        image: z.object({ type: z.string(), data: z.string().max(400_000) }).optional(),
+        audience: z.enum(["yes", "selected"]).optional(), audienceIds: z.array(z.string().uuid()).max(5000).optional() }),
       z.object({ action: z.literal("schedule"), id: z.string().uuid(), sendAt: z.string().datetime().nullable() }),
       z.object({ action: z.literal("cancel"), id: z.string().uuid() }),
     ]).parse(await readJson(request, 600_000));

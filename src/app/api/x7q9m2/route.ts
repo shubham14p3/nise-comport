@@ -79,6 +79,7 @@ const OPS = {
   "Cl4imD3c1de7Lp": { method: "POST", path: "/api/admin/claims/decide" },
   "Em4ilLis2tQ": { method: "GET", path: "/api/admin/email-campaigns" },
   "Em4ilAct3ion": { method: "POST", path: "/api/admin/email-campaigns" },
+  "Em4ilAsk3Cn9": { method: "POST", path: "/api/admin/email-campaigns/consent" },
 } as const;
 
 /** Encrypted file uploads: customer documents, and posters in the admin area. */
@@ -129,6 +130,12 @@ function targetFor(operation: string, input: Record<string, unknown>) {
     case "Z5b8N2qT6wK1": {
       const id = stringValue(input, "id", 40);
       return { method: "GET", path: `/api/admin/coupon-batches${id ? `?id=${encodeURIComponent(id)}` : ""}` };
+    }
+    case "Em4ilPeop1eQ": {
+      const params = new URLSearchParams();
+      for (const key of ["q", "filter", "service"]) { const value = stringValue(input, key, 80); if (value) params.set(key, value); }
+      if (typeof input.page === "number") params.set("page", String(Math.max(0, Math.floor(input.page))));
+      return { method: "GET", path: `/api/admin/email-campaigns/people?${params.toString()}` };
     }
     case "W8r2T5yN1cF6": {
       const params = new URLSearchParams();

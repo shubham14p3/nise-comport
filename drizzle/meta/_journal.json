@@ -169,6 +169,13 @@
       "when": 1793100000000,
       "tag": "0023_records_completed_before_may_2026",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793200000000,
+      "tag": "0024_email_audience_and_consent_ask",
+      "breakpoints": true
     }
   ]
 }
