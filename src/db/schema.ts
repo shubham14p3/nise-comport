@@ -18,6 +18,8 @@ export const users = pgTable("users", {
   permissions: jsonb("permissions").$type<string[]>().notNull().default([]),
   /** When this staff member last opened the admin inbox (unread count = newer activity). */
   inboxSeenAt: timestamp("inbox_seen_at", { withTimezone: true }),
+  /** Created from a mobile number on an imported register (no email or password yet). Signs in by checking a past record. */
+  fromRecords: boolean("from_records").notNull().default(false),
 }, (table) => [uniqueIndex("users_email_unique").on(table.email)]);
 
 export const emailOtps = pgTable("email_otps", {

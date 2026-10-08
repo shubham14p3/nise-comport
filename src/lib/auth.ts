@@ -10,6 +10,7 @@ import { clearRate, enforceRate, hitRate, identity, peekRate, RATE_RULES } from 
 import { secondsUntilWindowEnds } from "@/lib/rate-limit-core";
 import { emailProblem, isSixDigitCode, looksLikeEmail, nameProblem, normalizeEmail, normalizePhone, normalizeWhatsapp, passwordProblem, whatsappProblem } from "@/lib/validation";
 import { hasPermission, type Permission } from "@/lib/permissions";
+import { findRecordMatch } from "@/lib/claims";
 import { logActivity } from "@/lib/activity";
 
 export type User = typeof users.$inferSelect;
@@ -79,7 +80,7 @@ export async function createDemoSession() {
   return { id: demoUser.id, name: demoUser.name, email: demoUser.email };
 }
 
-async function createSession(userId: string) {
+export async function createSession(userId: string) {
   const rawToken = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60_000);
   await db.insert(sessions).values({ userId, tokenHash: hashToken(rawToken), expiresAt });
@@ -92,7 +93,7 @@ async function currentTokenHash() {
   return token ? hashToken(token) : null;
 }
 
-function publicUser(user: User) {
+export function publicUser(user: User) {
   return { id: user.id, name: user.name, email: user.email, role: user.role };
 }
 
@@ -223,7 +224,7 @@ export async function verifyEmailOtp(emailInput: string, code: string, purpose: 
  * -------------------------------------------------------------------------------------------- */
 
 /** Accounts that use this mobile number (customers and staff alike). Used for sign-in by mobile. */
-async function accountsOnMobile(phone: string) {
+export async function accountsOnMobile(phone: string) {
   return db.select().from(users).where(and(eq(users.phone, phone), isNull(users.deletedAt), isNull(users.disabledAt))).limit(5);
 }
 
@@ -553,4 +554,42 @@ export async function deleteAccount(user: User, password: string, confirmation: 
   });
   (await cookies()).delete(SESSION_COOKIE);
   sendAccountDeletedEmail(fresh.email, fresh.name).catch((error) => console.error("[auth] deletion email failed", error));
+}
+
+/** Placeholder password: never matches, so these accounts sign in only by checking a past record. */
+export const NO_PASSWORD_HASH = "!records-account-no-password";
+
+/** One account per mobile number, made from an imported register. The email is a reserved placeholder until the person adds a real one. */
+export function recordAccountRow(phone: string, name: string) {
+  const digits = phone.replace(/\D/g, "");
+  return { name, email: `${digits}@records.nisecomport.invalid`, phone, whatsapp: phone, passwordHash: NO_PASSWORD_HASH, role: "customer", fromRecords: true };
+}
+
+export async function createRecordAccount(phone: string, name: string) {
+  const [created] = await db.insert(users).values(recordAccountRow(phone, name)).onConflictDoNothing().returning();
+  return created ?? null;
+}
+
+/**
+ * Signs in the person who proves they own a past record: mobile + name + (receipt reference or PAN).
+ * The account for that mobile is made if it does not exist yet.
+ */
+export async function signInWithRecords(mobileInput: string, nameInput: string, method: "reference" | "pan", value: string, ip = "unknown") {
+  await enforceRate(RATE_RULES.passwordPerIp15m, identity("ip", ip), "Too many sign-in attempts from this network.");
+  const phone = normalizePhone(mobileInput);
+  if (!phone) throw new PublicError("Enter a valid 10-digit mobile number.", 400, { fields: { mobile: "Enter a valid 10-digit mobile number." } });
+  const problem = nameProblem(nameInput, 2, "Name");
+  if (problem) throw new PublicError(problem, 400, { fields: { name: problem } });
+  const cleaned = value.trim().toUpperCase().replace(/\s+/g, "");
+  if (!cleaned) throw new PublicError(method === "pan" ? "Enter your PAN number." : "Enter the reference number from your receipt.", 400, { fields: { value: "Required." } });
+  const match = await findRecordMatch(phone, nameInput, method, cleaned);
+  if (!match) throw new PublicError("These details do not match a past record. Check the mobile number, name and number, or ask the centre.", 401, { code: "no_record_match" });
+
+  const existing = await accountsOnMobile(phone);
+  let user: User | null = existing.find((row) => row.role === "customer") ?? existing[0] ?? null;
+  if (!user) user = await createRecordAccount(phone, match.name);
+  if (!isActive(user)) throw new PublicError("This account is not active. Contact the centre.", 403, { code: "account_inactive" });
+  await createSession(user.id);
+  await logActivity({ kind: "status", permission: "records", category: "records", title: `${user.name} signed in with a past record`, detail: `Checked by ${method === "pan" ? "PAN" : "reference number"} · ${match.name}`, refType: "user", refId: user.id, actorId: user.id });
+  return publicUser(user);
 }

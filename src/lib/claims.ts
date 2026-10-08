@@ -1,5 +1,5 @@
 import { randomInt } from "node:crypto";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { customerRecords, recordClaims, users } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import type { User } from "@/lib/auth";
@@ -23,6 +23,18 @@ export function namesMatch(a: string, b: string) {
   return [...words(b)].some((word) => left.has(word));
 }
 
+/** The record for this mobile whose name matches and whose PAN or receipt reference equals the value. */
+export async function findRecordMatch(phone: string, claimedName: string, method: "reference" | "pan", value: string) {
+  const candidates = await db.select({ name: customerRecords.name, payloadEnc: customerRecords.payloadEnc }).from(customerRecords)
+    .where(and(eq(customerRecords.mobileHash, blindIndex("mobile", phone)), isNull(customerRecords.removedAt))).limit(300);
+  return candidates.find((row) => {
+    if (!namesMatch(row.name, claimedName)) return false;
+    const data = open<Sealed>(row.payloadEnc);
+    if (method === "pan") return data.pan === value;
+    return Object.values(data.fields ?? {}).some((field) => field.toUpperCase().replace(/\s+/g, "") === value);
+  }) ?? null;
+}
+
 /**
  * A customer asks to be linked to their past records.
  * - reference / PAN: approved at once when the mobile, a name that matches, and that PAN or reference all match a record.
@@ -40,13 +52,7 @@ export async function submitClaim(user: User, input: { mobile: string; name: str
   if (input.method === "reference" || input.method === "pan") {
     const value = (input.value ?? "").trim().toUpperCase().replace(/\s+/g, "");
     if (!value) throw new PublicError(input.method === "pan" ? "Enter your PAN number." : "Enter the reference number from your receipt.", 400, { fields: { value: "Required." } });
-    const candidates = await db.select({ name: customerRecords.name, payloadEnc: customerRecords.payloadEnc }).from(customerRecords).where(eq(customerRecords.mobileHash, mobileHash)).limit(300);
-    const match = candidates.find((row) => {
-      if (!namesMatch(row.name, claimedName)) return false;
-      const data = open<Sealed>(row.payloadEnc);
-      if (input.method === "pan") return data.pan === value;
-      return Object.values(data.fields ?? {}).some((field) => field.toUpperCase().replace(/\s+/g, "") === value);
-    });
+    const match = await findRecordMatch(phone, claimedName, input.method, value);
     if (match) {
       await db.insert(recordClaims).values({ userId: user.id, mobileHash, matchedName: match.name, claimedName, method: input.method, status: "approved", decidedAt: new Date() });
       await logActivity({ kind: "status", permission: "records", category: "records", title: `${user.name} linked their records automatically`, detail: `Matched by ${input.method === "pan" ? "PAN" : "reference number"} · ${match.name}`, refType: "user", refId: user.id, actorId: user.id });

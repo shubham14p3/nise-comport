@@ -1,6 +1,7 @@
 import { and, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
-import { contacts, customerRecords, recordImports, recordSends } from "@/db/schema";
+import { contacts, customerRecords, recordImports, recordSends, users } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
+import { recordAccountRow } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { identityBase, identityKeys, maskAadhaar, maskPan, parseWorkbook, RECORD_SERVICES, type ParsedRecord, type SheetInput } from "@/lib/record-import";
@@ -138,7 +139,8 @@ export async function importRecords(fileName: string, sheets: SheetInput[], acto
   const totalRows = parsed.sheets.reduce((total, sheet) => total + sheet.rows, 0);
   const duplicates = unchanged;
   await db.update(recordImports).set({ imported, duplicates, updated, removed, skipped, contactsAdded, totalRows }).where(eq(recordImports.id, batch.id));
-  await logActivity({ kind: "import", permission: "records", category: "records", title: `${actor.name} imported ${fileName}`, detail: `${imported} new, ${updated} updated, ${duplicates} unchanged, ${removed} no longer in the register${removalHeld ? `, ${removalHeld} not marked (file much smaller than the register)` : ""}, ${contactsAdded} WhatsApp contacts added.`, refType: "import", refId: batch.id, actorId: actor.id });
+  const accountsMade = await ensureRecordAccounts();
+  await logActivity({ kind: "import", permission: "records", category: "records", title: `${actor.name} imported ${fileName}`, detail: `${accountsMade} accounts made, ${imported} new, ${updated} updated, ${duplicates} unchanged, ${removed} no longer in the register${removalHeld ? `, ${removalHeld} not marked (file much smaller than the register)` : ""}, ${contactsAdded} WhatsApp contacts added.`, refType: "import", refId: batch.id, actorId: actor.id });
   return { id: batch.id, imported, duplicates, updated, removed, removalHeld, skipped, contactsAdded, totalRows, sheets: parsed.sheets };
 }
 
@@ -374,3 +376,31 @@ export async function servicesSummary() {
   return { byService, services: RECORD_SERVICES };
 }
 
+/**
+ * One customer account per mobile number on the register, using the first name seen for that number.
+ * Numbers that already have an account (website sign-up or an earlier import) are left alone.
+ */
+export async function ensureRecordAccounts(): Promise<number> {
+  const rows = await db.select({ name: customerRecords.name, payloadEnc: customerRecords.payloadEnc }).from(customerRecords).where(isNull(customerRecords.removedAt));
+  const people = new Map<string, string>();
+  for (const row of rows) {
+    const data = open<{ mobile: string | null; whatsapp?: string | null }>(row.payloadEnc);
+    const phone = data.mobile ?? data.whatsapp ?? null;
+    const name = row.name?.trim().replace(/\s+/g, " ").slice(0, 100);
+    if (!phone || !/^\+91[6-9]\d{9}$/.test(phone) || !name || name.length < 2 || people.has(phone)) continue;
+    people.set(phone, name);
+  }
+  const phones = [...people.keys()];
+  const taken = new Set<string>();
+  for (let index = 0; index < phones.length; index += 500) {
+    const chunk = phones.slice(index, index + 500);
+    const existing = await db.select({ phone: users.phone }).from(users).where(inArray(users.phone, chunk));
+    for (const row of existing) if (row.phone) taken.add(row.phone);
+  }
+  const fresh = phones.filter((phone) => !taken.has(phone));
+  for (let index = 0; index < fresh.length; index += 500) {
+    const values = fresh.slice(index, index + 500).map((phone) => recordAccountRow(phone, people.get(phone) ?? "Customer"));
+    await db.insert(users).values(values).onConflictDoNothing();
+  }
+  return fresh.length;
+}
