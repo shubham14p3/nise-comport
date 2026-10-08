@@ -17,7 +17,12 @@ export default function ClaimsQueue() {
     try { setClaims((await secureApi<{ claims: Claim[] }>("Cl4imL1st7Kw", {})).claims); setError(""); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load claims."); }
   }
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    void (async () => {
+      try { setClaims((await secureApi<{ claims: Claim[] }>("Cl4imL1st7Kw", {})).claims); setError(""); }
+      catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load claims."); }
+    })();
+  }, []);
 
   async function decide(claim: Claim, decision: "approve" | "reject") {
     setBusy(claim.id); setError("");

@@ -23,7 +23,12 @@ export default function EmailCampaignsPanel() {
     try { setData(await secureApi<Listing>("Em4ilLis2tQ", {})); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load campaigns."); }
   }
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    void (async () => {
+      try { setData(await secureApi<Listing>("Em4ilLis2tQ", {})); }
+      catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load campaigns."); }
+    })();
+  }, []);
 
   function pickImage(file: File | undefined) {
     setError("");

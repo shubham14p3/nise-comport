@@ -26,7 +26,12 @@ export default function LinkRecords() {
     try { setLinked((await secureApi<{ records: Linked[] }>("Cl4imMine5Rz", {})).records); }
     catch { setLinked([]); }
   }
-  useEffect(() => { void loadLinked(); }, []);
+  useEffect(() => {
+    void (async () => {
+      try { setLinked((await secureApi<{ records: Linked[] }>("Cl4imMine5Rz", {})).records); }
+      catch { setLinked([]); }
+    })();
+  }, []);
 
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(""); setResult(null);
