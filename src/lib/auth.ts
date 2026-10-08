@@ -469,7 +469,7 @@ async function resolveCustomer(input: string) {
 }
 
 export async function startImpersonation(owner: User, targetEmailInput: string, ip = "unknown") {
-  if (owner.role !== "admin") throw new PublicError("Only the owner can view a customer’s account.", 403, { code: "forbidden" });
+  if (!hasPermission(owner, "records")) throw new PublicError("You need records access to view a customer’s account.", 403, { code: "forbidden" });
   if (await currentImpersonation()) throw new PublicError("Stop the current support view first.", 409);
   await enforceRate(RATE_RULES.accountChangePerUserHour, identity("user", owner.id), "Too many account changes.");
   const target = await resolveCustomer(targetEmailInput);
