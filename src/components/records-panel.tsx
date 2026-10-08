@@ -12,7 +12,7 @@ type Listing = { people: Person[]; totals: { people: number; records: number; re
 type SheetReport = { sheet: string; service: string | null; rows: number; records: number; skipped: number; reason?: string; droppedColumns?: string[] };
 type ImportResult = { imported: number; duplicates: number; skipped: number; contactsAdded: number; totalRows: number; sheets: SheetReport[] };
 type ImportRow = { id: string; fileName: string; imported: number; duplicates: number; contactsAdded: number; createdAt: string };
-type Detail = { name: string; records: { id: string; service: string; source: string; recordDate: string | null; renewalOn: string | null; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; pan: string | null; aadhaarMasked: string | null; fields: Record<string, string> }[] };
+type Detail = { name: string; records: { id: string; service: string; source: string; recordDate: string | null; renewalOn: string | null; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; panMasked: string | null; hasPan: boolean; aadhaarMasked: string | null; fields: Record<string, string> }[] };
 
 const day = (iso: string | null) => iso ? new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "—";
 const pretty = (phone: string) => phone.replace(/^\+91(\d{5})(\d{5})$/, "+91 $1 $2");
@@ -22,6 +22,38 @@ const whenSent = (iso: string) => new Date(iso).toLocaleString("en-IN", { day: "
  * Admin → Records: import the shop's Excel registers (all sheets) and find customers across them.
  * Data is encrypted in the database; opening a person's records is logged in the inbox.
  */
+/** Shows the masked PAN. "Show full PAN" emails a code to the signed-in staff member first. */
+function RevealPan({ recordId, masked }: { recordId: string; masked: string | null }) {
+  const [step, setStep] = useState<"idle" | "code" | "shown">("idle");
+  const [code, setCode] = useState("");
+  const [pan, setPan] = useState<string | null>(null);
+  const [hint, setHint] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function send() {
+    setBusy(true); setError("");
+    try { const result = await secureApi<{ emailHint: string }>("R4v7Pn2kQ9mX", { recordId }); setHint(result.emailHint); setStep("code"); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Could not send the code."); }
+    finally { setBusy(false); }
+  }
+  async function confirm(event: FormEvent) {
+    event.preventDefault(); setBusy(true); setError("");
+    try { const result = await secureApi<{ pan: string | null }>("R4v7Pn2kQ9mX", { recordId, code }); setPan(result.pan); setStep("shown"); setCode(""); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Wrong code."); }
+    finally { setBusy(false); }
+  }
+
+  if (step === "shown") return <span className="pan-shown">{pan ?? "—"}</span>;
+  if (step === "code") return <form className="pan-reveal" onSubmit={confirm}>
+    <span>Code sent to {hint}</span>
+    <input inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} placeholder="6-digit code" aria-label="Code from email"/>
+    <button className="btn btn--primary btn--sm" disabled={busy || code.length !== 6}>{busy ? "Checking…" : "Show PAN"}</button>
+    {error ? <small role="alert">{error}</small> : null}
+  </form>;
+  return <span className="pan-reveal">{masked ?? "XXXXX"} <button type="button" className="btn btn--ghost btn--sm" onClick={send} disabled={busy}>{busy ? "Sending…" : "Show full PAN"}</button>{error ? <small role="alert">{error}</small> : null}</span>;
+}
+
 export default function RecordsPanel() {
   const [data, setData] = useState<Listing | null>(null);
   const [imports, setImports] = useState<ImportRow[]>([]);
@@ -162,7 +194,7 @@ export default function RecordsPanel() {
             {record.altMobiles?.length > 0 && <><dt>Other mobiles</dt><dd>{record.altMobiles.map((phone) => <a key={phone} href={`tel:${phone}`}>{pretty(phone)} </a>)}</dd></>}
             {record.email && <><dt>Email</dt><dd><a href={`mailto:${record.email}`}>{record.email}</a></dd></>}
             {record.address && <><dt>Address</dt><dd>{record.address}</dd></>}
-            {record.pan && <><dt>PAN</dt><dd>{record.pan}</dd></>}
+            {record.hasPan && <><dt>PAN</dt><dd><RevealPan recordId={record.id} masked={record.panMasked}/></dd></>}
             {record.aadhaarMasked && <><dt>Aadhaar</dt><dd>{record.aadhaarMasked}</dd></>}
             {Object.entries(record.fields).map(([label, value]) => <div key={label} className="record-card__field"><dt>{label}</dt><dd>{value}</dd></div>)}
           </dl>

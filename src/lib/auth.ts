@@ -325,6 +325,21 @@ export async function confirmEmailChange(user: User, newEmailInput: string, code
 }
 
 /* ----------------------------------------------------------------------------------------------
+ * Full PAN reveal: staff confirm each view with a code sent to their own email.
+ * -------------------------------------------------------------------------------------------- */
+
+export async function requestRecordReveal(user: User, recordId: string, ip = "unknown") {
+  await enforceRate(RATE_RULES.accountChangePerUserHour, identity("user", user.id), "Too many account changes.");
+  await limitCodeRequests(user.email, ip);
+  await issueCode(user.email, `reveal:${recordId}`, "reveal");
+  return { emailHint: user.email.replace(/^(.).*(@.*)$/, "$1***$2") };
+}
+
+export async function confirmRecordReveal(user: User, recordId: string, code: string, ip = "unknown") {
+  await consumeOtp(user.email, `reveal:${recordId}`, code, ip);
+}
+
+/* ----------------------------------------------------------------------------------------------
  * Sessions
  * -------------------------------------------------------------------------------------------- */
 

@@ -2082,3 +2082,9 @@ a.site-banner:hover { transform: translateY(-3px); }
 .record-sheet__head small { color: var(--muted); font-size: .75rem; }
 .record-sheet__head h3 { margin: 0; font-size: 1.1rem; overflow-wrap: anywhere; }
 .record-sheet__close { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); color: inherit; font: inherit; font-size: .8125rem; cursor: pointer; }
+
+/* PAN reveal (records) */
+.pan-reveal { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.pan-reveal input { width: 120px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; font: inherit; letter-spacing: .15em; }
+.pan-reveal small { color: #9b1c1c; flex-basis: 100%; }
+.pan-shown { font-family: ui-monospace, monospace; letter-spacing: .08em; }

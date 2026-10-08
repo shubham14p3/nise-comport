@@ -75,13 +75,14 @@ export async function sendMail(mail: Mail) {
   });
 }
 
-export type OtpPurpose = "signup" | "signin" | "reset" | "email-change";
+export type OtpPurpose = "signup" | "signin" | "reset" | "email-change" | "reveal";
 
 const OTP_COPY: Record<OtpPurpose, { subject: string; heading: string; intro: string }> = {
   signup: { subject: "Your NISE COMPORT verification code", heading: "Verify your email", intro: "Enter this code to finish creating your NISE COMPORT account." },
   signin: { subject: "Your NISE COMPORT sign-in code", heading: "Your sign-in code", intro: "Enter this code to sign in to your NISE COMPORT account." },
   reset: { subject: "Reset your NISE COMPORT password", heading: "Reset your password", intro: "Enter this code on the password reset page to choose a new password." },
   "email-change": { subject: "Confirm your new email for NISE COMPORT", heading: "Confirm your new email", intro: "Enter this code in your profile to move your NISE COMPORT account to this email address." },
+  reveal: { subject: "Confirm viewing a PAN number", heading: "Confirm you are viewing a PAN", intro: "Someone asked to view a full PAN number in NISE COMPORT records. Enter this code only if that was you. Every view is logged." },
 };
 
 export async function sendOtpEmail(to: string, code: string, purpose: OtpPurpose = "signup") {

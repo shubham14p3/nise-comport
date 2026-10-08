@@ -165,6 +165,16 @@ export async function logRecordSend(key: string, actor: Actor) {
 }
 
 /** Everything known about one person, decrypted. Logged: who opened whose records, and when. */
+/** The full PAN of one record. Only called after the viewer confirmed the emailed code; every reveal is logged. */
+export async function revealPan(recordId: string, actor: Actor) {
+  if (!/^[0-9a-f-]{36}$/i.test(recordId)) throw new PublicError("Unknown record.", 404);
+  const [row] = await db.select().from(customerRecords).where(eq(customerRecords.id, recordId)).limit(1);
+  if (!row) throw new PublicError("Unknown record.", 404);
+  const data = open<Sealed>(row.payloadEnc);
+  await logActivity({ kind: "record_view", permission: "records", category: "records", title: `${actor.name} viewed a full PAN`, detail: `${row.name} · ${RECORD_SERVICES[row.service] ?? row.service}`, refType: "record", refId: row.id, actorId: actor.id });
+  return { pan: data.pan ?? null };
+}
+
 export async function personRecords(key: string, actor: Actor) {
   if (!/^[A-Za-z0-9_-]{20,64}$/.test(key)) throw new PublicError("Unknown person.", 404);
   const rows = await db.select().from(customerRecords)
@@ -174,7 +184,7 @@ export async function personRecords(key: string, actor: Actor) {
   const records = rows.map((row) => {
     const data = open<Sealed>(row.payloadEnc);
     return { id: row.id, service: row.service, source: row.source, name: row.name, recordDate: row.recordDate, renewalOn: row.renewalOn,
-      mobile: data.mobile, whatsapp: data.whatsapp ?? null, altMobiles: data.altMobiles ?? [], email: data.email ?? null, address: data.address ?? null, pan: data.pan, panMasked: maskPan(data.pan), aadhaarMasked: maskAadhaar(data.aadhaar), fields: maskIds(data.fields) };
+      mobile: data.mobile, whatsapp: data.whatsapp ?? null, altMobiles: data.altMobiles ?? [], email: data.email ?? null, address: data.address ?? null, pan: null, panMasked: maskPan(data.pan), hasPan: Boolean(data.pan), aadhaarMasked: maskAadhaar(data.aadhaar), fields: maskIds(data.fields) };
   });
   await logActivity({ kind: "record_view", permission: "records", category: "records", title: `${actor.name} opened the records of ${rows[0].name}`, detail: `${rows.length} record${rows.length === 1 ? "" : "s"} · ${[...new Set(rows.map((row) => RECORD_SERVICES[row.service] ?? row.service))].join(", ")}`, refType: "person", refId: key, actorId: actor.id });
   return { name: rows[0].name, records };
