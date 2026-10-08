@@ -1,10 +1,12 @@
-/** Stages a customer's work can be in. Shared by the server and the records screen. */
+/** Stages a customer's work can be in, in the order staff use them. Shared by the server and the records screen. */
 export const RECORD_STATUSES: Record<string, string> = {
-  new: "New",
-  in_progress: "In progress",
-  waiting_documents: "Waiting for documents",
-  submitted: "Submitted to office",
-  completed: "Completed",
-  cancelled: "Cancelled",
+  open: "Open",
+  pending: "Pending",
+  verification: "Verification",
+  dispatch: "Dispatch",
+  delivered: "Delivered",
+  document_required: "Document required",
+  pending_client: "Pending from client",
+  draft: "Draft",
 };
 export const RECORD_STATUS_KEYS = Object.keys(RECORD_STATUSES);

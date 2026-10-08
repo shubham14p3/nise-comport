@@ -9,6 +9,19 @@ import { RECORD_STATUSES, RECORD_STATUS_KEYS } from "@/lib/record-status";
 import { blindIndex, open, seal } from "@/lib/vault";
 
 type Actor = { id: string; name: string };
+
+/**
+ * One person = one mobile (or PAN) plus one name, so family members who share a phone stay separate.
+ * Key format: "<mobileHash>~<md5 of the name>", or the record id when there is no mobile or PAN.
+ */
+const personKeySql = sql<string>`coalesce(${customerRecords.mobileHash} || '~' || md5(lower(trim(${customerRecords.name}))), ${customerRecords.panHash} || '~' || md5(lower(trim(${customerRecords.name}))), ${customerRecords.id}::text)`;
+
+/** Matches the rows behind a person key. Older keys (a bare mobile or PAN hash) still match everyone with that hash. */
+function personFilter(key: string): SQL | undefined {
+  const [hash, nameKey] = key.split("~");
+  if (!nameKey) return or(eq(customerRecords.mobileHash, key), eq(customerRecords.panHash, key), sql`${customerRecords.id}::text = ${key}`);
+  return and(or(eq(customerRecords.mobileHash, hash), eq(customerRecords.panHash, hash)), sql`md5(lower(trim(${customerRecords.name}))) = ${nameKey}`);
+}
 type Sealed = { mobile: string | null; pan: string | null; aadhaar: string | null; whatsapp?: string | null; altMobiles?: string[]; email?: string | null; address?: string | null; fields: Record<string, string> };
 type ContactInfo = { whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null };
 
@@ -112,7 +125,7 @@ export async function listPeople(options: { q?: string; service?: string; sort?:
     else if (/^\d{4}$/.test(query)) filters.push(eq(customerRecords.mobileLast4, query));
     else filters.push(ilike(customerRecords.name, `%${query.replace(/[\\%_]/g, "\\$&")}%`));
   }
-  const personKey = sql<string>`coalesce(${customerRecords.mobileHash}, ${customerRecords.panHash}, ${customerRecords.id}::text)`;
+  const personKey = personKeySql;
   const where = filters.length ? and(...filters) : undefined;
   const page = Math.max(0, Math.min(options.page ?? 0, 500));
   const order = options.sort === "recent" ? sql`max(${customerRecords.recordDate}) desc nulls last`
@@ -129,7 +142,7 @@ export async function listPeople(options: { q?: string; service?: string; sort?:
     nextRenewal: sql<string | null>`(min(${customerRecords.renewalOn}) filter (where ${customerRecords.renewalOn} >= current_date))::text`,
   }).from(customerRecords).where(inArray(personKey, keys)).groupBy(personKey).orderBy(order).limit(50).offset(page * 50);
   const [totals] = await db.select({ people: sql<number>`count(distinct ${personKey})::int`, records: sql<number>`count(*)::int`,
-    repeat: sql<number>`(select count(*)::int from (select 1 from ${customerRecords} group by coalesce(mobile_hash, pan_hash, id::text) having count(*) > 1) as r)` }).from(customerRecords).where(where);
+    repeat: sql<number>`(select count(*)::int from (select 1 from ${customerRecords} group by ${personKeySql} having count(*) > 1) as r)` }).from(customerRecords).where(where);
   const byService = await db.select({ service: customerRecords.service, total: sql<number>`count(*)::int` }).from(customerRecords).groupBy(customerRecords.service);
   const sends = await sendHistory(rows.map((row) => row.key));
   return {
@@ -160,7 +173,7 @@ async function sendHistory(keys: string[]) {
  */
 export async function logRecordSend(key: string, actor: Actor) {
   const [known] = await db.select({ id: customerRecords.id }).from(customerRecords)
-    .where(or(eq(customerRecords.mobileHash, key), eq(customerRecords.panHash, key))).limit(1);
+    .where(personFilter(key)).limit(1);
   if (!known) throw new PublicError("Unknown person.", 404);
   await db.insert(recordSends).values({ personKey: key, sentBy: actor.id });
   const summary = await sendHistory([key]);
@@ -179,9 +192,9 @@ export async function revealPan(recordId: string, actor: Actor) {
 }
 
 export async function personRecords(key: string, actor: Actor) {
-  if (!/^[A-Za-z0-9_-]{20,64}$/.test(key)) throw new PublicError("Unknown person.", 404);
+  if (!/^[A-Za-z0-9_-]{20,64}(~[0-9a-f]{32})?$/.test(key) && !/^[0-9a-f-]{36}$/i.test(key)) throw new PublicError("Unknown person.", 404);
   const rows = await db.select().from(customerRecords)
-    .where(or(eq(customerRecords.mobileHash, key), eq(customerRecords.panHash, key), sql`${customerRecords.id}::text = ${key}`))
+    .where(personFilter(key))
     .orderBy(desc(customerRecords.recordDate)).limit(100);
   if (!rows.length) throw new PublicError("Unknown person.", 404);
   const records = rows.map((row) => {
@@ -258,13 +271,13 @@ export async function serviceRecords(service: string, options: ServiceFilters & 
     : sql`extract(year from ${customerRecords.recordDate})::int = ${options.year}`;
   const rows = await db.select({
     id: customerRecords.id, name: customerRecords.name, source: customerRecords.source, recordDate: customerRecords.recordDate, renewalOn: customerRecords.renewalOn,
-    status: customerRecords.status, payloadEnc: customerRecords.payloadEnc, mobileHash: customerRecords.mobileHash, panHash: customerRecords.panHash,
+    status: customerRecords.status, payloadEnc: customerRecords.payloadEnc, personKey: personKeySql,
   }).from(customerRecords).where(and(...serviceFilters(service, options), scope))
     .orderBy(sql`${customerRecords.recordDate} desc nulls last`, customerRecords.name)
     .limit(SERVICE_PAGE + 1).offset(page * SERVICE_PAGE);
   const items = rows.slice(0, SERVICE_PAGE).map((row) => {
     const data = open<Sealed>(row.payloadEnc);
-    return { id: row.id, key: row.mobileHash ?? row.panHash ?? row.id, name: row.name, source: row.source, recordDate: row.recordDate, renewalOn: row.renewalOn,
+    return { id: row.id, key: row.personKey, name: row.name, source: row.source, recordDate: row.recordDate, renewalOn: row.renewalOn,
       status: row.status, mobile: data.mobile ?? data.whatsapp ?? null, panMasked: maskPan(data.pan), hasPan: Boolean(data.pan) };
   });
   return { records: items, hasMore: rows.length > SERVICE_PAGE };
