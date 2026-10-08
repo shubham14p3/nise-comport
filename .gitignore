@@ -11,7 +11,7 @@ node_modules
 dist
 dist-ssr
 build
-
+myexcel/*
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
