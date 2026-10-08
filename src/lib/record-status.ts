@@ -10,3 +10,6 @@ export const RECORD_STATUSES: Record<string, string> = {
   draft: "Draft",
 };
 export const RECORD_STATUS_KEYS = Object.keys(RECORD_STATUSES);
+
+/** Records dated before this are finished work: they are stored and shown as Completed. */
+export const COMPLETED_BEFORE = "2026-05-01";

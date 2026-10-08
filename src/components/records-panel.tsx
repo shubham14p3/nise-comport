@@ -8,6 +8,7 @@ import { RECORD_STATUSES, RECORD_STATUS_KEYS } from "@/lib/record-status";
 import { Check, ChevronLeft, ChevronRight, Copy, Database, Eye, Loader2, Phone, Search, Upload, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
+import { recordsClient } from "@/lib/records-client";
 
 type Person = { key: string; name: string; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; total: number; services: string[]; lastDate: string | null; nextRenewal: string | null; sentCount: number; lastSentAt: string | null; recentSends: string[] };
 type SendSummary = { sentCount: number; lastSentAt: string | null; recentSends: string[] };
@@ -76,9 +77,10 @@ function recordSheetText(name: string, records: Detail["records"], names: Record
 function RecordStatus({ recordId, status, onSaved }: { recordId: string; status: string; onSaved: (status: string) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [note, setNote] = useState("");
   async function change(next: string) {
     setBusy(true); setError("");
-    try { await secureApi("S8t3Ra5vM1pY", { recordId, status: next }); onSaved(next); }
+    try { await recordsClient.setStatus(recordId, next); onSaved(next); setNote(`Saved as ${RECORD_STATUSES[next] ?? next}`); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save the status."); }
     finally { setBusy(false); }
   }
@@ -86,6 +88,7 @@ function RecordStatus({ recordId, status, onSaved }: { recordId: string; status:
     <label>Status <select value={status} disabled={busy} onChange={(e) => void change(e.target.value)}>
       {Object.entries(RECORD_STATUSES).map(([key, text]) => <option key={key} value={key}>{text}</option>)}
     </select></label>
+    {note ? <small role="status">{note}</small> : null}
     {error ? <small role="alert">{error}</small> : null}
   </div>;
 }
@@ -164,7 +167,7 @@ export default function RecordsPanel({ service: chosen = "" }: { service?: strin
   useEffect(() => {
     if (!service) return;
     let active = true;
-    secureApi<{ total: number; counts: Record<string, number> }>("W8r2T5yN1cF6", { view: "stages", service })
+    recordsClient.stages<{ total: number; counts: Record<string, number> }>(service)
       .then((value) => { if (active) setStages({ service, ...value }); }).catch(() => undefined);
     return () => { active = false; };
   }, [service]);
@@ -175,6 +178,7 @@ export default function RecordsPanel({ service: chosen = "" }: { service?: strin
     try {
       const uploaded = await secureUpload<{ file: { id: string } }>("U7b3R8mQ4zL1", file);
       const response = await secureApi<{ import: ImportResult }>("B4j9D6sX2mH7", { fileId: uploaded.file.id, addContacts });
+      recordsClient.clearAll();
       setResult(response.import); setFile(null);
       await load({ page: 0 }); setPage(0);
       const history = await secureApi<{ imports: ImportRow[] }>("W8r2T5yN1cF6", { imports: true }); setImports(history.imports);
@@ -195,7 +199,7 @@ export default function RecordsPanel({ service: chosen = "" }: { service?: strin
 
   async function openPerson(person: Person) {
     setBusy(person.key);
-    try { setDetail(await secureApi<Detail>("W8r2T5yN1cF6", { key: person.key })); }
+    try { setDetail(await recordsClient.person<Detail>(person.key)); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not open the records."); }
     finally { setBusy(""); }
   }
@@ -271,7 +275,6 @@ export default function RecordsPanel({ service: chosen = "" }: { service?: strin
     </>}
     </div>
     </div>}
-    {busy && busy !== "import" && <div className="loading-toast" role="status" aria-live="polite"><Loader2 size={16} className="spin" aria-hidden="true"/> Opening records… this is logged in the Inbox</div>}
     {detail && createPortal(<div className="record-sheet" role="dialog" aria-modal="true" aria-label={`Records of ${detail.name}`} onMouseDown={(event) => { if (event.target === event.currentTarget) setDetail(null); }}>
       <div className="record-sheet__panel">
         <div className="record-sheet__head"><div><small>Customer records</small><h3>{detail.name}</h3></div><span className="repeat-badge">{detail.records.length} record{detail.records.length === 1 ? "" : "s"}</span><CopyButton text={recordSheetText(detail.name, detail.records, names)} label="Copy all" withText/><button type="button" className="record-sheet__close" onClick={() => setDetail(null)} aria-label="Close"><X size={18}/> Close</button></div>

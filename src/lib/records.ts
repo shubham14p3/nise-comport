@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { identityBase, identityKeys, maskAadhaar, maskPan, parseWorkbook, RECORD_SERVICES, type ParsedRecord, type SheetInput } from "@/lib/record-import";
 import { normalizePhone } from "@/lib/validation";
-import { RECORD_STATUSES, RECORD_STATUS_KEYS } from "@/lib/record-status";
+import { COMPLETED_BEFORE, RECORD_STATUSES, RECORD_STATUS_KEYS } from "@/lib/record-status";
 import { blindIndex, open, seal } from "@/lib/vault";
 
 type Actor = { id: string; name: string };
@@ -82,7 +82,7 @@ export async function importRecords(fileName: string, sheets: SheetInput[], acto
     .from(customerRecords);
   const byIdentity = new Map(existing.map((row) => [row.identityHash ?? "", row]));
   const seen = new Set<string>();
-  const toInsert: ReturnType<typeof rowValues>[] = [];
+  const toInsert: (ReturnType<typeof rowValues> & { status: string })[] = [];
   const toUpdate: { id: string; values: ReturnType<typeof rowValues> }[] = [];
   let unchanged = 0;
   parsed.records.forEach((record, index) => {
@@ -90,7 +90,7 @@ export async function importRecords(fileName: string, sheets: SheetInput[], acto
     seen.add(identity);
     const values = rowValues(record, batch.id, identity);
     const current = byIdentity.get(identity);
-    if (!current) toInsert.push(values);
+    if (!current) toInsert.push({ ...values, status: values.recordDate && values.recordDate < COMPLETED_BEFORE ? "delivered" : "open" });
     else if (!current.removedAt && current.rowHash === values.rowHash) unchanged++;
     else toUpdate.push({ id: current.id, values });
   });

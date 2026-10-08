@@ -18,6 +18,8 @@ import InboxPanel from "@/components/inbox-panel";
 import SiteContentPanel from "@/components/site-content-panel";
 import GalleryPanel from "@/components/gallery-panel";
 import RecordsPanel from "@/components/records-panel";
+import RecordsLoading from "@/components/records-loading";
+import { recordsClient } from "@/lib/records-client";
 import EmailCampaignsPanel from "@/components/email-campaigns-panel";
 import type { Permission } from "@/lib/permissions";
 
@@ -216,7 +218,7 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
   useEffect(() => {
     if (!canRecords) return;
     let active = true;
-    secureApi<{ byService: { service: string; total: number }[]; services: Record<string, string> }>("W8r2T5yN1cF6", { view: "services" })
+    recordsClient.services<{ byService: { service: string; total: number }[]; services: Record<string, string> }>()
       .then((value) => { if (!active) return; setServices(value.byService.filter((row) => row.total > 0).sort((a, b) => b.total - a.total)); setServiceNames(value.services); })
       .catch(() => undefined);
     return () => { active = false; };
@@ -266,6 +268,7 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
         {active === "wallet" && <WalletCreditForm/>}
       </section>
     </div>
+    <RecordsLoading/>
   </main>;
 }
 

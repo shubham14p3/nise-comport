@@ -162,6 +162,13 @@
       "when": 1793000000000,
       "tag": "0022_record_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793100000000,
+      "tag": "0023_records_completed_before_may_2026",
+      "breakpoints": true
     }
   ]
 }
