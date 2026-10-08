@@ -263,7 +263,7 @@ export async function personRecords(key: string, actor: Actor) {
   if (!rows.length) throw new PublicError("Unknown person.", 404);
   const records = rows.map((row) => {
     const data = open<Sealed>(row.payloadEnc);
-    return { id: row.id, service: row.service, source: row.source, name: row.name, recordDate: row.recordDate, renewalOn: row.renewalOn, status: row.status, removedAt: row.removedAt ? row.removedAt.toISOString() : null,
+    return { id: row.id, service: row.service, source: row.source, name: row.name, recordDate: row.recordDate, renewalOn: row.renewalOn, status: row.status, statusNote: row.statusNote ?? null, removedAt: row.removedAt ? row.removedAt.toISOString() : null,
       mobile: data.mobile, whatsapp: data.whatsapp ?? null, altMobiles: data.altMobiles ?? [], email: data.email ?? null, address: data.address ?? null, pan: null, panMasked: maskPan(data.pan), hasPan: Boolean(data.pan), aadhaarMasked: maskAadhaar(data.aadhaar), fields: maskIds(data.fields) };
   });
   await logActivity({ kind: "record_view", permission: "records", category: "records", title: `${actor.name} opened the records of ${rows[0].name}`, detail: `${rows.length} record${rows.length === 1 ? "" : "s"} · ${[...new Set(rows.map((row) => RECORD_SERVICES[row.service] ?? row.service))].join(", ")}`, refType: "person", refId: key, actorId: actor.id });
@@ -348,12 +348,13 @@ export async function serviceRecords(service: string, options: ServiceFilters & 
 }
 
 /** Changes one record's stage. Written to the activity log with who changed it and from what. */
-export async function setRecordStatus(recordId: string, status: string, actor: Actor) {
+export async function setRecordStatus(recordId: string, status: string, actor: Actor, note?: string) {
   if (!/^[0-9a-f-]{36}$/i.test(recordId)) throw new PublicError("Unknown record.", 404);
   if (!RECORD_STATUS_KEYS.includes(status)) throw new PublicError("Unknown status.", 400);
   const [before] = await db.select({ name: customerRecords.name, service: customerRecords.service, status: customerRecords.status }).from(customerRecords).where(eq(customerRecords.id, recordId)).limit(1);
   if (!before) throw new PublicError("Unknown record.", 404);
-  await db.update(customerRecords).set({ status, statusAt: new Date() }).where(eq(customerRecords.id, recordId));
+  const comment = note === undefined ? undefined : note.trim().slice(0, 300) || null;
+  await db.update(customerRecords).set({ status, statusAt: new Date(), ...(comment !== undefined ? { statusNote: comment } : {}) }).where(eq(customerRecords.id, recordId));
   await logActivity({ kind: "status", permission: "records", category: "records", title: `${actor.name} changed ${before.name}’s ${RECORD_SERVICES[before.service] ?? before.service} to ${RECORD_STATUSES[status]}`, detail: `Was: ${RECORD_STATUSES[before.status] ?? before.status}`, refType: "record", refId: recordId, actorId: actor.id });
   return { id: recordId, status };
 }

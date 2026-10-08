@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { secureApi } from "@/lib/secure-api-client";
 
-type Linked = { id: string; service: string; name: string; recordDate: string | null; renewalOn: string | null; status: string };
+type Linked = { id: string; service: string; serviceLabel: string; recordDate: string | null; status: string; statusLabel: string; statusNote: string | null; fields: { label: string; value: string }[] };
 const METHODS = [
   { value: "reference", label: "Reference number on a receipt" },
   { value: "pan", label: "My PAN number" },
@@ -66,7 +66,11 @@ export default function LinkRecords() {
     </div> : null}
     {linked && linked.length ? <div className="link-records__list">
       <h3>Linked to your account</h3>
-      <ul>{linked.map((row) => <li key={row.id}><b>{row.service.replace(/-/g, " ")}</b> · {row.name} · {row.recordDate ?? "no date"} · {row.status}</li>)}</ul>
+      <ul className="link-records__items">{linked.map((row) => <li key={row.id}>
+        <b>{row.serviceLabel}</b> <span className="status-pill">{row.statusLabel}</span>
+        <dl>{row.fields.map((field) => <div key={field.label}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl>
+        {row.statusNote ? <p className="link-records__note">{row.statusNote}</p> : null}
+      </li>)}</ul>
     </div> : null}
   </section>;
 }

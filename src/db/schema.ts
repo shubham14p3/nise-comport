@@ -303,6 +303,8 @@ export const customerRecords = pgTable("customer_records", {
   recordDate: date("record_date"), renewalOn: date("renewal_on"),
   /** Where the customer's work stands. Every change is written to the activity log. */
   status: text("status").notNull().default("open"), statusAt: timestamp("status_at", { withTimezone: true }),
+  /** A short comment staff add with the status (shown to the customer). */
+  statusNote: text("status_note"),
   payloadEnc: text("payload_enc").notNull(), rowHash: text("row_hash").notNull(),
   /** Keyed hash of who the row is about (see identityBase). Re-imports update the row with the same identity. */
   identityHash: text("identity_hash"),

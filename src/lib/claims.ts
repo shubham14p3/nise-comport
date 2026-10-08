@@ -8,6 +8,9 @@ import { PublicError } from "@/lib/errors";
 import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
 import { normalizePhone, nameProblem } from "@/lib/validation";
 import { blindIndex, open } from "@/lib/vault";
+import { customerFields } from "@/lib/record-services";
+import { RECORD_SERVICES } from "@/lib/record-import";
+import { RECORD_STATUSES } from "@/lib/record-status";
 
 type Sealed = { mobile: string | null; pan: string | null; fields: Record<string, string> };
 export const CLAIM_METHODS = ["reference", "pan", "whatsapp", "staff"] as const;
@@ -93,11 +96,22 @@ export async function linkedRecords(userId: string) {
     .where(and(eq(recordClaims.userId, userId), eq(recordClaims.status, "approved")));
   const linked = claims.filter((claim) => claim.matchedName);
   if (!linked.length) return [];
+  type Sealed = { mobile: string | null; whatsapp?: string | null; email?: string | null; address?: string | null; pan: string | null; fields?: Record<string, string> };
   const rows = [];
   for (const claim of linked) {
-    rows.push(...await db.select({ id: customerRecords.id, service: customerRecords.service, name: customerRecords.name, recordDate: customerRecords.recordDate, renewalOn: customerRecords.renewalOn, status: customerRecords.status })
+    const found = await db.select({ id: customerRecords.id, service: customerRecords.service, name: customerRecords.name, recordDate: customerRecords.recordDate,
+      status: customerRecords.status, statusNote: customerRecords.statusNote, payloadEnc: customerRecords.payloadEnc })
       .from(customerRecords).where(and(eq(customerRecords.mobileHash, claim.mobileHash), eq(customerRecords.name, claim.matchedName!)))
-      .orderBy(desc(customerRecords.recordDate)).limit(300));
+      .orderBy(desc(customerRecords.recordDate)).limit(300);
+    for (const row of found) {
+      const data = open<Sealed>(row.payloadEnc);
+      rows.push({
+        id: row.id, service: row.service, serviceLabel: RECORD_SERVICES[row.service] ?? row.service, recordDate: row.recordDate,
+        status: row.status, statusLabel: RECORD_STATUSES[row.status] ?? row.status, statusNote: row.statusNote ?? null,
+        fields: customerFields(row.service, { name: row.name, mobile: data.mobile ?? null, whatsapp: data.whatsapp ?? null, email: data.email ?? null,
+          address: data.address ?? null, pan: data.pan ?? null, statusLabel: RECORD_STATUSES[row.status] ?? row.status, statusNote: row.statusNote ?? null, fields: data.fields ?? {} }),
+      });
+    }
   }
   return rows;
 }

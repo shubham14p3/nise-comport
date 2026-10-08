@@ -70,8 +70,8 @@ export const recordsClient = {
     return call<T>("Opening customer records…", RECORDS_OP, { key }, `person:${key}`);
   },
   /** Saves a status and clears the cached counts and person records it changes. */
-  async setStatus<T = unknown>(recordId: string, status: string) {
-    const value = await call<T>("Saving status…", STATUS_OP, { recordId, status });
+  async setStatus<T = unknown>(recordId: string, status: string, note?: string) {
+    const value = await call<T>("Saving status…", STATUS_OP, { recordId, status, note });
     dropCache("stages:");
     dropCache("person:");
     dropCache("services");

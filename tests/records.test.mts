@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { aadhaarFrom, cellText, dateFrom, identityBase, identityKeys, maskAadhaar, maskPan, mobileFrom, parseWorkbook } from "../src/lib/record-import.ts";
+import { customerFields } from "../src/lib/record-services.ts";
 import { findGuide, findVariant, HELP_GUIDES } from "../src/lib/help-docs.ts";
 import { blindIndex, open, seal } from "../src/lib/vault.ts";
 
@@ -118,5 +119,17 @@ test("an edited row keeps the same identity, and two rows for one person and dat
   assert.equal(a.endsWith("#1"), true);
   assert.equal(b.endsWith("#2"), true);
   assert.equal(c.endsWith("#1"), true);
+});
+
+test("the customer sees only the fields for their service, with the Go Digit insurer and reference found by prefix", () => {
+  const base = { name: "Anjali Gorai Das", mobile: "+919869154650", whatsapp: null, email: null, address: "Telco", pan: null, statusLabel: "Open", statusNote: "Bring original", fields: {} as Record<string, string> };
+  const residence = customerFields("residence-certificate", { ...base, fields: { "Column 9": "GHRCO/2024/1234", "Column 1": "x" } });
+  assert.deepEqual(residence.map((item) => item.label), ["Name", "Address", "Mobile number", "Reference number", "Status", "Comment"]);
+  assert.equal(residence.find((item) => item.label === "Reference number")?.value, "GHRCO/2024/1234");
+  const insurance = customerFields("insurance", { ...base, fields: { "Column 3": "D-2201", "type": "2", "Policy date": "2026-01-02", "dob": "1990-05-04", "junk": "12" } });
+  assert.equal(insurance.find((item) => item.label === "Insurer")?.value, "Go Digit");
+  assert.equal(insurance.find((item) => item.label === "Vehicle")?.value, "Two-wheeler");
+  assert.equal(customerFields("insurance", { ...base, fields: { "Column 3": "N-99" } }).some((item) => item.label === "Insurer"), false);
+  assert.equal(customerFields("passport", base).map((item) => item.label).join("|"), "Name|Mobile number|Status|Comment");
 });
 

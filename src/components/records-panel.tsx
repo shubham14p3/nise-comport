@@ -9,6 +9,7 @@ import { Check, ChevronLeft, ChevronRight, Copy, Database, Eye, Loader2, Phone, 
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
 import { recordsClient } from "@/lib/records-client";
+import { useRouter } from "next/navigation";
 
 type Person = { key: string; name: string; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; total: number; services: string[]; lastDate: string | null; nextRenewal: string | null; sentCount: number; lastSentAt: string | null; recentSends: string[] };
 type SendSummary = { sentCount: number; lastSentAt: string | null; recentSends: string[] };
@@ -16,7 +17,7 @@ type Listing = { people: Person[]; totals: { people: number; records: number; re
 type SheetReport = { sheet: string; service: string | null; rows: number; records: number; skipped: number; reason?: string; droppedColumns?: string[] };
 type ImportResult = { imported: number; duplicates: number; updated: number; removed: number; removalHeld: number; skipped: number; contactsAdded: number; totalRows: number; sheets: SheetReport[] };
 type ImportRow = { id: string; fileName: string; imported: number; duplicates: number; contactsAdded: number; createdAt: string };
-type Detail = { name: string; records: { id: string; removedAt: string | null; status: string; service: string; source: string; recordDate: string | null; renewalOn: string | null; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; panMasked: string | null; hasPan: boolean; aadhaarMasked: string | null; fields: Record<string, string> }[] };
+type Detail = { name: string; records: { id: string; removedAt: string | null; statusNote: string | null; status: string; service: string; source: string; recordDate: string | null; renewalOn: string | null; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; panMasked: string | null; hasPan: boolean; aadhaarMasked: string | null; fields: Record<string, string> }[] };
 
 const day = (iso: string | null) => iso ? new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "—";
 const pretty = (phone: string) => phone.replace(/^\+91(\d{5})(\d{5})$/, "+91 $1 $2");
@@ -74,13 +75,14 @@ function recordSheetText(name: string, records: Detail["records"], names: Record
  * Data is encrypted in the database; opening a person's records is logged in the inbox.
  */
 /** Where this record stands. Saving writes the change to the Inbox. */
-function RecordStatus({ recordId, status, onSaved }: { recordId: string; status: string; onSaved: (status: string) => void }) {
+function RecordStatus({ recordId, status, comment, onSaved }: { recordId: string; status: string; comment: string | null; onSaved: (status: string, comment: string | null) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(comment ?? "");
+  const [saved, setSaved] = useState("");
   async function change(next: string) {
     setBusy(true); setError("");
-    try { await recordsClient.setStatus(recordId, next); onSaved(next); setNote(`Saved as ${RECORD_STATUSES[next] ?? next}`); }
+    try { await recordsClient.setStatus(recordId, next, note.trim()); onSaved(next, note.trim() || null); setSaved(`Saved as ${RECORD_STATUSES[next] ?? next}`); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save the status."); }
     finally { setBusy(false); }
   }
@@ -88,7 +90,9 @@ function RecordStatus({ recordId, status, onSaved }: { recordId: string; status:
     <label>Status <select value={status} disabled={busy} onChange={(e) => void change(e.target.value)}>
       {Object.entries(RECORD_STATUSES).map(([key, text]) => <option key={key} value={key}>{text}</option>)}
     </select></label>
-    {note ? <small role="status">{note}</small> : null}
+    <label className="record-status__note">Comment <input value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} placeholder="Shown to the customer, e.g. documents needed"/></label>
+    <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void change(status)}>Save comment</button>
+    {saved ? <small role="status">{saved}</small> : null}
     {error ? <small role="alert">{error}</small> : null}
   </div>;
 }
@@ -136,6 +140,8 @@ export default function RecordsPanel({ service: chosen = "" }: { service?: strin
   const [addContacts, setAddContacts] = useState(true);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
+  const router = useRouter();
+  const [switchError, setSwitchError] = useState("");
   const [stages, setStages] = useState<{ service: string; total: number; counts: Record<string, number> } | null>(null);
   const [stage, setStage] = useState("");
   const [busy, setBusy] = useState("");
@@ -195,6 +201,19 @@ export default function RecordsPanel({ service: chosen = "" }: { service?: strin
       const summary = await secureApi<SendSummary>("T7p2Q9rL4xH8", { key: person.key });
       setData((current) => current && { ...current, people: current.people.map((item) => item.key === person.key ? { ...item, ...summary } : item) });
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not record the WhatsApp send."); }
+  }
+
+  /** Opens the customer's website account. Works only when the number belongs to one account. */
+  async function switchTo(phone: string) {
+    setSwitchError("");
+    try {
+      await secureApi("H5w2Zc8nR3vK", { email: phone });
+      setDetail(null);
+      router.push("/profile");
+      router.refresh();
+    } catch (reason) {
+      setSwitchError(reason instanceof Error ? reason.message : "Could not open that account.");
+    }
   }
 
   async function openPerson(person: Person) {
@@ -277,11 +296,12 @@ export default function RecordsPanel({ service: chosen = "" }: { service?: strin
     </div>}
     {detail && createPortal(<div className="record-sheet" role="dialog" aria-modal="true" aria-label={`Records of ${detail.name}`} onMouseDown={(event) => { if (event.target === event.currentTarget) setDetail(null); }}>
       <div className="record-sheet__panel">
-        <div className="record-sheet__head"><div><small>Customer records</small><h3>{detail.name}</h3></div><span className="repeat-badge">{detail.records.length} record{detail.records.length === 1 ? "" : "s"}</span><CopyButton text={recordSheetText(detail.name, detail.records, names)} label="Copy all" withText/><button type="button" className="record-sheet__close" onClick={() => setDetail(null)} aria-label="Close"><X size={18}/> Close</button></div>
+        <div className="record-sheet__head"><div><small>Customer records</small><h3>{detail.name}</h3></div><span className="repeat-badge">{detail.records.length} record{detail.records.length === 1 ? "" : "s"}</span><CopyButton text={recordSheetText(detail.name, detail.records, names)} label="Copy all" withText/>{detail.records.some((r) => r.mobile) ? <button type="button" className="btn btn--ghost btn--sm" onClick={() => void switchTo(detail.records.find((r) => r.mobile)?.mobile ?? "")}>Switch to this user</button> : null}<button type="button" className="record-sheet__close" onClick={() => setDetail(null)} aria-label="Close"><X size={18}/> Close</button></div>
         <p className="field__hint"><Eye size={12}/> This view was logged in the Inbox.</p>
+        {switchError ? <p role="alert" className="alert alert--error">{switchError}</p> : null}
         {detail.records.map((record) => <article key={record.id} className="record-card">
           <header><b>{names[record.service] ?? record.service}</b>{record.removedAt ? <span className="repeat-badge">No longer in the register</span> : null}<small>{day(record.recordDate)}{record.renewalOn ? ` · renewal ${day(record.renewalOn)}` : ""} · {record.source}</small></header>
-          <RecordStatus recordId={record.id} status={record.status} onSaved={(next) => setDetail((current) => current && { ...current, records: current.records.map((item) => item.id === record.id ? { ...item, status: next } : item) })}/>
+          <RecordStatus recordId={record.id} status={record.status} comment={record.statusNote} onSaved={(next, comment) => setDetail((current) => current && { ...current, records: current.records.map((item) => item.id === record.id ? { ...item, status: next, statusNote: comment } : item) })}/>
           <dl>
             {record.mobile && <><dt>Mobile</dt><dd><a href={`tel:${record.mobile}`}>{pretty(record.mobile)}</a><CopyButton text={pretty(record.mobile)} label="Copy mobile"/></dd></>}
             {record.whatsapp && <><dt>WhatsApp</dt><dd><a href={`https://wa.me/${record.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">{pretty(record.whatsapp)}</a><CopyButton text={pretty(record.whatsapp)} label="Copy WhatsApp"/></dd></>}

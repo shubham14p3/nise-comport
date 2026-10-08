@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export async function POST(request: NextRequest) {
   try {
     const user = await requirePermission("records");
-    const body = z.object({ recordId: z.string().uuid(), status: z.enum(RECORD_STATUS_KEYS as [string, ...string[]]) }).parse(await readJson(request));
-    return NextResponse.json(await setRecordStatus(body.recordId, body.status, user), { headers: { "cache-control": "private, no-store" } });
+    const body = z.object({ recordId: z.string().uuid(), status: z.enum(RECORD_STATUS_KEYS as [string, ...string[]]), note: z.string().max(300).optional() }).parse(await readJson(request));
+    return NextResponse.json(await setRecordStatus(body.recordId, body.status, user, body.note), { headers: { "cache-control": "private, no-store" } });
   } catch (error) { return apiError(error); }
 }
