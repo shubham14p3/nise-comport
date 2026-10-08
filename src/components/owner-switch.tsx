@@ -42,7 +42,7 @@ export default function OwnerSwitch() {
         <form className="owner-switch__panel" onSubmit={submit}>
           <label htmlFor="owner-switch-email">View a customer’s account</label>
           <p>30 minutes, shown in a banner, and logged. Password, email and deletion are blocked during the view.</p>
-          <input id="owner-switch-email" type="email" inputMode="email" autoComplete="off" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="customer@example.com"/>
+          <input id="owner-switch-email" type="text" inputMode="text" autoComplete="off" required maxLength={200} value={email} onChange={(e) => setEmail(e.target.value)} placeholder="customer@example.com or 98765 43210"/>
           <button type="submit" className="btn btn--primary" disabled={busy}>{busy ? "Opening…" : "Open account"}</button>
           {error ? <p role="alert" className="owner-switch__error">{error}</p> : null}
         </form>

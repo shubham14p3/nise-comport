@@ -8,7 +8,7 @@ import { sendAccountDeletedEmail, sendAccountExistsEmail, sendEmailChangedNotice
 import { isUniqueViolation, PublicError, RateLimitError, humanDuration } from "@/lib/errors";
 import { clearRate, enforceRate, hitRate, identity, peekRate, RATE_RULES } from "@/lib/rate-limit";
 import { secondsUntilWindowEnds } from "@/lib/rate-limit-core";
-import { emailProblem, isSixDigitCode, looksLikeEmail, nameProblem, normalizeEmail, normalizeWhatsapp, passwordProblem, whatsappProblem } from "@/lib/validation";
+import { emailProblem, isSixDigitCode, looksLikeEmail, nameProblem, normalizeEmail, normalizePhone, normalizeWhatsapp, passwordProblem, whatsappProblem } from "@/lib/validation";
 import { hasPermission, type Permission } from "@/lib/permissions";
 import { logActivity } from "@/lib/activity";
 
@@ -222,9 +222,21 @@ export async function verifyEmailOtp(emailInput: string, code: string, purpose: 
  * Password sign-in, reset and change
  * -------------------------------------------------------------------------------------------- */
 
-export async function signInWithPassword(emailInput: string, password: string, ip = "unknown") {
-  const email = normalizeEmail(emailInput);
-  const emailId = identity("email", email);
+/** Accounts that use this mobile number (customers and staff alike). Used for sign-in by mobile. */
+async function accountsOnMobile(phone: string) {
+  return db.select().from(users).where(and(eq(users.phone, phone), isNull(users.deletedAt), isNull(users.disabledAt))).limit(5);
+}
+
+/**
+ * Password sign-in with an email OR a 10-digit mobile number.
+ * A mobile number that belongs to several accounts is refused: the person must use the email instead.
+ * Unverified email: a code is sent to that email first (the response includes the email to type it in).
+ */
+export async function signInWithPassword(identifierInput: string, password: string, ip = "unknown") {
+  const raw = identifierInput.trim();
+  const phone = raw.includes("@") ? null : normalizePhone(raw);
+  const email = phone ? null : normalizeEmail(raw);
+  const emailId = identity(phone ? "phone" : "email", phone ?? email ?? "");
   await enforceRate(RATE_RULES.passwordPerIp15m, identity("ip", ip), "Too many sign-in attempts from this network.");
   for (const rule of [RATE_RULES.passwordFailuresPerEmail15m, RATE_RULES.passwordFailuresPerEmailDay]) {
     if ((await peekRate(rule, emailId)) >= rule.limit) {
@@ -232,11 +244,22 @@ export async function signInWithPassword(emailInput: string, password: string, i
       throw new RateLimitError(`Too many incorrect passwords for this email, so password sign-in is paused for ${humanDuration(wait)}. You can sign in with an email code or reset your password now.`, wait);
     }
   }
-  const user = await findUserByEmail(email);
-  let valid = false;
-  if (isActive(user)) valid = await verify(user.passwordHash, password).catch(() => false);
-  else await verify(await dummyHash(), password).catch(() => false);
-  if (!valid || !user) {
+  let user: User | null = null;
+  if (phone) {
+    const candidates = await accountsOnMobile(phone);
+    const matches: User[] = [];
+    for (const candidate of candidates) if (await verify(candidate.passwordHash, password).catch(() => false)) matches.push(candidate);
+    if (matches.length > 1) throw new PublicError("Several accounts use this mobile number. Sign in with the email address instead.", 409, { code: "several_accounts" });
+    user = matches[0] ?? null;
+    if (!user && !candidates.length) await verify(await dummyHash(), password).catch(() => false);
+  } else {
+    user = (await findUserByEmail(email ?? "")) ?? null;
+    let valid = false;
+    if (isActive(user)) valid = await verify(user.passwordHash, password).catch(() => false);
+    else await verify(await dummyHash(), password).catch(() => false);
+    if (!valid) user = null;
+  }
+  if (!user) {
     const recent = await hitRate(RATE_RULES.passwordFailuresPerEmail15m, emailId);
     await hitRate(RATE_RULES.passwordFailuresPerEmailDay, emailId);
     const left = RATE_RULES.passwordFailuresPerEmail15m.limit - recent.count;
@@ -249,8 +272,9 @@ export async function signInWithPassword(emailInput: string, password: string, i
   }
   await clearRate(RATE_RULES.passwordFailuresPerEmail15m, emailId);
   if (!user.emailVerifiedAt) {
-    try { await issueCode(email, "signin", "signin"); } catch (error) { if (!(error instanceof RateLimitError)) throw error; }
-    return { requiresOtp: true as const };
+    // Mobile sign-in needs the email verified first; the code goes to that email.
+    try { await issueCode(user.email, "signin", "signin"); } catch (error) { if (!(error instanceof RateLimitError)) throw error; }
+    return { requiresOtp: true as const, email: user.email, viaMobile: Boolean(phone) };
   }
   await createSession(user.id);
   return { requiresOtp: false as const, user: publicUser(user) };
@@ -425,13 +449,27 @@ export async function assertNotImpersonating() {
   if (await currentImpersonation()) throw new PublicError("This action is not available while you are viewing a customer’s account for support.", 403, { code: "impersonating" });
 }
 
+/** A customer by email, or by mobile number when that number has exactly one customer account. */
+async function resolveCustomer(input: string) {
+  const raw = input.trim();
+  if (!raw.includes("@")) {
+    const phone = normalizePhone(raw);
+    if (!phone) throw new PublicError("Enter an email address or a 10-digit mobile number.", 400, { fields: { email: "Enter an email or a mobile number." } });
+    const rows = await db.select().from(users).where(and(eq(users.phone, phone), eq(users.role, "customer"), isNull(users.deletedAt), isNull(users.disabledAt))).limit(5);
+    if (!rows.length) throw new PublicError("No active customer account uses that mobile number.", 404, { fields: { email: "No customer account uses that number." } });
+    if (rows.length > 1) throw new PublicError(`This number has ${rows.length} accounts (${rows.map((row) => row.name).join(", ")}). Type the email of the one you want.`, 409, { code: "several_accounts" });
+    return rows[0];
+  }
+  const target = await findUserByEmail(normalizeEmail(raw));
+  if (!isActive(target) || target.role !== "customer") throw new PublicError("No active customer account uses that email.", 404, { fields: { email: "No active customer account uses that email." } });
+  return target;
+}
+
 export async function startImpersonation(owner: User, targetEmailInput: string, ip = "unknown") {
   if (owner.role !== "admin") throw new PublicError("Only the owner can view a customer’s account.", 403, { code: "forbidden" });
   if (await currentImpersonation()) throw new PublicError("Stop the current support view first.", 409);
   await enforceRate(RATE_RULES.accountChangePerUserHour, identity("user", owner.id), "Too many account changes.");
-  const targetEmail = normalizeEmail(targetEmailInput);
-  const target = await findUserByEmail(targetEmail);
-  if (!isActive(target) || target.role !== "customer") throw new PublicError("No active customer account uses that email.", 404, { fields: { email: "No active customer account uses that email." } });
+  const target = await resolveCustomer(targetEmailInput);
   const ownerToken = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!ownerToken) throw new PublicError("Please sign in again.", 401, { code: "unauthenticated" });
 

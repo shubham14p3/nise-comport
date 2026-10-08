@@ -4,7 +4,7 @@ import { createDemoSession, DEMO_LOGIN, isDemoAuthEnabled, signInWithPassword } 
 import { apiError, clientIp, readJson } from "@/lib/http";
 
 const loginSchema = z.object({
-  email: z.string().trim().min(3, "Enter your email address.").max(254),
+  email: z.string().trim().min(3, "Enter your email or mobile number.").max(254),
   password: z.string().min(1, "Enter your password.").max(128, "Passwords are at most 128 characters."),
 });
 

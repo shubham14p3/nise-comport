@@ -18,7 +18,7 @@ import { emailProblem, nameProblem, passwordProblem, PASSWORD_MIN, whatsappProbl
 
 type Mode = "signin" | "signup";
 type WelcomeCoupon = { code: string; amount: number; minimum: number; expiresAt: string | null };
-type ApiResult = { error?: string; fields?: Record<string, string>; retryAfter?: number; message?: string; requiresOtp?: boolean; resendAfter?: number; welcomeCoupon?: WelcomeCoupon };
+type ApiResult = { error?: string; fields?: Record<string, string>; retryAfter?: number; message?: string; requiresOtp?: boolean; email?: string; viaMobile?: boolean; resendAfter?: number; welcomeCoupon?: WelcomeCoupon };
 
 const DEV = process.env.NODE_ENV !== "production";
 export const RESET_EMAIL_KEY = "nise-reset-email";
@@ -82,7 +82,12 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
       if (mode === "signin") {
         const { ok, result } = await post("Q7m4kP2vL9sD", { email, password });
         if (!ok) { showFailure(result, t.failSignin); return; }
-        if (result.requiresOtp) { setStage("otp"); setResendIn(60); setSuccess(t.sentVerify); return; }
+        if (result.requiresOtp) {
+          if (result.email) setEmail(result.email);
+          setStage("otp"); setResendIn(60);
+          setSuccess(result.viaMobile ? "Verify your email to finish signing in with your mobile number. We sent a code to that email." : t.sentVerify);
+          return;
+        }
         done(result); return;
       }
       const problems = signupProblems();
@@ -175,7 +180,7 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
         </div> : stage === "details" ? <form onSubmit={submitDetails} className="auth__form" noValidate>
           {mode === "signup" && <label className="field"><span className="field__label">{t.firstName}</span><span className="input-wrap"><UserRound size={18}/><input autoComplete="given-name" aria-required="true" maxLength={50} value={firstName} onChange={e => setFirstName(e.target.value)} placeholder={t.firstNamePh} aria-invalid={Boolean(fieldErrors.firstName)} aria-describedby={fieldErrors.firstName ? "firstName-error" : undefined}/></span>{fieldError("firstName")}</label>}
           {mode === "signup" && <label className="field"><span className="field__label">{t.lastName}</span><span className="input-wrap"><UserRound size={18}/><input autoComplete="family-name" aria-required="true" maxLength={50} value={lastName} onChange={e => setLastName(e.target.value)} placeholder={t.lastNamePh} aria-invalid={Boolean(fieldErrors.lastName)} aria-describedby={fieldErrors.lastName ? "lastName-error" : undefined}/></span>{fieldError("lastName")}</label>}
-          <label className="field"><span className="field__label">{t.email}</span><span className="input-wrap"><Mail size={18}/><input type="email" autoComplete="email" inputMode="email" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? "email-error" : undefined}/></span>{fieldError("email")}</label>
+          <label className="field"><span className="field__label">{mode === "signin" ? "Email or mobile number" : t.email}</span><span className="input-wrap"><Mail size={18}/><input type={mode === "signin" ? "text" : "email"} autoComplete={mode === "signin" ? "username" : "email"} inputMode={mode === "signin" ? "text" : "email"} required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} placeholder={mode === "signin" ? "you@example.com or 98765 43210" : "you@example.com"} aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? "email-error" : undefined}/></span>{fieldError("email")}</label>
           {mode === "signup" && <label className="field"><span className="field__label">{t.whatsapp}</span><span className="input-wrap"><span className="input-prefix">+91</span><input type="tel" autoComplete="tel-national" inputMode="numeric" aria-required="true" maxLength={20} value={phone} onChange={e => { let digits = e.target.value.replace(/\D/g, ""); if (digits.length === 12 && digits.startsWith("91")) digits = digits.slice(2); setPhone(digits.slice(0, 10)); }} placeholder="98765 43210" aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? "phone-error" : undefined}/></span>{fieldError("phone")}</label>}
           <label className="field"><span className="field__label">{t.password}</span><span className="input-wrap"><LockKeyhole size={18}/><input type={showPassword ? "text" : "password"} autoComplete={mode === "signup" ? "new-password" : "current-password"} required minLength={mode === "signup" ? PASSWORD_MIN : 1} maxLength={128} value={password} onChange={e => setPassword(e.target.value)} placeholder={mode === "signup" ? fill(t.newPasswordPh, { n: PASSWORD_MIN }) : t.passwordPh} aria-invalid={Boolean(fieldErrors.password)} aria-describedby={mode === "signup" ? "password-hint" : fieldErrors.password ? "password-error" : undefined}/><button type="button" className="icon-btn" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? t.hide : t.show}>{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button></span>
             {mode === "signup" && <span id="password-hint" className={passwordHint ? "field__hint field__hint--warn" : "field__hint"}>{passwordHint || fill(t.passwordHint, { n: PASSWORD_MIN })}</span>}
