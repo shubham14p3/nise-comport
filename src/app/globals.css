@@ -2207,12 +2207,13 @@ a.site-banner:hover { transform: translateY(-3px); }
 .inbox__pager select { margin: 0 4px; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); }
 
 /* Past records: one readable card per record, fields in a grid */
-.link-records__items { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 12px; }
-.link-records__items > li { border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; background: var(--surface); }
-.link-records__items > li > b { font-size: 1.05rem; }
-.link-records__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; }
-.link-records__record { padding: 12px 0; border-top: 1px dashed var(--line); }
-.link-records__head + .link-records__record { border-top: 0; padding-top: 8px; }
+.link-records__items { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 22px; }
+/* One section per service (e.g. PAN card) holding every record of that service for this person */
+.link-records__items > li { min-width: 0; }
+.link-records__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.link-records__head b { font-size: 1.05rem; }
+/* Each record is a card; its fields sit in a grid inside it */
+.link-records__record { margin-top: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
 .link-records__items dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px 16px; margin: 12px 0 0; }
 .link-records__items dl > div { min-width: 0; }
 .link-records__items dt { font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
