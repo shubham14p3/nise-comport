@@ -258,7 +258,7 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
         {active === "inbox" && <InboxPanel onSeen={clearUnread}/>}
         {active === "requests" && <RequestQueue/>}
         {active === "records" && <RecordsPanel key="all" service=""/>}
-        {activeService && <RecordsPanel key={activeService} service={activeService}/>}
+        {activeService && <RecordsPanel key={activeService} service={activeService} serviceOnly/>}
         {active === "email" && <EmailCampaignsPanel/>}
         {active === "promotions" && <PromotionsPanel canEdit/>}
         {active === "content" && <SiteContentPanel/>}
