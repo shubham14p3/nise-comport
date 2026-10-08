@@ -4,7 +4,7 @@ export const RECORD_STATUSES: Record<string, string> = {
   pending: "Pending",
   verification: "Verification",
   dispatch: "Dispatch",
-  delivered: "Delivered",
+  delivered: "Completed",
   document_required: "Document required",
   pending_client: "Pending from client",
   draft: "Draft",
