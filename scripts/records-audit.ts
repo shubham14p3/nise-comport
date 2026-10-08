@@ -31,7 +31,8 @@ async function main() {
   type Stat = { total: number; noMobile: number; badMobile: number; badPan: number; badAadhaar: number; noDate: number; badDate: number; refShapes: Map<string, number>; examples: string[] };
   const stats = new Map<string, Stat>();
   for (const row of rows) {
-    const stat = stats.get(row.service) ?? { total: 0, noMobile: 0, badMobile: 0, badPan: 0, badAadhaar: 0, noDate: 0, badDate: 0, refShapes: new Map(), examples: [] };
+    const fresh: Stat = { total: 0, noMobile: 0, badMobile: 0, badPan: 0, badAadhaar: 0, noDate: 0, badDate: 0, refShapes: new Map<string, number>(), examples: [] };
+    const stat = stats.get(row.service) ?? fresh;
     stats.set(row.service, stat);
     stat.total++;
     const data = open<Sealed>(row.payloadEnc);
