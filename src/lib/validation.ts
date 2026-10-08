@@ -56,6 +56,29 @@ export function emailProblem(value: string): string | null {
   return null;
 }
 
+/**
+ * WhatsApp number for sign-up: exactly 10 digits, an Indian mobile (starts with 6, 7, 8 or 9).
+ * "+91", "91" or a leading 0 in front is accepted and removed. Letters and other symbols are rejected.
+ */
+export function whatsappProblem(value: string): string | null {
+  const text = value.normalize("NFKC").trim();
+  if (!text) return "Enter your WhatsApp number.";
+  if (/[^\d\s+\-()]/.test(text)) return "WhatsApp number can only have digits, e.g. 98765 43210.";
+  const digits = text.replace(/\D/g, "");
+  const local = digits.length === 12 && digits.startsWith("91") ? digits.slice(2) : digits.length === 11 && digits.startsWith("0") ? digits.slice(1) : digits;
+  if (local.length !== 10) return "WhatsApp number must be 10 digits, e.g. 98765 43210.";
+  if (!/^[6-9]/.test(local)) return "Indian mobile numbers start with 6, 7, 8 or 9.";
+  return null;
+}
+
+/** Returns "+91XXXXXXXXXX" for a valid WhatsApp number, otherwise null. */
+export function normalizeWhatsapp(value: string): string | null {
+  if (whatsappProblem(value)) return null;
+  const digits = value.normalize("NFKC").replace(/\D/g, "");
+  const local = digits.length === 12 ? digits.slice(2) : digits.length === 11 ? digits.slice(1) : digits;
+  return `+91${local}`;
+}
+
 export function normalizePhone(value: string): string | null {
   const trimmed = value.normalize("NFKC").trim();
   if (!trimmed) return null;

@@ -8,7 +8,7 @@ import { sendAccountDeletedEmail, sendAccountExistsEmail, sendEmailChangedNotice
 import { isUniqueViolation, PublicError, RateLimitError, humanDuration } from "@/lib/errors";
 import { clearRate, enforceRate, hitRate, identity, peekRate, RATE_RULES } from "@/lib/rate-limit";
 import { secondsUntilWindowEnds } from "@/lib/rate-limit-core";
-import { emailProblem, isSixDigitCode, looksLikeEmail, nameProblem, normalizeEmail, normalizePhone, passwordProblem } from "@/lib/validation";
+import { emailProblem, isSixDigitCode, looksLikeEmail, nameProblem, normalizeEmail, normalizeWhatsapp, passwordProblem, whatsappProblem } from "@/lib/validation";
 import { hasPermission, type Permission } from "@/lib/permissions";
 
 export type User = typeof users.$inferSelect;
@@ -179,8 +179,11 @@ function validateSignupProfile(email: string, profile: SignupProfile) {
   const name = `${firstName} ${lastName}`;
   const problem = passwordProblem(profile.password ?? "", { email, name });
   if (problem) throw new PublicError(problem, 400, { fields: { password: problem } });
-  const phone = normalizePhone(profile.phone ?? "");
-  if (!phone) throw new PublicError("Enter a valid 10-digit WhatsApp number, e.g. 98765 43210.", 400, { fields: { phone: "Enter a valid 10-digit WhatsApp number, e.g. 98765 43210." } });
+  const phone = normalizeWhatsapp(profile.phone ?? "");
+  if (!phone) {
+    const phoneMessage = whatsappProblem(profile.phone ?? "") ?? "Enter a valid WhatsApp number.";
+    throw new PublicError(phoneMessage, 400, { fields: { phone: phoneMessage } });
+  }
   return { firstName, lastName, name, phone };
 }
 
