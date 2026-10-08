@@ -298,6 +298,8 @@ export const customerRecords = pgTable("customer_records", {
   /** Sealed { whatsapp, altMobiles, email, address } for the people list. */
   contactEnc: text("contact_enc"),
   recordDate: date("record_date"), renewalOn: date("renewal_on"),
+  /** Where the customer's work stands. Every change is written to the activity log. */
+  status: text("status").notNull().default("new"), statusAt: timestamp("status_at", { withTimezone: true }),
   payloadEnc: text("payload_enc").notNull(), rowHash: text("row_hash").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [

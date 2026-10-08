@@ -1,42 +1,51 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { secureApi } from "@/lib/secure-api-client";
+import { RECORD_STATUSES } from "@/lib/record-status";
 
 type YearRow = { year: number | null; total: number };
-type RecordRow = { id: string; key: string; name: string; source: string; recordDate: string | null; renewalOn: string | null; mobile: string | null; panMasked: string | null; hasPan: boolean };
+export type RecordRow = { id: string; key: string; name: string; source: string; recordDate: string | null; renewalOn: string | null; status: string; mobile: string | null; panMasked: string | null; hasPan: boolean };
 type Page = { records: RecordRow[]; hasMore: boolean; page: number; loading: boolean };
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const day = (value: string | null) => value ? new Date(`${value}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }) : "No date";
-const monthOf = (value: string | null) => value ? MONTHS[Number(value.slice(5, 7)) - 1] ?? "Unknown" : "No date";
 const yearKey = (year: number | null) => (year === null ? "undated" : String(year));
 
 /**
- * One service at a time, as accordions: year → month → records, newest first.
- * A year's records load only when it is opened, so big services stay fast on a phone.
+ * One service at a time: filters (like Excel column filters) on top, then accordions
+ * year → month → records, newest first. Filters run on the server, over the whole service.
  */
 export default function RecordsServiceBrowser({ service, label, onOpen }: { service: string; label: string; onOpen: (key: string) => void }) {
+  const [q, setQ] = useState("");
+  const [status, setStatus] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [years, setYears] = useState<YearRow[] | null>(null);
   const [error, setError] = useState("");
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [pages, setPages] = useState<Record<string, Page>>({});
+  const filters = { q: q.trim(), status, from, to };
 
+  // Reload the year counts whenever the service or a filter changes (typing waits a moment).
   useEffect(() => {
     let active = true;
-    setYears(null); setOpen({}); setPages({}); setError("");
-    secureApi<{ years: YearRow[] }>("W8r2T5yN1cF6", { view: "years", service })
-      .then((value) => { if (active) setYears(value.years); })
-      .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load this service."); });
-    return () => { active = false; };
-  }, [service]);
+    const timer = setTimeout(() => {
+      setYears(null); setOpen({}); setPages({}); setError("");
+      secureApi<{ years: YearRow[] }>("W8r2T5yN1cF6", { view: "years", service, ...filters })
+        .then((value) => { if (active) setYears(value.years); })
+        .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load this service."); });
+    }, q ? 300 : 0);
+    return () => { active = false; clearTimeout(timer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [service, q, status, from, to]);
 
   async function loadPage(year: number | null, page: number) {
     const key = yearKey(year);
     setPages((current) => ({ ...current, [key]: { records: current[key]?.records ?? [], hasMore: current[key]?.hasMore ?? false, page, loading: true } }));
     try {
       const result = await secureApi<{ records: RecordRow[]; hasMore: boolean }>("W8r2T5yN1cF6", {
-        view: "records", service, year: year === null ? undefined : String(year), undated: year === null ? true : undefined, page,
+        view: "records", service, ...filters, year: year === null ? undefined : String(year), undated: year === null ? true : undefined, page,
       });
       setPages((current) => ({ ...current, [key]: { records: page === 0 ? result.records : [...(current[key]?.records ?? []), ...result.records], hasMore: result.hasMore, page, loading: false } }));
     } catch (reason) {
@@ -52,7 +61,6 @@ export default function RecordsServiceBrowser({ service, label, onOpen }: { serv
     if (willOpen && !pages[key]) void loadPage(year, 0);
   }
 
-  // Newest month first, records inside each month newest first.
   const byMonth = (records: RecordRow[]) => {
     const groups = new Map<string, RecordRow[]>();
     for (const record of records) {
@@ -62,15 +70,25 @@ export default function RecordsServiceBrowser({ service, label, onOpen }: { serv
     return [...groups.entries()].sort((a, b) => (a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : 0));
   };
 
-  const total = useMemo(() => (years ?? []).reduce((sum, row) => sum + row.total, 0), [years]);
-
-  if (error) return <div className="alert alert--error" role="alert">{error}</div>;
-  if (!years) return <p className="admin-empty">Loading {label}…</p>;
-  if (!years.length) return <p className="admin-empty">No {label} records yet.</p>;
+  const total = (years ?? []).reduce((sum, row) => sum + row.total, 0);
+  const filtered = Boolean(filters.q || filters.status || filters.from || filters.to);
 
   return <div className="svc-browser">
-    <p className="svc-browser__total"><b>{total.toLocaleString("en-IN")}</b> {label} records · newest first</p>
-    {years.map((row) => {
+    <div className="svc-filters" role="search">
+      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Filter by name, mobile, last 4 digits, PAN or Aadhaar" aria-label="Filter by name, mobile or PAN"/>
+      <select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Filter by status">
+        <option value="">Any status</option>
+        {Object.entries(RECORD_STATUSES).map(([key, text]) => <option key={key} value={key}>{text}</option>)}
+      </select>
+      <label>From <input type="date" value={from} onChange={(e) => setFrom(e.target.value)}/></label>
+      <label>To <input type="date" value={to} onChange={(e) => setTo(e.target.value)}/></label>
+      {filtered ? <button type="button" className="btn btn--ghost btn--sm" onClick={() => { setQ(""); setStatus(""); setFrom(""); setTo(""); }}>Clear filters</button> : null}
+    </div>
+    {error ? <div className="alert alert--error" role="alert">{error}</div> : null}
+    {!years && !error ? <p className="admin-empty">Loading {label}…</p> : null}
+    {years && !years.length ? <p className="admin-empty">{filtered ? "Nothing matches these filters." : `No ${label} records yet.`}</p> : null}
+    {years && years.length ? <p className="svc-browser__total"><b>{total.toLocaleString("en-IN")}</b> {label} records{filtered ? " match" : ""} · newest first</p> : null}
+    {years?.map((row) => {
       const key = yearKey(row.year);
       const page = pages[key];
       const isOpen = Boolean(open[key]);
@@ -86,9 +104,10 @@ export default function RecordsServiceBrowser({ service, label, onOpen }: { serv
               {records.map((record) => <li key={record.id}>
                 <button type="button" className="svc-row" onClick={() => onOpen(record.key)}>
                   <b>{record.name}</b>
+                  <span className={`svc-status svc-status--${record.status}`}>{RECORD_STATUSES[record.status] ?? record.status}</span>
                   <span>{record.mobile ?? "No mobile"}</span>
                   {record.hasPan ? <span className="svc-row__pan">{record.panMasked}</span> : null}
-                  <small>{day(record.recordDate)}{record.renewalOn ? ` · renews ${day(record.renewalOn)}` : ""} · {monthOf(record.recordDate)}</small>
+                  <small>{day(record.recordDate)}{record.renewalOn ? ` · renews ${day(record.renewalOn)}` : ""}</small>
                 </button>
               </li>)}
             </ul>

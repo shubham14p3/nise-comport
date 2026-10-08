@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import RecordsServiceBrowser from "@/components/records-service-browser";
+import { RECORD_STATUSES } from "@/lib/record-status";
 import { ChevronLeft, ChevronRight, Database, Eye, Phone, Search, Upload, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
@@ -13,7 +14,7 @@ type Listing = { people: Person[]; totals: { people: number; records: number; re
 type SheetReport = { sheet: string; service: string | null; rows: number; records: number; skipped: number; reason?: string; droppedColumns?: string[] };
 type ImportResult = { imported: number; duplicates: number; skipped: number; contactsAdded: number; totalRows: number; sheets: SheetReport[] };
 type ImportRow = { id: string; fileName: string; imported: number; duplicates: number; contactsAdded: number; createdAt: string };
-type Detail = { name: string; records: { id: string; service: string; source: string; recordDate: string | null; renewalOn: string | null; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; panMasked: string | null; hasPan: boolean; aadhaarMasked: string | null; fields: Record<string, string> }[] };
+type Detail = { name: string; records: { id: string; status: string; service: string; source: string; recordDate: string | null; renewalOn: string | null; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; panMasked: string | null; hasPan: boolean; aadhaarMasked: string | null; fields: Record<string, string> }[] };
 
 const day = (iso: string | null) => iso ? new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "—";
 const pretty = (phone: string) => phone.replace(/^\+91(\d{5})(\d{5})$/, "+91 $1 $2");
@@ -23,6 +24,24 @@ const whenSent = (iso: string) => new Date(iso).toLocaleString("en-IN", { day: "
  * Admin → Records: import the shop's Excel registers (all sheets) and find customers across them.
  * Data is encrypted in the database; opening a person's records is logged in the inbox.
  */
+/** Where this record stands. Saving writes the change to the Inbox. */
+function RecordStatus({ recordId, status, onSaved }: { recordId: string; status: string; onSaved: (status: string) => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function change(next: string) {
+    setBusy(true); setError("");
+    try { await secureApi("S8t3Ra5vM1pY", { recordId, status: next }); onSaved(next); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save the status."); }
+    finally { setBusy(false); }
+  }
+  return <div className="record-status">
+    <label>Status <select value={status} disabled={busy} onChange={(e) => void change(e.target.value)}>
+      {Object.entries(RECORD_STATUSES).map(([key, text]) => <option key={key} value={key}>{text}</option>)}
+    </select></label>
+    {error ? <small role="alert">{error}</small> : null}
+  </div>;
+}
+
 /** Shows the masked PAN. "Show full PAN" emails a code to the signed-in staff member first. */
 function RevealPan({ recordId, masked }: { recordId: string; masked: string | null }) {
   const [step, setStep] = useState<"idle" | "code" | "shown">("idle");
@@ -194,6 +213,7 @@ export default function RecordsPanel() {
         <p className="field__hint"><Eye size={12}/> This view was logged in the Inbox.</p>
         {detail.records.map((record) => <article key={record.id} className="record-card">
           <header><b>{names[record.service] ?? record.service}</b><small>{day(record.recordDate)}{record.renewalOn ? ` · renewal ${day(record.renewalOn)}` : ""} · {record.source}</small></header>
+          <RecordStatus recordId={record.id} status={record.status} onSaved={(next) => setDetail((current) => current && { ...current, records: current.records.map((item) => item.id === record.id ? { ...item, status: next } : item) })}/>
           <dl>
             {record.mobile && <><dt>Mobile</dt><dd><a href={`tel:${record.mobile}`}>{pretty(record.mobile)}</a></dd></>}
             {record.whatsapp && <><dt>WhatsApp</dt><dd><a href={`https://wa.me/${record.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">{pretty(record.whatsapp)}</a></dd></>}

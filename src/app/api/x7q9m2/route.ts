@@ -72,6 +72,7 @@ const OPS = {
   "P9d4Ks1mL7qY": { method: "POST", path: "/api/impersonation" },
   "F2n8Vb6tW0xE": { method: "POST", path: "/api/impersonation/stop" },
   "R4v7Pn2kQ9mX": { method: "POST", path: "/api/admin/records/reveal" },
+  "S8t3Ra5vM1pY": { method: "POST", path: "/api/admin/records/status" },
 } as const;
 
 /** Encrypted file uploads: customer documents, and posters in the admin area. */
@@ -125,7 +126,7 @@ function targetFor(operation: string, input: Record<string, unknown>) {
     }
     case "W8r2T5yN1cF6": {
       const params = new URLSearchParams();
-      for (const key of ["q", "service", "sort", "key", "view", "year"]) { const value = stringValue(input, key, 80); if (value) params.set(key, value); }
+      for (const key of ["q", "service", "sort", "key", "view", "year", "status", "from", "to"]) { const value = stringValue(input, key, 80); if (value) params.set(key, value); }
       if (input.imports) params.set("imports", "1");
       if (input.undated) params.set("undated", "1");
       if (typeof input.page === "number") params.set("page", String(Math.max(0, Math.floor(input.page))));

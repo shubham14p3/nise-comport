@@ -29,10 +29,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(await personRecords(key, user));
     }
     await enforceRate(RATE_RULES.recordPagesPerUserHour, identity("user", user.id), "Too many record searches this hour.");
-    if (params.get("view") === "years") return NextResponse.json(await serviceYears(params.get("service") ?? ""));
+    const filters = { q: params.get("q") ?? "", status: params.get("status") ?? "", from: params.get("from") ?? "", to: params.get("to") ?? "" };
+    if (params.get("view") === "years") return NextResponse.json(await serviceYears(params.get("service") ?? "", filters));
     if (params.get("view") === "records") {
       const year = params.get("year");
-      return NextResponse.json(await serviceRecords(params.get("service") ?? "", { year: year ? Number(year) : null, undated: params.get("undated") === "1", page: Number(params.get("page") ?? 0) || 0 }));
+      return NextResponse.json(await serviceRecords(params.get("service") ?? "", { ...filters, year: year ? Number(year) : null, undated: params.get("undated") === "1", page: Number(params.get("page") ?? 0) || 0 }));
     }
     if (params.get("imports")) return NextResponse.json({ imports: await recentImports() });
     const sort = params.get("sort");

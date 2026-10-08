@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { maskAadhaar, maskPan, parseWorkbook, RECORD_SERVICES, type SheetInput } from "@/lib/record-import";
 import { normalizePhone } from "@/lib/validation";
+import { RECORD_STATUSES, RECORD_STATUS_KEYS } from "@/lib/record-status";
 import { blindIndex, open, seal } from "@/lib/vault";
 
 type Actor = { id: string; name: string };
@@ -183,7 +184,7 @@ export async function personRecords(key: string, actor: Actor) {
   if (!rows.length) throw new PublicError("Unknown person.", 404);
   const records = rows.map((row) => {
     const data = open<Sealed>(row.payloadEnc);
-    return { id: row.id, service: row.service, source: row.source, name: row.name, recordDate: row.recordDate, renewalOn: row.renewalOn,
+    return { id: row.id, service: row.service, source: row.source, name: row.name, recordDate: row.recordDate, renewalOn: row.renewalOn, status: row.status,
       mobile: data.mobile, whatsapp: data.whatsapp ?? null, altMobiles: data.altMobiles ?? [], email: data.email ?? null, address: data.address ?? null, pan: null, panMasked: maskPan(data.pan), hasPan: Boolean(data.pan), aadhaarMasked: maskAadhaar(data.aadhaar), fields: maskIds(data.fields) };
   });
   await logActivity({ kind: "record_view", permission: "records", category: "records", title: `${actor.name} opened the records of ${rows[0].name}`, detail: `${rows.length} record${rows.length === 1 ? "" : "s"} · ${[...new Set(rows.map((row) => RECORD_SERVICES[row.service] ?? row.service))].join(", ")}`, refType: "person", refId: key, actorId: actor.id });
@@ -212,36 +213,68 @@ function mergeContacts(sealed: string[] | null) {
 
 /* ----------------------------------------------------------------------------------------------
  * Service browser: one service at a time, grouped by year then month (newest first).
+ * Filters work on the whole service, not only the rows already loaded.
  * -------------------------------------------------------------------------------------------- */
 
 const SERVICE_PAGE = 100;
+export type ServiceFilters = { q?: string; status?: string; from?: string; to?: string };
 
-/** How many records a service has in each year. Undated records come last with year null. */
-export async function serviceYears(service: string) {
+function serviceFilters(service: string, filters: ServiceFilters): SQL[] {
   if (!(service in RECORD_SERVICES)) throw new PublicError("Unknown service.", 404);
+  const clauses: SQL[] = [eq(customerRecords.service, service)];
+  if (filters.status && RECORD_STATUS_KEYS.includes(filters.status)) clauses.push(eq(customerRecords.status, filters.status));
+  if (filters.from && /^\d{4}-\d{2}-\d{2}$/.test(filters.from)) clauses.push(sql`${customerRecords.recordDate} >= ${filters.from}::date`);
+  if (filters.to && /^\d{4}-\d{2}-\d{2}$/.test(filters.to)) clauses.push(sql`${customerRecords.recordDate} <= ${filters.to}::date`);
+  const q = (filters.q ?? "").trim().slice(0, 80);
+  if (q) {
+    const phone = normalizePhone(q);
+    const pan = /^[A-Za-z]{5}\d{4}[A-Za-z]$/.test(q) ? q.toUpperCase() : null;
+    const aadhaar = /^\d{12}$/.test(q.replace(/\s/g, "")) ? q.replace(/\s/g, "") : null;
+    const options: SQL[] = [ilike(customerRecords.name, `%${q.replace(/[\\%_]/g, "\\$&")}%`)];
+    if (phone) options.push(eq(customerRecords.mobileHash, blindIndex("mobile", phone)));
+    else if (/^\d{4}$/.test(q)) options.push(eq(customerRecords.mobileLast4, q));
+    if (pan) options.push(eq(customerRecords.panHash, blindIndex("pan", pan)));
+    if (aadhaar) options.push(eq(customerRecords.aadhaarHash, blindIndex("aadhaar", aadhaar)));
+    clauses.push(or(...options)!);
+  }
+  return clauses;
+}
+
+/** How many records a service has in each year (after the filters). Undated records have year null. */
+export async function serviceYears(service: string, filters: ServiceFilters = {}) {
   const year = sql<number | null>`extract(year from ${customerRecords.recordDate})::int`;
   const rows = await db.select({ year, total: sql<number>`count(*)::int` }).from(customerRecords)
-    .where(eq(customerRecords.service, service)).groupBy(year).orderBy(sql`${year} desc nulls last`);
+    .where(and(...serviceFilters(service, filters))).groupBy(year).orderBy(sql`${year} desc nulls last`);
   return { years: rows.map((row) => ({ year: row.year, total: row.total })) };
 }
 
 /** One page of a service's records for one year (or undated records), newest first. */
-export async function serviceRecords(service: string, options: { year?: number | null; undated?: boolean; page?: number }) {
-  if (!(service in RECORD_SERVICES)) throw new PublicError("Unknown service.", 404);
+export async function serviceRecords(service: string, options: ServiceFilters & { year?: number | null; undated?: boolean; page?: number }) {
   const page = Math.max(0, Math.min(options.page ?? 0, 500));
   const scope = options.undated || options.year == null
     ? sql`${customerRecords.recordDate} is null`
     : sql`extract(year from ${customerRecords.recordDate})::int = ${options.year}`;
   const rows = await db.select({
     id: customerRecords.id, name: customerRecords.name, source: customerRecords.source, recordDate: customerRecords.recordDate, renewalOn: customerRecords.renewalOn,
-    payloadEnc: customerRecords.payloadEnc, mobileHash: customerRecords.mobileHash, panHash: customerRecords.panHash,
-  }).from(customerRecords).where(and(eq(customerRecords.service, service), scope))
+    status: customerRecords.status, payloadEnc: customerRecords.payloadEnc, mobileHash: customerRecords.mobileHash, panHash: customerRecords.panHash,
+  }).from(customerRecords).where(and(...serviceFilters(service, options), scope))
     .orderBy(sql`${customerRecords.recordDate} desc nulls last`, customerRecords.name)
     .limit(SERVICE_PAGE + 1).offset(page * SERVICE_PAGE);
   const items = rows.slice(0, SERVICE_PAGE).map((row) => {
     const data = open<Sealed>(row.payloadEnc);
     return { id: row.id, key: row.mobileHash ?? row.panHash ?? row.id, name: row.name, source: row.source, recordDate: row.recordDate, renewalOn: row.renewalOn,
-      mobile: data.mobile ?? data.whatsapp ?? null, panMasked: maskPan(data.pan), hasPan: Boolean(data.pan) };
+      status: row.status, mobile: data.mobile ?? data.whatsapp ?? null, panMasked: maskPan(data.pan), hasPan: Boolean(data.pan) };
   });
   return { records: items, hasMore: rows.length > SERVICE_PAGE };
+}
+
+/** Changes one record's stage. Written to the activity log with who changed it and from what. */
+export async function setRecordStatus(recordId: string, status: string, actor: Actor) {
+  if (!/^[0-9a-f-]{36}$/i.test(recordId)) throw new PublicError("Unknown record.", 404);
+  if (!RECORD_STATUS_KEYS.includes(status)) throw new PublicError("Unknown status.", 400);
+  const [before] = await db.select({ name: customerRecords.name, service: customerRecords.service, status: customerRecords.status }).from(customerRecords).where(eq(customerRecords.id, recordId)).limit(1);
+  if (!before) throw new PublicError("Unknown record.", 404);
+  await db.update(customerRecords).set({ status, statusAt: new Date() }).where(eq(customerRecords.id, recordId));
+  await logActivity({ kind: "status", permission: "records", category: "records", title: `${actor.name} changed ${before.name}’s ${RECORD_SERVICES[before.service] ?? before.service} to ${RECORD_STATUSES[status]}`, detail: `Was: ${RECORD_STATUSES[before.status] ?? before.status}`, refType: "record", refId: recordId, actorId: actor.id });
+  return { id: recordId, status };
 }
