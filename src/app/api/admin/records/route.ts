@@ -9,7 +9,7 @@ import { db } from "@/lib/db";
 import { apiError } from "@/lib/http";
 import { PublicError } from "@/lib/errors";
 import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
-import { importRecords, listPeople, personRecords, recentImports } from "@/lib/records";
+import { importRecords, listPeople, personRecords, recentImports, serviceRecords, serviceYears } from "@/lib/records";
 import type { SheetInput } from "@/lib/record-import";
 import { privateStoragePath } from "@/lib/storage";
 import { vaultReady } from "@/lib/vault";
@@ -29,6 +29,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(await personRecords(key, user));
     }
     await enforceRate(RATE_RULES.recordPagesPerUserHour, identity("user", user.id), "Too many record searches this hour.");
+    if (params.get("view") === "years") return NextResponse.json(await serviceYears(params.get("service") ?? ""));
+    if (params.get("view") === "records") {
+      const year = params.get("year");
+      return NextResponse.json(await serviceRecords(params.get("service") ?? "", { year: year ? Number(year) : null, undated: params.get("undated") === "1", page: Number(params.get("page") ?? 0) || 0 }));
+    }
     if (params.get("imports")) return NextResponse.json({ imports: await recentImports() });
     const sort = params.get("sort");
     return NextResponse.json(await listPeople({ q: params.get("q") ?? "", service: params.get("service") ?? "", sort: sort === "recent" || sort === "renewal" ? sort : "repeat", page: Number(params.get("page") ?? 0) || 0 }));

@@ -125,8 +125,9 @@ function targetFor(operation: string, input: Record<string, unknown>) {
     }
     case "W8r2T5yN1cF6": {
       const params = new URLSearchParams();
-      for (const key of ["q", "service", "sort", "key"]) { const value = stringValue(input, key, 80); if (value) params.set(key, value); }
+      for (const key of ["q", "service", "sort", "key", "view", "year"]) { const value = stringValue(input, key, 80); if (value) params.set(key, value); }
       if (input.imports) params.set("imports", "1");
+      if (input.undated) params.set("undated", "1");
       if (typeof input.page === "number") params.set("page", String(Math.max(0, Math.floor(input.page))));
       return { method: "GET", path: `/api/admin/records?${params.toString()}` };
     }

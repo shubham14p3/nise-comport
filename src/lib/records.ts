@@ -209,3 +209,39 @@ function mergeContacts(sealed: string[] | null) {
   }
   return merged;
 }
+
+/* ----------------------------------------------------------------------------------------------
+ * Service browser: one service at a time, grouped by year then month (newest first).
+ * -------------------------------------------------------------------------------------------- */
+
+const SERVICE_PAGE = 100;
+
+/** How many records a service has in each year. Undated records come last with year null. */
+export async function serviceYears(service: string) {
+  if (!(service in RECORD_SERVICES)) throw new PublicError("Unknown service.", 404);
+  const year = sql<number | null>`extract(year from ${customerRecords.recordDate})::int`;
+  const rows = await db.select({ year, total: sql<number>`count(*)::int` }).from(customerRecords)
+    .where(eq(customerRecords.service, service)).groupBy(year).orderBy(sql`${year} desc nulls last`);
+  return { years: rows.map((row) => ({ year: row.year, total: row.total })) };
+}
+
+/** One page of a service's records for one year (or undated records), newest first. */
+export async function serviceRecords(service: string, options: { year?: number | null; undated?: boolean; page?: number }) {
+  if (!(service in RECORD_SERVICES)) throw new PublicError("Unknown service.", 404);
+  const page = Math.max(0, Math.min(options.page ?? 0, 500));
+  const scope = options.undated || options.year == null
+    ? sql`${customerRecords.recordDate} is null`
+    : sql`extract(year from ${customerRecords.recordDate})::int = ${options.year}`;
+  const rows = await db.select({
+    id: customerRecords.id, name: customerRecords.name, source: customerRecords.source, recordDate: customerRecords.recordDate, renewalOn: customerRecords.renewalOn,
+    payloadEnc: customerRecords.payloadEnc, mobileHash: customerRecords.mobileHash, panHash: customerRecords.panHash,
+  }).from(customerRecords).where(and(eq(customerRecords.service, service), scope))
+    .orderBy(sql`${customerRecords.recordDate} desc nulls last`, customerRecords.name)
+    .limit(SERVICE_PAGE + 1).offset(page * SERVICE_PAGE);
+  const items = rows.slice(0, SERVICE_PAGE).map((row) => {
+    const data = open<Sealed>(row.payloadEnc);
+    return { id: row.id, key: row.mobileHash ?? row.panHash ?? row.id, name: row.name, source: row.source, recordDate: row.recordDate, renewalOn: row.renewalOn,
+      mobile: data.mobile ?? data.whatsapp ?? null, panMasked: maskPan(data.pan), hasPan: Boolean(data.pan) };
+  });
+  return { records: items, hasMore: rows.length > SERVICE_PAGE };
+}

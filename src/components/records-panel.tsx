@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import RecordsServiceBrowser from "@/components/records-service-browser";
 import { ChevronLeft, ChevronRight, Database, Eye, Phone, Search, Upload, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
@@ -145,12 +146,14 @@ export default function RecordsPanel() {
       <div><b>{data.totals.records.toLocaleString("en-IN")}</b><small>records</small></div>
       <div><b>{data.totals.repeat.toLocaleString("en-IN")}</b><small>came back more than once</small></div>
     </div>}
-    {data && <div className="records-services">
+    {data && <div className="records-layout"><div className="records-services">
       <button type="button" className={!service ? "is-active" : undefined} onClick={() => { setService(""); setPage(0); void load({ service: "", page: 0 }); }}>All</button>
       {[...data.byService].sort((a, b) => b.total - a.total).map((item) => <button key={item.service} type="button" className={service === item.service ? "is-active" : undefined}
-        onClick={() => { setService(item.service); setPage(0); void load({ service: item.service, page: 0 }); }}>{names[item.service] ?? item.service} · {item.total.toLocaleString("en-IN")}</button>)}
-    </div>}
-
+        onClick={() => { setService(item.service); setPage(0); void load({ service: item.service, page: 0 }); }}><span>{names[item.service] ?? item.service}</span><b>{item.total.toLocaleString("en-IN")}</b></button>)}
+    </div>
+    <div className="records-main">
+    {service && <RecordsServiceBrowser service={service} label={names[service] ?? service} onOpen={(key) => void openPerson({ key } as Person)}/>}
+    {!service && <>
     <form className="promo-admin__bar" role="search" onSubmit={(event) => { event.preventDefault(); setPage(0); void load({ page: 0 }); }}>
       <label className="input-wrap"><Search size={16}/><input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Name, mobile, WhatsApp, email, PAN, Aadhaar or last 4 digits" aria-label="Search customers"/></label>
       <select value={sort} onChange={(event) => { const next = event.target.value as typeof sort; setSort(next); setPage(0); void load({ sort: next, page: 0 }); }} aria-label="Sort">
@@ -182,6 +185,9 @@ export default function RecordsPanel() {
 
     {imports.length > 0 && <div className="pan-import-history"><b>Recent imports</b>{imports.map((row) => <span key={row.id}>{new Date(row.createdAt).toLocaleDateString("en-IN")} · {row.fileName} · {row.imported} added · {row.duplicates} already there · {row.contactsAdded} contacts</span>)}</div>}
 
+    </>}
+    </div>
+    </div>}
     {detail && createPortal(<div className="record-sheet" role="dialog" aria-modal="true" aria-label={`Records of ${detail.name}`} onMouseDown={(event) => { if (event.target === event.currentTarget) setDetail(null); }}>
       <div className="record-sheet__panel">
         <div className="record-sheet__head"><div><small>Customer records</small><h3>{detail.name}</h3></div><span className="repeat-badge">{detail.records.length} record{detail.records.length === 1 ? "" : "s"}</span><button type="button" className="record-sheet__close" onClick={() => setDetail(null)} aria-label="Close"><X size={18}/> Close</button></div>

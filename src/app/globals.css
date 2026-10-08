@@ -2088,3 +2088,27 @@ a.site-banner:hover { transform: translateY(-3px); }
 .pan-reveal input { width: 120px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; font: inherit; letter-spacing: .15em; }
 .pan-reveal small { color: #9b1c1c; flex-basis: 100%; }
 .pan-shown { font-family: ui-monospace, monospace; letter-spacing: .08em; }
+
+/* Records: service browser (left column services, accordions by year and month) */
+.records-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; align-items: start; }
+.records-layout > .records-services { display: grid; gap: 4px; position: sticky; top: 90px; }
+.records-layout > .records-services button { display: flex; justify-content: space-between; gap: 8px; width: 100%; text-align: left; }
+.svc-browser__total { margin: 0 0 8px; color: var(--muted); font-size: .875rem; }
+.svc-year, .svc-month { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); margin-bottom: 8px; overflow: hidden; }
+.svc-year > summary, .svc-month > summary { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; cursor: pointer; font-weight: 600; list-style: none; }
+.svc-year > summary::-webkit-details-marker, .svc-month > summary::-webkit-details-marker { display: none; }
+.svc-year > summary small, .svc-month > summary small { color: var(--muted); font-weight: 500; }
+.svc-year__body { padding: 0 10px 10px; display: grid; gap: 8px; }
+.svc-month { margin: 0; background: var(--bg); }
+.svc-rows { list-style: none; margin: 0; padding: 0 8px 8px; display: grid; gap: 6px; }
+.svc-row { width: 100%; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 2px 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); text-align: left; font: inherit; cursor: pointer; }
+.svc-row b { overflow-wrap: anywhere; }
+.svc-row span { color: var(--ink); }
+.svc-row small { grid-column: 1 / -1; color: var(--muted); }
+.svc-row__pan { font-family: ui-monospace, monospace; }
+@media (max-width: 760px) {
+  .records-layout { grid-template-columns: minmax(0, 1fr); }
+  .records-layout > .records-services { position: static; display: flex; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
+  .records-layout > .records-services button { width: auto; flex: 0 0 auto; white-space: nowrap; }
+  .svc-row { grid-template-columns: minmax(0, 1fr); }
+}
