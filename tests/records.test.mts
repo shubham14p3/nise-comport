@@ -94,3 +94,15 @@ test("contact details: WhatsApp, other mobiles, email and address are picked up"
   assert.equal(rina.address, "Kharangajhar");
   assert.equal(mohan.whatsapp, null, "a WhatsApp number equal to the mobile isn't repeated");
 });
+
+test("sparse Excel rows with empty header cells don't crash the parser", () => {
+  const sparseHeader: unknown[] = [];
+  sparseHeader[1] = "Name";
+  sparseHeader[3] = "Mobile";
+  const sparseRow: unknown[] = [];
+  sparseRow[1] = "Ravi Kumar";
+  sparseRow[3] = "9876543210";
+  const parsed = parseWorkbook("Insurance.xlsx", [{ name: "Sheet1", rows: [sparseHeader, sparseRow] }]);
+  assert.equal(parsed.records.length, 1);
+  assert.equal(parsed.records[0].name, "Ravi Kumar");
+});
