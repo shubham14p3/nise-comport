@@ -357,3 +357,19 @@ export async function setRecordStatus(recordId: string, status: string, actor: A
   await logActivity({ kind: "status", permission: "records", category: "records", title: `${actor.name} changed ${before.name}’s ${RECORD_SERVICES[before.service] ?? before.service} to ${RECORD_STATUSES[status]}`, detail: `Was: ${RECORD_STATUSES[before.status] ?? before.status}`, refType: "record", refId: recordId, actorId: actor.id });
   return { id: recordId, status };
 }
+
+/** Customers per stage for one service: the counts shown above its list. */
+export async function stageCounts(service: string) {
+  const rows = await db.select({ status: customerRecords.status, total: sql<number>`count(*)::int` }).from(customerRecords)
+    .where(service ? eq(customerRecords.service, service) : undefined).groupBy(customerRecords.status);
+  const counts: Record<string, number> = Object.fromEntries(RECORD_STATUS_KEYS.map((key) => [key, 0]));
+  for (const row of rows) if (row.status in counts) counts[row.status] = row.total;
+  return { total: rows.reduce((sum, row) => sum + row.total, 0), counts };
+}
+
+/** Records per service, for the sidebar under Master records. */
+export async function servicesSummary() {
+  const byService = await db.select({ service: customerRecords.service, total: sql<number>`count(*)::int` }).from(customerRecords).groupBy(customerRecords.service);
+  return { byService, services: RECORD_SERVICES };
+}
+

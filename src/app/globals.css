@@ -2165,3 +2165,17 @@ a.site-banner:hover { transform: translateY(-3px); }
 .copy-icon--text { width: auto; padding: 0 10px; height: 32px; margin-left: 0; font-size: .85rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
 .copy-icon.is-copied { color: #166534; border-color: #86efac; background: #f0fdf4; }
 .record-sheet__head .copy-icon--text { flex-shrink: 0; }
+
+/* Master records: sidebar service rows, stage counts, loading message */
+.profile__nav button.nav-sub { min-height: 38px; padding-left: 44px; font-size: .875rem; color: var(--ink-2); }
+.profile__nav button.nav-sub small { color: var(--muted); font-size: .75rem; font-weight: 600; }
+.profile__nav button.nav-sub.is-active { background: #eaf3ff; color: var(--blue-700); font-weight: 600; }
+.stage-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 14px; }
+.stage-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink-2); font-size: .8125rem; cursor: pointer; }
+.stage-chip b { font-size: .9375rem; color: var(--ink); }
+.stage-chip.is-on { border-color: var(--blue); background: #eaf3ff; color: var(--blue-700); }
+.loading-toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 70; display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 999px; background: var(--ink); color: var(--surface); font-size: .875rem; box-shadow: var(--shadow-lg); }
+.spin { animation: nc-spin 0.9s linear infinite; }
+@keyframes nc-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+

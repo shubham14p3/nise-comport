@@ -16,9 +16,9 @@ const yearKey = (year: number | null) => (year === null ? "undated" : String(yea
  * One service at a time: filters (like Excel column filters) on top, then accordions
  * year → month → records, newest first. Filters run on the server, over the whole service.
  */
-export default function RecordsServiceBrowser({ service, label, onOpen }: { service: string; label: string; onOpen: (key: string) => void }) {
+export default function RecordsServiceBrowser({ service, label, onOpen, initialStatus = "" }: { service: string; label: string; onOpen: (key: string) => void; initialStatus?: string }) {
   const [q, setQ] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(initialStatus);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [years, setYears] = useState<YearRow[] | null>(null);

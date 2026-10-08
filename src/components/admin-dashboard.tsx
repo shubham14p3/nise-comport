@@ -1,7 +1,7 @@
 "use client";
 
 import ShowMore, { useShowMore } from "@/components/show-more";
-import { FormEvent, useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { FormEvent, Fragment, useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import SiteHeader from "@/components/site-header";
 import { WhatsAppIcon } from "@/components/icons";
 import PanImportPanel from "@/components/pan-import-panel";
@@ -18,6 +18,7 @@ import InboxPanel from "@/components/inbox-panel";
 import SiteContentPanel from "@/components/site-content-panel";
 import GalleryPanel from "@/components/gallery-panel";
 import RecordsPanel from "@/components/records-panel";
+import EmailCampaignsPanel from "@/components/email-campaigns-panel";
 import type { Permission } from "@/lib/permissions";
 
 type Row = { id: string; reference: string; name: string; email: string; phone: string | null; whatsapp?: string | null; status: string; createdAt: string };
@@ -164,15 +165,16 @@ function RequestQueue() {
   </>;
 }
 
-type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "campaigns" | "contacts" | "team" | "pan" | "wallet";
+type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "campaigns" | "email" | "contacts" | "team" | "pan" | "wallet";
 const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | "admin" | "staff" }[] = [
   { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
   { id: "requests", label: "Requests", icon: ClipboardList, needs: "requests" },
-  { id: "records", label: "Records", icon: FolderLock, needs: "records" },
+  { id: "records", label: "Master records", icon: FolderLock, needs: "records" },
   { id: "promotions", label: "Promotions", icon: TicketPercent, needs: "promotions" },
   { id: "content", label: "Site content", icon: LayoutTemplate, needs: "content" },
   { id: "gallery", label: "Gallery photos", icon: Images, needs: "content" },
   { id: "campaigns", label: "WhatsApp", icon: Megaphone, needs: "campaigns" },
+  { id: "email", label: "Email campaigns", icon: Mail, needs: "campaigns" },
   { id: "contacts", label: "Contacts", icon: Contact, needs: "campaigns" },
   { id: "team", label: "Team", icon: UsersRound, needs: "admin" },
   { id: "pan", label: "PAN data", icon: Database, needs: "pan" },
@@ -199,11 +201,26 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
   }, []);
   const hash = useSyncExternalStore(subscribeHash, readHash, () => "");
   const [picked, setPicked] = useState<Tab | null>(null);
-  const fromHash = tabs.find((tab) => tab.id === hash)?.id;
+  const [pickedService, setPickedService] = useState("");
+  const hashService = hash.startsWith("records/") ? hash.slice("records/".length) : "";
+  const chosenService = picked ? pickedService : hashService;
+  const fromHash = tabs.find((tab) => tab.id === hash.split("/")[0])?.id;
   const active = picked ?? fromHash ?? tabs[0]?.id;
   const clearUnread = useCallback(() => setSummary((value) => value ? { ...value, unread: 0 } : value), []);
-  function choose(tab: Tab) { setPicked(tab); window.history.replaceState(null, "", `#${tab}`); }
+  function choose(tab: Tab) { setPicked(tab); setPickedService(""); window.history.replaceState(null, "", `#${tab}`); }
+  function chooseService(service: string) { setPicked("records"); setPickedService(service); window.history.replaceState(null, "", `#records/${service}`); }
   const first = me.name.split(/\s+/)[0] || "there";
+  const [services, setServices] = useState<{ service: string; total: number }[]>([]);
+  const [serviceNames, setServiceNames] = useState<Record<string, string>>({});
+  const canRecords = me.role === "admin" || me.permissions.includes("records");
+  useEffect(() => {
+    if (!canRecords) return;
+    let active = true;
+    secureApi<{ byService: { service: string; total: number }[]; services: Record<string, string> }>("W8r2T5yN1cF6", { view: "services" })
+      .then((value) => { if (!active) return; setServices(value.byService.filter((row) => row.total > 0).sort((a, b) => b.total - a.total)); setServiceNames(value.services); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [canRecords]);
   const current = tabs.find((tab) => tab.id === active);
   const can = (permission: Permission) => me.role === "admin" || me.permissions.includes(permission);
   return <main className="page page--app profile admin-desk"><SiteHeader/>
@@ -220,9 +237,12 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
     </section>
     <div className="container profile__layout">
       <aside className="profile__nav" aria-label="Admin sections">
-        <nav>{tabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={active === id ? "is-active" : undefined} aria-current={active === id ? "page" : undefined} onClick={() => choose(id)}>
+        <nav>{tabs.map(({ id, label, icon: Icon }) => <Fragment key={id}><button type="button" className={active === id ? "is-active" : undefined} aria-current={active === id ? "page" : undefined} onClick={() => choose(id)}>
           <Icon size={19}/><span>{label}</span>{id === "inbox" && unread > 0 && <small aria-label={`${unread} new`}>{unread > 99 ? "99+" : unread}</small>}
-        </button>)}</nav>
+        </button>
+        {id === "records" && canRecords && services.map((row) => <button key={row.service} type="button" className={`nav-sub${active === "records" && chosenService === row.service ? " is-active" : ""}`} onClick={() => chooseService(row.service)}>
+          <span>{serviceNames[row.service] ?? row.service}</span><small>{row.total.toLocaleString("en-IN")}</small>
+        </button>)}</Fragment>)}</nav>
       </aside>
       <section className="profile__main admin-page" aria-live="polite" aria-label={current?.label}>
         {!tabs.length && <p className="alert alert--info">Your account doesn’t have access to any admin area yet. Ask the owner to add it in Team.</p>}
@@ -234,7 +254,8 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
         </div>}
         {active === "inbox" && <InboxPanel onSeen={clearUnread}/>}
         {active === "requests" && <RequestQueue/>}
-        {active === "records" && <RecordsPanel/>}
+        {active === "records" && <RecordsPanel key={chosenService || "all"} service={chosenService}/>}
+        {active === "email" && <EmailCampaignsPanel/>}
         {active === "promotions" && <PromotionsPanel canEdit/>}
         {active === "content" && <SiteContentPanel/>}
         {active === "gallery" && <GalleryPanel/>}

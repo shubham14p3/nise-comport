@@ -4,7 +4,6 @@ import { FormEvent, useEffect, useState } from "react";
 import { Contact, Search, ThumbsDown, ThumbsUp, UserPlus } from "lucide-react";
 import { CAMPAIGN_SERVICES, serviceTitle } from "@/lib/campaign-text";
 import { secureApi } from "@/lib/secure-api-client";
-import EmailCampaignsPanel from "@/components/email-campaigns-panel";
 
 type Row = { id: string; name: string; phone: string; locale: string; area: string | null; services: { service: string; renewalOn?: string | null; note?: string | null }[]; consent: string; lastMessagedAt: string | null; source: string | null };
 type Listing = { contacts: Row[]; totals: Record<string, number>; matching: number; page: number; pageSize: number };
@@ -57,7 +56,6 @@ export default function ContactsPanel() {
 
   const totals = data?.totals ?? {};
   return <section className="admin-queue contacts">
-    <EmailCampaignsPanel/>
     <h2><Contact size={17}/> Contacts <span>{Object.values(totals).reduce((sum, value) => sum + value, 0)}</span></h2>
     <p className="admin-lead">Everyone the shop may message on WhatsApp. People who say <b>STOP</b> are never messaged again, even if they appear in a later list. Excel lists (PAN, insurance, voter ID…) can be imported here next.</p>
     <form className="promo-admin__bar" role="search" onSubmit={(event) => { event.preventDefault(); void load(); }}>

@@ -4,8 +4,8 @@ import { FormEvent, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import RecordsServiceBrowser from "@/components/records-service-browser";
 import ClaimsQueue from "@/components/claims-queue";
-import { RECORD_STATUSES } from "@/lib/record-status";
-import { Check, ChevronLeft, ChevronRight, Copy, Database, Eye, Phone, Search, Upload, X } from "lucide-react";
+import { RECORD_STATUSES, RECORD_STATUS_KEYS } from "@/lib/record-status";
+import { Check, ChevronLeft, ChevronRight, Copy, Database, Eye, Loader2, Phone, Search, Upload, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
 
@@ -122,17 +122,19 @@ function RevealPan({ recordId, masked }: { recordId: string; masked: string | nu
   return <span className="pan-reveal">{masked ?? "XXXXX"} <button type="button" className="btn btn--ghost btn--sm" onClick={send} disabled={busy}>{busy ? "Sending…" : "Show full PAN"}</button>{error ? <small role="alert">{error}</small> : null}</span>;
 }
 
-export default function RecordsPanel() {
+export default function RecordsPanel({ service: chosen = "" }: { service?: string }) {
   const [data, setData] = useState<Listing | null>(null);
   const [imports, setImports] = useState<ImportRow[]>([]);
   const [q, setQ] = useState("");
-  const [service, setService] = useState("");
+  const [service, setService] = useState(chosen);
   const [sort, setSort] = useState<"repeat" | "recent" | "renewal">("repeat");
   const [page, setPage] = useState(0);
   const [file, setFile] = useState<File | null>(null);
   const [addContacts, setAddContacts] = useState(true);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
+  const [stages, setStages] = useState<{ service: string; total: number; counts: Record<string, number> } | null>(null);
+  const [stage, setStage] = useState("");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
 
@@ -157,6 +159,15 @@ export default function RecordsPanel() {
     secureApi<{ imports: ImportRow[] }>("W8r2T5yN1cF6", { imports: true }).then((value) => { if (active) setImports(value.imports); }).catch(() => undefined);
     return () => { active = false; };
   }, []);
+
+  // Counts per stage for the chosen service (the row above its list).
+  useEffect(() => {
+    if (!service) return;
+    let active = true;
+    secureApi<{ total: number; counts: Record<string, number> }>("W8r2T5yN1cF6", { view: "stages", service })
+      .then((value) => { if (active) setStages({ service, ...value }); }).catch(() => undefined);
+    return () => { active = false; };
+  }, [service]);
 
   async function upload(event: FormEvent) {
     event.preventDefault(); if (!file) return;
@@ -191,7 +202,7 @@ export default function RecordsPanel() {
 
   const names = data?.services ?? {};
   return <section className="admin-queue records">
-    <h2><Database size={17}/> Customer records {data ? <span>{data.totals.people.toLocaleString("en-IN")}</span> : null}</h2>
+    <h2><Database size={17}/> Master records {data ? <span>{data.totals.people.toLocaleString("en-IN")}</span> : null}</h2>
     <p className="admin-lead">🔒 Imported registers are encrypted in the database. Portal passwords and user IDs in the sheets are never imported, Aadhaar numbers stay masked, and the uploaded file is deleted after import. Every time someone opens a person’s records it shows in the Inbox.</p>
 
     <ClaimsQueue/>
@@ -220,7 +231,11 @@ export default function RecordsPanel() {
         onClick={() => { setService(item.service); setPage(0); void load({ service: item.service, page: 0 }); }}><span>{names[item.service] ?? item.service}</span><b>{item.total.toLocaleString("en-IN")}</b></button>)}
     </div>
     <div className="records-main">
-    {service && <RecordsServiceBrowser service={service} label={names[service] ?? service} onOpen={(key) => void openPerson({ key } as Person)}/>}
+    {service && stages?.service === service && <div className="stage-row" role="group" aria-label="Filter by stage">
+      <button type="button" className={`stage-chip${stage === "" ? " is-on" : ""}`} onClick={() => setStage("")}><b>{stages.total.toLocaleString("en-IN")}</b> All</button>
+      {RECORD_STATUS_KEYS.map((key) => <button key={key} type="button" className={`stage-chip stage-chip--${key}${stage === key ? " is-on" : ""}`} onClick={() => setStage(key)}><b>{(stages.counts[key] ?? 0).toLocaleString("en-IN")}</b>{RECORD_STATUSES[key]}</button>)}
+    </div>}
+    {service && <RecordsServiceBrowser key={`${service}|${stage}`} service={service} initialStatus={stage} label={names[service] ?? service} onOpen={(key) => void openPerson({ key } as Person)}/>}
     {!service && <>
     <form className="promo-admin__bar" role="search" onSubmit={(event) => { event.preventDefault(); setPage(0); void load({ page: 0 }); }}>
       <label className="input-wrap"><Search size={16}/><input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Name, mobile, WhatsApp, email, PAN, Aadhaar or last 4 digits" aria-label="Search customers"/></label>
@@ -241,7 +256,7 @@ export default function RecordsPanel() {
       <div className="person-row__actions">
         {person.mobile && <a className="icon-btn" href={`tel:${person.mobile}`} aria-label={`Call ${person.name}`}><Phone size={16}/></a>}
         {(person.whatsapp ?? person.mobile) && <button type="button" className="icon-btn" onClick={() => void openWhatsApp(person)} aria-label={`WhatsApp ${person.name}`}><WhatsAppIcon size={16}/></button>}
-        <button type="button" className="btn btn--ghost btn--sm" disabled={busy === person.key} onClick={() => void openPerson(person)}><Eye size={14}/>Open</button>
+        <button type="button" className="btn btn--ghost btn--sm" disabled={busy === person.key} onClick={() => void openPerson(person)}><Eye size={14}/>{busy === person.key ? "Opening…" : "Open"}</button>
       </div>
     </article>)}</div>
     {data && !data.people.length && <p className="admin-empty">{data.totals.records ? "Nobody matches." : "No registers imported yet. Upload your PAN, insurance or certificate Excel files above."}</p>}
@@ -256,6 +271,7 @@ export default function RecordsPanel() {
     </>}
     </div>
     </div>}
+    {busy && busy !== "import" && <div className="loading-toast" role="status" aria-live="polite"><Loader2 size={16} className="spin" aria-hidden="true"/> Opening records… this is logged in the Inbox</div>}
     {detail && createPortal(<div className="record-sheet" role="dialog" aria-modal="true" aria-label={`Records of ${detail.name}`} onMouseDown={(event) => { if (event.target === event.currentTarget) setDetail(null); }}>
       <div className="record-sheet__panel">
         <div className="record-sheet__head"><div><small>Customer records</small><h3>{detail.name}</h3></div><span className="repeat-badge">{detail.records.length} record{detail.records.length === 1 ? "" : "s"}</span><CopyButton text={recordSheetText(detail.name, detail.records, names)} label="Copy all" withText/><button type="button" className="record-sheet__close" onClick={() => setDetail(null)} aria-label="Close"><X size={18}/> Close</button></div>
