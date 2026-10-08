@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import RecordsServiceBrowser from "@/components/records-service-browser";
 import ClaimsQueue from "@/components/claims-queue";
 import { RECORD_STATUSES, RECORD_STATUS_KEYS } from "@/lib/record-status";
-import { Check, ChevronLeft, ChevronRight, Copy, Database, Eye, Loader2, Phone, Search, Upload, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, Database, Eye, Phone, Search, Upload, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
 import { recordsClient } from "@/lib/records-client";
