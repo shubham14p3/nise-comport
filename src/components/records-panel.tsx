@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, Database, Eye, Phone, Search, Upload, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
@@ -40,6 +41,14 @@ export default function RecordsPanel() {
     try { setData(await secureApi<Listing>("W8r2T5yN1cF6", params)); setError(""); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load records."); }
   }
+
+  // Escape closes the record panel.
+  useEffect(() => {
+    if (!detail) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setDetail(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [detail]);
 
   useEffect(() => {
     let active = true;
@@ -141,9 +150,9 @@ export default function RecordsPanel() {
 
     {imports.length > 0 && <div className="pan-import-history"><b>Recent imports</b>{imports.map((row) => <span key={row.id}>{new Date(row.createdAt).toLocaleDateString("en-IN")} · {row.fileName} · {row.imported} added · {row.duplicates} already there · {row.contactsAdded} contacts</span>)}</div>}
 
-    {detail && <div className="record-sheet" role="dialog" aria-label={`Records of ${detail.name}`}>
+    {detail && createPortal(<div className="record-sheet" role="dialog" aria-modal="true" aria-label={`Records of ${detail.name}`} onMouseDown={(event) => { if (event.target === event.currentTarget) setDetail(null); }}>
       <div className="record-sheet__panel">
-        <div className="promo-editor__head"><h3>{detail.name} <span className="repeat-badge">{detail.records.length}×</span></h3><button type="button" className="icon-btn" onClick={() => setDetail(null)} aria-label="Close"><X size={18}/></button></div>
+        <div className="record-sheet__head"><div><small>Customer records</small><h3>{detail.name}</h3></div><span className="repeat-badge">{detail.records.length} record{detail.records.length === 1 ? "" : "s"}</span><button type="button" className="record-sheet__close" onClick={() => setDetail(null)} aria-label="Close"><X size={18}/> Close</button></div>
         <p className="field__hint"><Eye size={12}/> This view was logged in the Inbox.</p>
         {detail.records.map((record) => <article key={record.id} className="record-card">
           <header><b>{names[record.service] ?? record.service}</b><small>{day(record.recordDate)}{record.renewalOn ? ` · renewal ${day(record.renewalOn)}` : ""} · {record.source}</small></header>
@@ -159,6 +168,6 @@ export default function RecordsPanel() {
           </dl>
         </article>)}
       </div>
-    </div>}
+    </div>, document.body)}
   </section>;
 }
