@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     await requirePermission("campaigns");
     const params = request.nextUrl.searchParams;
-    return NextResponse.json(await listContacts({ q: params.get("q") ?? "", consent: params.get("consent") ?? "" }), { headers: { "cache-control": "private, no-store" } });
+    return NextResponse.json(await listContacts({ q: params.get("q") ?? "", consent: params.get("consent") ?? "", page: Number(params.get("page") ?? 0) || 0 }), { headers: { "cache-control": "private, no-store" } });
   } catch (error) { return apiError(error); }
 }
 

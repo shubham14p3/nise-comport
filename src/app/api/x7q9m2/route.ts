@@ -135,7 +135,8 @@ function targetFor(operation: string, input: Record<string, unknown>) {
     case "D4q8M2wS7kF1": {
       const q = stringValue(input, "q", 80);
       const consent = stringValue(input, "consent", 20);
-      return { method: "GET", path: `/api/admin/contacts?q=${encodeURIComponent(q)}&consent=${encodeURIComponent(consent)}` };
+      const page = typeof input.page === "number" ? Math.max(0, Math.floor(input.page)) : 0;
+      return { method: "GET", path: `/api/admin/contacts?q=${encodeURIComponent(q)}&consent=${encodeURIComponent(consent)}&page=${page}` };
     }
     case "B6r1K8mQ3cT9": {
       const id = stringValue(input, "id", 80);

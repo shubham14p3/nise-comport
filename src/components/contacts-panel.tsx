@@ -6,7 +6,7 @@ import { CAMPAIGN_SERVICES, serviceTitle } from "@/lib/campaign-text";
 import { secureApi } from "@/lib/secure-api-client";
 
 type Row = { id: string; name: string; phone: string; locale: string; area: string | null; services: { service: string; renewalOn?: string | null; note?: string | null }[]; consent: string; lastMessagedAt: string | null; source: string | null };
-type Listing = { contacts: Row[]; totals: Record<string, number> };
+type Listing = { contacts: Row[]; totals: Record<string, number>; matching: number; page: number; pageSize: number };
 const CONSENT: Record<string, { label: string; className: string }> = {
   unknown: { label: "Not asked yet", className: "status-pill" },
   opted_in: { label: "Said YES", className: "status-pill status-pill--done" },
@@ -24,8 +24,9 @@ export default function ContactsPanel() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
-  async function load(nextQ = q, nextConsent = consent) {
-    try { setData(await secureApi<Listing>("D4q8M2wS7kF1", { q: nextQ, consent: nextConsent })); }
+  const [page, setPage] = useState(0);
+  async function load(nextQ = q, nextConsent = consent, nextPage = 0) {
+    try { setData(await secureApi<Listing>("D4q8M2wS7kF1", { q: nextQ, consent: nextConsent, page: nextPage })); setPage(nextPage); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load contacts."); }
   }
   useEffect(() => {
@@ -74,7 +75,13 @@ export default function ContactsPanel() {
         {row.consent !== "opted_out" && <button type="button" className="profile-text-button" disabled={busy === row.id} onClick={() => void setAnswer(row, "opted_out")}><ThumbsDown size={13}/> Said STOP</button>}
       </div>
     </article>)}</div>
-    {data && !data.contacts.length && <p className="admin-empty">No contacts match.</p>}
+    {data && !data.contacts.length && <p className="admin-empty">No contacts match. Import your registers with “Also add mobile numbers to WhatsApp contacts” ticked to fill this list.</p>}
+    {data && data.matching > data.pageSize && <div className="pager">
+      <button type="button" className="btn btn--ghost btn--sm" disabled={page === 0} onClick={() => void load(q, consent, page - 1)}>Previous</button>
+      <span>Page {page + 1} of {Math.ceil(data.matching / data.pageSize)} · {data.matching.toLocaleString("en-IN")} contacts</span>
+      <button type="button" className="btn btn--ghost btn--sm" disabled={(page + 1) * data.pageSize >= data.matching} onClick={() => void load(q, consent, page + 1)}>Next</button>
+    </div>}
+    {data && data.matching <= data.pageSize && data.matching > 0 && <p className="field__hint">{data.matching.toLocaleString("en-IN")} contacts</p>}
     <form className="team-add" onSubmit={add}>
       <h3><UserPlus size={17}/> Add a contact</h3>
       <div className="form-grid form-grid--3">
