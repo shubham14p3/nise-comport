@@ -59,6 +59,19 @@ function devConsoleMail() {
   return process.env.NODE_ENV !== "production" && process.env.MAIL_DEV_CONSOLE !== "0" && (!smtpConfigured() || process.env.MAIL_DEV_CONSOLE === "1");
 }
 
+/** Campaign email: HTML + text, optional inline image, and a one-click unsubscribe header. */
+export async function sendCampaignMail(input: { to: string; subject: string; html: string; text: string; unsubscribeUrl: string; image?: { type: string; data: Buffer } }) {
+  if (devConsoleMail()) { console.info(`[dev campaign mail] to ${input.to}: ${input.subject}`); return; }
+  const extension = input.image?.type === "image/png" ? "png" : input.image?.type === "image/webp" ? "webp" : "jpg";
+  await transporter().sendMail({
+    from: process.env.SMTP_FROM,
+    ...(process.env.SMTP_REPLY_TO ? { replyTo: process.env.SMTP_REPLY_TO } : {}),
+    to: input.to, subject: input.subject, text: input.text, html: input.html,
+    headers: { "List-Unsubscribe": `<${input.unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
+    ...(input.image ? { attachments: [{ filename: `poster.${extension}`, content: input.image.data, cid: "poster", contentType: input.image.type }] } : {}),
+  });
+}
+
 export async function sendMail(mail: Mail) {
   const { text, html } = render(mail);
   if (devConsoleMail()) {

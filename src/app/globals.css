@@ -2143,3 +2143,16 @@ a.site-banner:hover { transform: translateY(-3px); }
 .claims-queue__actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .claims-queue__actions select { flex: 1 1 220px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; font: inherit; }
 .link-records-slot { padding: 16px; }
+
+/* Email campaigns (Contacts tab) */
+.email-campaigns { margin-bottom: 16px; }
+.email-campaigns__form { display: grid; gap: 10px; max-width: 640px; }
+.email-campaigns__form label { display: grid; gap: 4px; font-size: .875rem; }
+.email-campaigns__form input, .email-campaigns__form textarea { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; }
+.email-campaigns__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.email-campaigns__list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 8px; }
+.email-campaigns__list li { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.email-campaigns__list small { color: var(--muted); }
+.email-status { margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); font-size: .75rem; }
+.email-status--done { color: #166534; }
+.email-status--cancelled { color: #991b1b; }

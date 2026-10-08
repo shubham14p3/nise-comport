@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { contacts, customerRecords, recordImports, recordSends } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import { db } from "@/lib/db";
@@ -27,7 +27,7 @@ export async function importRecords(fileName: string, sheets: SheetInput[], acto
   const parsed = parseWorkbook(fileName.replace(/\.(xlsx|xlsm|csv)$/i, ""), sheets);
   const [batch] = await db.insert(recordImports).values({ fileName: fileName.slice(0, 200), uploadedBy: actor.id, sheets: parsed.sheets }).returning({ id: recordImports.id });
   let imported = 0;
-  const people = new Map<string, { name: string; services: Map<string, string | null>; area?: string | null }>();
+  const people = new Map<string, { name: string; services: Map<string, string | null>; area?: string | null; email?: string | null }>();
   for (let offset = 0; offset < parsed.records.length; offset += 400) {
     const values = parsed.records.slice(offset, offset + 400).map((record) => ({
       importId: batch.id, service: record.service, source: record.source.slice(0, 200), name: record.name,
@@ -46,7 +46,8 @@ export async function importRecords(fileName: string, sheets: SheetInput[], acto
       // WhatsApp campaigns go to the WhatsApp number when the sheet has one.
       const phone = record.whatsapp ?? record.mobile;
       if (!phone) continue;
-      const person = people.get(phone) ?? { name: record.name, services: new Map(), area: record.address };
+      const person = people.get(phone) ?? { name: record.name, services: new Map(), area: record.address, email: record.email };
+      if (!person.email && record.email) person.email = record.email;
       const service = CONTACT_SERVICE[record.service];
       if (service) {
         const previous = person.services.get(service);
@@ -65,7 +66,7 @@ export async function importRecords(fileName: string, sheets: SheetInput[], acto
 }
 
 /** Adds imported people to WhatsApp contacts (consent "not asked"). Existing contacts keep their YES/STOP and gain the new services. */
-async function addContacts(people: Map<string, { name: string; services: Map<string, string | null>; area?: string | null }>, fileName: string) {
+async function addContacts(people: Map<string, { name: string; services: Map<string, string | null>; area?: string | null; email?: string | null }>, fileName: string) {
   let added = 0;
   const entries = [...people.entries()];
   for (let offset = 0; offset < entries.length; offset += 300) {
@@ -77,7 +78,7 @@ async function addContacts(people: Map<string, { name: string; services: Map<str
       const fresh = [...person.services.entries()].map(([service, renewalOn]) => ({ service, renewalOn, note: null }));
       const current = known.get(phone);
       if (!current) {
-        const result = await db.insert(contacts).values({ name: person.name.slice(0, 100), phone, services: fresh, area: person.area?.slice(0, 80) || null, source: `import: ${fileName}`.slice(0, 40) }).onConflictDoNothing().returning({ id: contacts.id });
+        const result = await db.insert(contacts).values({ name: person.name.slice(0, 100), phone, services: fresh, area: person.area?.slice(0, 80) || null, email: person.email ?? null, source: `import: ${fileName}`.slice(0, 40) }).onConflictDoNothing().returning({ id: contacts.id });
         added += result.length;
       } else {
         const merged = [...current];
@@ -87,6 +88,7 @@ async function addContacts(people: Map<string, { name: string; services: Map<str
           else if (item.renewalOn && (!merged[index].renewalOn || item.renewalOn > (merged[index].renewalOn ?? ""))) merged[index] = { ...merged[index], renewalOn: item.renewalOn };
         }
         if (merged.length !== current.length || JSON.stringify(merged) !== JSON.stringify(current)) await db.update(contacts).set({ services: merged.slice(0, 12), updatedAt: new Date() }).where(eq(contacts.phone, phone));
+        if (person.email) await db.update(contacts).set({ email: person.email }).where(and(eq(contacts.phone, phone), isNull(contacts.email)));
       }
     }
   }

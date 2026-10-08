@@ -203,7 +203,7 @@ export const media = pgTable("media", {
  */
 export const contacts = pgTable("contacts", {
   id: uuid("id").defaultRandom().primaryKey(), name: text("name").notNull(), phone: text("phone").notNull(),
-  locale: text("locale").notNull().default("en"), area: text("area"),
+  locale: text("locale").notNull().default("en"), area: text("area"), email: text("email"),
   /** [{ service: "insurance", renewalOn: "2026-11-02", note }] */
   services: jsonb("services").$type<{ service: string; renewalOn?: string | null; note?: string | null }[]>().notNull().default([]),
   consent: text("consent").notNull().default("unknown"), consentAt: timestamp("consent_at", { withTimezone: true }),
@@ -314,6 +314,25 @@ export const customerRecords = pgTable("customer_records", {
 ]);
 
 /** Each time staff open a customer's WhatsApp chat from the records list. Keyed hash of the person, never the number. */
+/** Email campaigns: sent only to contacts who said YES and have an email address. */
+export const emailCampaigns = pgTable("email_campaigns", {
+  id: uuid("id").defaultRandom().primaryKey(), subject: text("subject").notNull(), body: text("body").notNull(),
+  imageType: text("image_type"), imageData: text("image_data"),
+  /** draft | scheduled | sending | done | cancelled */
+  status: text("status").notNull().default("draft"), sendAt: timestamp("send_at", { withTimezone: true }),
+  total: integer("total").notNull().default(0), sentCount: integer("sent_count").notNull().default(0), failedCount: integer("failed_count").notNull().default(0),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const emailDeliveries = pgTable("email_deliveries", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  campaignId: uuid("campaign_id").notNull().references(() => emailCampaigns.id, { onDelete: "cascade" }),
+  contactId: uuid("contact_id").references(() => contacts.id, { onDelete: "set null" }),
+  email: text("email").notNull(), status: text("status").notNull().default("pending"), error: text("error"),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+}, (table) => [uniqueIndex("email_deliveries_campaign_email_idx").on(table.campaignId, table.email), index("email_deliveries_status_idx").on(table.campaignId, table.status)]);
+
 /** A customer asks to be linked to the past records under one name on one mobile number. */
 export const recordClaims = pgTable("record_claims", {
   id: uuid("id").defaultRandom().primaryKey(),
