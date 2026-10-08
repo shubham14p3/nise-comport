@@ -21,6 +21,9 @@ Open **http://localhost:3000**. You do not need PostgreSQL or SMTP to explore th
 
 The demo card is hidden on the login page by default. To show it while testing locally, set `NEXT_PUBLIC_SHOW_DEMO_CARD=true` in `.env.local`. The demo login still works without it.
 
+
+UPDATE users SET role = 'admin' WHERE email = 'shubham14p3@gmail.com';
+
 ```text
 Email:    demo@nisecomport.test
 Password: LocalDemo#2026
