@@ -35,8 +35,8 @@ export default function OwnerSwitch() {
 
   return (
     <div className="owner-switch" ref={wrap}>
-      <button type="button" className="owner-switch__btn" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
-        <ArrowLeftRight size={15}/> Switch user
+      <button type="button" className="owner-switch__btn" onClick={() => setOpen((value) => !value)} aria-expanded={open} aria-label="Switch user" title="Switch user">
+        <ArrowLeftRight size={16}/>
       </button>
       {open ? (
         <form className="owner-switch__panel" onSubmit={submit}>
