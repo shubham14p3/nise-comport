@@ -1,5 +1,5 @@
 import { randomInt } from "node:crypto";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { customerRecords, recordClaims, users } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import type { User } from "@/lib/auth";
@@ -100,16 +100,26 @@ export async function decideClaim(id: string, decision: "approve" | "reject", ma
 export async function linkedRecords(userId: string) {
   const claims = await db.select({ mobileHash: recordClaims.mobileHash, matchedName: recordClaims.matchedName }).from(recordClaims)
     .where(and(eq(recordClaims.userId, userId), eq(recordClaims.status, "approved")));
-  const linked = claims.filter((claim) => claim.matchedName);
-  if (!linked.length) return [];
+  // One lookup per distinct person (mobile + name), the same key the records screens use.
+  const people = new Map<string, { mobileHash: string; name: string }>();
+  for (const claim of claims) {
+    if (!claim.matchedName) continue;
+    const name = claim.matchedName.trim().toLowerCase();
+    people.set(`${claim.mobileHash}|${name}`, { mobileHash: claim.mobileHash, name });
+  }
+  if (!people.size) return [];
   type Sealed = { mobile: string | null; whatsapp?: string | null; email?: string | null; address?: string | null; pan: string | null; fields?: Record<string, string> };
-  const rows = [];
-  for (const claim of linked) {
+  const rows: { id: string; service: string; serviceLabel: string; recordDate: string | null; status: string; statusLabel: string; statusNote: string | null; fields: { label: string; value: string }[] }[] = [];
+  const seen = new Set<string>();
+  for (const person of people.values()) {
     const found = await db.select({ id: customerRecords.id, service: customerRecords.service, name: customerRecords.name, recordDate: customerRecords.recordDate,
       status: customerRecords.status, statusNote: customerRecords.statusNote, payloadEnc: customerRecords.payloadEnc })
-      .from(customerRecords).where(and(eq(customerRecords.mobileHash, claim.mobileHash), eq(customerRecords.name, claim.matchedName!)))
+      .from(customerRecords)
+      .where(and(eq(customerRecords.mobileHash, person.mobileHash), isNull(customerRecords.removedAt), sql`lower(trim(${customerRecords.name})) = ${person.name}`))
       .orderBy(desc(customerRecords.recordDate)).limit(300);
     for (const row of found) {
+      if (seen.has(row.id)) continue;
+      seen.add(row.id);
       const data = open<Sealed>(row.payloadEnc);
       rows.push({
         id: row.id, service: row.service, serviceLabel: RECORD_SERVICES[row.service] ?? row.service, recordDate: row.recordDate,
@@ -119,6 +129,6 @@ export async function linkedRecords(userId: string) {
       });
     }
   }
-  return rows;
+  return rows.sort((a, b) => (a.recordDate ?? "") < (b.recordDate ?? "") ? 1 : (a.recordDate ?? "") > (b.recordDate ?? "") ? -1 : 0);
 }
 

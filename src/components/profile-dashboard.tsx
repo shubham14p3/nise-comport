@@ -72,13 +72,18 @@ const rupees = (value: number) => new Intl.NumberFormat("en-IN", { style: "curre
 
 type PastRecord = { id: string; serviceLabel: string; recordDate: string | null; statusLabel: string; statusNote: string | null; fields: { label: string; value: string }[] };
 
-/** Records made before, linked to this account (completed by the centre). */
+/** Records made before, linked to this account (completed by the centre). One card per service, all its records inside. */
 function PastRecordList({ rows }: { rows: PastRecord[] }) {
+  const groups = new Map<string, PastRecord[]>();
+  for (const row of rows) groups.set(row.serviceLabel, [...(groups.get(row.serviceLabel) ?? []), row]);
   return <div className="link-records__list"><h3>Past records linked to your account</h3>
-    <ul className="link-records__items">{rows.map((row) => <li key={row.id}>
-      <b>{row.serviceLabel}</b> <span className="status-pill">{row.statusLabel}</span>
-      <dl>{row.fields.map((field) => <div key={field.label}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl>
-      {row.statusNote ? <p className="link-records__note">{row.statusNote}</p> : null}
+    <ul className="link-records__items">{[...groups.entries()].map(([service, items]) => <li key={service}>
+      <div className="link-records__head"><b>{service}</b><span className="muted">{items.length === 1 ? "1 record" : `${items.length} records`}</span></div>
+      {items.map((row) => <div className="link-records__record" key={row.id}>
+        <span className="status-pill">{row.statusLabel}</span>
+        <dl>{row.fields.map((field) => <div key={field.label}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl>
+        {row.statusNote ? <p className="link-records__note">{row.statusNote}</p> : null}
+      </div>)}
     </li>)}</ul>
   </div>;
 }

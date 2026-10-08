@@ -28,6 +28,12 @@ export default function InboxPanel({ onSeen }: { onSeen?: () => void }) {
   const [category, setCategory] = useState("");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [pageSize, setPageSize] = useState(20);
+  const [page, setPage] = useState(0);
+  const items = data?.items ?? [];
+  const pages = Math.max(1, Math.ceil(items.length / pageSize));
+  const current = Math.min(page, pages - 1);
+  const shown = items.slice(current * pageSize, current * pageSize + pageSize);
 
   async function load(nextCategory = category) {
     try { setData(await secureApi<Inbox>("I5x2N8kQ3wT6", { category: nextCategory })); setError(""); }
@@ -82,11 +88,19 @@ export default function InboxPanel({ onSeen }: { onSeen?: () => void }) {
     </div>}
 
     <h3 className="inbox__feed-title">Activity{category ? ` · ${data?.pending.find((item) => item.category === category)?.label ?? category}` : ""}</h3>
-    <ol className="inbox__feed">{(data?.items ?? []).map((item) => <li key={item.id} className={new Date(item.createdAt).getTime() > seenAt ? "is-new" : undefined}>
+    <ol className="inbox__feed">{shown.map((item) => <li key={item.id} className={new Date(item.createdAt).getTime() > seenAt ? "is-new" : undefined}>
       <span className="inbox__icon" aria-hidden="true">{ICON[item.kind] ?? "•"}</span>
       <div><b>{item.title}</b>{item.detail && <small>{item.detail}</small>}</div>
       <time dateTime={item.createdAt}>{item.kind === "record_view" ? <Eye size={12}/> : item.actor ? <UserRound size={12}/> : null} {ago(item.createdAt)}</time>
     </li>)}</ol>
-    {data && !data.items.length && <p className="admin-empty">Nothing yet. New requests, call-back requests and staff actions appear here.</p>}
+    {items.length > 0 && <div className="inbox__pager">
+      <label>Show <select value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(0); }}>
+        {[10, 20, 50, 100].map((size) => <option key={size} value={size}>{size}</option>)}
+      </select> per page</label>
+      <span>{current * pageSize + 1}–{Math.min(items.length, (current + 1) * pageSize)} of {items.length}</span>
+      <button type="button" className="btn btn--ghost btn--sm" disabled={current === 0} onClick={() => setPage(current - 1)}>Previous</button>
+      <button type="button" className="btn btn--ghost btn--sm" disabled={current >= pages - 1} onClick={() => setPage(current + 1)}>Next</button>
+    </div>}
+    {data && !items.length && <p className="admin-empty">Nothing yet. New requests, call-back requests and staff actions appear here.</p>}
   </section>;
 }

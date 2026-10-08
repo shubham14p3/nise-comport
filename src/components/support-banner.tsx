@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { secureApi } from "@/lib/secure-api-client";
 
 type Status = { active: boolean; targetName?: string; targetEmail?: string; ownerName?: string; expiresAt?: string };
@@ -10,7 +10,6 @@ type Status = { active: boolean; targetName?: string; targetEmail?: string; owne
 export default function SupportBanner() {
   const [status, setStatus] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
-  const router = useRouter();
   const pathname = usePathname();
 
   // Checked on every page change: a switch to a customer is a client-side navigation, so the layout does not remount.
@@ -26,9 +25,17 @@ export default function SupportBanner() {
 
   async function stop() {
     setBusy(true);
-    try { await secureApi("F2n8Vb6tW0xE", {}); } catch { /* the session expires on its own */ }
+    try {
+      // Never wait forever: if the call hangs, still return to the admin account.
+      await Promise.race([
+        secureApi("F2n8Vb6tW0xE", {}),
+        new Promise((resolve) => setTimeout(resolve, 5000)),
+      ]);
+    } catch { /* the session expires on its own */ }
+    finally { setBusy(false); }
     setStatus(null);
-    router.push("/admin"); router.refresh();
+    // Full navigation so no stale state from the customer's account survives the return.
+    window.location.assign("/admin");
   }
 
   const until = status.expiresAt ? new Date(status.expiresAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" }) : "";
