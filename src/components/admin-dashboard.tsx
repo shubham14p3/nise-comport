@@ -1,7 +1,7 @@
 "use client";
 
 import ShowMore, { useShowMore } from "@/components/show-more";
-import { FormEvent, useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { FormEvent, Fragment, useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import SiteHeader from "@/components/site-header";
 import { WhatsAppIcon } from "@/components/icons";
 import PanImportPanel from "@/components/pan-import-panel";
@@ -10,6 +10,7 @@ import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
 import { ArrowRight, Bell, ClipboardList, Contact, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, TicketPercent, UsersRound, WalletCards, Images } from "lucide-react";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
+import { recordsClient } from "@/lib/records-client";
 import PromotionsPanel from "@/components/promotions-panel";
 import CampaignsPanel from "@/components/campaigns-panel";
 import ContactsPanel from "@/components/contacts-panel";
@@ -18,7 +19,6 @@ import InboxPanel from "@/components/inbox-panel";
 import SiteContentPanel from "@/components/site-content-panel";
 import GalleryPanel from "@/components/gallery-panel";
 import RecordsPanel from "@/components/records-panel";
-import RecordsLoading from "@/components/records-loading";
 import EmailCampaignsPanel from "@/components/email-campaigns-panel";
 import type { Permission } from "@/lib/permissions";
 
@@ -201,15 +201,32 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
     return () => { active = false; window.clearInterval(timer); };
   }, []);
   const hash = useSyncExternalStore(subscribeHash, readHash, () => "");
-  const [picked, setPicked] = useState<Tab | null>(null);
-  const [pickedService, setPickedService] = useState("");
-  const hashService = hash.startsWith("records/") ? hash.slice("records/".length) : "";
-  const chosenService = picked ? pickedService : hashService;
+  /** The open area: a tab id, or "svc:<service>" for one record service. */
+  const [picked, setPicked] = useState<string | null>(null);
+  const hashService = hash.startsWith("svc/") ? hash.slice("svc/".length) : "";
   const fromHash = tabs.find((tab) => tab.id === hash.split("/")[0])?.id;
-  const active = picked ?? fromHash ?? tabs[0]?.id;
+  const active = picked ?? (hashService ? `svc:${hashService}` : fromHash) ?? tabs[0]?.id;
+  const activeService = active?.startsWith("svc:") ? active.slice("svc:".length) : "";
   const clearUnread = useCallback(() => setSummary((value) => value ? { ...value, unread: 0 } : value), []);
-  function choose(tab: Tab) { setPicked(tab); setPickedService(""); window.history.replaceState(null, "", `#${tab}`); }
+  function choose(tab: Tab) { setPicked(tab); window.history.replaceState(null, "", `#${tab}`); }
+  function chooseService(service: string) { setPicked(`svc:${service}`); window.history.replaceState(null, "", `#svc/${service}`); }
   const first = me.name.split(/\s+/)[0] || "there";
+  const [services, setServices] = useState<{ service: string; total: number }[]>([]);
+  const [serviceNames, setServiceNames] = useState<Record<string, string>>({});
+  const canRecords = me.role === "admin" || me.permissions.includes("records");
+  useEffect(() => {
+    if (!canRecords) return;
+    let alive = true;
+    recordsClient.services<{ byService: { service: string; total: number }[]; services: Record<string, string> }>()
+      .then((value) => { if (!alive) return; setServices(value.byService.filter((row) => row.total > 0).sort((a, b) => b.total - a.total)); setServiceNames(value.services); })
+      .catch(() => undefined);
+    return () => { alive = false; };
+  }, [canRecords]);
+  /** One sidebar item per record service, each with its count. Shown just before PAN data. */
+  const serviceButtons = canRecords ? services.map((row) => <button key={`svc-${row.service}`} type="button" className={active === `svc:${row.service}` ? "is-active" : undefined} aria-current={active === `svc:${row.service}` ? "page" : undefined} onClick={() => chooseService(row.service)}>
+    <FileText size={19}/><span>{serviceNames[row.service] ?? row.service}</span><small aria-label={`${row.total} records`}>{row.total.toLocaleString("en-IN")}</small>
+  </button>) : [];
+  const servicesBeforePan = tabs.some((tab) => tab.id === "pan");
   const current = tabs.find((tab) => tab.id === active);
   const can = (permission: Permission) => me.role === "admin" || me.permissions.includes(permission);
   return <main className="page page--app profile admin-desk"><SiteHeader/>
@@ -226,11 +243,11 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
     </section>
     <div className="container profile__layout">
       <aside className="profile__nav" aria-label="Admin sections">
-        <nav>{tabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={active === id ? "is-active" : undefined} aria-current={active === id ? "page" : undefined} onClick={() => choose(id)}>
+        <nav>{tabs.map(({ id, label, icon: Icon }) => <Fragment key={id}>{id === "pan" && serviceButtons}<button type="button" className={active === id ? "is-active" : undefined} aria-current={active === id ? "page" : undefined} onClick={() => choose(id)}>
           <Icon size={19}/><span>{label}</span>{id === "inbox" && unread > 0 && <small aria-label={`${unread} new`}>{unread > 99 ? "99+" : unread}</small>}
-        </button>)}</nav>
+        </button></Fragment>)}{!servicesBeforePan && serviceButtons}</nav>
       </aside>
-      <section className="profile__main admin-page" aria-live="polite" aria-label={current?.label}>
+      <section className="profile__main admin-page" aria-live="polite" aria-label={activeService ? serviceNames[activeService] ?? activeService : current?.label}>
         {!tabs.length && <p className="alert alert--info">Your account doesn’t have access to any admin area yet. Ask the owner to add it in Team.</p>}
         {active === "inbox" && summary && <div className="metric-grid">
           {can("requests") && <AdminMetric tone="blue" icon={<ClipboardList size={22}/>} number={summary.waiting} label="Requests waiting" onClick={() => choose("requests")}/>}
@@ -240,7 +257,8 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
         </div>}
         {active === "inbox" && <InboxPanel onSeen={clearUnread}/>}
         {active === "requests" && <RequestQueue/>}
-        {active === "records" && <RecordsPanel key={chosenService || "all"} service={chosenService}/>}
+        {active === "records" && <RecordsPanel key="all" service=""/>}
+        {activeService && <RecordsPanel key={activeService} service={activeService}/>}
         {active === "email" && <EmailCampaignsPanel/>}
         {active === "promotions" && <PromotionsPanel canEdit/>}
         {active === "content" && <SiteContentPanel/>}
@@ -252,7 +270,6 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
         {active === "wallet" && <WalletCreditForm/>}
       </section>
     </div>
-    <RecordsLoading/>
   </main>;
 }
 

@@ -13,50 +13,25 @@ import { RECORD_SERVICES } from "@/lib/record-import";
 const RECORDS_OP = "W8r2T5yN1cF6";
 const STATUS_OP = "S8t3Ra5vM1pY";
 
-type InFlight = { id: number; label: string };
-let inFlight: InFlight[] = [];
-let snapshot: string[] = [];
-let nextId = 1;
-const listeners = new Set<() => void>();
 const cache = new Map<string, unknown>();
 const running = new Map<string, Promise<unknown>>();
 
-function publish() {
-  snapshot = inFlight.map((item) => item.label);
-  listeners.forEach((listener) => listener());
-}
-
-async function call<T>(label: string, op: string, params: Record<string, unknown>, cacheKey?: string): Promise<T> {
+/** Labels go to the shared loader (api-loading), so the screen shows what is being fetched. */
+function call<T>(label: string, op: string, params: Record<string, unknown>, cacheKey?: string): Promise<T> {
   if (cacheKey) {
-    if (cache.has(cacheKey)) return cache.get(cacheKey) as T;
+    if (cache.has(cacheKey)) return Promise.resolve(cache.get(cacheKey) as T);
     const sharing = running.get(cacheKey);
     if (sharing) return sharing as Promise<T>;
   }
-  const id = nextId++;
-  inFlight = [...inFlight, { id, label }];
-  publish();
-  const request = secureApi<T>(op, params)
+  const request = secureApi<T>(op, params, label)
     .then((value) => { if (cacheKey) cache.set(cacheKey, value); return value; })
-    .finally(() => {
-      inFlight = inFlight.filter((item) => item.id !== id);
-      if (cacheKey) running.delete(cacheKey);
-      publish();
-    });
+    .finally(() => { if (cacheKey) running.delete(cacheKey); });
   if (cacheKey) running.set(cacheKey, request);
   return request;
 }
 
 function dropCache(prefix: string) {
   for (const key of [...cache.keys()]) if (key.startsWith(prefix)) cache.delete(key);
-}
-
-/** For useSyncExternalStore: the labels of requests in flight, in the order they started. */
-export function subscribeRecordsLoading(listener: () => void) {
-  listeners.add(listener);
-  return () => { listeners.delete(listener); };
-}
-export function getRecordsLoading(): string[] {
-  return snapshot;
 }
 
 export const recordsClient = {

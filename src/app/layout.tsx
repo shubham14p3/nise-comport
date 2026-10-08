@@ -8,6 +8,7 @@ import OffersProvider from "@/components/offers-provider";
 import SiteFooter from "@/components/site-footer";
 import { getLivePromos } from "@/lib/promotions";
 import { site } from "@/lib/site";
+import ApiLoading from "@/components/api-loading";
 import { graph, localBusinessLd, organizationLd, websiteLd } from "@/lib/structured-data";
 import { publishedServiceDetails, serviceSeoTitle } from "@/lib/services";
 import { allServices } from "@/lib/site-content";
@@ -68,6 +69,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <SupportBanner/>
         <SiteBanners placement="strip"/>
         <div id="main-content">{children}</div>
+        <ApiLoading/>
         <SiteFooter/>
         <MobileDock/>
         <ChatWidget whatsapp={site.whatsapp.primary} phone={site.phones.primary.e164} mapsUrl={site.mapsUrl} hours={site.openingHours} services={chatServices}/>

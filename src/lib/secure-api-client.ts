@@ -1,5 +1,7 @@
 "use client";
 
+import { trackApi } from "@/lib/api-loading";
+
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const ROUTE = "/api/x7q9m2";
@@ -106,7 +108,12 @@ async function decryptJsonResponse<T>(response: Response, responseKey: CryptoKey
   return { status: Number(wrapped.z), data: wrapped.d as T };
 }
 
-export async function secureApi<T>(operation: string, input: unknown = {}): Promise<T> {
+/** Every encrypted call shows a loading line while it runs. Pass a label to say what is loading. */
+export function secureApi<T>(operation: string, input: unknown = {}, label = "Loading…"): Promise<T> {
+  return trackApi(label, secureApiRaw<T>(operation, input));
+}
+
+async function secureApiRaw<T>(operation: string, input: unknown = {}): Promise<T> {
   const ctx = await prepare();
   const clear = encoder.encode(JSON.stringify({ o: operation, i: input }));
   const ciphertext = await crypto.subtle.encrypt(
@@ -138,7 +145,11 @@ export async function secureResult<T>(operation: string, input: unknown = {}) {
   }
 }
 
-export async function secureUpload<T>(operation: string, file: File, input: Record<string, unknown> = {}): Promise<T> {
+export function secureUpload<T>(operation: string, file: File, input: Record<string, unknown> = {}): Promise<T> {
+  return trackApi("Uploading…", secureUploadRaw<T>(operation, file, input));
+}
+
+async function secureUploadRaw<T>(operation: string, file: File, input: Record<string, unknown> = {}): Promise<T> {
   const ctx = await prepare();
   const metadata = encoder.encode(JSON.stringify({ o: operation, i: { ...input, n: file.name, t: file.type } }));
   const fileBytes = new Uint8Array(await file.arrayBuffer());
@@ -169,7 +180,11 @@ export async function secureUpload<T>(operation: string, file: File, input: Reco
   return opened.data;
 }
 
-export async function secureFile(operation: string, input: unknown = {}) {
+export function secureFile(operation: string, input: unknown = {}) {
+  return trackApi("Loading file…", secureFileRaw(operation, input));
+}
+
+async function secureFileRaw(operation: string, input: unknown = {}) {
   const ctx = await prepare();
   const clear = encoder.encode(JSON.stringify({ o: operation, i: input }));
   const ciphertext = await crypto.subtle.encrypt(

@@ -2,11 +2,11 @@
 
 import { useSyncExternalStore } from "react";
 import { Loader2 } from "lucide-react";
-import { getRecordsLoading, subscribeRecordsLoading } from "@/lib/records-client";
+import { getApiLoading, subscribeApiLoading } from "@/lib/api-loading";
 
-/** Shows which records request is running right now (bottom of the screen). Nothing when idle. */
-export default function RecordsLoading() {
-  const labels = useSyncExternalStore(subscribeRecordsLoading, getRecordsLoading, () => [] as string[]);
+/** Shows the latest server call that is running (bottom of the screen). Nothing when idle. */
+export default function ApiLoading() {
+  const labels = useSyncExternalStore(subscribeApiLoading, getApiLoading, () => [] as string[]);
   if (!labels.length) return null;
   const latest = labels[labels.length - 1];
   return <div className="loading-toast" role="status" aria-live="polite">
