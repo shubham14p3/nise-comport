@@ -5,6 +5,7 @@ import ProfileDashboard from "@/components/profile-dashboard";
 import DemoProfile from "@/components/demo-profile";
 import { getCurrentUser } from "@/lib/auth";
 import { isStaffRole } from "@/lib/permissions";
+import LinkRecords from "@/components/link-records";
 
 export const metadata: Metadata = { title: "Customer profile", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
@@ -20,6 +21,7 @@ export default async function ProfilePage() {
       {isStaffRole(user.role) ? (
         <div className="admin-entry"><Link className="btn btn--ghost" href="/admin">Open admin dashboard</Link></div>
       ) : null}
+      <div className="link-records-slot"><LinkRecords/></div>
       <ProfileDashboard/>
     </>
   );

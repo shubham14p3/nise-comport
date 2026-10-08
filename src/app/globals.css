@@ -2124,3 +2124,22 @@ a.site-banner:hover { transform: translateY(-3px); }
 .svc-status--waiting_documents { color: #92400e; border-color: #fde68a; }
 .record-status { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; font-size: .8125rem; }
 .record-status select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+
+/* Link past records (customer profile) */
+.link-records__form { display: grid; gap: 10px; max-width: 480px; }
+.link-records__form label { display: grid; gap: 4px; font-size: .875rem; }
+.link-records__form input, .link-records__form select { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font: inherit; }
+.link-records__error { color: #9b1c1c; }
+.link-records__result { margin-top: 12px; padding: 12px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); }
+.link-records__list ul { padding-left: 18px; }
+
+/* Staff claims queue */
+.claims-queue { margin-bottom: 16px; }
+.claims-queue h3 span { margin-left: 6px; padding: 2px 8px; border-radius: 999px; background: var(--bg); font-size: .8125rem; }
+.claims-queue__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.claims-queue__item { display: grid; gap: 6px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.claims-queue__item small { color: var(--muted); }
+.claims-queue__late { margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: #fee2e2; color: #991b1b; font-size: .75rem; }
+.claims-queue__actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.claims-queue__actions select { flex: 1 1 220px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; font: inherit; }
+.link-records-slot { padding: 16px; }

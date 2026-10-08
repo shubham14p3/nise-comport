@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import RecordsServiceBrowser from "@/components/records-service-browser";
+import ClaimsQueue from "@/components/claims-queue";
 import { RECORD_STATUSES } from "@/lib/record-status";
 import { ChevronLeft, ChevronRight, Database, Eye, Phone, Search, Upload, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
@@ -146,6 +147,7 @@ export default function RecordsPanel() {
     <h2><Database size={17}/> Customer records {data ? <span>{data.totals.people.toLocaleString("en-IN")}</span> : null}</h2>
     <p className="admin-lead">🔒 Imported registers are encrypted in the database. Portal passwords and user IDs in the sheets are never imported, Aadhaar numbers stay masked, and the uploaded file is deleted after import. Every time someone opens a person’s records it shows in the Inbox.</p>
 
+    <ClaimsQueue/>
     <form className="records-import" onSubmit={upload}>
       <label className="records-import__file"><Upload size={16}/><input type="file" accept=".xlsx,.csv" onChange={(event) => setFile(event.target.files?.[0] ?? null)}/><span>{file?.name ?? "Choose an Excel register (.xlsx), all sheets are read"}</span></label>
       <label className="check"><input type="checkbox" checked={addContacts} onChange={(event) => setAddContacts(event.target.checked)}/> Also add mobile numbers to WhatsApp contacts (as “not asked yet”)</label>

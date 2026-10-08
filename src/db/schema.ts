@@ -314,6 +314,24 @@ export const customerRecords = pgTable("customer_records", {
 ]);
 
 /** Each time staff open a customer's WhatsApp chat from the records list. Keyed hash of the person, never the number. */
+/** A customer asks to be linked to the past records under one name on one mobile number. */
+export const recordClaims = pgTable("record_claims", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  /** The mobile number's blind index (the same key the records list uses for that phone). */
+  mobileHash: text("mobile_hash").notNull(),
+  /** The exact name on the records this account is linked to. Null until it is matched. */
+  matchedName: text("matched_name"),
+  claimedName: text("claimed_name").notNull(),
+  method: text("method").notNull(),
+  /** Six-digit code the customer sends from this number on WhatsApp (manual check). */
+  whatsappCode: text("whatsapp_code"),
+  status: text("status").notNull().default("pending"),
+  decidedBy: uuid("decided_by").references(() => users.id, { onDelete: "set null" }),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const recordSends = pgTable("record_sends", {
   id: uuid("id").defaultRandom().primaryKey(),
   personKey: text("person_key").notNull(),
