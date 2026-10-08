@@ -2091,7 +2091,7 @@ a.site-banner:hover { transform: translateY(-3px); }
 
 /* Records: service browser (left column services, accordions by year and month) */
 .records-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 16px; align-items: start; }
-.records-layout > .records-services { display: grid; gap: 4px; position: sticky; top: 90px; }
+.records-layout > .records-services { display: grid; gap: 4px; position: sticky; top: 90px; max-height: calc(100vh - 110px); overflow-y: auto; padding-right: 2px; }
 .records-layout > .records-services button { display: flex; justify-content: space-between; gap: 8px; width: 100%; text-align: left; }
 .svc-browser__total { margin: 0 0 8px; color: var(--muted); font-size: .875rem; }
 .svc-year, .svc-month { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); margin-bottom: 8px; overflow: hidden; }
@@ -2108,7 +2108,7 @@ a.site-banner:hover { transform: translateY(-3px); }
 .svc-row__pan { font-family: ui-monospace, monospace; }
 @media (max-width: 760px) {
   .records-layout { grid-template-columns: minmax(0, 1fr); }
-  .records-layout > .records-services { position: static; display: flex; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
+  .records-layout > .records-services { position: static; display: flex; overflow-x: auto; gap: 6px; padding-bottom: 4px; max-height: none; }
   .records-layout > .records-services button { width: auto; flex: 0 0 auto; white-space: nowrap; }
   .svc-row { grid-template-columns: minmax(0, 1fr); }
 }
