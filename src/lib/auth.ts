@@ -31,7 +31,7 @@ export const DEMO_LOGIN = { email: "demo@nisecomport.test", password: "LocalDemo
 const demoUser: User = {
   id: "00000000-0000-4000-8000-000000000001", name: "Demo Customer", firstName: "Demo", lastName: "Customer", email: DEMO_LOGIN.email, phone: null, passwordHash: "", emailVerifiedAt: new Date(0),
   city: null, state: null, postalCode: null, profileSummary: null, preferredContact: "email", role: "demo", createdAt: new Date(0), updatedAt: new Date(0),
-  passwordChangedAt: null, disabledAt: null, deletedAt: null, permissions: [], whatsapp: null, inboxSeenAt: null,
+  passwordChangedAt: null, disabledAt: null, deletedAt: null, permissions: [], whatsapp: null, inboxSeenAt: null, fromRecords: false,
 };
 
 const hashToken = (value: string) => createHash("sha256").update(value).digest("hex");
