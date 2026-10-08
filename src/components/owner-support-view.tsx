@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { secureApi } from "@/lib/secure-api-client";
 
 /** Owner only. Opens a customer's account for 30 minutes to help with a problem. */
@@ -8,6 +9,7 @@ export default function OwnerSupportView() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const router = useRouter();
 
   async function open(event: React.FormEvent) {
     event.preventDefault();
@@ -15,7 +17,7 @@ export default function OwnerSupportView() {
     setBusy(true);
     try {
       await secureApi("H5w2Zc8nR3vK", { email: email.trim() });
-      window.location.assign("/profile");
+      router.push("/profile"); router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not open that account.");
       setBusy(false);

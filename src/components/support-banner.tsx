@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { secureApi } from "@/lib/secure-api-client";
 
 type Status = { active: boolean; targetName?: string; targetEmail?: string; ownerName?: string; expiresAt?: string };
@@ -9,6 +10,7 @@ type Status = { active: boolean; targetName?: string; targetEmail?: string; owne
 export default function SupportBanner() {
   const [status, setStatus] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     // The hint cookie is set only during a support view, so normal visitors make no extra request.
@@ -23,7 +25,7 @@ export default function SupportBanner() {
   async function stop() {
     setBusy(true);
     try { await secureApi("F2n8Vb6tW0xE", {}); } catch { /* the session expires on its own */ }
-    window.location.assign("/admin");
+    router.push("/admin"); router.refresh();
   }
 
   const until = status.expiresAt ? new Date(status.expiresAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" }) : "";
