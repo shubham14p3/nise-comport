@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { aadhaarFrom, cellText, dateFrom, maskAadhaar, maskPan, mobileFrom, parseWorkbook } from "../src/lib/record-import.ts";
+import { aadhaarFrom, cellText, dateFrom, identityBase, identityKeys, maskAadhaar, maskPan, mobileFrom, parseWorkbook } from "../src/lib/record-import.ts";
 import { findGuide, findVariant, HELP_GUIDES } from "../src/lib/help-docs.ts";
 import { blindIndex, open, seal } from "../src/lib/vault.ts";
 
@@ -106,3 +106,17 @@ test("sparse Excel rows with empty header cells don't crash the parser", () => {
   assert.equal(parsed.records.length, 1);
   assert.equal(parsed.records[0].name, "Ravi Kumar");
 });
+
+test("an edited row keeps the same identity, and two rows for one person and date get separate keys", () => {
+  const first = { service: "pan", name: "Ravi Kumar", mobile: "+919876543210", pan: null, aadhaar: null, recordDate: "2025-01-02" };
+  const edited = { ...first, name: "  ravi kumar " };
+  assert.equal(identityBase(first), identityBase(edited));
+  const other = { ...first, recordDate: "2025-01-03" };
+  assert.notEqual(identityBase(first), identityBase(other));
+  const [a, b, c] = identityKeys([identityBase(first), identityBase(edited), identityBase(other)]);
+  assert.notEqual(a, b);
+  assert.equal(a.endsWith("#1"), true);
+  assert.equal(b.endsWith("#2"), true);
+  assert.equal(c.endsWith("#1"), true);
+});
+

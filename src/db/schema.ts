@@ -279,6 +279,7 @@ export const recordImports = pgTable("record_imports", {
   uploadedBy: uuid("uploaded_by").references(() => users.id, { onDelete: "set null" }),
   sheets: jsonb("sheets").notNull().default([]), totalRows: integer("total_rows").notNull().default(0),
   imported: integer("imported").notNull().default(0), duplicates: integer("duplicates").notNull().default(0),
+  updated: integer("updated").notNull().default(0), removed: integer("removed").notNull().default(0),
   skipped: integer("skipped").notNull().default(0), contactsAdded: integer("contacts_added").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -301,9 +302,14 @@ export const customerRecords = pgTable("customer_records", {
   /** Where the customer's work stands. Every change is written to the activity log. */
   status: text("status").notNull().default("open"), statusAt: timestamp("status_at", { withTimezone: true }),
   payloadEnc: text("payload_enc").notNull(), rowHash: text("row_hash").notNull(),
+  /** Keyed hash of who the row is about (see identityBase). Re-imports update the row with the same identity. */
+  identityHash: text("identity_hash"),
+  /** Set when the row is no longer in the register it came from. Rows are never deleted by an import. */
+  removedAt: timestamp("removed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex("customer_records_row_hash_unique").on(table.rowHash),
+  index("customer_records_identity_idx").on(table.identityHash),
   index("customer_records_mobile_idx").on(table.mobileHash),
   index("customer_records_pan_idx").on(table.panHash),
   index("customer_records_service_idx").on(table.service),

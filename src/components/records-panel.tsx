@@ -13,9 +13,9 @@ type Person = { key: string; name: string; mobile: string | null; whatsapp: stri
 type SendSummary = { sentCount: number; lastSentAt: string | null; recentSends: string[] };
 type Listing = { people: Person[]; totals: { people: number; records: number; repeat: number }; byService: { service: string; total: number }[]; services: Record<string, string> };
 type SheetReport = { sheet: string; service: string | null; rows: number; records: number; skipped: number; reason?: string; droppedColumns?: string[] };
-type ImportResult = { imported: number; duplicates: number; skipped: number; contactsAdded: number; totalRows: number; sheets: SheetReport[] };
+type ImportResult = { imported: number; duplicates: number; updated: number; removed: number; removalHeld: number; skipped: number; contactsAdded: number; totalRows: number; sheets: SheetReport[] };
 type ImportRow = { id: string; fileName: string; imported: number; duplicates: number; contactsAdded: number; createdAt: string };
-type Detail = { name: string; records: { id: string; status: string; service: string; source: string; recordDate: string | null; renewalOn: string | null; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; panMasked: string | null; hasPan: boolean; aadhaarMasked: string | null; fields: Record<string, string> }[] };
+type Detail = { name: string; records: { id: string; removedAt: string | null; status: string; service: string; source: string; recordDate: string | null; renewalOn: string | null; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; panMasked: string | null; hasPan: boolean; aadhaarMasked: string | null; fields: Record<string, string> }[] };
 
 const day = (iso: string | null) => iso ? new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "—";
 const pretty = (phone: string) => phone.replace(/^\+91(\d{5})(\d{5})$/, "+91 $1 $2");
@@ -201,7 +201,7 @@ export default function RecordsPanel() {
       <button className="btn btn--primary" disabled={!file || busy === "import"}>{busy === "import" ? "Importing… (big files take a minute)" : "Import"}<Upload size={16}/></button>
     </form>
     {result && <div className="alert alert--success" role="status">
-      <b>{result.imported.toLocaleString("en-IN")} new records</b> · {result.duplicates.toLocaleString("en-IN")} were already there · {result.contactsAdded.toLocaleString("en-IN")} new WhatsApp contacts
+      <b>{result.imported.toLocaleString("en-IN")} new records</b> · {result.duplicates.toLocaleString("en-IN")} unchanged · {result.updated.toLocaleString("en-IN")} updated · {result.removed.toLocaleString("en-IN")} no longer in the register{result.removalHeld ? <> · <b>{result.removalHeld.toLocaleString("en-IN")} not marked: the file is much smaller than the register, check it</b></> : null} · {result.contactsAdded.toLocaleString("en-IN")} new WhatsApp contacts
       <table className="records-report"><thead><tr><th>Sheet</th><th>Read as</th><th>Records</th><th>Skipped</th><th>Note</th></tr></thead><tbody>
         {result.sheets.map((sheet) => <tr key={sheet.sheet}><td>{sheet.sheet}</td><td>{sheet.service ? names[sheet.service] ?? sheet.service : "—"}</td><td>{sheet.records}</td><td>{sheet.skipped}</td>
           <td>{sheet.reason ?? (sheet.skipped ? "Rows without a name, or without mobile/PAN/Aadhaar" : "")}{sheet.droppedColumns?.length ? ` Not imported: ${sheet.droppedColumns.join(", ")}.` : ""}</td></tr>)}
@@ -261,7 +261,7 @@ export default function RecordsPanel() {
         <div className="record-sheet__head"><div><small>Customer records</small><h3>{detail.name}</h3></div><span className="repeat-badge">{detail.records.length} record{detail.records.length === 1 ? "" : "s"}</span><CopyButton text={recordSheetText(detail.name, detail.records, names)} label="Copy all" withText/><button type="button" className="record-sheet__close" onClick={() => setDetail(null)} aria-label="Close"><X size={18}/> Close</button></div>
         <p className="field__hint"><Eye size={12}/> This view was logged in the Inbox.</p>
         {detail.records.map((record) => <article key={record.id} className="record-card">
-          <header><b>{names[record.service] ?? record.service}</b><small>{day(record.recordDate)}{record.renewalOn ? ` · renewal ${day(record.renewalOn)}` : ""} · {record.source}</small></header>
+          <header><b>{names[record.service] ?? record.service}</b>{record.removedAt ? <span className="repeat-badge">No longer in the register</span> : null}<small>{day(record.recordDate)}{record.renewalOn ? ` · renewal ${day(record.renewalOn)}` : ""} · {record.source}</small></header>
           <RecordStatus recordId={record.id} status={record.status} onSaved={(next) => setDetail((current) => current && { ...current, records: current.records.map((item) => item.id === record.id ? { ...item, status: next } : item) })}/>
           <dl>
             {record.mobile && <><dt>Mobile</dt><dd><a href={`tel:${record.mobile}`}>{pretty(record.mobile)}</a><CopyButton text={pretty(record.mobile)} label="Copy mobile"/></dd></>}

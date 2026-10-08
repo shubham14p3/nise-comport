@@ -3,7 +3,7 @@ import { contacts, customerRecords, recordImports, recordSends } from "@/db/sche
 import { logActivity } from "@/lib/activity";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
-import { maskAadhaar, maskPan, parseWorkbook, RECORD_SERVICES, type SheetInput } from "@/lib/record-import";
+import { identityBase, identityKeys, maskAadhaar, maskPan, parseWorkbook, RECORD_SERVICES, type ParsedRecord, type SheetInput } from "@/lib/record-import";
 import { normalizePhone } from "@/lib/validation";
 import { RECORD_STATUSES, RECORD_STATUS_KEYS } from "@/lib/record-status";
 import { blindIndex, open, seal } from "@/lib/vault";
@@ -32,50 +32,114 @@ const CONTACT_SERVICE: Record<string, string> = {
   "ews-certificate": "income-caste", "residence-certificate": "residence",
 };
 
+/** The stored values for one register row. */
+function rowValues(record: ParsedRecord, importId: string, identity: string) {
+  return {
+    importId, identityHash: identity, service: record.service, source: record.source.slice(0, 200), name: record.name,
+    mobileHash: record.mobile ? blindIndex("mobile", record.mobile) : null,
+    mobileEnc: record.mobile ? seal(record.mobile) : null, mobileLast4: record.mobile ? record.mobile.slice(-4) : null,
+    panHash: record.pan ? blindIndex("pan", record.pan) : null, aadhaarHash: record.aadhaar ? blindIndex("aadhaar", record.aadhaar) : null,
+    recordDate: record.recordDate, renewalOn: record.renewalOn,
+    phoneHashes: [...new Set([record.mobile, record.whatsapp, ...record.altMobiles].filter((value): value is string => Boolean(value)))].map((value) => blindIndex("mobile", value)),
+    emailHash: record.email ? blindIndex("email", record.email) : null,
+    contactEnc: record.whatsapp || record.altMobiles.length || record.email || record.address ? seal({ whatsapp: record.whatsapp, altMobiles: record.altMobiles, email: record.email, address: record.address } satisfies ContactInfo) : null,
+    payloadEnc: seal({ mobile: record.mobile, pan: record.pan, aadhaar: record.aadhaar, whatsapp: record.whatsapp, altMobiles: record.altMobiles, email: record.email, address: record.address, fields: record.fields } satisfies Sealed),
+    rowHash: blindIndex("row", record.dedupeKey),
+  };
+}
+
+/** Rows imported before identities existed get one now, from their stored values. After the first run there is nothing to do. */
+async function backfillIdentities() {
+  const legacy = await db.select({ id: customerRecords.id, service: customerRecords.service, name: customerRecords.name, recordDate: customerRecords.recordDate, payloadEnc: customerRecords.payloadEnc })
+    .from(customerRecords).where(isNull(customerRecords.identityHash)).orderBy(customerRecords.createdAt, customerRecords.id);
+  if (!legacy.length) return;
+  const keys = identityKeys(legacy.map((row) => {
+    const data = open<Sealed>(row.payloadEnc);
+    return identityBase({ service: row.service, name: row.name, mobile: data.mobile ?? null, pan: data.pan ?? null, aadhaar: data.aadhaar ?? null, recordDate: row.recordDate });
+  }));
+  for (let offset = 0; offset < legacy.length; offset += 25) {
+    await Promise.all(legacy.slice(offset, offset + 25).map((row, index) => db.update(customerRecords).set({ identityHash: blindIndex("identity", keys[offset + index]) }).where(eq(customerRecords.id, row.id))));
+  }
+}
+
 /**
- * Imports every sheet of a workbook. Rows already imported (from this or an earlier file) are
- * skipped, so uploading the same register again only adds what's new.
+ * Imports every sheet of a workbook. Each row is matched to its record by who it is about
+ * (service, name, mobile, PAN, Aadhaar, date):
+ *  - new rows are added;
+ *  - rows that changed are updated in place (no second copy);
+ *  - unchanged rows are left alone;
+ *  - records that are no longer in the register are marked "No longer in the register". Nothing is deleted.
+ * If the file looks far smaller than the register it came from, nothing is marked, and the import says so.
  */
 export async function importRecords(fileName: string, sheets: SheetInput[], actor: Actor, options: { addContacts: boolean }) {
-  const parsed = parseWorkbook(fileName.replace(/\.(xlsx|xlsm|csv)$/i, ""), sheets);
+  const cleanName = fileName.replace(/\.(xlsx|xlsm|csv)$/i, "");
+  const parsed = parseWorkbook(cleanName, sheets);
+  await backfillIdentities();
   const [batch] = await db.insert(recordImports).values({ fileName: fileName.slice(0, 200), uploadedBy: actor.id, sheets: parsed.sheets }).returning({ id: recordImports.id });
+
+  const identities = identityKeys(parsed.records.map(identityBase)).map((key) => blindIndex("identity", key));
+  const existing = await db.select({ id: customerRecords.id, identityHash: customerRecords.identityHash, rowHash: customerRecords.rowHash, source: customerRecords.source, removedAt: customerRecords.removedAt })
+    .from(customerRecords);
+  const byIdentity = new Map(existing.map((row) => [row.identityHash ?? "", row]));
+  const seen = new Set<string>();
+  const toInsert: ReturnType<typeof rowValues>[] = [];
+  const toUpdate: { id: string; values: ReturnType<typeof rowValues> }[] = [];
+  let unchanged = 0;
+  parsed.records.forEach((record, index) => {
+    const identity = identities[index];
+    seen.add(identity);
+    const values = rowValues(record, batch.id, identity);
+    const current = byIdentity.get(identity);
+    if (!current) toInsert.push(values);
+    else if (!current.removedAt && current.rowHash === values.rowHash) unchanged++;
+    else toUpdate.push({ id: current.id, values });
+  });
+
   let imported = 0;
-  const people = new Map<string, { name: string; services: Map<string, string | null>; area?: string | null; email?: string | null }>();
-  for (let offset = 0; offset < parsed.records.length; offset += 400) {
-    const values = parsed.records.slice(offset, offset + 400).map((record) => ({
-      importId: batch.id, service: record.service, source: record.source.slice(0, 200), name: record.name,
-      mobileHash: record.mobile ? blindIndex("mobile", record.mobile) : null,
-      mobileEnc: record.mobile ? seal(record.mobile) : null, mobileLast4: record.mobile ? record.mobile.slice(-4) : null,
-      panHash: record.pan ? blindIndex("pan", record.pan) : null, aadhaarHash: record.aadhaar ? blindIndex("aadhaar", record.aadhaar) : null,
-      recordDate: record.recordDate, renewalOn: record.renewalOn,
-      phoneHashes: [...new Set([record.mobile, record.whatsapp, ...record.altMobiles].filter((value): value is string => Boolean(value)))].map((value) => blindIndex("mobile", value)),
-      emailHash: record.email ? blindIndex("email", record.email) : null,
-      contactEnc: record.whatsapp || record.altMobiles.length || record.email || record.address ? seal({ whatsapp: record.whatsapp, altMobiles: record.altMobiles, email: record.email, address: record.address } satisfies ContactInfo) : null,
-      payloadEnc: seal({ mobile: record.mobile, pan: record.pan, aadhaar: record.aadhaar, whatsapp: record.whatsapp, altMobiles: record.altMobiles, email: record.email, address: record.address, fields: record.fields } satisfies Sealed),
-      rowHash: blindIndex("row", record.dedupeKey),
-    }));
-    imported += (await db.insert(customerRecords).values(values).onConflictDoNothing().returning({ id: customerRecords.id })).length;
-    for (const record of parsed.records.slice(offset, offset + 400)) {
-      // WhatsApp campaigns go to the WhatsApp number when the sheet has one.
-      const phone = record.whatsapp ?? record.mobile;
-      if (!phone) continue;
-      const person = people.get(phone) ?? { name: record.name, services: new Map(), area: record.address, email: record.email };
-      if (!person.email && record.email) person.email = record.email;
-      const service = CONTACT_SERVICE[record.service];
-      if (service) {
-        const previous = person.services.get(service);
-        if (!previous || (record.renewalOn && record.renewalOn > previous)) person.services.set(service, record.renewalOn ?? previous ?? null);
-      }
-      people.set(phone, person);
+  for (let offset = 0; offset < toInsert.length; offset += 400) {
+    imported += (await db.insert(customerRecords).values(toInsert.slice(offset, offset + 400)).onConflictDoNothing().returning({ id: customerRecords.id })).length;
+  }
+  for (let offset = 0; offset < toUpdate.length; offset += 25) {
+    await Promise.all(toUpdate.slice(offset, offset + 25).map(({ id, values }) => db.update(customerRecords).set({ ...values, removedAt: null }).where(eq(customerRecords.id, id))));
+  }
+  const updated = toUpdate.length;
+
+  // Only sheets that were read properly can mark rows as removed.
+  const scopes = new Set(parsed.sheets.filter((sheet) => sheet.service && !sheet.reason).map((sheet) => `${cleanName} › ${sheet.sheet}`.slice(0, 200)));
+  const inScope = existing.filter((row) => scopes.has(row.source) && !row.removedAt);
+  const missing = inScope.filter((row) => !seen.has(row.identityHash ?? ""));
+  const safeToRemove = parsed.records.length * 2 >= inScope.length;
+  let removed = 0;
+  if (safeToRemove && missing.length) {
+    const ids = missing.map((row) => row.id);
+    for (let offset = 0; offset < ids.length; offset += 500) {
+      await db.update(customerRecords).set({ removedAt: new Date() }).where(inArray(customerRecords.id, ids.slice(offset, offset + 500)));
     }
+    removed = ids.length;
+  }
+  const removalHeld = safeToRemove ? 0 : missing.length;
+
+  const people = new Map<string, { name: string; services: Map<string, string | null>; area?: string | null; email?: string | null }>();
+  for (const record of parsed.records) {
+    // WhatsApp campaigns go to the WhatsApp number when the sheet has one.
+    const phone = record.whatsapp ?? record.mobile;
+    if (!phone) continue;
+    const person = people.get(phone) ?? { name: record.name, services: new Map(), area: record.address, email: record.email };
+    if (!person.email && record.email) person.email = record.email;
+    const service = CONTACT_SERVICE[record.service];
+    if (service) {
+      const previous = person.services.get(service);
+      if (!previous || (record.renewalOn && record.renewalOn > previous)) person.services.set(service, record.renewalOn ?? previous ?? null);
+    }
+    people.set(phone, person);
   }
   const contactsAdded = options.addContacts ? await addContacts(people, fileName) : 0;
   const skipped = parsed.sheets.reduce((total, sheet) => total + sheet.skipped + (sheet.service && !sheet.reason ? 0 : sheet.rows), 0);
   const totalRows = parsed.sheets.reduce((total, sheet) => total + sheet.rows, 0);
-  const duplicates = parsed.records.length - imported;
-  await db.update(recordImports).set({ imported, duplicates, skipped, contactsAdded, totalRows }).where(eq(recordImports.id, batch.id));
-  await logActivity({ kind: "import", permission: "records", category: "records", title: `${actor.name} imported ${fileName}`, detail: `${imported} new records, ${duplicates} already there, ${contactsAdded} WhatsApp contacts added.`, refType: "import", refId: batch.id, actorId: actor.id });
-  return { id: batch.id, imported, duplicates, skipped, contactsAdded, totalRows, sheets: parsed.sheets };
+  const duplicates = unchanged;
+  await db.update(recordImports).set({ imported, duplicates, updated, removed, skipped, contactsAdded, totalRows }).where(eq(recordImports.id, batch.id));
+  await logActivity({ kind: "import", permission: "records", category: "records", title: `${actor.name} imported ${fileName}`, detail: `${imported} new, ${updated} updated, ${duplicates} unchanged, ${removed} no longer in the register${removalHeld ? `, ${removalHeld} not marked (file much smaller than the register)` : ""}, ${contactsAdded} WhatsApp contacts added.`, refType: "import", refId: batch.id, actorId: actor.id });
+  return { id: batch.id, imported, duplicates, updated, removed, removalHeld, skipped, contactsAdded, totalRows, sheets: parsed.sheets };
 }
 
 /** Adds imported people to WhatsApp contacts (consent "not asked"). Existing contacts keep their YES/STOP and gain the new services. */
@@ -199,7 +263,7 @@ export async function personRecords(key: string, actor: Actor) {
   if (!rows.length) throw new PublicError("Unknown person.", 404);
   const records = rows.map((row) => {
     const data = open<Sealed>(row.payloadEnc);
-    return { id: row.id, service: row.service, source: row.source, name: row.name, recordDate: row.recordDate, renewalOn: row.renewalOn, status: row.status,
+    return { id: row.id, service: row.service, source: row.source, name: row.name, recordDate: row.recordDate, renewalOn: row.renewalOn, status: row.status, removedAt: row.removedAt ? row.removedAt.toISOString() : null,
       mobile: data.mobile, whatsapp: data.whatsapp ?? null, altMobiles: data.altMobiles ?? [], email: data.email ?? null, address: data.address ?? null, pan: null, panMasked: maskPan(data.pan), hasPan: Boolean(data.pan), aadhaarMasked: maskAadhaar(data.aadhaar), fields: maskIds(data.fields) };
   });
   await logActivity({ kind: "record_view", permission: "records", category: "records", title: `${actor.name} opened the records of ${rows[0].name}`, detail: `${rows.length} record${rows.length === 1 ? "" : "s"} · ${[...new Set(rows.map((row) => RECORD_SERVICES[row.service] ?? row.service))].join(", ")}`, refType: "person", refId: key, actorId: actor.id });

@@ -214,3 +214,22 @@ export function parseWorkbook(fileName: string, sheets: SheetInput[]): { records
 
 export function maskPan(pan: string | null) { return pan ? `${pan.slice(0, 2)}XXXXX${pan.slice(-3)}` : null; }
 export function maskAadhaar(aadhaar: string | null) { return aadhaar ? `XXXX XXXX ${aadhaar.slice(-4)}` : null; }
+
+/**
+ * Who a row is about. Other columns can change without changing this, so an edited row updates
+ * the record it belongs to instead of adding a copy.
+ */
+export function identityBase(row: { service: string; name: string; mobile: string | null; pan: string | null; aadhaar: string | null; recordDate: string | null }): string {
+  return [row.service, row.name.trim().toLowerCase(), row.mobile ?? "", row.pan ?? "", row.aadhaar ?? "", row.recordDate ?? ""].join("|");
+}
+
+/** Adds "#1", "#2"… so two different rows for the same person, service and date both keep their own record. */
+export function identityKeys(bases: string[]): string[] {
+  const count = new Map<string, number>();
+  return bases.map((base) => {
+    const next = (count.get(base) ?? 0) + 1;
+    count.set(base, next);
+    return `${base}#${next}`;
+  });
+}
+
