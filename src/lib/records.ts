@@ -4,6 +4,7 @@ import { logActivity } from "@/lib/activity";
 import { recordAccountRow } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
+import { cachedRecords, forgetRecordCache } from "@/lib/records-cache";
 import { identityBase, identityKeys, maskAadhaar, maskPan, parseWorkbook, RECORD_SERVICES, type ParsedRecord, type SheetInput } from "@/lib/record-import";
 import { normalizePhone } from "@/lib/validation";
 import { COMPLETED_BEFORE, RECORD_STATUSES, RECORD_STATUS_KEYS } from "@/lib/record-status";
@@ -139,6 +140,7 @@ export async function importRecords(fileName: string, sheets: SheetInput[], acto
   const totalRows = parsed.sheets.reduce((total, sheet) => total + sheet.rows, 0);
   const duplicates = unchanged;
   await db.update(recordImports).set({ imported, duplicates, updated, removed, skipped, contactsAdded, totalRows }).where(eq(recordImports.id, batch.id));
+  forgetRecordCache();
   const accountsMade = await ensureRecordAccounts();
   await logActivity({ kind: "import", permission: "records", category: "records", title: `${actor.name} imported ${fileName}`, detail: `${accountsMade} accounts made, ${imported} new, ${updated} updated, ${duplicates} unchanged, ${removed} no longer in the register${removalHeld ? `, ${removalHeld} not marked (file much smaller than the register)` : ""}, ${contactsAdded} WhatsApp contacts added.`, refType: "import", refId: batch.id, actorId: actor.id });
   return { id: batch.id, imported, duplicates, updated, removed, removalHeld, skipped, contactsAdded, totalRows, sheets: parsed.sheets };
@@ -199,7 +201,7 @@ export async function listPeople(options: { q?: string; service?: string; sort?:
     : sql`count(*) desc, max(${customerRecords.recordDate}) desc nulls last`;
   // Repeat counts are over everything known about the person, not only the filtered rows.
   const keys = db.select({ key: personKey.as("key") }).from(customerRecords).where(where).groupBy(personKey);
-  const rows = await db.select({
+  const rowsQuery = db.select({
     key: personKey, name: sql<string>`(array_agg(${customerRecords.name} order by ${customerRecords.recordDate} desc nulls last))[1]`,
     mobileEnc: sql<string | null>`max(${customerRecords.mobileEnc})`,
     contacts: sql<string[] | null>`(array_agg(${customerRecords.contactEnc}) filter (where ${customerRecords.contactEnc} is not null))[1:5]`, total: sql<number>`count(*)::int`,
@@ -207,14 +209,27 @@ export async function listPeople(options: { q?: string; service?: string; sort?:
     lastDate: sql<string | null>`max(${customerRecords.recordDate})::text`,
     nextRenewal: sql<string | null>`(min(${customerRecords.renewalOn}) filter (where ${customerRecords.renewalOn} >= current_date))::text`,
   }).from(customerRecords).where(inArray(personKey, keys)).groupBy(personKey).orderBy(order).limit(50).offset(page * 50);
-  const [totals] = await db.select({ people: sql<number>`count(distinct ${personKey})::int`, records: sql<number>`count(*)::int`,
-    repeat: sql<number>`(select count(*)::int from (select 1 from ${customerRecords} group by ${personKeySql} having count(*) > 1) as r)` }).from(customerRecords).where(where);
-  const byService = await db.select({ service: customerRecords.service, total: sql<number>`count(*)::int` }).from(customerRecords).groupBy(customerRecords.service);
+  const totalsQuery = db.select({ people: sql<number>`count(distinct ${personKey})::int`, records: sql<number>`count(*)::int` }).from(customerRecords).where(where);
+  // These two do not depend on the search, so they are worked out once and kept (see records-cache).
+  const [rows, [totals], repeat, byService] = await Promise.all([rowsQuery, totalsQuery, repeatPeople(), serviceCounts()]);
   const sends = await sendHistory(rows.map((row) => row.key));
   return {
     people: rows.map((row) => ({ key: row.key, name: row.name, mobile: row.mobileEnc ? open<string>(row.mobileEnc) : null, ...mergeContacts(row.contacts), total: row.total, services: row.services, lastDate: row.lastDate, nextRenewal: row.nextRenewal, ...sends.get(row.key) ?? { sentCount: 0, lastSentAt: null, recentSends: [] } })),
-    totals, byService, services: RECORD_SERVICES,
+    totals: { ...totals, repeat }, byService, services: RECORD_SERVICES,
   };
+}
+
+/** Records per service. The same answer feeds the sidebar and the Master records totals. */
+function serviceCounts() {
+  return cachedRecords("services", () => db.select({ service: customerRecords.service, total: sql<number>`count(*)::int` }).from(customerRecords).groupBy(customerRecords.service));
+}
+
+/** How many people came back more than once (everyone known, whatever is searched). */
+function repeatPeople() {
+  return cachedRecords("repeat", async () => {
+    const [row] = await db.select({ repeat: sql<number>`(select count(*)::int from (select 1 from ${customerRecords} group by ${personKeySql} having count(*) > 1) as r)` }).from(customerRecords).limit(1);
+    return row?.repeat ?? 0;
+  });
 }
 
 /** Send counts for the people on one page: how many times their WhatsApp chat was opened, newest first. */
@@ -322,15 +337,25 @@ function serviceFilters(service: string, filters: ServiceFilters): SQL[] {
 }
 
 /** How many records a service has in each year (after the filters). Undated records have year null. */
-export async function serviceYears(service: string, filters: ServiceFilters = {}) {
-  const year = sql<number | null>`extract(year from ${customerRecords.recordDate})::int`;
-  const rows = await db.select({ year, total: sql<number>`count(*)::int` }).from(customerRecords)
-    .where(and(...serviceFilters(service, filters))).groupBy(year).orderBy(sql`${year} desc nulls last`);
-  return { years: rows.map((row) => ({ year: row.year, total: row.total })) };
+export function serviceYears(service: string, filters: ServiceFilters = {}) {
+  const clauses = serviceFilters(service, filters); // also rejects an unknown service
+  const run = async () => {
+    const year = sql<number | null>`extract(year from ${customerRecords.recordDate})::int`;
+    const rows = await db.select({ year, total: sql<number>`count(*)::int` }).from(customerRecords)
+      .where(and(...clauses)).groupBy(year).orderBy(sql`${year} desc nulls last`);
+    return { years: rows.map((row) => ({ year: row.year, total: row.total })) };
+  };
+  // Searches with typed text are one-offs and are not kept.
+  return filters.q?.trim() ? run() : cachedRecords(`years:${service}:${JSON.stringify(filters)}`, run);
 }
 
 /** One page of a service's records for one year (or undated records), newest first. */
-export async function serviceRecords(service: string, options: ServiceFilters & { year?: number | null; undated?: boolean; page?: number }) {
+export function serviceRecords(service: string, options: ServiceFilters & { year?: number | null; undated?: boolean; page?: number }) {
+  const clauses = serviceFilters(service, options);
+  return options.q?.trim() ? loadServiceRecords(clauses, options) : cachedRecords(`rows:${service}:${JSON.stringify(options)}`, () => loadServiceRecords(clauses, options));
+}
+
+async function loadServiceRecords(clauses: SQL[], options: { year?: number | null; undated?: boolean; page?: number }) {
   const page = Math.max(0, Math.min(options.page ?? 0, 500));
   const scope = options.undated || options.year == null
     ? sql`${customerRecords.recordDate} is null`
@@ -338,7 +363,7 @@ export async function serviceRecords(service: string, options: ServiceFilters & 
   const rows = await db.select({
     id: customerRecords.id, name: customerRecords.name, source: customerRecords.source, recordDate: customerRecords.recordDate, renewalOn: customerRecords.renewalOn,
     status: customerRecords.status, payloadEnc: customerRecords.payloadEnc, personKey: personKeySql,
-  }).from(customerRecords).where(and(...serviceFilters(service, options), scope))
+  }).from(customerRecords).where(and(...clauses, scope))
     .orderBy(sql`${customerRecords.recordDate} desc nulls last`, customerRecords.name)
     .limit(SERVICE_PAGE + 1).offset(page * SERVICE_PAGE);
   const items = rows.slice(0, SERVICE_PAGE).map((row) => {
@@ -357,23 +382,25 @@ export async function setRecordStatus(recordId: string, status: string, actor: A
   if (!before) throw new PublicError("Unknown record.", 404);
   const comment = note === undefined ? undefined : note.trim().slice(0, 300) || null;
   await db.update(customerRecords).set({ status, statusAt: new Date(), ...(comment !== undefined ? { statusNote: comment } : {}) }).where(eq(customerRecords.id, recordId));
+  forgetRecordCache();
   await logActivity({ kind: "status", permission: "records", category: "records", title: `${actor.name} changed ${before.name}’s ${RECORD_SERVICES[before.service] ?? before.service} to ${RECORD_STATUSES[status]}`, detail: `Was: ${RECORD_STATUSES[before.status] ?? before.status}`, refType: "record", refId: recordId, actorId: actor.id });
   return { id: recordId, status };
 }
 
 /** Customers per stage for one service: the counts shown above its list. */
-export async function stageCounts(service: string) {
-  const rows = await db.select({ status: customerRecords.status, total: sql<number>`count(*)::int` }).from(customerRecords)
-    .where(service ? eq(customerRecords.service, service) : undefined).groupBy(customerRecords.status);
-  const counts: Record<string, number> = Object.fromEntries(RECORD_STATUS_KEYS.map((key) => [key, 0]));
-  for (const row of rows) if (row.status in counts) counts[row.status] = row.total;
-  return { total: rows.reduce((sum, row) => sum + row.total, 0), counts };
+export function stageCounts(service: string) {
+  return cachedRecords(`stages:${service}`, async () => {
+    const rows = await db.select({ status: customerRecords.status, total: sql<number>`count(*)::int` }).from(customerRecords)
+      .where(service ? eq(customerRecords.service, service) : undefined).groupBy(customerRecords.status);
+    const counts: Record<string, number> = Object.fromEntries(RECORD_STATUS_KEYS.map((key) => [key, 0]));
+    for (const row of rows) if (row.status in counts) counts[row.status] = row.total;
+    return { total: rows.reduce((sum, row) => sum + row.total, 0), counts };
+  });
 }
 
 /** Records per service, for the sidebar under Master records. */
 export async function servicesSummary() {
-  const byService = await db.select({ service: customerRecords.service, total: sql<number>`count(*)::int` }).from(customerRecords).groupBy(customerRecords.service);
-  return { byService, services: RECORD_SERVICES };
+  return { byService: await serviceCounts(), services: RECORD_SERVICES };
 }
 
 /**

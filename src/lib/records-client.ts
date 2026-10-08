@@ -6,7 +6,8 @@ import { RECORD_SERVICES } from "@/lib/record-import";
 
 /**
  * The only place the records screens talk to the server.
- * - Every read is cached: opening a service, a year, a page or a person again shows the stored answer.
+ * - Every read is cached: opening a service, a year or a page again shows the stored answer (not a person's
+ *   records: each opening of those is logged by the server, so it always asks).
  * - The cache is cleared only when something changes (a status is saved, a register is imported).
  *   Screens that are open then load once more, through useRecordsVersion().
  * - Identical reads that are already running share one request.
@@ -82,8 +83,9 @@ export const recordsClient = {
     const params = { view: "records", service, ...filters, year: year ?? undefined, undated: year === null ? true : undefined, page };
     return call<T>(`Loading ${label} records…`, RECORDS_OP, params, `rows:${service}:${filterKey(filters)}:${year ?? "undated"}:${page}`);
   },
+  /** Never kept: every time someone opens a customer's records the server writes it to the activity log. */
   person<T>(key: string) {
-    return call<T>("Opening customer records…", RECORDS_OP, { key }, `person:${key}`);
+    return call<T>("Opening customer records…", RECORDS_OP, { key });
   },
   /** Saves a status. Everything stored is then out of date, so screens load again. */
   async setStatus<T = unknown>(recordId: string, status: string, note?: string) {

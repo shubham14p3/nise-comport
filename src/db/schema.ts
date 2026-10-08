@@ -319,6 +319,8 @@ export const customerRecords = pgTable("customer_records", {
   index("customer_records_mobile_idx").on(table.mobileHash),
   index("customer_records_pan_idx").on(table.panHash),
   index("customer_records_service_idx").on(table.service),
+  index("customer_records_service_date_idx").on(table.service, sql`${table.recordDate} desc nulls last`),
+  index("customer_records_service_status_idx").on(table.service, table.status),
   index("customer_records_name_idx").on(table.name),
   index("customer_records_renewal_idx").on(table.renewalOn),
   index("customer_records_phones_idx").using("gin", table.phoneHashes),
