@@ -83,22 +83,12 @@ function PastRecordList({ rows }: { rows: PastRecord[] }) {
   </div>;
 }
 
+/** Records made before, read from the server. */
+const fetchPastRecords = () => secureApi<{ records: PastRecord[] }>("Cl4imMine5Rz", {}).then((value) => value.records);
+
 export default function ProfileDashboard({ demoMode = false }: { demoMode?: boolean }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(demoMode ? DEMO_SNAPSHOT : null);
   const [loadError, setLoadError] = useState("");
-  const [pastRecords, setPastRecords] = useState<PastRecord[] | null>(demoMode ? [] : null);
-  // Past records are read once; they are read again only after a link is approved.
-  const loadPastRecords = useCallback(async () => {
-    try { setPastRecords((await secureApi<{ records: PastRecord[] }>("Cl4imMine5Rz", {})).records); }
-    catch { setPastRecords([]); }
-  }, []);
-  useEffect(() => {
-    if (demoMode) return;
-    void loadPastRecords();
-    const again = () => void loadPastRecords();
-    window.addEventListener(RECORDS_LINKED_EVENT, again);
-    return () => window.removeEventListener(RECORDS_LINKED_EVENT, again);
-  }, [demoMode, loadPastRecords]);
 
   const load = useCallback(async () => {
     setLoadError("");
@@ -140,6 +130,23 @@ function sectionFromUrl(): Section {
 }
 
 function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; reload: () => Promise<void>; demoMode: boolean }) {
+  const [pastRecords, setPastRecords] = useState<PastRecord[] | null>(demoMode ? [] : null);
+  // Past records are read once; they are read again only after a link is approved.
+  useEffect(() => {
+    if (demoMode) return;
+    void (async () => {
+      try { setPastRecords(await fetchPastRecords()); }
+      catch { setPastRecords([]); }
+    })();
+    const again = () => {
+      void (async () => {
+        try { setPastRecords(await fetchPastRecords()); }
+        catch { setPastRecords([]); }
+      })();
+    };
+    window.addEventListener(RECORDS_LINKED_EVENT, again);
+    return () => window.removeEventListener(RECORDS_LINKED_EVENT, again);
+  }, [demoMode]);
   const locale = useLocale();
   const { user, requests, jobs, wallet, coupons, activeSessions, openWork } = snapshot;
   const urlSection = useSyncExternalStore(subscribeHash, sectionFromUrl, () => "overview" as Section);
