@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import RecordsServiceBrowser from "@/components/records-service-browser";
 import ClaimsQueue from "@/components/claims-queue";
 import { RECORD_STATUSES } from "@/lib/record-status";
-import { ChevronLeft, ChevronRight, Database, Eye, Phone, Search, Upload, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, Database, Eye, Phone, Search, Upload, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
 
@@ -20,6 +20,53 @@ type Detail = { name: string; records: { id: string; status: string; service: st
 const day = (iso: string | null) => iso ? new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "—";
 const pretty = (phone: string) => phone.replace(/^\+91(\d{5})(\d{5})$/, "+91 $1 $2");
 const whenSent = (iso: string) => new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
+
+/** Copies text to the clipboard; falls back to select-and-copy on older browsers. Resolves true when it worked. */
+async function copyText(text: string): Promise<boolean> {
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch {
+    const area = document.createElement("textarea");
+    area.value = text; area.setAttribute("readonly", ""); area.style.position = "fixed"; area.style.opacity = "0";
+    document.body.appendChild(area); area.select();
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch { ok = false; }
+    area.remove();
+    return ok;
+  }
+}
+
+/** Icon button beside one value. Shows a tick for a moment after copying. */
+function CopyButton({ text, label, withText = false }: { text: string; label: string; withText?: boolean }) {
+  const [done, setDone] = useState(false);
+  useEffect(() => {
+    if (!done) return;
+    const timer = window.setTimeout(() => setDone(false), 1500);
+    return () => window.clearTimeout(timer);
+  }, [done]);
+  const caption = done ? "Copied" : label;
+  return <button type="button" className={`copy-icon${withText ? " copy-icon--text" : ""}${done ? " is-copied" : ""}`} aria-label={caption} title={caption} onClick={async () => { if (await copyText(text)) setDone(true); }}>
+    {done ? <Check size={14} aria-hidden="true"/> : <Copy size={14} aria-hidden="true"/>}
+    {withText ? <span>{caption}</span> : null}
+  </button>;
+}
+
+/** Plain text of one person's records, for "Copy all". PAN is copied masked unless it was revealed. */
+function recordSheetText(name: string, records: Detail["records"], names: Record<string, string>): string {
+  const statusText = (key: string) => (RECORD_STATUSES as Record<string, string>)[key] ?? key;
+  const blocks = records.map((record) => {
+    const lines = [`${names[record.service] ?? record.service}${record.recordDate ? ` · ${day(record.recordDate)}` : ""}`, `Status: ${statusText(record.status)}`];
+    if (record.mobile) lines.push(`Mobile: ${pretty(record.mobile)}`);
+    if (record.whatsapp) lines.push(`WhatsApp: ${pretty(record.whatsapp)}`);
+    if (record.altMobiles?.length) lines.push(`Other mobiles: ${record.altMobiles.map(pretty).join(", ")}`);
+    if (record.email) lines.push(`Email: ${record.email}`);
+    if (record.address) lines.push(`Address: ${record.address}`);
+    if (record.hasPan && record.panMasked) lines.push(`PAN: ${record.panMasked}`);
+    if (record.aadhaarMasked) lines.push(`Aadhaar: ${record.aadhaarMasked}`);
+    for (const [label, value] of Object.entries(record.fields)) lines.push(`${label}: ${value}`);
+    return lines.join("\n");
+  });
+  return [`${name} (${records.length} record${records.length === 1 ? "" : "s"})`, ...blocks].join("\n\n");
+}
 
 /**
  * Admin → Records: import the shop's Excel registers (all sheets) and find customers across them.
@@ -65,7 +112,7 @@ function RevealPan({ recordId, masked }: { recordId: string; masked: string | nu
     finally { setBusy(false); }
   }
 
-  if (step === "shown") return <span className="pan-shown">{pan ?? "—"}</span>;
+  if (step === "shown") return <span className="pan-shown">{pan ?? "—"}{pan ? <CopyButton text={pan} label="Copy PAN"/> : null}</span>;
   if (step === "code") return <form className="pan-reveal" onSubmit={confirm}>
     <span>Code sent to {hint}</span>
     <input inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))} placeholder="6-digit code" aria-label="Code from email"/>
@@ -211,20 +258,20 @@ export default function RecordsPanel() {
     </div>}
     {detail && createPortal(<div className="record-sheet" role="dialog" aria-modal="true" aria-label={`Records of ${detail.name}`} onMouseDown={(event) => { if (event.target === event.currentTarget) setDetail(null); }}>
       <div className="record-sheet__panel">
-        <div className="record-sheet__head"><div><small>Customer records</small><h3>{detail.name}</h3></div><span className="repeat-badge">{detail.records.length} record{detail.records.length === 1 ? "" : "s"}</span><button type="button" className="record-sheet__close" onClick={() => setDetail(null)} aria-label="Close"><X size={18}/> Close</button></div>
+        <div className="record-sheet__head"><div><small>Customer records</small><h3>{detail.name}</h3></div><span className="repeat-badge">{detail.records.length} record{detail.records.length === 1 ? "" : "s"}</span><CopyButton text={recordSheetText(detail.name, detail.records, names)} label="Copy all" withText/><button type="button" className="record-sheet__close" onClick={() => setDetail(null)} aria-label="Close"><X size={18}/> Close</button></div>
         <p className="field__hint"><Eye size={12}/> This view was logged in the Inbox.</p>
         {detail.records.map((record) => <article key={record.id} className="record-card">
           <header><b>{names[record.service] ?? record.service}</b><small>{day(record.recordDate)}{record.renewalOn ? ` · renewal ${day(record.renewalOn)}` : ""} · {record.source}</small></header>
           <RecordStatus recordId={record.id} status={record.status} onSaved={(next) => setDetail((current) => current && { ...current, records: current.records.map((item) => item.id === record.id ? { ...item, status: next } : item) })}/>
           <dl>
-            {record.mobile && <><dt>Mobile</dt><dd><a href={`tel:${record.mobile}`}>{pretty(record.mobile)}</a></dd></>}
-            {record.whatsapp && <><dt>WhatsApp</dt><dd><a href={`https://wa.me/${record.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">{pretty(record.whatsapp)}</a></dd></>}
-            {record.altMobiles?.length > 0 && <><dt>Other mobiles</dt><dd>{record.altMobiles.map((phone) => <a key={phone} href={`tel:${phone}`}>{pretty(phone)} </a>)}</dd></>}
-            {record.email && <><dt>Email</dt><dd><a href={`mailto:${record.email}`}>{record.email}</a></dd></>}
-            {record.address && <><dt>Address</dt><dd>{record.address}</dd></>}
+            {record.mobile && <><dt>Mobile</dt><dd><a href={`tel:${record.mobile}`}>{pretty(record.mobile)}</a><CopyButton text={pretty(record.mobile)} label="Copy mobile"/></dd></>}
+            {record.whatsapp && <><dt>WhatsApp</dt><dd><a href={`https://wa.me/${record.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">{pretty(record.whatsapp)}</a><CopyButton text={pretty(record.whatsapp)} label="Copy WhatsApp"/></dd></>}
+            {record.altMobiles?.length > 0 && <><dt>Other mobiles</dt><dd>{record.altMobiles.map((phone) => <span key={phone}><a href={`tel:${phone}`}>{pretty(phone)}</a><CopyButton text={pretty(phone)} label="Copy mobile"/> </span>)}</dd></>}
+            {record.email && <><dt>Email</dt><dd><a href={`mailto:${record.email}`}>{record.email}</a><CopyButton text={record.email} label="Copy email"/></dd></>}
+            {record.address && <><dt>Address</dt><dd>{record.address}<CopyButton text={record.address} label="Copy address"/></dd></>}
             {record.hasPan && <><dt>PAN</dt><dd><RevealPan recordId={record.id} masked={record.panMasked}/></dd></>}
             {record.aadhaarMasked && <><dt>Aadhaar</dt><dd>{record.aadhaarMasked}</dd></>}
-            {Object.entries(record.fields).map(([label, value]) => <div key={label} className="record-card__field"><dt>{label}</dt><dd>{value}</dd></div>)}
+            {Object.entries(record.fields).map(([label, value]) => <div key={label} className="record-card__field"><dt>{label}</dt><dd>{value}<CopyButton text={value} label={`Copy ${label}`}/></dd></div>)}
           </dl>
         </article>)}
       </div>

@@ -2156,3 +2156,10 @@ a.site-banner:hover { transform: translateY(-3px); }
 .email-status { margin-left: 6px; padding: 1px 8px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); font-size: .75rem; }
 .email-status--done { color: #166534; }
 .email-status--cancelled { color: #991b1b; }
+
+/* Copy buttons in the records view */
+.copy-icon { display: inline-flex; align-items: center; justify-content: center; gap: 4px; vertical-align: middle; width: 26px; height: 26px; margin-left: 6px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--muted); cursor: pointer; }
+.copy-icon:hover, .copy-icon:focus-visible { color: var(--ink); border-color: var(--muted); }
+.copy-icon--text { width: auto; padding: 0 10px; height: 32px; margin-left: 0; font-size: .85rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.copy-icon.is-copied { color: #166534; border-color: #86efac; background: #f0fdf4; }
+.record-sheet__head .copy-icon--text { flex-shrink: 0; }
