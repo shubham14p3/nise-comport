@@ -5,7 +5,8 @@ import { ChevronLeft, ChevronRight, Database, Eye, Phone, Search, Upload, X } fr
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
 
-type Person = { key: string; name: string; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; total: number; services: string[]; lastDate: string | null; nextRenewal: string | null };
+type Person = { key: string; name: string; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; total: number; services: string[]; lastDate: string | null; nextRenewal: string | null; sentCount: number; lastSentAt: string | null; recentSends: string[] };
+type SendSummary = { sentCount: number; lastSentAt: string | null; recentSends: string[] };
 type Listing = { people: Person[]; totals: { people: number; records: number; repeat: number }; byService: { service: string; total: number }[]; services: Record<string, string> };
 type SheetReport = { sheet: string; service: string | null; rows: number; records: number; skipped: number; reason?: string; droppedColumns?: string[] };
 type ImportResult = { imported: number; duplicates: number; skipped: number; contactsAdded: number; totalRows: number; sheets: SheetReport[] };
@@ -14,6 +15,7 @@ type Detail = { name: string; records: { id: string; service: string; source: st
 
 const day = (iso: string | null) => iso ? new Date(`${iso.slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "—";
 const pretty = (phone: string) => phone.replace(/^\+91(\d{5})(\d{5})$/, "+91 $1 $2");
+const whenSent = (iso: string) => new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
 
 /**
  * Admin → Records: import the shop's Excel registers (all sheets) and find customers across them.
@@ -58,6 +60,17 @@ export default function RecordsPanel() {
       const history = await secureApi<{ imports: ImportRow[] }>("W8r2T5yN1cF6", { imports: true }); setImports(history.imports);
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Import failed."); }
     finally { setBusy(""); }
+  }
+
+  /** Opens the WhatsApp chat straight away, then records the send so the list shows it. */
+  async function openWhatsApp(person: Person) {
+    const number = (person.whatsapp ?? person.mobile ?? "").replace(/\D/g, "");
+    if (!number) return;
+    window.open(`https://wa.me/${number}`, "_blank", "noopener,noreferrer");
+    try {
+      const summary = await secureApi<SendSummary>("T7p2Q9rL4xH8", { key: person.key });
+      setData((current) => current && { ...current, people: current.people.map((item) => item.key === person.key ? { ...item, ...summary } : item) });
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not record the WhatsApp send."); }
   }
 
   async function openPerson(person: Person) {
@@ -108,13 +121,14 @@ export default function RecordsPanel() {
     <div className="people-list">{(data?.people ?? []).map((person) => <article key={person.key} className="person-row">
       <div className="person-row__main">
         <span><b>{person.name}</b>{person.total > 1 && <span className="repeat-badge" title="How many times this person appears across your registers">{person.total}×</span>}</span>
+        {person.sentCount > 0 && <span className="send-badge" title={`WhatsApp opened ${person.sentCount} time${person.sentCount === 1 ? "" : "s"}\n${person.recentSends.map(whenSent).join("\n")}`}>Sent {person.sentCount}× · last {whenSent(person.lastSentAt ?? "")}</span>}
         <small>{person.mobile ? pretty(person.mobile) : "no mobile"}{person.whatsapp ? ` · WhatsApp ${pretty(person.whatsapp)}` : ""}{person.altMobiles?.length ? ` · also ${person.altMobiles.map(pretty).join(", ")}` : ""} · last {day(person.lastDate)}{person.nextRenewal ? ` · renewal ${day(person.nextRenewal)}` : ""}</small>
         {(person.email || person.address) && <small>{person.email && <a href={`mailto:${person.email}`}>{person.email}</a>}{person.email && person.address ? " · " : ""}{person.address}</small>}
         <span className="contact-row__services">{person.services.map((item) => <em key={item}>{names[item] ?? item}</em>)}</span>
       </div>
       <div className="person-row__actions">
         {person.mobile && <a className="icon-btn" href={`tel:${person.mobile}`} aria-label={`Call ${person.name}`}><Phone size={16}/></a>}
-        {(person.whatsapp ?? person.mobile) && <a className="icon-btn" href={`https://wa.me/${(person.whatsapp ?? person.mobile ?? "").replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" aria-label={`WhatsApp ${person.name}`}><WhatsAppIcon size={16}/></a>}
+        {(person.whatsapp ?? person.mobile) && <button type="button" className="icon-btn" onClick={() => void openWhatsApp(person)} aria-label={`WhatsApp ${person.name}`}><WhatsAppIcon size={16}/></button>}
         <button type="button" className="btn btn--ghost btn--sm" disabled={busy === person.key} onClick={() => void openPerson(person)}><Eye size={14}/>Open</button>
       </div>
     </article>)}</div>

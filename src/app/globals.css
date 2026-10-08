@@ -1794,6 +1794,7 @@ a.pan-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
 .person-row__main b { display: inline; margin-right: 6px; }
 .person-row__main small { color: var(--muted); font-size: .8125rem; }
 .person-row__actions { display: flex; gap: 6px; align-items: center; }
+.send-badge { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: #eef4ff; color: #1f4f9a; font-size: .75rem; font-weight: 700; vertical-align: 1px; }
 .repeat-badge { display: inline-grid; place-items: center; min-width: 26px; height: 22px; padding: 0 7px; border-radius: 999px; background: #fff0d6; color: #8a5300; font-size: .75rem; font-weight: 800; vertical-align: 1px; }
 .pager { display: flex; align-items: center; justify-content: center; gap: 12px; font-size: .875rem; color: var(--muted); }
 .record-sheet { position: fixed; inset: 0; z-index: 80; display: grid; justify-items: end; background: rgb(11 16 38 / .45); }

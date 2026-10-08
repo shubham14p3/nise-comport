@@ -309,6 +309,14 @@ export const customerRecords = pgTable("customer_records", {
   index("customer_records_email_idx").on(table.emailHash),
 ]);
 
+/** Each time staff open a customer's WhatsApp chat from the records list. Keyed hash of the person, never the number. */
+export const recordSends = pgTable("record_sends", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  personKey: text("person_key").notNull(),
+  sentBy: uuid("sent_by").references(() => users.id, { onDelete: "set null" }),
+  sentAt: timestamp("sent_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("record_sends_person_idx").on(table.personKey, table.sentAt)]);
+
 /** Banners the owner manages in Admin → Site content (top strip, home page, services, service pages). */
 export const siteBanners = pgTable("site_banners", {
   id: uuid("id").defaultRandom().primaryKey(), placement: text("placement").notNull(),

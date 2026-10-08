@@ -1,5 +1,5 @@
 import { and, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
-import { contacts, customerRecords, recordImports } from "@/db/schema";
+import { contacts, customerRecords, recordImports, recordSends } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
@@ -128,10 +128,40 @@ export async function listPeople(options: { q?: string; service?: string; sort?:
   const [totals] = await db.select({ people: sql<number>`count(distinct ${personKey})::int`, records: sql<number>`count(*)::int`,
     repeat: sql<number>`(select count(*)::int from (select 1 from ${customerRecords} group by coalesce(mobile_hash, pan_hash, id::text) having count(*) > 1) as r)` }).from(customerRecords).where(where);
   const byService = await db.select({ service: customerRecords.service, total: sql<number>`count(*)::int` }).from(customerRecords).groupBy(customerRecords.service);
+  const sends = await sendHistory(rows.map((row) => row.key));
   return {
-    people: rows.map((row) => ({ key: row.key, name: row.name, mobile: row.mobileEnc ? open<string>(row.mobileEnc) : null, ...mergeContacts(row.contacts), total: row.total, services: row.services, lastDate: row.lastDate, nextRenewal: row.nextRenewal })),
+    people: rows.map((row) => ({ key: row.key, name: row.name, mobile: row.mobileEnc ? open<string>(row.mobileEnc) : null, ...mergeContacts(row.contacts), total: row.total, services: row.services, lastDate: row.lastDate, nextRenewal: row.nextRenewal, ...sends.get(row.key) ?? { sentCount: 0, lastSentAt: null, recentSends: [] } })),
     totals, byService, services: RECORD_SERVICES,
   };
+}
+
+/** Send counts for the people on one page: how many times their WhatsApp chat was opened, newest first. */
+async function sendHistory(keys: string[]) {
+  const result = new Map<string, { sentCount: number; lastSentAt: string | null; recentSends: string[] }>();
+  if (!keys.length) return result;
+  const rows = await db.select({ key: recordSends.personKey, sentAt: recordSends.sentAt }).from(recordSends)
+    .where(inArray(recordSends.personKey, keys)).orderBy(desc(recordSends.sentAt));
+  for (const row of rows) {
+    const entry = result.get(row.key) ?? { sentCount: 0, lastSentAt: null, recentSends: [] };
+    entry.sentCount += 1;
+    entry.lastSentAt ??= new Date(row.sentAt).toISOString();
+    if (entry.recentSends.length < 10) entry.recentSends.push(new Date(row.sentAt).toISOString());
+    result.set(row.key, entry);
+  }
+  return result;
+}
+
+/**
+ * Logs that staff opened a person's WhatsApp chat (the chat itself opens in the browser).
+ * Only keys that exist in the records are accepted.
+ */
+export async function logRecordSend(key: string, actor: Actor) {
+  const [known] = await db.select({ id: customerRecords.id }).from(customerRecords)
+    .where(or(eq(customerRecords.mobileHash, key), eq(customerRecords.panHash, key))).limit(1);
+  if (!known) throw new PublicError("Unknown person.", 404);
+  await db.insert(recordSends).values({ personKey: key, sentBy: actor.id });
+  const summary = await sendHistory([key]);
+  return summary.get(key) ?? { sentCount: 0, lastSentAt: null, recentSends: [] };
 }
 
 /** Everything known about one person, decrypted. Logged: who opened whose records, and when. */
