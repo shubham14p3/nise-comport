@@ -2066,3 +2066,12 @@ a.site-banner:hover { transform: translateY(-3px); }
 .owner-support__form { display: grid; gap: 8px; max-width: 420px; margin-top: 10px; }
 .owner-support__form input { padding: 10px 12px; border: 1px solid #c9c2b3; border-radius: 8px; font: inherit; }
 .owner-support__error { color: #9b1c1c; margin-top: 8px; }
+
+/* Owner "Switch user" in the header */
+.owner-switch { position: relative; }
+.owner-switch__btn { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid currentColor; background: transparent; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+.owner-switch__panel { position: absolute; right: 0; top: calc(100% + 8px); z-index: 70; width: min(320px, 90vw); display: grid; gap: 8px; padding: 14px; border-radius: 12px; background: #fff; color: #1d1d1b; box-shadow: 0 12px 32px rgba(0,0,0,.18); }
+.owner-switch__panel label { font-weight: 600; }
+.owner-switch__panel p { margin: 0; font-size: 13px; color: #555; }
+.owner-switch__panel input { padding: 10px 12px; border: 1px solid #c9c2b3; border-radius: 8px; font: inherit; }
+.owner-switch__error { color: #9b1c1c !important; }

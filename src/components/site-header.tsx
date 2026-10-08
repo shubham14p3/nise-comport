@@ -7,6 +7,7 @@ import OfferTicker from "@/components/offer-ticker";
 import { WhatsAppIcon } from "@/components/icons";
 import { ArrowRight, LogOut, Menu, Phone, UserRound, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import OwnerSwitch from "@/components/owner-switch";
 import { usePathname, useRouter } from "next/navigation";
 import { secureApi } from "@/lib/secure-api-client";
 import { dict } from "@/lib/i18n";
@@ -81,6 +82,7 @@ export default function SiteHeader() {
           {!sessionLoaded ? <span className="nav-placeholder" aria-hidden="true"/> : user
             ? <>
               <Link className="account-chip" href="/profile" title={t.myProfile}><span className="account-avatar">{firstName.slice(0, 1).toUpperCase() || <UserRound size={16}/>}</span><span className="account-name">{firstName || t.myProfile}</span></Link>
+              {user.role === "admin" ? <OwnerSwitch/> : null}
               <button className="icon-btn nav-signout" type="button" onClick={() => void signOut()} disabled={signingOut} title={t.signOut} aria-label={t.signOut}><LogOut size={18}/></button>
             </>
             : <Link className="nav-signin" href="/login">{t.signIn}</Link>}
