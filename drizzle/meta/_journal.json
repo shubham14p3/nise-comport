@@ -120,6 +120,13 @@
       "when": 1792400000000,
       "tag": "0016_signup_name_parts",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792500000000,
+      "tag": "0017_impersonation",
+      "breakpoints": true
     }
   ]
 }

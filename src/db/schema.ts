@@ -29,6 +29,8 @@ export const emailOtps = pgTable("email_otps", {
 export const sessions = pgTable("sessions", {
   id: uuid("id").defaultRandom().primaryKey(), userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   tokenHash: text("token_hash").notNull().unique(), expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  /** Set when the owner is viewing this account for support ("log in as"). The owner's own session is kept in a return cookie. */
+  impersonatorId: uuid("impersonator_id").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

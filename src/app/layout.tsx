@@ -12,6 +12,7 @@ import { graph, localBusinessLd, organizationLd, websiteLd } from "@/lib/structu
 import { publishedServiceDetails, serviceSeoTitle } from "@/lib/services";
 import { allServices } from "@/lib/site-content";
 import SiteBanners from "@/components/site-banners";
+import SupportBanner from "@/components/support-banner";
 
 /** Poppins covers English and Hindi (Devanagari); Hind Siliguri, from the same type foundry, covers Bengali. */
 const poppins = Poppins({ subsets: ["latin", "devanagari"], weight: ["400", "500", "600", "700", "800"], variable: "--font-poppins", display: "swap" });
@@ -64,6 +65,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <body className={`${poppins.variable} ${hindSiliguri.variable}`}>
       <OffersProvider promos={promos}>
         <a className="skip-link" href="#main-content">Skip to content</a>
+        <SupportBanner/>
         <SiteBanners placement="strip"/>
         <div id="main-content">{children}</div>
         <SiteFooter/>

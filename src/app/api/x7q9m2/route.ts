@@ -68,6 +68,9 @@ const OPS = {
   "E3h8K1tW6qZ9": { method: "PATCH", path: "/api/admin/leads" },
   "B4j9D6sX2mH7": { method: "POST", path: "/api/admin/records" },
   "T7p2Q9rL4xH8": { method: "POST", path: "/api/admin/records/sends" },
+  "H5w2Zc8nR3vK": { method: "POST", path: "/api/admin/impersonate" },
+  "P9d4Ks1mL7qY": { method: "POST", path: "/api/impersonation" },
+  "F2n8Vb6tW0xE": { method: "POST", path: "/api/impersonation/stop" },
 } as const;
 
 /** Encrypted file uploads: customer documents, and posters in the admin area. */

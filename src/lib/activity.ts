@@ -8,7 +8,7 @@ import { findService } from "@/lib/services";
 /** "team" entries (staff changes) are for the owner only. */
 type Audience = Permission | "team";
 export type ActivityEntry = {
-  kind: "lead" | "request" | "print" | "status" | "import" | "record_view" | "staff" | "campaign" | "promotion";
+  kind: "lead" | "request" | "print" | "status" | "import" | "record_view" | "staff" | "campaign" | "promotion" | "impersonation";
   permission: Audience; title: string; detail?: string | null; category?: string | null;
   refType?: string | null; refId?: string | null; actorId?: string | null;
 };

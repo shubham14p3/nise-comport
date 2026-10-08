@@ -58,7 +58,12 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
     if (result.retryAfter && result.retryAfter <= 120) setResendIn(result.retryAfter);
   }
 
-  function done() { router.push(takeReturn()); router.refresh(); }
+  /** Staff and the owner land on the admin dashboard; customers on their profile (unless they were headed somewhere). */
+  function done(result?: { role?: string; user?: { role?: string } }) {
+    const role = result?.role ?? result?.user?.role;
+    const staff = role === "admin" || role === "staff";
+    router.push(takeReturn(staff ? "/admin" : "/profile")); router.refresh();
+  }
 
   /** Checks the sign-up fields in the browser first, so the person sees the exact problem next to the field. */
   function signupProblems() {
@@ -77,7 +82,7 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
         const { ok, result } = await post("Q7m4kP2vL9sD", { email, password });
         if (!ok) { showFailure(result, t.failSignin); return; }
         if (result.requiresOtp) { setStage("otp"); setResendIn(60); setSuccess(t.sentVerify); return; }
-        done(); return;
+        done(result); return;
       }
       const problems = signupProblems();
       if (Object.keys(problems).length) { setFieldErrors(problems); setError(Object.values(problems)[0]); return; }
@@ -118,7 +123,7 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
         return;
       }
       if (result.welcomeCoupon) { setWelcome(result.welcomeCoupon); setStage("welcome"); setSuccess(""); return; }
-      done();
+      done(result);
     } finally { setBusy(false); }
   }
 

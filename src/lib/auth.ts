@@ -10,12 +10,17 @@ import { clearRate, enforceRate, hitRate, identity, peekRate, RATE_RULES } from 
 import { secondsUntilWindowEnds } from "@/lib/rate-limit-core";
 import { emailProblem, isSixDigitCode, looksLikeEmail, nameProblem, normalizeEmail, normalizeWhatsapp, passwordProblem, whatsappProblem } from "@/lib/validation";
 import { hasPermission, type Permission } from "@/lib/permissions";
+import { logActivity } from "@/lib/activity";
 
 export type User = typeof users.$inferSelect;
 export type SignupProfile = { firstName: string; lastName: string; password: string; phone?: string };
 
 const SESSION_COOKIE = "nc_7x9k";
 const DEMO_COOKIE = "nc_d4q8";
+/** Holds the owner's own session while they view a customer account for support. HttpOnly, cleared on stop. */
+const RETURN_COOKIE = "nc_return";
+const SUPPORT_HINT_COOKIE = "nc_sv";
+const IMPERSONATION_MINUTES = 30;
 const SESSION_DAYS = 14;
 const OTP_MINUTES = 10;
 const OTP_MAX_ATTEMPTS = 5;
@@ -88,7 +93,7 @@ async function currentTokenHash() {
 }
 
 function publicUser(user: User) {
-  return { id: user.id, name: user.name, email: user.email };
+  return { id: user.id, name: user.name, email: user.email, role: user.role };
 }
 
 /* ----------------------------------------------------------------------------------------------
@@ -274,6 +279,7 @@ export async function resetPasswordWithCode(emailInput: string, code: string, ne
 }
 
 export async function changePassword(user: User, currentPassword: string, newPassword: string) {
+  await assertNotImpersonating();
   await enforceRate(RATE_RULES.accountChangePerUserHour, identity("user", user.id), "Too many account changes.");
   const [fresh] = await db.select().from(users).where(eq(users.id, user.id)).limit(1);
   if (!isActive(fresh) || !(await verify(fresh.passwordHash, currentPassword).catch(() => false))) throw new PublicError("Your current password is incorrect.", 400, { fields: { currentPassword: "Your current password is incorrect." } });
@@ -291,6 +297,7 @@ export async function changePassword(user: User, currentPassword: string, newPas
  * -------------------------------------------------------------------------------------------- */
 
 export async function requestEmailChange(user: User, newEmailInput: string, password: string, ip = "unknown") {
+  await assertNotImpersonating();
   await enforceRate(RATE_RULES.accountChangePerUserHour, identity("user", user.id), "Too many account changes.");
   const newEmail = normalizeEmail(newEmailInput);
   if (!looksLikeEmail(newEmail)) throw new PublicError("Enter a valid email address.", 400, { fields: { newEmail: "Enter a valid email address." } });
@@ -303,6 +310,7 @@ export async function requestEmailChange(user: User, newEmailInput: string, pass
 }
 
 export async function confirmEmailChange(user: User, newEmailInput: string, code: string, ip = "unknown") {
+  await assertNotImpersonating();
   const newEmail = normalizeEmail(newEmailInput);
   await consumeOtp(newEmail, `email-change:${user.id}`, code, ip);
   const oldEmail = user.email;
@@ -356,6 +364,8 @@ export async function requirePermission(permission: Permission) {
 export async function destroySession() {
   const cookieStore = await cookies();
   if (cookieStore.get(DEMO_COOKIE)) { cookieStore.delete(DEMO_COOKIE); return; }
+  cookieStore.delete(RETURN_COOKIE);
+  cookieStore.delete(SUPPORT_HINT_COOKIE);
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   // Always clear the cookie, even if the database is briefly unavailable.
   cookieStore.delete(SESSION_COOKIE);
@@ -377,6 +387,76 @@ export async function activeSessionCount(userId: string) {
 }
 
 /* ----------------------------------------------------------------------------------------------
+ * Support view ("log in as a customer"). Owner only. Time-limited, logged, and blocked from
+ * changing passwords, email, or deleting the account.
+ * -------------------------------------------------------------------------------------------- */
+
+async function impersonationRow(token: string | undefined) {
+  if (!token || token.length > 128) return null;
+  const [row] = await db.select().from(sessions)
+    .where(and(eq(sessions.tokenHash, hashToken(token)), gt(sessions.expiresAt, new Date()), isNotNull(sessions.impersonatorId))).limit(1);
+  return row ?? null;
+}
+
+export async function currentImpersonation() {
+  const row = await impersonationRow((await cookies()).get(SESSION_COOKIE)?.value);
+  if (!row?.impersonatorId) return null;
+  const [target] = await db.select({ name: users.name, email: users.email }).from(users).where(eq(users.id, row.userId)).limit(1);
+  const [owner] = await db.select({ name: users.name }).from(users).where(eq(users.id, row.impersonatorId)).limit(1);
+  return { targetName: target?.name ?? "Customer", targetEmail: target?.email ?? "", ownerName: owner?.name ?? "Owner", expiresAt: row.expiresAt.toISOString() };
+}
+
+export async function assertNotImpersonating() {
+  if (await currentImpersonation()) throw new PublicError("This action is not available while you are viewing a customer’s account for support.", 403, { code: "impersonating" });
+}
+
+export async function startImpersonation(owner: User, targetEmailInput: string, ip = "unknown") {
+  if (owner.role !== "admin") throw new PublicError("Only the owner can view a customer’s account.", 403, { code: "forbidden" });
+  if (await currentImpersonation()) throw new PublicError("Stop the current support view first.", 409);
+  await enforceRate(RATE_RULES.accountChangePerUserHour, identity("user", owner.id), "Too many account changes.");
+  const targetEmail = normalizeEmail(targetEmailInput);
+  const target = await findUserByEmail(targetEmail);
+  if (!isActive(target) || target.role !== "customer") throw new PublicError("No active customer account uses that email.", 404, { fields: { email: "No active customer account uses that email." } });
+  const ownerToken = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!ownerToken) throw new PublicError("Please sign in again.", 401, { code: "unauthenticated" });
+
+  const rawToken = randomBytes(32).toString("base64url");
+  const expiresAt = new Date(Date.now() + IMPERSONATION_MINUTES * 60_000);
+  await db.insert(sessions).values({ userId: target.id, tokenHash: hashToken(rawToken), expiresAt, impersonatorId: owner.id });
+  const cookieStore = await cookies();
+  const secure = process.env.NODE_ENV === "production";
+  cookieStore.set(RETURN_COOKIE, ownerToken, { httpOnly: true, secure, sameSite: "lax", path: "/", expires: new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60_000) });
+  cookieStore.set(SESSION_COOKIE, rawToken, { httpOnly: true, secure, sameSite: "lax", path: "/", expires: expiresAt, priority: "high" });
+  // Non-sensitive hint so the page only asks the server for the banner while a support view is open.
+  cookieStore.set(SUPPORT_HINT_COOKIE, "1", { httpOnly: false, secure, sameSite: "lax", path: "/", expires: expiresAt });
+  await logActivity({ kind: "impersonation", permission: "team", title: `Owner started viewing ${target.name}’s account`, detail: `Support view, ${IMPERSONATION_MINUTES} minutes. IP ${ip}.`, refType: "user", refId: target.id, actorId: owner.id });
+  return { targetName: target.name, expiresAt: expiresAt.toISOString() };
+}
+
+export async function stopImpersonation() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE)?.value;
+  const row = await impersonationRow(token);
+  if (!row?.impersonatorId) { cookieStore.delete(RETURN_COOKIE); return { stopped: false }; }
+  await db.delete(sessions).where(eq(sessions.id, row.id));
+  const ownerToken = cookieStore.get(RETURN_COOKIE)?.value;
+  cookieStore.delete(RETURN_COOKIE);
+  cookieStore.delete(SUPPORT_HINT_COOKIE);
+  let restored = false;
+  if (ownerToken && ownerToken.length <= 128) {
+    const [owner] = await db.select({ id: sessions.id }).from(sessions)
+      .where(and(eq(sessions.tokenHash, hashToken(ownerToken)), gt(sessions.expiresAt, new Date()))).limit(1);
+    if (owner) {
+      cookieStore.set(SESSION_COOKIE, ownerToken, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax", path: "/", expires: new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60_000), priority: "high" });
+      restored = true;
+    }
+  }
+  if (!restored) cookieStore.delete(SESSION_COOKIE);
+  await logActivity({ kind: "impersonation", permission: "team", title: "Owner stopped viewing a customer’s account", refType: "user", refId: row.userId, actorId: row.impersonatorId });
+  return { stopped: true, restored };
+}
+
+/* ----------------------------------------------------------------------------------------------
  * Account deletion (anonymisation)
  * -------------------------------------------------------------------------------------------- */
 
@@ -391,6 +471,7 @@ export async function openWorkCount(userId: string) {
  * anonymised (name, email, phone, address removed) instead of deleted.
  */
 export async function deleteAccount(user: User, password: string, confirmation: string) {
+  await assertNotImpersonating();
   if (confirmation.trim().toUpperCase() !== "DELETE") throw new PublicError("Type DELETE to confirm.", 400, { fields: { confirmation: "Type DELETE to confirm." } });
   await enforceRate(RATE_RULES.accountChangePerUserHour, identity("user", user.id), "Too many account changes.");
   const [fresh] = await db.select().from(users).where(eq(users.id, user.id)).limit(1);
