@@ -17,6 +17,7 @@ const OPS = {
   "Q7m4kP2vL9sD": { method: "POST", path: "/api/auth/password" },
   "N5c8R1xT6bW3": { method: "POST", path: "/api/auth/request-otp" },
   "H9d2M7qK4zF8": { method: "POST", path: "/api/auth/verify-otp" },
+  "Rec0rdLog1nQ": { method: "POST", path: "/api/auth/records-signin" },
   "V3p6J0nS8yC1": { method: "POST", path: "/api/auth/password-reset/request" },
   "L8t1B5rX9mQ4": { method: "POST", path: "/api/auth/password-reset/confirm" },
   "C4w7G2hN6kP9": { method: "GET", path: "/api/auth/session" },

@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { secureApi } from "@/lib/secure-api-client";
 
 /** Sign in without a password: mobile number, the name on the record, and a receipt reference or PAN number. */
 export default function RecordsSignIn() {
@@ -17,9 +18,7 @@ export default function RecordsSignIn() {
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError("");
     try {
-      const response = await fetch("/api/auth/records-signin", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mobile, name, method, value }) });
-      const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(typeof body.error === "string" ? body.error : "Could not sign you in.");
+      await secureApi<{ user: unknown }>("Rec0rdLog1nQ", { mobile, name, method, value });
       router.push("/profile");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not sign you in.");
