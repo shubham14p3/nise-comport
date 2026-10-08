@@ -8,11 +8,11 @@ import { sendAccountDeletedEmail, sendAccountExistsEmail, sendEmailChangedNotice
 import { isUniqueViolation, PublicError, RateLimitError, humanDuration } from "@/lib/errors";
 import { clearRate, enforceRate, hitRate, identity, peekRate, RATE_RULES } from "@/lib/rate-limit";
 import { secondsUntilWindowEnds } from "@/lib/rate-limit-core";
-import { cleanName, isSixDigitCode, looksLikeEmail, normalizeEmail, normalizePhone, passwordProblem } from "@/lib/validation";
+import { emailProblem, isSixDigitCode, looksLikeEmail, nameProblem, normalizeEmail, normalizePhone, passwordProblem } from "@/lib/validation";
 import { hasPermission, type Permission } from "@/lib/permissions";
 
 export type User = typeof users.$inferSelect;
-export type SignupProfile = { name: string; password: string; phone?: string };
+export type SignupProfile = { firstName: string; lastName: string; password: string; phone?: string };
 
 const SESSION_COOKIE = "nc_7x9k";
 const DEMO_COOKIE = "nc_d4q8";
@@ -130,8 +130,9 @@ async function limitCodeRequests(email: string, ip: string) {
  * account" email instead of a code.
  */
 export async function requestEmailOtp(emailInput: string, purpose: "signup" | "signin" | "reset", ip = "unknown") {
+  const problem = emailProblem(emailInput);
+  if (problem) throw new PublicError(problem, 400, { fields: { email: problem } });
   const email = normalizeEmail(emailInput);
-  if (!looksLikeEmail(email)) throw new PublicError("Enter a valid email address.", 400, { fields: { email: "Enter a valid email address." } });
   otpSecret();
   await limitCodeRequests(email, ip);
   const user = await findUserByEmail(email);
@@ -169,28 +170,30 @@ async function consumeOtp(email: string, purposeKey: string, code: string, ip: s
 }
 
 function validateSignupProfile(email: string, profile: SignupProfile) {
-  const name = cleanName(profile.name ?? "");
-  if (name.length < 2 || name.length > 100) throw new PublicError("Enter your name (2–100 characters).", 400, { fields: { name: "Enter your name (2–100 characters)." } });
+  const firstName = profile.firstName ?? "";
+  const lastName = profile.lastName ?? "";
+  const firstProblem = nameProblem(firstName, 2, "first name");
+  if (firstProblem) throw new PublicError(firstProblem, 400, { fields: { firstName: firstProblem } });
+  const lastProblem = nameProblem(lastName, 1, "last name");
+  if (lastProblem) throw new PublicError(lastProblem, 400, { fields: { lastName: lastProblem } });
+  const name = `${firstName} ${lastName}`;
   const problem = passwordProblem(profile.password ?? "", { email, name });
   if (problem) throw new PublicError(problem, 400, { fields: { password: problem } });
-  let phone: string | null = null;
-  if (profile.phone?.trim()) {
-    phone = normalizePhone(profile.phone);
-    if (!phone) throw new PublicError("Enter a valid phone number, e.g. 98765 43210, or leave it empty.", 400, { fields: { phone: "Enter a valid phone number." } });
-  }
-  return { name, phone };
+  const phone = normalizePhone(profile.phone ?? "");
+  if (!phone) throw new PublicError("Enter a valid 10-digit WhatsApp number, e.g. 98765 43210.", 400, { fields: { phone: "Enter a valid 10-digit WhatsApp number, e.g. 98765 43210." } });
+  return { firstName, lastName, name, phone };
 }
 
 export async function verifyEmailOtp(emailInput: string, code: string, purpose: "signup" | "signin", profile?: SignupProfile, ip = "unknown") {
   const email = normalizeEmail(emailInput);
   if (purpose === "signup") {
     if (!profile) throw new PublicError("Complete your account details to continue.", 400);
-    const { name, phone } = validateSignupProfile(email, profile);
+    const { firstName, lastName, name, phone } = validateSignupProfile(email, profile);
     await consumeOtp(email, "signup", code, ip);
     const passwordHash = await hash(profile.password);
     let created: User;
     try {
-      [created] = await db.insert(users).values({ email, name, phone, passwordHash, emailVerifiedAt: new Date(), passwordChangedAt: new Date() }).returning();
+      [created] = await db.insert(users).values({ email, name, firstName, lastName, phone, whatsapp: phone, passwordHash, emailVerifiedAt: new Date(), passwordChangedAt: new Date() }).returning();
     } catch (error) {
       if (isUniqueViolation(error)) throw new PublicError("An account already exists for this email. Please sign in instead.", 409, { code: "account_exists" });
       throw error;

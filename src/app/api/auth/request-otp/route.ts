@@ -4,7 +4,7 @@ import { requestEmailOtp } from "@/lib/auth";
 import { apiError, clientIp, readJson } from "@/lib/http";
 
 const requestSchema = z.object({
-  email: z.string().trim().min(3, "Enter your email address.").max(254),
+  email: z.string().min(3, "Enter your email address.").max(254),
   purpose: z.enum(["signup", "signin"]),
   /** Honeypot: real people never see or fill this field. */
   website: z.string().max(200).optional(),

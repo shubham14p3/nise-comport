@@ -6,7 +6,7 @@ import type { ServiceDetail } from "../lib/services";
 type Text3 = { en: string; hi: string; bn: string };
 
 export const users = pgTable("users", {
-  id: uuid("id").defaultRandom().primaryKey(), name: text("name").notNull(), email: text("email").notNull(),
+  id: uuid("id").defaultRandom().primaryKey(), name: text("name").notNull(), firstName: text("first_name"), lastName: text("last_name"), email: text("email").notNull(),
   phone: text("phone"), whatsapp: text("whatsapp"), passwordHash: text("password_hash").notNull(), emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
   city: text("city"), state: text("state"), postalCode: text("postal_code"), profileSummary: text("profile_summary"), preferredContact: text("preferred_contact").notNull().default("email"),
   role: text("role").notNull().default("customer"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

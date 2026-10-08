@@ -14,7 +14,7 @@ import { findOffer } from "@/lib/offers";
 import { promoDict, shortDate } from "@/lib/promo-i18n";
 import { useLocale } from "@/lib/use-locale";
 import { takeReturn } from "@/lib/after-login";
-import { passwordProblem, PASSWORD_MIN } from "@/lib/validation";
+import { emailProblem, nameProblem, normalizePhone, passwordProblem, PASSWORD_MIN } from "@/lib/validation";
 
 type Mode = "signin" | "signup";
 type WelcomeCoupon = { code: string; amount: number; minimum: number; expiresAt: string | null };
@@ -36,12 +36,13 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
   const codes = useLiveCodes();
   const [stage, setStage] = useState<"details" | "otp" | "welcome">("details");
   const [welcome, setWelcome] = useState<WelcomeCoupon | null>(null);
-  const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [phone, setPhone] = useState(""); const [password, setPassword] = useState(""); const [otp, setOtp] = useState("");
+  const [firstName, setFirstName] = useState(""); const [lastName, setLastName] = useState(""); const [email, setEmail] = useState(""); const [phone, setPhone] = useState(""); const [password, setPassword] = useState(""); const [otp, setOtp] = useState("");
   const [website, setWebsite] = useState("");
   const [showPassword, setShowPassword] = useState(false); const [busy, setBusy] = useState(false);
   const [error, setError] = useState(""); const [success, setSuccess] = useState(""); const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [resendIn, setResendIn] = useState(0);
-  const passwordHint = mode === "signup" && password ? passwordProblem(password, { email, name }) : "";
+  const fullName = `${firstName} ${lastName}`;
+  const passwordHint = mode === "signup" && password ? passwordProblem(password, { email, name: fullName }) : "";
   // Sign-up advertises the ₹50 welcome coupon; sign-in shows the festival / match code ending soonest.
   const offer = mode === "signup" ? findOffer("welcome-50") : codes[0] ?? findOffer("welcome-50");
 
@@ -59,6 +60,16 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
 
   function done() { router.push(takeReturn()); router.refresh(); }
 
+  /** Checks the sign-up fields in the browser first, so the person sees the exact problem next to the field. */
+  function signupProblems() {
+    const found: Record<string, string> = {};
+    const first = nameProblem(firstName, 2, "first name"); if (first) found.firstName = first;
+    const last = nameProblem(lastName, 1, "last name"); if (last) found.lastName = last;
+    const mail = emailProblem(email); if (mail) found.email = mail;
+    if (!normalizePhone(phone)) found.phone = "Enter a valid 10-digit WhatsApp number, e.g. 98765 43210.";
+    return found;
+  }
+
   async function submitDetails(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(""); setSuccess(""); setFieldErrors({});
     try {
@@ -68,7 +79,9 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
         if (result.requiresOtp) { setStage("otp"); setResendIn(60); setSuccess(t.sentVerify); return; }
         done(); return;
       }
-      const problem = passwordProblem(password, { email, name });
+      const problems = signupProblems();
+      if (Object.keys(problems).length) { setFieldErrors(problems); setError(Object.values(problems)[0]); return; }
+      const problem = passwordProblem(password, { email, name: fullName });
       if (problem) { setFieldErrors({ password: problem }); setError(problem); return; }
       const { ok, result } = await post("N5c8R1xT6bW3", { email, purpose: "signup", website });
       if (!ok) { showFailure(result, t.failSend); return; }
@@ -98,10 +111,10 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
   async function verify(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(""); setFieldErrors({});
     try {
-      const { ok, result } = await post("H9d2M7qK4zF8", { email, code: otp.trim(), purpose: mode, ...(mode === "signup" ? { name, password, phone } : {}) });
+      const { ok, result } = await post("H9d2M7qK4zF8", { email, code: otp.trim(), purpose: mode, ...(mode === "signup" ? { firstName, lastName, password, phone } : {}) });
       if (!ok) {
         showFailure(result, t.failVerify);
-        if (result.fields?.password || result.fields?.name || result.fields?.phone) setStage("details");
+        if (result.fields?.password || result.fields?.firstName || result.fields?.lastName || result.fields?.phone) setStage("details");
         return;
       }
       if (result.welcomeCoupon) { setWelcome(result.welcomeCoupon); setStage("welcome"); setSuccess(""); return; }
@@ -154,9 +167,10 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
           </div>
           <button type="button" className="btn btn--primary btn--lg btn--block" onClick={done}>{p.continue}<ArrowRight size={18}/></button>
         </div> : stage === "details" ? <form onSubmit={submitDetails} className="auth__form" noValidate>
-          {mode === "signup" && <label className="field"><span className="field__label">{t.name}</span><span className="input-wrap"><UserRound size={18}/><input autoComplete="name" required minLength={2} maxLength={100} value={name} onChange={e => setName(e.target.value)} placeholder={t.namePh} aria-invalid={Boolean(fieldErrors.name)} aria-describedby={fieldErrors.name ? "name-error" : undefined}/></span>{fieldError("name")}</label>}
+          {mode === "signup" && <label className="field"><span className="field__label">{t.firstName}</span><span className="input-wrap"><UserRound size={18}/><input autoComplete="given-name" aria-required="true" maxLength={50} value={firstName} onChange={e => setFirstName(e.target.value)} placeholder={t.firstNamePh} aria-invalid={Boolean(fieldErrors.firstName)} aria-describedby={fieldErrors.firstName ? "firstName-error" : undefined}/></span>{fieldError("firstName")}</label>}
+          {mode === "signup" && <label className="field"><span className="field__label">{t.lastName}</span><span className="input-wrap"><UserRound size={18}/><input autoComplete="family-name" aria-required="true" maxLength={50} value={lastName} onChange={e => setLastName(e.target.value)} placeholder={t.lastNamePh} aria-invalid={Boolean(fieldErrors.lastName)} aria-describedby={fieldErrors.lastName ? "lastName-error" : undefined}/></span>{fieldError("lastName")}</label>}
           <label className="field"><span className="field__label">{t.email}</span><span className="input-wrap"><Mail size={18}/><input type="email" autoComplete="email" inputMode="email" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? "email-error" : undefined}/></span>{fieldError("email")}</label>
-          {mode === "signup" && <label className="field"><span className="field__label">{t.phone} <em>{t.optional}</em></span><span className="input-wrap"><span className="input-prefix">+91</span><input type="tel" autoComplete="tel-national" inputMode="tel" maxLength={20} value={phone} onChange={e => setPhone(e.target.value)} placeholder="98765 43210" aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? "phone-error" : undefined}/></span>{fieldError("phone")}</label>}
+          {mode === "signup" && <label className="field"><span className="field__label">{t.whatsapp}</span><span className="input-wrap"><span className="input-prefix">+91</span><input type="tel" autoComplete="tel-national" inputMode="tel" aria-required="true" maxLength={20} value={phone} onChange={e => setPhone(e.target.value)} placeholder="98765 43210" aria-invalid={Boolean(fieldErrors.phone)} aria-describedby={fieldErrors.phone ? "phone-error" : undefined}/></span>{fieldError("phone")}</label>}
           <label className="field"><span className="field__label">{t.password}</span><span className="input-wrap"><LockKeyhole size={18}/><input type={showPassword ? "text" : "password"} autoComplete={mode === "signup" ? "new-password" : "current-password"} required minLength={mode === "signup" ? PASSWORD_MIN : 1} maxLength={128} value={password} onChange={e => setPassword(e.target.value)} placeholder={mode === "signup" ? fill(t.newPasswordPh, { n: PASSWORD_MIN }) : t.passwordPh} aria-invalid={Boolean(fieldErrors.password)} aria-describedby={mode === "signup" ? "password-hint" : fieldErrors.password ? "password-error" : undefined}/><button type="button" className="icon-btn" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? t.hide : t.show}>{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button></span>
             {mode === "signup" && <span id="password-hint" className={passwordHint ? "field__hint field__hint--warn" : "field__hint"}>{passwordHint || fill(t.passwordHint, { n: PASSWORD_MIN })}</span>}
             {mode === "signin" && fieldError("password")}

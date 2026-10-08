@@ -32,6 +32,30 @@ export function cleanName(value: string) {
  *   "+44 20 7946 0958" (international) -> "+442079460958"
  * Returns null when the number cannot be valid.
  */
+/**
+ * Sign-up name rule: letters in any language, with single spaces, hyphens, apostrophes or dots inside.
+ * No numbers, no symbols, no spaces at the start or end, no double spaces.
+ */
+export function nameProblem(value: string, minLetters: number, label: string): string | null {
+  if (!value) return `Enter your ${label}.`;
+  if (value !== value.trim()) return `Remove the spaces at the start or end of your ${label}.`;
+  if (/\s{2,}/.test(value)) return `Use only one space between words in your ${label}.`;
+  if (value.length > 50) return `Your ${label} is too long (50 characters at most).`;
+  if (!/^[\p{L}\p{M}][\p{L}\p{M} '’.-]*$/u.test(value)) return `Your ${label} can only have letters, with no numbers or symbols.`;
+  if (value.replace(/[^\p{L}]/gu, "").length < minLetters) return `Your ${label} needs at least ${minLetters} letters.`;
+  return null;
+}
+
+/** Strict email check for sign-up and sign-in codes: no spaces, no stray symbols, no leading or double dots. */
+export function emailProblem(value: string): string | null {
+  if (!value) return "Enter your email address.";
+  if (value !== value.trim()) return "Remove the spaces at the start or end of the email address.";
+  if (/\s/.test(value)) return "An email address can't contain spaces.";
+  if (value.length > 254 || !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/.test(value)) return "Enter a valid email address, like name@example.com.";
+  if (value.startsWith(".") || value.includes("..") || value.includes(".@")) return "Check the dots in the email address.";
+  return null;
+}
+
 export function normalizePhone(value: string): string | null {
   const trimmed = value.normalize("NFKC").trim();
   if (!trimmed) return null;
