@@ -59,8 +59,9 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
   }
 
   /** Staff and the owner land on the admin dashboard; customers on their profile (unless they were headed somewhere). */
-  function done(result?: { role?: string; user?: { role?: string } }) {
-    const role = result?.role ?? result?.user?.role;
+  function done(result?: unknown) {
+    const body = result as { role?: string; user?: { role?: string } } | undefined;
+    const role = body?.role ?? body?.user?.role;
     const staff = role === "admin" || role === "staff";
     router.push(takeReturn(staff ? "/admin" : "/profile")); router.refresh();
   }
@@ -170,7 +171,7 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
             <div className="big-ticket__left"><span className="big-ticket__kicker"><Gift size={15}/>{p.personal}</span><strong>₹{welcome.amount}</strong></div>
             <div className="big-ticket__right"><span className="promo-card__code-label">{p.code}</span><b className="big-ticket__code">{welcome.code}</b><CopyCode text={welcome.code} locale={locale} className="copy-btn copy-btn--light"/></div>
           </div>
-          <button type="button" className="btn btn--primary btn--lg btn--block" onClick={done}>{p.continue}<ArrowRight size={18}/></button>
+          <button type="button" className="btn btn--primary btn--lg btn--block" onClick={() => done()}>{p.continue}<ArrowRight size={18}/></button>
         </div> : stage === "details" ? <form onSubmit={submitDetails} className="auth__form" noValidate>
           {mode === "signup" && <label className="field"><span className="field__label">{t.firstName}</span><span className="input-wrap"><UserRound size={18}/><input autoComplete="given-name" aria-required="true" maxLength={50} value={firstName} onChange={e => setFirstName(e.target.value)} placeholder={t.firstNamePh} aria-invalid={Boolean(fieldErrors.firstName)} aria-describedby={fieldErrors.firstName ? "firstName-error" : undefined}/></span>{fieldError("firstName")}</label>}
           {mode === "signup" && <label className="field"><span className="field__label">{t.lastName}</span><span className="input-wrap"><UserRound size={18}/><input autoComplete="family-name" aria-required="true" maxLength={50} value={lastName} onChange={e => setLastName(e.target.value)} placeholder={t.lastNamePh} aria-invalid={Boolean(fieldErrors.lastName)} aria-describedby={fieldErrors.lastName ? "lastName-error" : undefined}/></span>{fieldError("lastName")}</label>}
