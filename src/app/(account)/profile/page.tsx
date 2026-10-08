@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import ProfileDashboard from "@/components/profile-dashboard";
 import DemoProfile from "@/components/demo-profile";
-import { getCurrentUser } from "@/lib/auth";
+import { currentImpersonation, getCurrentUser } from "@/lib/auth";
 import { isStaffRole } from "@/lib/permissions";
 import LinkRecords from "@/components/link-records";
 
@@ -14,6 +14,8 @@ export default async function ProfilePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (user.role === "demo") return <DemoProfile/>;
+  // Staff, and anyone viewing an account for support, do not get the link button.
+  const supportView = isStaffRole(user.role) || Boolean(await currentImpersonation());
   // No customer record, request, wallet or identifier is serialized into the RSC payload.
   // The authenticated workspace loads its private data through the encrypted browser transport.
   return (
@@ -21,7 +23,7 @@ export default async function ProfilePage() {
       {isStaffRole(user.role) ? (
         <div className="admin-entry"><Link className="btn btn--ghost" href="/admin">Open admin dashboard</Link></div>
       ) : null}
-      <div className="link-records-slot"><LinkRecords/></div>
+      {supportView ? null : <div className="link-records-slot"><LinkRecords/></div>}
       <ProfileDashboard/>
     </>
   );

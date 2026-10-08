@@ -2194,3 +2194,10 @@ a.site-banner:hover { transform: translateY(-3px); }
 .email-picker__row small { color: var(--muted); overflow-wrap: anywhere; }
 .email-picker__pager { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: .875rem; color: var(--muted); }
 
+
+/* Link past records: dialog opened from a button */
+.links-modal { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px; background: rgba(15, 23, 42, .45); }
+.links-modal__panel { width: 100%; max-width: 520px; max-height: 90vh; overflow: auto; padding: 20px; border-radius: 18px; background: var(--surface); box-shadow: 0 24px 60px rgba(15, 23, 42, .25); }
+.links-modal__head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+.links-modal__head h2 { margin: 0; font-size: 1.25rem; }
+.link-records__open { margin: 8px 0; }

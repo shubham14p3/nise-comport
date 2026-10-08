@@ -1,5 +1,5 @@
 import { and, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
-import { contacts, customerRecords, recordImports, recordSends, users } from "@/db/schema";
+import { contacts, customerRecords, recordClaims, recordImports, recordSends, users } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import { recordAccountRow } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -378,17 +378,21 @@ export async function servicesSummary() {
 
 /**
  * One customer account per mobile number on the register, using the first name seen for that number.
+ * Each record account is also linked to its own first name, so its past records show on the account.
  * Numbers that already have an account (website sign-up or an earlier import) are left alone.
+ * Runs on every import and from scripts/create-record-accounts.ts, so older accounts are linked too.
  */
 export async function ensureRecordAccounts(): Promise<number> {
   const rows = await db.select({ name: customerRecords.name, payloadEnc: customerRecords.payloadEnc }).from(customerRecords).where(isNull(customerRecords.removedAt));
-  const people = new Map<string, string>();
+  // phone -> the name exactly as it is on the record (used to link), plus its tidy form (used for the account name)
+  const people = new Map<string, { raw: string; tidy: string }>();
   for (const row of rows) {
     const data = open<{ mobile: string | null; whatsapp?: string | null }>(row.payloadEnc);
     const phone = data.mobile ?? data.whatsapp ?? null;
-    const name = row.name?.trim().replace(/\s+/g, " ").slice(0, 100);
-    if (!phone || !/^\+91[6-9]\d{9}$/.test(phone) || !name || name.length < 2 || people.has(phone)) continue;
-    people.set(phone, name);
+    const raw = row.name ?? "";
+    const tidy = raw.trim().replace(/\s+/g, " ").slice(0, 100);
+    if (!phone || !/^\+91[6-9]\d{9}$/.test(phone) || tidy.length < 2 || people.has(phone)) continue;
+    people.set(phone, { raw, tidy });
   }
   const phones = [...people.keys()];
   const taken = new Set<string>();
@@ -399,8 +403,26 @@ export async function ensureRecordAccounts(): Promise<number> {
   }
   const fresh = phones.filter((phone) => !taken.has(phone));
   for (let index = 0; index < fresh.length; index += 500) {
-    const values = fresh.slice(index, index + 500).map((phone) => recordAccountRow(phone, people.get(phone) ?? "Customer"));
+    const values = fresh.slice(index, index + 500).map((phone) => recordAccountRow(phone, people.get(phone)?.tidy ?? "Customer"));
     await db.insert(users).values(values).onConflictDoNothing();
+  }
+
+  // Link each record account to its own mobile's name (approved), if that link is not there yet.
+  for (let index = 0; index < phones.length; index += 500) {
+    const chunk = phones.slice(index, index + 500);
+    const accounts = await db.select({ id: users.id, phone: users.phone }).from(users).where(and(inArray(users.phone, chunk), eq(users.fromRecords, true)));
+    if (!accounts.length) continue;
+    const linked = await db.select({ userId: recordClaims.userId, mobileHash: recordClaims.mobileHash }).from(recordClaims)
+      .where(and(inArray(recordClaims.userId, accounts.map((account) => account.id)), eq(recordClaims.status, "approved")));
+    const have = new Set(linked.map((row) => `${row.userId}|${row.mobileHash}`));
+    const claims = accounts.flatMap((account) => {
+      const person = account.phone ? people.get(account.phone) : undefined;
+      if (!account.phone || !person) return [];
+      const mobileHash = blindIndex("mobile", account.phone);
+      if (have.has(`${account.id}|${mobileHash}`)) return [];
+      return [{ userId: account.id, mobileHash, matchedName: person.raw, claimedName: person.tidy, method: "register", status: "approved", decidedAt: new Date() }];
+    });
+    for (let start = 0; start < claims.length; start += 500) await db.insert(recordClaims).values(claims.slice(start, start + 500));
   }
   return fresh.length;
 }

@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi } from "@/lib/secure-api-client";
+import { isPlaceholderEmail } from "@/lib/record-account-email";
+import { RECORDS_LINKED_EVENT } from "@/components/link-records";
 import { whatsappHref } from "@/lib/public-contact";
 import type { CustomerVoucher } from "@/lib/promo-view";
 
@@ -68,9 +70,35 @@ const dateLabel = (value: string) => new Date(value).toLocaleDateString("en-IN",
 const dateTime = (value: string) => new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 const rupees = (value: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(value);
 
+type PastRecord = { id: string; serviceLabel: string; recordDate: string | null; statusLabel: string; statusNote: string | null; fields: { label: string; value: string }[] };
+
+/** Records made before, linked to this account (completed by the centre). */
+function PastRecordList({ rows }: { rows: PastRecord[] }) {
+  return <div className="link-records__list"><h3>Past records linked to your account</h3>
+    <ul className="link-records__items">{rows.map((row) => <li key={row.id}>
+      <b>{row.serviceLabel}</b> <span className="status-pill">{row.statusLabel}</span>
+      <dl>{row.fields.map((field) => <div key={field.label}><dt>{field.label}</dt><dd>{field.value}</dd></div>)}</dl>
+      {row.statusNote ? <p className="link-records__note">{row.statusNote}</p> : null}
+    </li>)}</ul>
+  </div>;
+}
+
 export default function ProfileDashboard({ demoMode = false }: { demoMode?: boolean }) {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(demoMode ? DEMO_SNAPSHOT : null);
   const [loadError, setLoadError] = useState("");
+  const [pastRecords, setPastRecords] = useState<PastRecord[] | null>(demoMode ? [] : null);
+  // Past records are read once; they are read again only after a link is approved.
+  const loadPastRecords = useCallback(async () => {
+    try { setPastRecords((await secureApi<{ records: PastRecord[] }>("Cl4imMine5Rz", {})).records); }
+    catch { setPastRecords([]); }
+  }, []);
+  useEffect(() => {
+    if (demoMode) return;
+    void loadPastRecords();
+    const again = () => void loadPastRecords();
+    window.addEventListener(RECORDS_LINKED_EVENT, again);
+    return () => window.removeEventListener(RECORDS_LINKED_EVENT, again);
+  }, [demoMode, loadPastRecords]);
 
   const load = useCallback(async () => {
     setLoadError("");
@@ -225,7 +253,12 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
           </>}
         </article>}
         <RequestRows rows={activeRequests}/></div>;
-      case "history": return <div className="panel"><SectionHeading eyebrow="COMPLETED & CLOSED" title="Request history" text="Completed, cancelled and otherwise closed requests."/><RequestRows rows={historyRequests}/>{!historyRequests.length && requests.length > 0 && <p className="muted">Your requests are still in progress. They move here once the team closes them.</p>}</div>;
+      case "history": return <div className="panel"><SectionHeading eyebrow="COMPLETED & CLOSED" title="Request history" text="Completed, cancelled and otherwise closed requests, and past records linked to your account."/>
+        {pastRecords && pastRecords.length > 0 && <PastRecordList rows={pastRecords}/>}
+        <RequestRows rows={historyRequests}/>
+        {!historyRequests.length && requests.length > 0 && <p className="muted">Your requests are still in progress. They move here once the team closes them.</p>}
+        {!historyRequests.length && requests.length === 0 && pastRecords !== null && pastRecords.length === 0 && <p className="muted">No completed requests or linked records yet.</p>}
+      </div>;
       case "prints": return <div className="panel"><SectionHeading eyebrow="DOCUMENT SERVICES" title="Print orders" text="Your print requests, pickup or delivery choice, the estimate and the latest status." />{jobs.length ? <div className="record-list">{jobs.map((job) => <article className="record" key={job.reference}><span className="record__icon"><Printer size={20}/></span><div className="record__body"><b>Print order · {job.fulfillment}</b><small>{job.reference} · {dateLabel(job.createdAt)}</small><p>Estimate: {rupees(Number(job.total))}</p></div><span className={statusClass(job.status)}>{statusText(job.status, locale)}</span></article>)}</div> : <EmptyState icon={<Printer size={22}/>} title="No print orders yet" text="Upload a document, choose options and request an estimate. The team confirms the final cost before printing." action={<Link href="/print" className="btn btn--primary">Start a print request <ArrowRight size={16}/></Link>}/>}</div>;
       case "wallet": return <div className="panel"><SectionHeading eyebrow="CUSTOMER REWARDS" title="Wallet & credits" text="Credits and adjustments posted by the team, with date and reference."/><div className="wallet-hero"><span>AVAILABLE BALANCE</span><strong>{rupees(balance)}</strong><small>Top-up and online wallet payment are not enabled.</small></div>{wallet.length ? <div className="ledger">{wallet.map((entry, index) => <article key={`${entry.createdAt}-${index}`}><div><b>{entry.description}</b><small>{dateLabel(entry.createdAt)}{entry.reference ? ` · ${entry.reference}` : ""}</small></div><strong className={entry.kind.toLowerCase() === "debit" ? "is-debit" : "is-credit"}>{entry.kind.toLowerCase() === "debit" ? "−" : "+"}{rupees(Number(entry.amount))}</strong></article>)}</div> : <EmptyState icon={<WalletCards size={22}/>} title="No wallet activity yet" text="Eligible promotional credits or adjustments will appear here."/>}</div>;
       case "vouchers": return <div className="panel"><SectionHeading eyebrow="SAVINGS" title="Vouchers & offers" text="Your ₹50 welcome coupon and the festival and Team India codes live today. Each code can be used once." /><VoucherBoard vouchers={coupons}/></div>;
@@ -258,7 +291,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
       <div className="page-hero__bg" aria-hidden="true"><span className="blob blob--1"/><span className="blob blob--2"/></div>
       <div className="container profile__hero-inner">
         <span className="profile__avatar" aria-hidden="true">{firstName.slice(0, 1).toUpperCase()}</span>
-        <div className="profile__hello"><span className="eyebrow eyebrow--light">MY ACCOUNT</span><h1>Hi {firstName}, <span className="grad-text grad-text--warm">good to see you.</span></h1><p>{user.email} · <span className={user.emailVerified ? "verified" : "unverified"}><ShieldCheck size={15}/> Email {user.emailVerified ? "verified" : "not verified"}</span></p></div>
+        <div className="profile__hello"><span className="eyebrow eyebrow--light">MY ACCOUNT</span><h1>Hi {firstName}, <span className="grad-text grad-text--warm">good to see you.</span></h1><p>{isPlaceholderEmail(user.email) ? <span>No email added yet. Add one in Profile details.</span> : <>{user.email} · <span className={user.emailVerified ? "verified" : "unverified"}><ShieldCheck size={15}/> Email {user.emailVerified ? "verified" : "not verified"}</span></>}</p></div>
         <Link className="btn btn--primary btn--lg profile__cta" href="/request"><Plus size={18}/>New request</Link>
       </div>
     </section>

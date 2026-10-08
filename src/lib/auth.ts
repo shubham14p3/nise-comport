@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { and, count, desc, eq, gt, inArray, isNotNull, isNull, lt, ne, notInArray, sql } from "drizzle-orm";
 import { hash, verify } from "@node-rs/argon2";
 import { db } from "@/lib/db";
-import { addresses, emailOtps, notifications, printJobs, serviceRequests, sessions, storedFiles, users } from "@/db/schema";
+import { addresses, emailOtps, notifications, printJobs, recordClaims, serviceRequests, sessions, storedFiles, users } from "@/db/schema";
 import { sendAccountDeletedEmail, sendAccountExistsEmail, sendEmailChangedNotice, sendOtpEmail, sendPasswordChangedEmail, type OtpPurpose } from "@/lib/email";
 import { isUniqueViolation, PublicError, RateLimitError, humanDuration } from "@/lib/errors";
 import { clearRate, enforceRate, hitRate, identity, peekRate, RATE_RULES } from "@/lib/rate-limit";
@@ -12,6 +12,8 @@ import { emailProblem, isSixDigitCode, looksLikeEmail, nameProblem, normalizeEma
 import { hasPermission, type Permission } from "@/lib/permissions";
 import { findRecordMatch } from "@/lib/claims";
 import { logActivity } from "@/lib/activity";
+import { RECORDS_EMAIL_DOMAIN } from "@/lib/record-account-email";
+import { blindIndex } from "@/lib/vault";
 
 export type User = typeof users.$inferSelect;
 export type SignupProfile = { firstName: string; lastName: string; password: string; phone?: string };
@@ -562,7 +564,7 @@ export const NO_PASSWORD_HASH = "!records-account-no-password";
 /** One account per mobile number, made from an imported register. The email is a reserved placeholder until the person adds a real one. */
 export function recordAccountRow(phone: string, name: string) {
   const digits = phone.replace(/\D/g, "");
-  return { name, email: `${digits}@records.nisecomport.invalid`, phone, whatsapp: phone, passwordHash: NO_PASSWORD_HASH, role: "customer", fromRecords: true };
+  return { name, email: `${digits}@${RECORDS_EMAIL_DOMAIN}`, phone, whatsapp: phone, passwordHash: NO_PASSWORD_HASH, role: "customer", fromRecords: true };
 }
 
 export async function createRecordAccount(phone: string, name: string) {
@@ -589,6 +591,13 @@ export async function signInWithRecords(mobileInput: string, nameInput: string, 
   let user: User | null = existing.find((row) => row.role === "customer") ?? existing[0] ?? null;
   if (!user) user = await createRecordAccount(phone, match.name);
   if (!isActive(user)) throw new PublicError("This account is not active. Contact the centre.", 403, { code: "account_inactive" });
+  // Signing in with a record links it, so the account shows its past records.
+  const mobileHash = blindIndex("mobile", phone);
+  const [alreadyLinked] = await db.select({ id: recordClaims.id }).from(recordClaims)
+    .where(and(eq(recordClaims.userId, user.id), eq(recordClaims.mobileHash, mobileHash), eq(recordClaims.status, "approved"))).limit(1);
+  if (!alreadyLinked) {
+    await db.insert(recordClaims).values({ userId: user.id, mobileHash, matchedName: match.name, claimedName: nameInput.trim().replace(/\s+/g, " "), method, status: "approved", decidedAt: new Date() });
+  }
   await createSession(user.id);
   await logActivity({ kind: "status", permission: "records", category: "records", title: `${user.name} signed in with a past record`, detail: `Checked by ${method === "pan" ? "PAN" : "reference number"} · ${match.name}`, refType: "user", refId: user.id, actorId: user.id });
   return publicUser(user);
