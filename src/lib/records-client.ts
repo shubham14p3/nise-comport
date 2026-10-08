@@ -1,20 +1,43 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { secureApi } from "@/lib/secure-api-client";
 import { RECORD_SERVICES } from "@/lib/record-import";
 
 /**
  * The only place the records screens talk to the server.
- * - Reads are cached until something changes them (a status change, an import), so opening the same
- *   service or person again does not call the server again.
+ * - Every read is cached: opening a service, a year, a page or a person again shows the stored answer.
+ * - The cache is cleared only when something changes (a status is saved, a register is imported).
+ *   Screens that are open then load once more, through useRecordsVersion().
  * - Identical reads that are already running share one request.
- * - Every request in flight is listed, so the screen can say what is loading.
  */
 const RECORDS_OP = "W8r2T5yN1cF6";
 const STATUS_OP = "S8t3Ra5vM1pY";
 
 const cache = new Map<string, unknown>();
 const running = new Map<string, Promise<unknown>>();
+let version = 0;
+const versionListeners = new Set<() => void>();
+
+/** Something changed: forget every stored answer and tell the open screens. */
+function changed() {
+  cache.clear();
+  version += 1;
+  versionListeners.forEach((listener) => listener());
+}
+
+/** Changes each time the records change (status saved, import). */
+export function subscribeRecordsVersion(listener: () => void) {
+  versionListeners.add(listener);
+  return () => { versionListeners.delete(listener); };
+}
+export function getRecordsVersion(): number {
+  return version;
+}
+/** Open screens use this to load again after a change, and not otherwise. */
+export function useRecordsVersion(): number {
+  return useSyncExternalStore(subscribeRecordsVersion, getRecordsVersion, () => 0);
+}
 
 /** Labels go to the shared loader (api-loading), so the screen shows what is being fetched. */
 function call<T>(label: string, op: string, params: Record<string, unknown>, cacheKey?: string): Promise<T> {
@@ -30,9 +53,7 @@ function call<T>(label: string, op: string, params: Record<string, unknown>, cac
   return request;
 }
 
-function dropCache(prefix: string) {
-  for (const key of [...cache.keys()]) if (key.startsWith(prefix)) cache.delete(key);
-}
+const filterKey = (filters: Record<string, string>) => JSON.stringify(filters);
 
 export const recordsClient = {
   services<T>() {
@@ -41,19 +62,26 @@ export const recordsClient = {
   stages<T>(service: string) {
     return call<T>(`Loading ${RECORD_SERVICES[service] ?? service} stages…`, RECORDS_OP, { view: "stages", service }, `stages:${service}`);
   },
+  /** Year counts for one service, after the filters (text, status, dates). */
+  years<T>(service: string, label: string, filters: Record<string, string>) {
+    return call<T>(`Loading ${label}…`, RECORDS_OP, { view: "years", service, ...filters }, `years:${service}:${filterKey(filters)}`);
+  },
+  /** One page of records in a year (or undated) for one service. */
+  rows<T>(service: string, label: string, filters: Record<string, string>, year: string | null, page: number) {
+    const params = { view: "records", service, ...filters, year: year ?? undefined, undated: year === null ? true : undefined, page };
+    return call<T>(`Loading ${label} records…`, RECORDS_OP, params, `rows:${service}:${filterKey(filters)}:${year ?? "undated"}:${page}`);
+  },
   person<T>(key: string) {
     return call<T>("Opening customer records…", RECORDS_OP, { key }, `person:${key}`);
   },
-  /** Saves a status and clears the cached counts and person records it changes. */
+  /** Saves a status. Everything stored is then out of date, so screens load again. */
   async setStatus<T = unknown>(recordId: string, status: string, note?: string) {
     const value = await call<T>("Saving status…", STATUS_OP, { recordId, status, note });
-    dropCache("stages:");
-    dropCache("person:");
-    dropCache("services");
+    changed();
     return value;
   },
-  /** After an import: everything cached may be out of date. */
+  /** After an import: everything stored is out of date, so screens load again. */
   clearAll() {
-    cache.clear();
+    changed();
   },
 };

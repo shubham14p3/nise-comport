@@ -8,7 +8,7 @@ import { RECORD_STATUSES, RECORD_STATUS_KEYS } from "@/lib/record-status";
 import { Check, ChevronLeft, ChevronRight, Copy, Database, Eye, FileText, Phone, Search, Upload, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
-import { recordsClient } from "@/lib/records-client";
+import { recordsClient, useRecordsVersion } from "@/lib/records-client";
 import { useRouter } from "next/navigation";
 
 type Person = { key: string; name: string; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; total: number; services: string[]; lastDate: string | null; nextRenewal: string | null; sentCount: number; lastSentAt: string | null; recentSends: string[] };
@@ -185,13 +185,14 @@ export default function RecordsPanel({ service: chosen = "", serviceOnly = false
   }, [serviceOnly]);
 
   // Counts per stage for the chosen service (the row above its list).
+  const version = useRecordsVersion();
   useEffect(() => {
     if (!service) return;
     let active = true;
     recordsClient.stages<{ total: number; counts: Record<string, number> }>(service)
       .then((value) => { if (active) setStages({ service, ...value }); }).catch(() => undefined);
     return () => { active = false; };
-  }, [service]);
+  }, [service, version]);
 
   async function upload(event: FormEvent) {
     event.preventDefault(); if (!file) return;

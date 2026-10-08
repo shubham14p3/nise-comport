@@ -10,7 +10,7 @@ import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
 import { ArrowRight, Bell, ClipboardList, Contact, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, TicketPercent, UsersRound, WalletCards, Images } from "lucide-react";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
-import { recordsClient } from "@/lib/records-client";
+import { recordsClient, useRecordsVersion } from "@/lib/records-client";
 import PromotionsPanel from "@/components/promotions-panel";
 import CampaignsPanel from "@/components/campaigns-panel";
 import ContactsPanel from "@/components/contacts-panel";
@@ -207,10 +207,18 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
   const fromHash = tabs.find((tab) => tab.id === hash.split("/")[0])?.id;
   const active = picked ?? (hashService ? `svc:${hashService}` : fromHash) ?? tabs[0]?.id;
   const activeService = active?.startsWith("svc:") ? active.slice("svc:".length) : "";
+  /** Each service opened stays mounted (hidden when another area is shown), so coming back shows it at once. */
+  const [visited, setVisited] = useState<string[]>([]);
+  const mountedServices = [...new Set([...visited, ...(activeService ? [activeService] : [])])];
   const clearUnread = useCallback(() => setSummary((value) => value ? { ...value, unread: 0 } : value), []);
   function choose(tab: Tab) { setPicked(tab); window.history.replaceState(null, "", `#${tab}`); }
-  function chooseService(service: string) { setPicked(`svc:${service}`); window.history.replaceState(null, "", `#svc/${service}`); }
+  function chooseService(service: string) {
+    setPicked(`svc:${service}`);
+    setVisited((current) => (current.includes(service) ? current : [...current, service]));
+    window.history.replaceState(null, "", `#svc/${service}`);
+  }
   const first = me.name.split(/\s+/)[0] || "there";
+  const version = useRecordsVersion();
   const [services, setServices] = useState<{ service: string; total: number }[]>([]);
   const [serviceNames, setServiceNames] = useState<Record<string, string>>({});
   const canRecords = me.role === "admin" || me.permissions.includes("records");
@@ -221,7 +229,7 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
       .then((value) => { if (!alive) return; setServices(value.byService.filter((row) => row.total > 0).sort((a, b) => b.total - a.total)); setServiceNames(value.services); })
       .catch(() => undefined);
     return () => { alive = false; };
-  }, [canRecords]);
+  }, [canRecords, version]);
   /** One sidebar item per record service, each with its count. Shown just before PAN data. */
   const serviceButtons = canRecords ? services.map((row) => <button key={`svc-${row.service}`} type="button" className={active === `svc:${row.service}` ? "is-active" : undefined} aria-current={active === `svc:${row.service}` ? "page" : undefined} onClick={() => chooseService(row.service)}>
     <FileText size={19}/><span>{serviceNames[row.service] ?? row.service}</span><small aria-label={`${row.total} records`}>{row.total.toLocaleString("en-IN")}</small>
@@ -258,7 +266,9 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
         {active === "inbox" && <InboxPanel onSeen={clearUnread}/>}
         {active === "requests" && <RequestQueue/>}
         {active === "records" && <RecordsPanel key="all" service=""/>}
-        {activeService && <RecordsPanel key={activeService} service={activeService} serviceOnly/>}
+        {mountedServices.map((service) => <div key={service} style={{ display: activeService === service ? undefined : "none" }}>
+          <RecordsPanel service={service} serviceOnly/>
+        </div>)}
         {active === "email" && <EmailCampaignsPanel/>}
         {active === "promotions" && <PromotionsPanel canEdit/>}
         {active === "content" && <SiteContentPanel/>}

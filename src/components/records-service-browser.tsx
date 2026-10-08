@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { secureApi } from "@/lib/secure-api-client";
+import { recordsClient, useRecordsVersion } from "@/lib/records-client";
 import { RECORD_STATUSES } from "@/lib/record-status";
 
 type YearRow = { year: number | null; total: number };
@@ -26,27 +26,27 @@ export default function RecordsServiceBrowser({ service, label, onOpen, initialS
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [pages, setPages] = useState<Record<string, Page>>({});
   const filters = { q: q.trim(), status, from, to };
+  // Changes after a status is saved or an import: then the open list loads again once.
+  const version = useRecordsVersion();
 
   // Reload the year counts whenever the service or a filter changes (typing waits a moment).
   useEffect(() => {
     let active = true;
     const timer = setTimeout(() => {
       setYears(null); setOpen({}); setPages({}); setError("");
-      secureApi<{ years: YearRow[] }>("W8r2T5yN1cF6", { view: "years", service, ...filters })
+      recordsClient.years<{ years: YearRow[] }>(service, label, filters)
         .then((value) => { if (active) setYears(value.years); })
         .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load this service."); });
     }, q ? 300 : 0);
     return () => { active = false; clearTimeout(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [service, q, status, from, to]);
+  }, [service, q, status, from, to, version]);
 
   async function loadPage(year: number | null, page: number) {
     const key = yearKey(year);
     setPages((current) => ({ ...current, [key]: { records: current[key]?.records ?? [], hasMore: current[key]?.hasMore ?? false, page, loading: true } }));
     try {
-      const result = await secureApi<{ records: RecordRow[]; hasMore: boolean }>("W8r2T5yN1cF6", {
-        view: "records", service, ...filters, year: year === null ? undefined : String(year), undated: year === null ? true : undefined, page,
-      });
+      const result = await recordsClient.rows<{ records: RecordRow[]; hasMore: boolean }>(service, label, filters, year === null ? null : String(year), page);
       setPages((current) => ({ ...current, [key]: { records: page === 0 ? result.records : [...(current[key]?.records ?? []), ...result.records], hasMore: result.hasMore, page, loading: false } }));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not load these records.");
