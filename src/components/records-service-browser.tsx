@@ -137,13 +137,13 @@ export default function RecordsServiceBrowser({ service, label, onOpen, initialS
             <summary><span>{month === "undated" ? "No date" : `${MONTHS[Number(month.slice(5, 7)) - 1]} ${month.slice(0, 4)}`}</span><small>{records.length} shown</small></summary>
             <div className="svc-table-wrap"><table className="svc-table">
               <thead><tr><th>Name</th><th>Mobile</th><th>PAN</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
-              <tbody>{records.map((record) => <tr key={record.id}>
+              <tbody>{records.map((record) => <tr key={record.id} className="svc-table__row" onClick={() => onOpen(record.key)}>
                 <td data-label="Name"><b>{record.name}</b></td>
                 <td data-label="Mobile">{record.mobile ?? "No mobile"}</td>
                 <td data-label="PAN">{record.hasPan ? record.panMasked : "—"}</td>
                 <td data-label="Status"><span className={`svc-status svc-status--${record.status}`}>{RECORD_STATUSES[record.status] ?? record.status}</span></td>
                 <td data-label="Date">{day(record.recordDate)}{record.renewalOn ? <small> · renews {day(record.renewalOn)}</small> : null}</td>
-                <td data-label="Action"><button type="button" className="btn btn--ghost btn--sm" onClick={() => onOpen(record.key)}>Open</button></td>
+                <td data-label="Action"><button type="button" className="btn btn--ghost btn--sm">Open</button></td>
               </tr>)}</tbody>
             </table></div>
           </details>)}

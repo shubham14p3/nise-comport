@@ -2269,3 +2269,4 @@ a.site-banner:hover { transform: translateY(-3px); }
 .add-record__notice { color: var(--muted); }
 .add-record__form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 14px; }
 .add-record__wide { grid-column: 1 / -1; }
+.svc-table__row { cursor: pointer; }
