@@ -10,6 +10,7 @@ import { apiError } from "@/lib/http";
 import { PublicError } from "@/lib/errors";
 import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
 import { forgetRecordCache } from "@/lib/records-cache";
+import { recordScope } from "@/lib/record-access";
 import { importRecords, listPeople, personRecords, recentImports, serviceRecords, serviceYears, servicesSummary, stageCounts } from "@/lib/records";
 import type { SheetInput } from "@/lib/record-import";
 import { privateStoragePath } from "@/lib/storage";
@@ -23,26 +24,27 @@ export async function GET(request: NextRequest) {
   try {
     const user = await requirePermission("records");
     if (!vaultReady()) throw new PublicError("Customer records need RECORDS_ENCRYPTION_KEY (or PAN_ENCRYPTION_KEY) in the server settings.", 503);
+    const scope = recordScope(user); // null = every service; a list = only those the owner allowed
     const params = request.nextUrl.searchParams;
     const key = params.get("key");
     if (key) {
       await enforceRate(RATE_RULES.recordOpensPerUserHour, identity("user", user.id), "You have opened a lot of customer records this hour.");
-      return NextResponse.json(await personRecords(key, user));
+      return NextResponse.json(await personRecords(key, user, scope));
     }
     await enforceRate(RATE_RULES.recordPagesPerUserHour, identity("user", user.id), "Too many record searches this hour.");
     // The Refresh button: forget what the server kept, so the next reads come straight from the database.
     if (params.get("view") === "refresh") { forgetRecordCache(); return NextResponse.json({ ok: true }); }
     const filters = { q: params.get("q") ?? "", status: params.get("status") ?? "", from: params.get("from") ?? "", to: params.get("to") ?? "" };
-    if (params.get("view") === "years") return NextResponse.json(await serviceYears(params.get("service") ?? "", filters));
+    if (params.get("view") === "years") return NextResponse.json(await serviceYears(params.get("service") ?? "", filters, scope));
     if (params.get("view") === "records") {
       const year = params.get("year");
-      return NextResponse.json(await serviceRecords(params.get("service") ?? "", { ...filters, year: year ? Number(year) : null, undated: params.get("undated") === "1", page: Number(params.get("page") ?? 0) || 0 }));
+      return NextResponse.json(await serviceRecords(params.get("service") ?? "", { ...filters, year: year ? Number(year) : null, undated: params.get("undated") === "1", page: Number(params.get("page") ?? 0) || 0 }, scope));
     }
-    if (params.get("view") === "stages") return NextResponse.json(await stageCounts(params.get("service") ?? ""));
-    if (params.get("view") === "services") return NextResponse.json(await servicesSummary());
-    if (params.get("imports")) return NextResponse.json({ imports: await recentImports() });
+    if (params.get("view") === "stages") return NextResponse.json(await stageCounts(params.get("service") ?? "", scope));
+    if (params.get("view") === "services") return NextResponse.json(await servicesSummary(scope));
+    if (params.get("imports")) return NextResponse.json({ imports: scope ? [] : await recentImports() });
     const sort = params.get("sort");
-    return NextResponse.json(await listPeople({ q: params.get("q") ?? "", service: params.get("service") ?? "", sort: sort === "recent" || sort === "renewal" ? sort : "repeat", page: Number(params.get("page") ?? 0) || 0 }));
+    return NextResponse.json(await listPeople({ scope, q: params.get("q") ?? "", service: params.get("service") ?? "", sort: sort === "recent" || sort === "renewal" ? sort : "repeat", page: Number(params.get("page") ?? 0) || 0 }));
   } catch (error) { return apiError(error); }
 }
 
@@ -66,6 +68,7 @@ function sheetsFrom(workbook: InstanceType<typeof ExcelJS.Workbook>): SheetInput
 export async function POST(request: NextRequest) {
   try {
     const user = await requirePermission("records");
+    if (recordScope(user)) throw new PublicError("Importing a register needs access to every service. Ask the owner.", 403, { code: "forbidden" });
     if (!vaultReady()) throw new PublicError("Customer records need RECORDS_ENCRYPTION_KEY (or PAN_ENCRYPTION_KEY) in the server settings.", 503);
     const input = z.object({ fileId: z.uuid(), addContacts: z.boolean().optional() }).parse(await request.json());
     await enforceRate(RATE_RULES.recordImportsPerUserHour, identity("user", user.id), "Too many imports this hour.");

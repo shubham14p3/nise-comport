@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import RecordsServiceBrowser from "@/components/records-service-browser";
 import FollowUp, { type FollowUpItem } from "@/components/follow-up";
+import AddRecord from "@/components/add-record";
 import ClaimsQueue from "@/components/claims-queue";
 import { RECORD_STATUSES, RECORD_STATUS_KEYS } from "@/lib/record-status";
 import { Check, ChevronLeft, ChevronRight, Copy, Database, Eye, FileText, Phone, Search, Upload, X } from "lucide-react";
@@ -134,7 +135,7 @@ function RevealPan({ recordId, masked }: { recordId: string; masked: string | nu
  * Master records (all services, import, claims) when serviceOnly is false.
  * serviceOnly: one service from the sidebar. It loads only that service's stages and year list.
  */
-export default function RecordsPanel({ service: chosen = "", serviceOnly = false, visible = true }: { service?: string; serviceOnly?: boolean; visible?: boolean }) {
+export default function RecordsPanel({ service: chosen = "", serviceOnly = false, visible = true, canAdd = false }: { service?: string; serviceOnly?: boolean; visible?: boolean; canAdd?: boolean }) {
   const [data, setData] = useState<Listing | null>(null);
   const [imports, setImports] = useState<ImportRow[]>([]);
   const [q, setQ] = useState("");
@@ -275,6 +276,7 @@ export default function RecordsPanel({ service: chosen = "", serviceOnly = false
   </>;
   if (serviceOnly && service) return <section className="admin-queue records records--service" aria-labelledby="records-service-title">
     <h2 id="records-service-title"><FileText size={17}/> {names[service] ?? service} {stages?.service === service ? <span>{stages.total.toLocaleString("en-IN")}</span> : null}</h2>
+    {canAdd ? <div className="records__add"><AddRecord service={service} label={names[service] ?? service}/></div> : null}
     {error && <div className="alert alert--error" role="alert">{error}</div>}
     {stageRow}
     {serviceBrowser}

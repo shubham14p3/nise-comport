@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { and, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { contacts, customerRecords, recordClaims, recordImports, recordSends, users } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
@@ -6,8 +7,9 @@ import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { cachedRecords, forgetRecordCache } from "@/lib/records-cache";
 import { followupsFor } from "@/lib/followups";
+import { assertServiceAccess } from "@/lib/record-access";
 import { identityBase, identityKeys, maskAadhaar, maskPan, parseWorkbook, RECORD_SERVICES, type ParsedRecord, type SheetInput } from "@/lib/record-import";
-import { normalizePhone } from "@/lib/validation";
+import { cleanName, looksLikeEmail, nameProblem, normalizePhone } from "@/lib/validation";
 import { COMPLETED_BEFORE, RECORD_STATUSES, RECORD_STATUS_KEYS } from "@/lib/record-status";
 import { blindIndex, open, seal } from "@/lib/vault";
 
@@ -36,7 +38,7 @@ const CONTACT_SERVICE: Record<string, string> = {
 };
 
 /** The stored values for one register row. */
-function rowValues(record: ParsedRecord, importId: string, identity: string) {
+function rowValues(record: ParsedRecord, importId: string | null, identity: string) {
   return {
     importId, identityHash: identity, service: record.service, source: record.source.slice(0, 200), name: record.name,
     mobileHash: record.mobile ? blindIndex("mobile", record.mobile) : null,
@@ -178,8 +180,11 @@ async function addContacts(people: Map<string, { name: string; services: Map<str
 }
 
 /** People across all registers: one row per mobile (or PAN), with how often they appear. */
-export async function listPeople(options: { q?: string; service?: string; sort?: "repeat" | "recent" | "renewal"; page?: number }) {
+export async function listPeople(options: { q?: string; service?: string; sort?: "repeat" | "recent" | "renewal"; page?: number; scope?: string[] | null }) {
   const filters: SQL[] = [];
+  // Staff the owner limited to some services never see the others, not even in a person's other records.
+  const scopeSql = options.scope ? (options.scope.length ? inArray(customerRecords.service, options.scope) : sql`false`) : undefined;
+  if (scopeSql) filters.push(scopeSql);
   if (options.service && options.service in RECORD_SERVICES) filters.push(eq(customerRecords.service, options.service));
   const query = (options.q ?? "").trim().slice(0, 80);
   if (query) {
@@ -209,10 +214,11 @@ export async function listPeople(options: { q?: string; service?: string; sort?:
     services: sql<string[]>`array_agg(distinct ${customerRecords.service})`,
     lastDate: sql<string | null>`max(${customerRecords.recordDate})::text`,
     nextRenewal: sql<string | null>`(min(${customerRecords.renewalOn}) filter (where ${customerRecords.renewalOn} >= current_date))::text`,
-  }).from(customerRecords).where(inArray(personKey, keys)).groupBy(personKey).orderBy(order).limit(50).offset(page * 50);
+  }).from(customerRecords).where(and(inArray(personKey, keys), scopeSql)).groupBy(personKey).orderBy(order).limit(50).offset(page * 50);
   const totalsQuery = db.select({ people: sql<number>`count(distinct ${personKey})::int`, records: sql<number>`count(*)::int` }).from(customerRecords).where(where);
   // These two do not depend on the search, so they are worked out once and kept (see records-cache).
-  const [rows, [totals], repeat, byService] = await Promise.all([rowsQuery, totalsQuery, repeatPeople(), serviceCounts()]);
+  const [rows, [totals], repeat, allServices] = await Promise.all([rowsQuery, totalsQuery, options.scope ? Promise.resolve(0) : repeatPeople(), serviceCounts()]);
+  const byService = allServices.filter((row) => !options.scope || options.scope.includes(row.service));
   const sends = await sendHistory(rows.map((row) => row.key));
   return {
     people: rows.map((row) => ({ key: row.key, name: row.name, mobile: row.mobileEnc ? open<string>(row.mobileEnc) : null, ...mergeContacts(row.contacts), total: row.total, services: row.services, lastDate: row.lastDate, nextRenewal: row.nextRenewal, ...sends.get(row.key) ?? { sentCount: 0, lastSentAt: null, recentSends: [] } })),
@@ -264,19 +270,29 @@ export async function logRecordSend(key: string, actor: Actor) {
 
 /** Everything known about one person, decrypted. Logged: who opened whose records, and when. */
 /** The full PAN of one record. Only called after the viewer confirmed the emailed code; every reveal is logged. */
-export async function revealPan(recordId: string, actor: Actor) {
+/** Throws unless this person may open the service the record belongs to. */
+export async function assertRecordAccess(recordId: string, scope: string[] | null) {
+  if (scope === null) return;
+  if (!/^[0-9a-f-]{36}$/i.test(recordId)) throw new PublicError("Unknown record.", 404);
+  const [row] = await db.select({ service: customerRecords.service }).from(customerRecords).where(eq(customerRecords.id, recordId)).limit(1);
+  if (!row) throw new PublicError("Unknown record.", 404);
+  assertServiceAccess(scope, row.service);
+}
+
+export async function revealPan(recordId: string, actor: Actor, scope: string[] | null = null) {
   if (!/^[0-9a-f-]{36}$/i.test(recordId)) throw new PublicError("Unknown record.", 404);
   const [row] = await db.select().from(customerRecords).where(eq(customerRecords.id, recordId)).limit(1);
   if (!row) throw new PublicError("Unknown record.", 404);
+  assertServiceAccess(scope, row.service);
   const data = open<Sealed>(row.payloadEnc);
   await logActivity({ kind: "record_view", permission: "records", category: "records", title: `${actor.name} viewed a full PAN`, detail: `${row.name} · ${RECORD_SERVICES[row.service] ?? row.service}`, refType: "record", refId: row.id, actorId: actor.id });
   return { pan: data.pan ?? null };
 }
 
-export async function personRecords(key: string, actor: Actor) {
+export async function personRecords(key: string, actor: Actor, scope: string[] | null = null) {
   if (!/^[A-Za-z0-9_-]{20,64}(~[0-9a-f]{32})?$/.test(key) && !/^[0-9a-f-]{36}$/i.test(key)) throw new PublicError("Unknown person.", 404);
   const rows = await db.select().from(customerRecords)
-    .where(personFilter(key))
+    .where(and(personFilter(key), scope ? (scope.length ? inArray(customerRecords.service, scope) : sql`false`) : undefined))
     .orderBy(desc(customerRecords.recordDate)).limit(100);
   if (!rows.length) throw new PublicError("Unknown person.", 404);
   const threads = await followupsFor(rows.map((row) => row.id), false);
@@ -339,7 +355,8 @@ function serviceFilters(service: string, filters: ServiceFilters): SQL[] {
 }
 
 /** How many records a service has in each year (after the filters). Undated records have year null. */
-export function serviceYears(service: string, filters: ServiceFilters = {}) {
+export function serviceYears(service: string, filters: ServiceFilters = {}, scope: string[] | null = null) {
+  assertServiceAccess(scope, service);
   const clauses = serviceFilters(service, filters); // also rejects an unknown service
   const run = async () => {
     const year = sql<number | null>`extract(year from ${customerRecords.recordDate})::int`;
@@ -352,7 +369,8 @@ export function serviceYears(service: string, filters: ServiceFilters = {}) {
 }
 
 /** One page of a service's records for one year (or undated records), newest first. */
-export function serviceRecords(service: string, options: ServiceFilters & { year?: number | null; undated?: boolean; page?: number }) {
+export function serviceRecords(service: string, options: ServiceFilters & { year?: number | null; undated?: boolean; page?: number }, scope: string[] | null = null) {
+  assertServiceAccess(scope, service);
   const clauses = serviceFilters(service, options);
   return options.q?.trim() ? loadServiceRecords(clauses, options) : cachedRecords(`rows:${service}:${JSON.stringify(options)}`, () => loadServiceRecords(clauses, options));
 }
@@ -376,12 +394,65 @@ async function loadServiceRecords(clauses: SQL[], options: { year?: number | nul
   return { records: items, hasMore: rows.length > SERVICE_PAGE };
 }
 
+export type NewRecord = {
+  service: string; name: string; mobile: string; whatsapp?: string | null; pan?: string | null; email?: string | null; address?: string | null;
+  recordDate?: string | null; status?: string; note?: string | null;
+};
+
+/**
+ * Adds one person to a service by hand. It is stored exactly like an imported row (sealed, searchable, with the
+ * same identity), so it shows in Master records, gets a customer account and a WhatsApp contact, and a later
+ * Excel import of the same person updates it instead of making a second copy.
+ */
+export async function addRecord(input: NewRecord, actor: Actor, scope: string[] | null) {
+  if (!(input.service in RECORD_SERVICES)) throw new PublicError("Unknown service.", 404);
+  assertServiceAccess(scope, input.service);
+  const name = cleanName(input.name ?? "");
+  const problem = nameProblem(name, 2, "Name");
+  if (problem) throw new PublicError(problem, 400, { fields: { name: problem } });
+  const mobile = normalizePhone(input.mobile ?? "");
+  if (!mobile) throw new PublicError("Enter a 10-digit mobile number.", 400, { fields: { mobile: "Enter a 10-digit mobile number." } });
+  const whatsapp = input.whatsapp?.trim() ? normalizePhone(input.whatsapp) : null;
+  if (input.whatsapp?.trim() && !whatsapp) throw new PublicError("That WhatsApp number is not valid.", 400, { fields: { whatsapp: "Enter a 10-digit number." } });
+  const pan = input.pan?.trim() ? input.pan.trim().toUpperCase() : null;
+  if (pan && !/^[A-Z]{5}\d{4}[A-Z]$/.test(pan)) throw new PublicError("A PAN looks like ABCDE1234F.", 400, { fields: { pan: "A PAN looks like ABCDE1234F." } });
+  const email = input.email?.trim() ? input.email.trim().toLowerCase() : null;
+  if (email && !looksLikeEmail(email)) throw new PublicError("Enter a valid email address.", 400, { fields: { email: "Enter a valid email address." } });
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+  const recordDate = input.recordDate && /^\d{4}-\d{2}-\d{2}$/.test(input.recordDate) && input.recordDate <= today ? input.recordDate : today;
+  const status = input.status && RECORD_STATUS_KEYS.includes(input.status) ? input.status : recordDate < COMPLETED_BEFORE ? "delivered" : "open";
+  const note = input.note?.trim().slice(0, 300) || null;
+
+  const record: ParsedRecord = {
+    service: input.service, source: `Added by ${actor.name}`.slice(0, 200), name, mobile, pan, aadhaar: null,
+    whatsapp, altMobiles: [], email, address: input.address?.trim().slice(0, 300) || null,
+    recordDate, renewalOn: null, fields: {}, dedupeKey: `manual|${randomUUID()}`,
+  };
+  // Same identity an import would give this person; if the same person/date already exists, take the next number.
+  const base = identityBase({ service: record.service, name, mobile, pan, aadhaar: null, recordDate });
+  const candidates = Array.from({ length: 25 }, (_, index) => blindIndex("identity", `${base}#${index + 1}`));
+  const taken = new Set((await db.select({ hash: customerRecords.identityHash }).from(customerRecords).where(inArray(customerRecords.identityHash, candidates))).map((row) => row.hash));
+  const identity = candidates.find((hash) => !taken.has(hash));
+  if (!identity) throw new PublicError("This person already has many entries for that date.", 409);
+
+  const values = rowValues(record, null, identity);
+  const [row] = await db.insert(customerRecords).values({ ...values, status, statusNote: note, statusAt: note || status !== "open" ? new Date() : null }).returning({ id: customerRecords.id });
+  forgetRecordCache();
+  await ensureRecordAccounts([{ name, payloadEnc: values.payloadEnc }]);
+  const contactService = CONTACT_SERVICE[record.service];
+  await addContacts(new Map([[whatsapp ?? mobile, { name, services: new Map<string, string | null>(contactService ? [[contactService, null]] : []), area: record.address, email }]]), "added by hand");
+  await logActivity({ kind: "import", permission: "records", category: "records", actorId: actor.id, refType: "record", refId: row.id,
+    title: `${actor.name} added ${name} to ${RECORD_SERVICES[record.service]}`, detail: `Mobile ending ${mobile.slice(-4)} · ${RECORD_STATUSES[status]}` });
+  return { id: row.id };
+}
+
 /** Changes one record's stage. Written to the activity log with who changed it and from what. */
-export async function setRecordStatus(recordId: string, status: string, actor: Actor, note?: string) {
+export async function setRecordStatus(recordId: string, status: string, actor: Actor, note?: string, scope: string[] | null = null) {
   if (!/^[0-9a-f-]{36}$/i.test(recordId)) throw new PublicError("Unknown record.", 404);
   if (!RECORD_STATUS_KEYS.includes(status)) throw new PublicError("Unknown status.", 400);
   const [before] = await db.select({ name: customerRecords.name, service: customerRecords.service, status: customerRecords.status }).from(customerRecords).where(eq(customerRecords.id, recordId)).limit(1);
   if (!before) throw new PublicError("Unknown record.", 404);
+  assertServiceAccess(scope, before.service);
   const comment = note === undefined ? undefined : note.trim().slice(0, 300) || null;
   await db.update(customerRecords).set({ status, statusAt: new Date(), ...(comment !== undefined ? { statusNote: comment } : {}) }).where(eq(customerRecords.id, recordId));
   forgetRecordCache();
@@ -390,10 +461,11 @@ export async function setRecordStatus(recordId: string, status: string, actor: A
 }
 
 /** Customers per stage for one service: the counts shown above its list. */
-export function stageCounts(service: string) {
-  return cachedRecords(`stages:${service}`, async () => {
-    const rows = await db.select({ status: customerRecords.status, total: sql<number>`count(*)::int` }).from(customerRecords)
-      .where(service ? eq(customerRecords.service, service) : undefined).groupBy(customerRecords.status);
+export function stageCounts(service: string, scope: string[] | null = null) {
+  if (service) assertServiceAccess(scope, service);
+  return cachedRecords(`stages:${service}:${scope ? scope.join(",") : "*"}`, async () => {
+    const where = service ? eq(customerRecords.service, service) : scope ? (scope.length ? inArray(customerRecords.service, scope) : sql`false`) : undefined;
+    const rows = await db.select({ status: customerRecords.status, total: sql<number>`count(*)::int` }).from(customerRecords).where(where).groupBy(customerRecords.status);
     const counts: Record<string, number> = Object.fromEntries(RECORD_STATUS_KEYS.map((key) => [key, 0]));
     for (const row of rows) if (row.status in counts) counts[row.status] = row.total;
     return { total: rows.reduce((sum, row) => sum + row.total, 0), counts };
@@ -401,8 +473,9 @@ export function stageCounts(service: string) {
 }
 
 /** Records per service, for the sidebar under Master records. */
-export async function servicesSummary() {
-  return { byService: await serviceCounts(), services: RECORD_SERVICES };
+export async function servicesSummary(scope: string[] | null = null) {
+  const byService = (await serviceCounts()).filter((row) => !scope || scope.includes(row.service));
+  return { byService, services: scope ? Object.fromEntries(Object.entries(RECORD_SERVICES).filter(([key]) => scope.includes(key))) : RECORD_SERVICES };
 }
 
 /**
@@ -411,8 +484,9 @@ export async function servicesSummary() {
  * Numbers that already have an account (website sign-up or an earlier import) are left alone.
  * Runs on every import and from scripts/create-record-accounts.ts, so older accounts are linked too.
  */
-export async function ensureRecordAccounts(): Promise<number> {
-  const rows = await db.select({ name: customerRecords.name, payloadEnc: customerRecords.payloadEnc }).from(customerRecords).where(isNull(customerRecords.removedAt));
+export async function ensureRecordAccounts(only?: { name: string; payloadEnc: string }[]): Promise<number> {
+  // With a list (a record added by hand) only those rows are looked at; otherwise every record on the register.
+  const rows = only ?? await db.select({ name: customerRecords.name, payloadEnc: customerRecords.payloadEnc }).from(customerRecords).where(isNull(customerRecords.removedAt));
   // phone -> the name exactly as it is on the record (used to link), plus its tidy form (used for the account name)
   const people = new Map<string, { raw: string; tidy: string }>();
   for (const row of rows) {

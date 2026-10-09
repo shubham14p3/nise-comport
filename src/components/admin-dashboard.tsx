@@ -292,7 +292,7 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
         {keep("requests", <RequestQueue/>)}
         {keep("records", <RecordsPanel key="all" service="" visible={active === "records"}/>)}
         {mountedServices.map((service) => <div key={`${service}-${refreshed[`svc:${service}`] ?? 0}`} style={{ display: activeService === service ? undefined : "none" }}>
-          <RecordsPanel service={service} serviceOnly visible={activeService === service}/>
+          <RecordsPanel service={service} serviceOnly visible={activeService === service} canAdd={can("add_records")}/>
         </div>)}
         {keep("email", <EmailCampaignsPanel/>)}
         {keep("promotions", <PromotionsPanel canEdit/>)}

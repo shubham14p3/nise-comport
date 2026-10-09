@@ -2235,3 +2235,37 @@ a.site-banner:hover { transform: translateY(-3px); }
 
 /* Refresh button above an admin area */
 .admin-refresh { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+
+/* Team as a table, with role cards */
+.team-table-wrap, .svc-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.team-table, .svc-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.team-table th, .svc-table th { text-align: left; padding: 10px 12px; font-size: .75rem; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); border-bottom: 1px solid var(--line); white-space: nowrap; }
+.team-table td, .svc-table td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; overflow-wrap: anywhere; }
+.team-table tr:last-child > td, .svc-table tr:last-child > td { border-bottom: 0; }
+.team-table__edit > td { background: var(--bg); display: grid; gap: 10px; }
+.service-access { display: grid; gap: 8px; }
+.perm-grid--compact { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+.role-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 18px 0; }
+.role-cards article { padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.role-cards h3 { margin: 8px 0 4px; font-size: 1rem; }
+.role-cards p { margin: 0; color: var(--muted); font-size: .875rem; }
+.role-cards__icon { display: inline-grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); }
+
+/* Service lists as tables; on phones every row becomes a labelled card */
+.svc-table small { color: var(--muted); }
+.svc-table tbody tr:hover > td { background: var(--bg); }
+@media (max-width: 720px) {
+  .team-table thead, .svc-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .team-table, .team-table tbody, .team-table tr, .team-table td, .svc-table, .svc-table tbody, .svc-table tr, .svc-table td { display: block; width: 100%; }
+  .team-table tr, .svc-table tr { padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .team-table td, .svc-table td { display: flex; justify-content: space-between; gap: 12px; border: 0; padding: 4px 12px; text-align: right; }
+  .team-table td::before, .svc-table td::before { content: attr(data-label); color: var(--muted); font-size: .75rem; text-transform: uppercase; text-align: left; }
+  .team-table__edit > td { display: grid; text-align: left; }
+  .team-table__edit > td::before { content: none; }
+}
+
+/* Add person */
+.records__add { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 4px 0 10px; }
+.add-record__notice { color: var(--muted); }
+.add-record__form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 14px; }
+.add-record__wide { grid-column: 1 / -1; }

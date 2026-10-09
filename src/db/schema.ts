@@ -16,6 +16,8 @@ export const users = pgTable("users", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   /** What a staff member may do in the admin area (see src/lib/permissions.ts). Admins can do everything. */
   permissions: jsonb("permissions").$type<string[]>().notNull().default([]),
+  /** Which record services a staff member may open. Null = every service (the default); the owner can narrow it. */
+  recordServices: jsonb("record_services").$type<string[] | null>(),
   /** When this staff member last opened the admin inbox (unread count = newer activity). */
   inboxSeenAt: timestamp("inbox_seen_at", { withTimezone: true }),
   /** Created from a mobile number on an imported register (no email or password yet). Signs in by checking a past record. */

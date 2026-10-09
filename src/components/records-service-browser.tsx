@@ -135,17 +135,17 @@ export default function RecordsServiceBrowser({ service, label, onOpen, initialS
           {!page || (page.loading && !page.records.length) ? <p className="field__hint">Loading…</p> : null}
           {(months[key] ?? []).map(([month, records]) => <details key={month} className="svc-month" open>
             <summary><span>{month === "undated" ? "No date" : `${MONTHS[Number(month.slice(5, 7)) - 1]} ${month.slice(0, 4)}`}</span><small>{records.length} shown</small></summary>
-            <ul className="svc-rows">
-              {records.map((record) => <li key={record.id}>
-                <button type="button" className="svc-row" onClick={() => onOpen(record.key)}>
-                  <b>{record.name}</b>
-                  <span className={`svc-status svc-status--${record.status}`}>{RECORD_STATUSES[record.status] ?? record.status}</span>
-                  <span>{record.mobile ?? "No mobile"}</span>
-                  {record.hasPan ? <span className="svc-row__pan">{record.panMasked}</span> : null}
-                  <small>{day(record.recordDate)}{record.renewalOn ? ` · renews ${day(record.renewalOn)}` : ""}</small>
-                </button>
-              </li>)}
-            </ul>
+            <div className="svc-table-wrap"><table className="svc-table">
+              <thead><tr><th>Name</th><th>Mobile</th><th>PAN</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
+              <tbody>{records.map((record) => <tr key={record.id}>
+                <td data-label="Name"><b>{record.name}</b></td>
+                <td data-label="Mobile">{record.mobile ?? "No mobile"}</td>
+                <td data-label="PAN">{record.hasPan ? record.panMasked : "—"}</td>
+                <td data-label="Status"><span className={`svc-status svc-status--${record.status}`}>{RECORD_STATUSES[record.status] ?? record.status}</span></td>
+                <td data-label="Date">{day(record.recordDate)}{record.renewalOn ? <small> · renews {day(record.renewalOn)}</small> : null}</td>
+                <td data-label="Action"><button type="button" className="btn btn--ghost btn--sm" onClick={() => onOpen(record.key)}>Open</button></td>
+              </tr>)}</tbody>
+            </table></div>
           </details>)}
           {page?.hasMore ? <button type="button" className="btn btn--ghost btn--sm" disabled={page.loading} onClick={() => void loadPage(row.year, page.page + 1)}>{page.loading ? "Loading…" : "Load more"}</button> : null}
         </div>}

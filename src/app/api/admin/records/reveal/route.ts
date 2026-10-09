@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { confirmRecordReveal, requestRecordReveal, requirePermission } from "@/lib/auth";
 import { apiError, clientIp, readJson } from "@/lib/http";
-import { revealPan } from "@/lib/records";
+import { assertRecordAccess, revealPan } from "@/lib/records";
+import { recordScope } from "@/lib/record-access";
 
 export const dynamic = "force-dynamic";
 
@@ -15,12 +16,14 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requirePermission("records");
     const body = z.object({ recordId: z.string().uuid(), code: z.string().regex(/^\d{6}$/).optional() }).parse(await readJson(request));
+    const scope = recordScope(user);
+    await assertRecordAccess(body.recordId, scope);
     const headers = { "cache-control": "private, no-store" };
     if (!body.code) {
       const sent = await requestRecordReveal(user, body.recordId, clientIp(request));
       return NextResponse.json({ sent: true, ...sent }, { headers });
     }
     await confirmRecordReveal(user, body.recordId, body.code, clientIp(request));
-    return NextResponse.json(await revealPan(body.recordId, user), { headers });
+    return NextResponse.json(await revealPan(body.recordId, user, scope), { headers });
   } catch (error) { return apiError(error); }
 }

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requirePermission } from "@/lib/auth";
 import { apiError, readJson } from "@/lib/http";
 import { setRecordStatus } from "@/lib/records";
+import { recordScope } from "@/lib/record-access";
 import { RECORD_STATUS_KEYS } from "@/lib/record-status";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,6 @@ export async function POST(request: NextRequest) {
   try {
     const user = await requirePermission("records");
     const body = z.object({ recordId: z.string().uuid(), status: z.enum(RECORD_STATUS_KEYS as [string, ...string[]]), note: z.string().max(300).optional() }).parse(await readJson(request));
-    return NextResponse.json(await setRecordStatus(body.recordId, body.status, user, body.note), { headers: { "cache-control": "private, no-store" } });
+    return NextResponse.json(await setRecordStatus(body.recordId, body.status, user, body.note, recordScope(user)), { headers: { "cache-control": "private, no-store" } });
   } catch (error) { return apiError(error); }
 }

@@ -77,6 +77,7 @@ const OPS = {
   "Cl4imS9ub2Qv": { method: "POST", path: "/api/claims" },
   "Cl4imMine5Rz": { method: "POST", path: "/api/claims/linked" },
   "Cl4imL1st7Kw": { method: "GET", path: "/api/admin/claims" },
+  "Rec0rdAdd7Np": { method: "POST", path: "/api/admin/records/add" },
   "Fl0wUpC7mrAd": { method: "POST", path: "/api/claims/followup" },
   "Fl0wUpSt4ffRp": { method: "POST", path: "/api/admin/records/followup" },
   "Cl4imD3c1de7Lp": { method: "POST", path: "/api/admin/claims/decide" },

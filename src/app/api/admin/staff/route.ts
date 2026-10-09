@@ -14,7 +14,7 @@ export async function GET() {
   } catch (error) { return apiError(error); }
 }
 
-const addSchema = z.object({ email: z.string().trim().min(3).max(254), name: z.string().trim().max(100).default(""), permissions: z.array(z.string().max(40)).max(10) });
+const addSchema = z.object({ email: z.string().trim().min(3).max(254), name: z.string().trim().max(100).default(""), permissions: z.array(z.string().max(40)).max(12), recordServices: z.array(z.string().max(40)).max(40).nullable().optional() });
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   } catch (error) { return apiError(error); }
 }
 
-const patchSchema = z.object({ id: z.uuid(), permissions: z.array(z.string().max(40)).max(10).optional(), remove: z.boolean().optional() });
+const patchSchema = z.object({ id: z.uuid(), permissions: z.array(z.string().max(40)).max(12).optional(), recordServices: z.array(z.string().max(40)).max(40).nullable().optional(), remove: z.boolean().optional() });
 
 export async function PATCH(request: NextRequest) {
   try {

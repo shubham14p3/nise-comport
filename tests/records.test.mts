@@ -147,3 +147,25 @@ test("migrations 0027 and 0028 add the record indexes and the follow-up thread",
   assert.ok(tags.includes("0027_records_speed") && tags.includes("0028_record_followups"));
   assert.deepEqual(journal.entries.map((entry) => entry.idx), journal.entries.map((_, index) => index), "journal indexes are in order");
 });
+
+test("staff reach every service unless the owner narrows it; the owner always reaches all", async () => {
+  const { pickServices, scopeOf, canOpen } = await import("../src/lib/record-scope.ts");
+  const known = Object.keys((await import("../src/lib/record-import.ts")).RECORD_SERVICES);
+  assert.equal(scopeOf({ role: "admin", recordServices: ["pan"] }, known), null, "owner is never limited");
+  assert.equal(scopeOf({ role: "staff", recordServices: null }, known), null, "nothing set = every service (the default)");
+  assert.equal(scopeOf({ role: "staff" }, known), null);
+  assert.deepEqual(scopeOf({ role: "staff", recordServices: ["voter-id", "pan", "nonsense"] }, known), ["pan", "voter-id"], "unknown names are dropped");
+  assert.deepEqual(pickServices([], known), [], "an empty list means no services");
+  assert.equal(scopeOf(null, known), null);
+  assert.ok(canOpen(null, "pan") && canOpen(["pan"], "pan") && !canOpen(["pan"], "passport") && !canOpen([], "pan"));
+});
+
+test("migration 0029 adds the per-staff service list and the add_records permission exists", async () => {
+  const sql = readFileSync(new URL("../drizzle/0029_staff_record_services.sql", import.meta.url), "utf8");
+  assert.match(sql, /ADD COLUMN IF NOT EXISTS "record_services" jsonb/);
+  const { STAFF_PERMISSIONS, hasPermission } = await import("../src/lib/permissions.ts");
+  assert.ok(STAFF_PERMISSIONS.includes("add_records"));
+  assert.ok(hasPermission({ role: "admin" }, "add_records"));
+  assert.ok(!hasPermission({ role: "staff", permissions: ["records"] }, "add_records"), "adding people must be switched on by the owner");
+  assert.ok(hasPermission({ role: "staff", permissions: ["records", "add_records"] }, "add_records"));
+});
