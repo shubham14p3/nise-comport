@@ -190,6 +190,11 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
         <div className="guide-grid">{guides.map((guide) => <article key={guide.slug} className="guide-card"><div className="guide-card__body"><span className="chip">{guide.category}</span><h3><Link href={`/blog/${guide.slug}`}>{guide.title}</Link></h3><p>{guide.excerpt}</p><Link className="text-link" href={`/blog/${guide.slug}`} aria-label={`Read: ${guide.title}`}>Read guide <ArrowRight size={16}/></Link></div></article>)}</div>
       </div>
     </section> : null}
+    {editorial?.explainers?.length ? <section className="section section--flush"><div className="container">
+      <h2>See how it works</h2>
+      {editorial.video ? <video className="explainer-video" controls playsInline preload="metadata" poster={editorial.explainers[0]} aria-label={`${title}: short explainer video`} style={{width:"100%",height:"auto",borderRadius:16,marginBottom:20}}><source src={editorial.video} type="video/mp4"/></video> : null}
+      <div className="prep-grid">{editorial.explainers.map((src, index) => <article key={src}><Image src={src} alt={`${title}: explainer slide ${index + 1}`} width={1200} height={900} sizes="(max-width: 900px) 100vw, 33vw" style={{width:"100%",height:"auto",borderRadius:12}}/></article>)}</div>
+    </div></section> : null}
     <section className="section section--flush"><div className="container">
       <h2>Serving Jamshedpur, East Singhbhum and Jharkhand</h2>
       <p>Customers visit NISE COMPORT from across Jamshedpur and East Singhbhum. Find your area below, or call or WhatsApp us if you are not sure how to reach our desk in Kharangajhar, Telco.</p>
