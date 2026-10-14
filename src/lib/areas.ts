@@ -17,5 +17,9 @@ export const areas: Area[] = [
   { slug: "bistupur", name: "Bistupur", hindi: "बिष्टुपुर", note: "Check the guide for your service first so you bring the right documents." },
   { slug: "sonari", name: "Sonari", hindi: "सोनारी", note: "Track your request online after submitting it, instead of calling for updates." },
   { slug: "kadma", name: "Kadma", hindi: "कदमा", note: "Pensioners from Kadma can ask about Jeevan Pramaan before travelling." },
+  { slug: "telco-colony", name: "Telco Colony", hindi: "टेल्को कॉलोनी", note: "From Telco Colony, a short trip brings you to our Kharangajhar desk. Send a request online to save a visit." },
+  { slug: "barinagar", name: "Barinagar", hindi: "बरीनागर", note: "From Barinagar, check the document list on the service page first, then call or WhatsApp us." },
+  { slug: "jyoti-nagar", name: "Jyoti Nagar", hindi: "ज्योति नगर", note: "Residents of Jyoti Nagar can confirm service availability on WhatsApp before travelling." },
+  { slug: "karandih", name: "Karandih", hindi: "करनडीह", note: "From Karandih, message us first for banking, certificate or printing work so we can confirm what to bring." },
   { slug: "adityapur", name: "Adityapur", hindi: "आदित्यपुर", note: "From Adityapur (Seraikela-Kharsawan), confirm service availability by phone first." },
 ];

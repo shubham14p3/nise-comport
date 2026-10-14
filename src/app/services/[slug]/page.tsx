@@ -25,6 +25,7 @@ import { translatedSlugs } from "@/lib/translated-slugs";
 import { SITE_CONTENT_DATE } from "@/lib/routes";
 import { pageMetadata } from "@/lib/seo";
 import { serviceEditorial } from "@/lib/service-editorial";
+import { areas } from "@/lib/areas";
 import { FACILITATOR_NOTE } from "@/lib/motor-insurance";
 import { categoryFor, findService, isServiceDetail, publishedServiceDetails, requestHrefFor, serviceCatalog, serviceSeoDescription, serviceSeoTitle, shortServiceName } from "@/lib/services";
 import { site, whatsappLink } from "@/lib/site";
@@ -55,7 +56,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const hindi = findHindiService(slug);
   const detail = isServiceDetail(service);
   return pageMetadata(serviceSeoTitle(service), serviceSeoDescription(service), `/services/${service.slug}`, {
-    keywords: [...service.keywords, "NISE COMPORT", "Kharangajhar", "Telco", "Jamshedpur", "Jharkhand"],
+    keywords: [...service.keywords, "NISE COMPORT", "Kharangajhar", "Telco", "Telco Colony", "Jamshedpur", "East Singhbhum", "Jharkhand", "Barinagar", "Jyoti Nagar", "Sakchi", "Bistupur", "Bisanagar", "Golmuri", "Mango", "Jugsalai", "Karandih", "near me"],
     image: detail && findService(slug) ? `/og/services/${service.slug}.png` : undefined,
     imageAlt: `${service.title} – NISE COMPORT, Telco, Jamshedpur`,
     ...(hindi ? { languages: { "hi-IN": `/hi/services/${service.slug}`, ...(translatedSlugs.bn.includes(service.slug) ? { "bn-IN": `/bn/services/${service.slug}` } : {}) } } : {}),
@@ -189,6 +190,11 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
         <div className="guide-grid">{guides.map((guide) => <article key={guide.slug} className="guide-card"><div className="guide-card__body"><span className="chip">{guide.category}</span><h3><Link href={`/blog/${guide.slug}`}>{guide.title}</Link></h3><p>{guide.excerpt}</p><Link className="text-link" href={`/blog/${guide.slug}`} aria-label={`Read: ${guide.title}`}>Read guide <ArrowRight size={16}/></Link></div></article>)}</div>
       </div>
     </section> : null}
+    <section className="section section--flush"><div className="container">
+      <h2>Serving Jamshedpur, East Singhbhum and Jharkhand</h2>
+      <p>Customers visit NISE COMPORT from across Jamshedpur and East Singhbhum. Find your area below, or call or WhatsApp us if you are not sure how to reach our desk in Kharangajhar, Telco.</p>
+      <div className="related-links">{areas.map((area) => <Link key={area.slug} href={`/areas-we-serve#${area.slug}`}>{area.name}</Link>)}</div>
+    </div></section>
     <FaqSection faqs={faqs}/>
     {siblings.length ? <section className="section section--flush">
       <div className="container">
