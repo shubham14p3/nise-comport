@@ -16,6 +16,8 @@ FONT_DIR = os.path.join(ROOT, "legacy", "assets", "fonts", "metropolis")
 DEVANAGARI = "/usr/share/fonts/truetype/google-fonts/Poppins-Bold.ttf"
 DEVANAGARI_REGULAR = "/usr/share/fonts/truetype/google-fonts/Poppins-Regular.ttf"
 LOGO = os.path.join(ROOT, "logo512.png")
+# The real brand wordmark (header and footer). Used on share images; app icons keep LOGO.
+WORDMARK = os.path.join(ROOT, "public", "images", "logo", "logo-footer.png")
 DEEP, GREEN, CREAM, PAPER, INK, MUTED, GOLD, LINE = "#14271f", "#24533c", "#f7f5ed", "#fffefa", "#202923", "#5f675d", "#d1aa5b", "#e5e7df"
 ADDRESS = "Kharangajhar, Telco, Jamshedpur  |  +91 97712 19893"
 
@@ -23,9 +25,15 @@ def font(weight, size):
     return ImageFont.truetype(os.path.join(FONT_DIR, f"Metropolis-{weight}.woff"), size)
 
 def logo(size):
-    mark = Image.open(LOGO).convert("RGBA")
+    mark = Image.open(WORDMARK).convert("RGBA")
     mark.thumbnail((size, size), Image.LANCZOS)
     return mark
+
+def wordmark(width):
+    """The real brand wordmark at a readable width (the wordmark is wide and short)."""
+    mark = Image.open(WORDMARK).convert("RGBA")
+    height = round(mark.height * width / mark.width)
+    return mark.resize((width, height), Image.LANCZOS)
 
 def wrap(draw, text, fnt, width):
     words, lines, line = text.split(), [], ""
@@ -43,10 +51,9 @@ def card(path, title, eyebrow, hindi=False):
     d = ImageDraw.Draw(img)
     d.ellipse((860, -260, 1460, 340), fill="#e9ede3")
     d.ellipse((930, -190, 1390, 270), outline="#d9e0d3", width=3)
-    mark = logo(88)
-    img.paste(mark, (72, 60), mark)
-    d.text((176, 78), "NISE COMPORT", font=font("Bold", 40), fill=INK)
-    d.text((178, 124), "CSC  |  PRAGYA KENDRA  |  JAMSHEDPUR", font=font("SemiBold", 18), fill=GREEN)
+    mark = wordmark(330)
+    img.paste(mark, (72, 48), mark)
+    d.text((76, 122), "CSC  |  PRAGYA KENDRA  |  JAMSHEDPUR", font=font("SemiBold", 18), fill=GREEN)
     eyebrow_font = ImageFont.truetype(DEVANAGARI_REGULAR, 26) if hindi else font("SemiBold", 24)
     d.text((72, 206), eyebrow.upper() if not hindi else eyebrow, font=eyebrow_font, fill=GREEN)
     size = 64

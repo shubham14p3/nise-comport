@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { liveBanners, type Banner, type BannerPlacement } from "@/lib/site-content";
+import BannerRotator from "@/components/banner-rotator";
 
 type Lang = "en" | "hi" | "bn";
 
@@ -27,6 +28,15 @@ export default async function SiteBanners({ placement, category, lang = "en" }: 
     return <BannerLink banner={banner} className={`banner-strip tone-${banner.tone}`}>
       <span><b>{banner.title[lang]}</b>{banner.text ? ` ${banner.text[lang]}` : ""}</span>{banner.cta && <em>{banner.cta[lang]} <ArrowRight size={14}/></em>}
     </BannerLink>;
+  }
+  if (placement === "home" && banners.length > 1) {
+    // Several live announcements: cycle them on the home page instead of stacking them.
+    return <section className="container rotator-wrap">
+      <BannerRotator slides={banners.slice(0, 6).map((banner) => <BannerLink key={banner.id} banner={banner} className={`site-banner site-banner--slide tone-${banner.tone}${banner.image ? " has-image" : ""}`}>
+        {banner.image && <BannerImage src={banner.image}/>}
+        <span className="site-banner__body"><b>{banner.title[lang]}</b>{banner.text && <small>{banner.text[lang]}</small>}{banner.cta && <em>{banner.cta[lang]} <ArrowRight size={15}/></em>}</span>
+      </BannerLink>)}/>
+    </section>;
   }
   return <section className={`site-banners site-banners--${placement}${placement === "home" ? " container" : ""}`} aria-label="Announcements">
     {banners.slice(0, placement === "home" ? 3 : 2).map((banner) => <BannerLink key={banner.id} banner={banner} className={`site-banner tone-${banner.tone}${banner.image ? " has-image" : ""}`}>

@@ -16,6 +16,7 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 IMG_DIR = os.path.join(ROOT, "public", "images", "explainers")
 VID_DIR = os.path.join(ROOT, "public", "videos")
+WORDMARK = os.path.join(ROOT, "public", "images", "logo", "logo-footer.png")
 FONT_BOLD = "/usr/share/fonts/truetype/google-fonts/Poppins-Bold.ttf"
 FONT_REG = "/usr/share/fonts/truetype/google-fonts/Poppins-Regular.ttf"
 
@@ -45,8 +46,16 @@ def frame(title_small, title, subtitle_lines):
     d.rectangle([0, 0, W, 250], fill=DEEP)
     d.rectangle([0, 250, W, 258], fill=GOLD)
     d.text((70, 60), title_small.upper(), font=font(FONT_BOLD, 26), fill=GOLD)
+    # Brand logo on a white plate so the blue wordmark reads on the dark header.
+    logo = Image.open(WORDMARK).convert("RGBA")
+    logo = logo.resize((int(logo.width * 1.5), int(logo.height * 1.5)), Image.LANCZOS)
+    plate = Image.new("RGBA", (logo.width + 40, logo.height + 24), (255, 255, 255, 255))
+    mask = Image.new("L", plate.size, 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, plate.width - 1, plate.height - 1], radius=18, fill=255)
+    img.paste(plate, (W - plate.width - 50, 40), mask)
+    img.paste(logo, (W - plate.width - 30, 52), logo)
     y = 100
-    for line in wrap(d, title, font(FONT_BOLD, 60), W - 140):
+    for line in wrap(d, title, font(FONT_BOLD, 60), 700):
         d.text((70, y), line, font=font(FONT_BOLD, 60), fill=PAPER)
         y += 70
     d.rectangle([0, H - 110, W, H], fill=GREEN)

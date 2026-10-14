@@ -2076,3 +2076,14 @@ a.site-banner:hover { transform: translateY(-3px); }
   .hw-grid { grid-template-columns: minmax(0, 1fr); }
   .hw-build__actions .btn { width: 100%; justify-content: center; }
 }
+
+/* Rotating home announcements */
+.rotator { position: relative; }
+.rotator__slide { display: none; }
+.rotator__slide.is-active { display: block; animation: rotator-in .5s ease; }
+.rotator .site-banner--slide { width: 100%; }
+.rotator__dots { display: flex; justify-content: center; gap: 8px; margin-top: 12px; }
+.rotator__dots button { width: 10px; height: 10px; border-radius: 999px; border: 0; padding: 0; background: var(--line); cursor: pointer; }
+.rotator__dots button.is-active { background: var(--violet); width: 26px; }
+@keyframes rotator-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .rotator__slide.is-active { animation: none; } }
