@@ -7,7 +7,7 @@ export type Tone = "blue" | "violet" | "pink" | "saffron" | "green" | "cyan" | "
 
 export type CategoryMeta = {
   slug: string;
-  icon: "landmark" | "banknote" | "shield" | "graduation" | "receipt" | "file" | "printer" | "plane";
+  icon: "landmark" | "banknote" | "shield" | "graduation" | "receipt" | "file" | "printer" | "plane" | "cpu" | "camera";
   tone: Tone;
   short: { en: string; hi: string; bn: string };
   /** One catchy line for tiles. */
@@ -25,6 +25,8 @@ export const categoryMeta: CategoryMeta[] = [
   { slug: "form-filing", icon: "file", tone: "teal", short: { en: "Forms & business", hi: "फ़ॉर्म व व्यवसाय", bn: "ফর্ম ও ব্যবসা" }, line: { en: "ITR, GST, Udyam, FSSAI, rent agreement", hi: "ITR, GST, उद्यम, FSSAI, किराया अनुबंध", bn: "ITR, GST, উদ্যম, FSSAI, ভাড়া চুক্তি" }, popular: ["ITR help", "Udyam", "FSSAI"] },
   { slug: "it-services", icon: "printer", tone: "cyan", short: { en: "Print & digital", hi: "प्रिंट व डिजिटल", bn: "প্রিন্ট ও ডিজিটাল" }, line: { en: "Print, scan, computer & CCTV help", hi: "प्रिंट, स्कैन, कंप्यूटर व CCTV", bn: "প্রিন্ট, স্ক্যান, কম্পিউটার ও CCTV" }, popular: ["Print from phone", "Scan", "Computer repair"] },
   { slug: "travel", icon: "plane", tone: "rose", short: { en: "Travel tickets", hi: "यात्रा टिकट", bn: "যাত্রার টিকিট" }, line: { en: "Train, bus, flight & hotel booking help", hi: "ट्रेन, बस, फ़्लाइट और होटल बुकिंग", bn: "ট্রেন, বাস, ফ্লাইট ও হোটেল বুকিং" }, popular: ["Train ticket", "Flight", "Bus"] },
+  { slug: "hardware", icon: "cpu", tone: "blue", short: { en: "Hardware & PC", hi: "हार्डवेयर व PC", bn: "হার্ডওয়্যার ও PC" }, line: { en: "Laptop & PC repair, PC builds, parts at latest price", hi: "लैपटॉप व PC मरम्मत, PC बिल्ड, ताज़ा कीमत पर पार्ट्स", bn: "ল্যাপটপ ও PC মেরামত, PC বিল্ড, সর্বশেষ দামে পার্টস" }, popular: ["Laptop repair", "PC build quote", "RAM price", "Printer repair"] },
+  { slug: "extra-services", icon: "camera", tone: "pink", short: { en: "Print, design & more", hi: "प्रिंट, डिज़ाइन व अन्य", bn: "প্রিন্ট, ডিজাইন ও অন্য" }, line: { en: "Printing, CorelDRAW design, websites, photo studio", hi: "प्रिंटिंग, CorelDRAW डिज़ाइन, वेबसाइट, फोटो स्टूडियो", bn: "প্রিন্টিং, CorelDRAW ডিজাইন, ওয়েবসাইট, ফটো স্টুডিও" }, popular: ["Banner design", "Poster design", "Website creation", "A4 print"] },
 ];
 
 export function categoryMetaFor(slug: string | null | undefined) {

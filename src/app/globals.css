@@ -2056,3 +2056,23 @@ a.site-banner:hover { transform: translateY(-3px); }
 .gallery-admin__actions { display: flex; gap: 6px; align-items: center; }
 .gallery-admin__actions small { flex: 1; font-size: .75rem; }
 .gallery-admin__upload .btn { display: inline-flex; flex-direction: row; align-items: center; gap: 8px; white-space: nowrap; cursor: pointer; }
+
+/* Hardware & PC build page */
+.hw-build__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; margin-bottom: 14px; }
+.hw-build select, .hw-build input, .hw-build textarea, .hw-tray input { width: 100%; }
+.hw-build__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+.hw-group { margin-top: 28px; }
+.hw-group h3 { margin: 0 0 12px; font-size: 1.2rem; }
+.hw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.hw-item { position: relative; display: grid; gap: 4px; padding: 16px 16px 14px 44px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); cursor: pointer; }
+.hw-item input { position: absolute; left: 16px; top: 18px; width: 18px; height: 18px; accent-color: var(--violet); }
+.hw-item.is-picked { border-color: var(--violet); box-shadow: 0 0 0 2px rgb(124 58 237 / .15); }
+.hw-item__name { font-weight: 700; color: var(--ink); }
+.hw-item__note { font-size: .9375rem; color: var(--ink-2); }
+.hw-item__price { font-size: .8125rem; font-weight: 600; color: var(--violet); }
+.hw-tray { margin-top: 28px; padding: 20px; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); position: sticky; bottom: 12px; }
+@media (max-width: 640px) {
+  .hw-build__grid { grid-template-columns: minmax(0, 1fr); }
+  .hw-grid { grid-template-columns: minmax(0, 1fr); }
+  .hw-build__actions .btn { width: 100%; justify-content: center; }
+}

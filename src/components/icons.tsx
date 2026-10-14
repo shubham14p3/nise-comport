@@ -1,4 +1,4 @@
-import { Banknote, FileText, GraduationCap, Landmark, Plane, Printer, Receipt, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Banknote, Camera, Cpu, FileText, GraduationCap, Landmark, Plane, Printer, Receipt, ShieldCheck, type LucideIcon } from "lucide-react";
 import type { CategoryMeta } from "@/lib/categories";
 
 /** WhatsApp glyph (brand icons are not part of lucide-react). */
@@ -8,7 +8,7 @@ export function WhatsAppIcon({ size = 18, className }: { size?: number; classNam
 
 const CATEGORY_ICONS: Record<CategoryMeta["icon"], LucideIcon> = {
   landmark: Landmark, banknote: Banknote, shield: ShieldCheck, graduation: GraduationCap,
-  receipt: Receipt, file: FileText, printer: Printer, plane: Plane,
+  receipt: Receipt, file: FileText, printer: Printer, plane: Plane, cpu: Cpu, camera: Camera,
 };
 
 export function CategoryIcon({ icon, size = 22 }: { icon: CategoryMeta["icon"]; size?: number }) {

@@ -46,6 +46,8 @@ const QUICK_PICKS: Record<string, string[]> = {
   "fee-payments": ["Electricity bill", "Mobile / DTH recharge", "School or college fee"],
   "form-filing": ["ITR filing help", "GST help", "Udyam registration", "Rent agreement"],
   "it-services": ["Printing / scanning", "Computer repair", "CCTV enquiry", "Website for my shop"],
+  hardware: ["Laptop repair", "PC build quote", "Parts price", "Printer repair"],
+  "extra-services": ["Photo studio", "Photo print", "A4 print", "A3 print"],
   travel: ["Train ticket", "Bus ticket", "Flight ticket", "Hotel booking"],
   other: ["I’m not sure which service", "Documents check", "General question"],
 };
@@ -100,7 +102,7 @@ function initialDraft(services: WizardService[], initial: Initial): Draft {
   const service = services.find((item) => item.slug === initial.service);
   const category = service?.category ?? (categoryMeta.some((item) => item.slug === initial.category) ? initial.category! : "all");
   const offer = findOffer(initial.offer);
-  return { ...blank, serviceSlug: service?.slug ?? "", category, description: initial.note?.slice(0, 300) ?? "", offerId: offer && isOfferLive(offer) ? offer.id : "", coupon, step: service ? 1 : 0 };
+  return { ...blank, serviceSlug: service?.slug ?? "", category, description: initial.note?.slice(0, 1500) ?? "", offerId: offer && isOfferLive(offer) ? offer.id : "", coupon, step: service ? 1 : 0 };
 }
 
 function Wizard({ services, initial, hours, locale }: { services: WizardService[]; initial: Initial; hours: OpeningHoursRule[]; locale: Locale }) {
