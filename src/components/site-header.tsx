@@ -4,6 +4,7 @@ import Link from "next/link";
 import BrandWordmark from "@/components/brand-wordmark";
 import LanguageMenu from "@/components/language-menu";
 import OfferTicker from "@/components/offer-ticker";
+import { ServicesMegaDesktop, ServicesMegaMobile } from "@/components/services-mega-menu";
 import { WhatsAppIcon } from "@/components/icons";
 import { ArrowRight, LogOut, Menu, Phone, UserRound, X } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -74,7 +75,9 @@ export default function SiteHeader() {
       <div className="container nav-wrap">
         <Link className="brand" href={home} aria-label="NISE COMPORT home"><BrandWordmark/></Link>
         <nav className="desktop-nav" aria-label="Main navigation">
-          {links.map((link) => <Link key={link.href} href={link.href} className={isActive(link.href) ? "is-active" : undefined} aria-current={isActive(link.href) ? "page" : undefined}>{link.label}{link.live && <i className="live-dot" aria-hidden="true"/>}</Link>)}
+          {links.map((link) => link.href === "/services"
+            ? <ServicesMegaDesktop key={link.href} label={link.label} active={isActive(link.href)}/>
+            : <Link key={link.href} href={link.href} className={isActive(link.href) ? "is-active" : undefined} aria-current={isActive(link.href) ? "page" : undefined}>{link.label}{link.live && <i className="live-dot" aria-hidden="true"/>}</Link>)}
         </nav>
         <div className="nav-actions">
           <LanguageMenu locale={locale} label={t.changeLanguage} compact/>
@@ -96,7 +99,7 @@ export default function SiteHeader() {
       <nav className="mobile-sheet__panel" aria-label="Mobile navigation">
         <div className="mobile-sheet__top"><Link className="brand" href={home}><BrandWordmark/></Link><button className="icon-btn" type="button" onClick={() => setMenuOpen(false)} aria-label={t.close}><X size={22}/></button></div>
         <div className="mobile-sheet__links">
-          {[{ href: home, label: t.home }, ...links, { href: "/about", label: t.about }, { href: "/areas-we-serve", label: t.areas }, { href: "/faq", label: t.faq }, { href: "/pan", label: t.pan }].map((link, index) => <Link key={link.href} href={link.href} style={{ animationDelay: `${index * 30}ms` }}>{link.label}<ArrowRight size={18}/></Link>)}
+          {[{ href: home, label: t.home }, ...links, { href: "/about", label: t.about }, { href: "/areas-we-serve", label: t.areas }, { href: "/faq", label: t.faq }, { href: "/pan", label: t.pan }].map((link, index) => link.href === "/services" ? <ServicesMegaMobile key={link.href} label={link.label}/> : <Link key={link.href} href={link.href} style={{ animationDelay: `${index * 30}ms` }}>{link.label}<ArrowRight size={18}/></Link>)}
         </div>
         <div className="mobile-sheet__lang"><span>{t.changeLanguage}</span><LanguageMenu locale={locale} label={t.changeLanguage} inline/></div>
         <div className="mobile-sheet__actions">

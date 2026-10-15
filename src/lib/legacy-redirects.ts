@@ -44,6 +44,7 @@ const blogIds = [
 
 export function legacyRedirects(): LegacyRedirect[] {
   const list: LegacyRedirect[] = [
+    { source: "/services/extra-services", destination: "/services/it-services", permanent: true },
     { source: "/home", destination: "/", permanent: true },
     { source: "/index.html", destination: "/", permanent: true },
     { source: "/all-services", destination: "/services", permanent: true },

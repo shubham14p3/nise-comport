@@ -134,7 +134,7 @@ export default async function HomePage() {
           <div className="section-head">
             <span className="eyebrow">HOW IT WORKS</span>
             <h2>Four steps. <span className="grad-text">Zero confusion.</span></h2>
-            <p>Start on your phone, finish at our counter (or doorstep). We tell you everything before we begin.</p>
+            <p>Start on your phone, finish at our counter. We tell you everything before we begin.</p>
           </div>
           <ol className="steps-row">{steps.map(({ icon: Icon, title, text }, index) => <li key={title} className="step-card" style={{ animationDelay: `${index * 80}ms` }}>
             <span className="step-card__num">0{index + 1}</span>
@@ -156,7 +156,7 @@ export default async function HomePage() {
             <article className="bento__item tone-green"><Clock3 size={28}/><h3>Track it live</h3><p>Every request gets a reference number and status updates in your account.</p></article>
             <article className="bento__item tone-violet"><Languages size={28}/><h3>Your language</h3><p>English, हिन्दी or বাংলা, on the site and at the counter.</p></article>
             <article className="bento__item tone-pink"><LockKeyhole size={28}/><h3>Private by design</h3><p>Encrypted connections. We never ask for your OTP, PIN or password.</p></article>
-            <article className="bento__item tone-cyan"><Truck size={28}/><h3>Pickup, delivery or doorstep</h3><p>Collect prints from our Kharangajhar counter, ask for delivery, or request doorstep help nearby.</p><Link className="text-link" href="/print">Print from your phone <ArrowRight size={16}/></Link></article>
+            <article className="bento__item tone-cyan"><Truck size={28}/><h3>Pickup, delivery or doorstep</h3><p>Collect prints from our Kharangajhar counter, or ask for delivery.</p><Link className="text-link" href="/print">Print from your phone <ArrowRight size={16}/></Link></article>
           </div>
         </div>
       </section>
