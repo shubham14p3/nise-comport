@@ -1,6 +1,6 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import { PublicError } from "@/lib/errors";
-import { site } from "@/lib/site";
+import { absoluteUrl, site, whatsappLink } from "@/lib/site";
 
 let cachedTransporter: Transporter | null = null;
 
@@ -36,16 +36,58 @@ export function escapeHtml(value: string) {
 
 type Mail = { to: string; subject: string; heading: string; paragraphs: string[]; code?: string; action?: { label: string; href: string }; footer?: string };
 
+// Brand colours, matched to the site (see src/app/globals.css :root). Email clients don't read
+// CSS custom properties, so the values are copied here rather than imported.
+const INK = "#0b1026";
+const MUTED = "#5b6386";
+const LINE = "#e2e6f3";
+const BLUE = "#0a7bf7";
+const BLUE_700 = "#0660c9";
+const BG = "#f5f7fc";
+
+/** Best-guess label for a profile URL in site.sameAs, so the footer reads "Facebook" not a raw link. */
+function socialLabel(href: string) {
+  const host = (() => { try { return new URL(href).hostname.replace(/^www\./, ""); } catch { return ""; } })();
+  if (host.includes("facebook.com")) return "Facebook";
+  if (host.includes("instagram.com")) return "Instagram";
+  if (host.includes("youtube.com") || host.includes("youtu.be")) return "YouTube";
+  if (host.includes("justdial.com")) return "Justdial";
+  if (host.includes("g.page") || host.includes("maps.app.goo.gl") || host.includes("google.com")) return "Google";
+  return host || "Link";
+}
+
 function render(mail: Mail) {
   const footer = mail.footer ?? `${site.name} · ${site.address.oneLine} · ${site.phones.primary.display}`;
   const text = [mail.heading, "", ...mail.paragraphs, ...(mail.code ? ["", `Code: ${mail.code}`] : []), ...(mail.action ? ["", `${mail.action.label}: ${mail.action.href}`] : []), "", footer].join("\n");
-  const html = `<!doctype html><html lang="en"><body style="margin:0;background:#f7f5ed"><div style="font-family:Arial,Helvetica,sans-serif;max-width:540px;margin:0 auto;padding:32px 24px;color:#202923">
-<p style="color:#24533c;font-weight:bold;letter-spacing:2px;margin:0 0 24px">${escapeHtml(site.name)}</p>
-<h1 style="font-size:22px;margin:0 0 16px">${escapeHtml(mail.heading)}</h1>
-${mail.paragraphs.map((paragraph) => `<p style="line-height:1.55;margin:0 0 14px">${escapeHtml(paragraph)}</p>`).join("\n")}
-${mail.code ? `<p style="font-size:32px;font-weight:bold;letter-spacing:8px;background:#fffefa;border:1px solid #e5e7df;padding:18px;text-align:center;margin:20px 0">${escapeHtml(mail.code)}</p>` : ""}
-${mail.action ? `<p style="margin:24px 0"><a href="${escapeHtml(mail.action.href)}" style="background:#24533c;color:#fffefa;padding:12px 20px;border-radius:999px;text-decoration:none;font-weight:bold">${escapeHtml(mail.action.label)}</a></p>` : ""}
-<p style="color:#737970;font-size:12px;line-height:1.5;margin-top:32px;border-top:1px solid #e5e7df;padding-top:16px">${escapeHtml(footer)}</p>
+
+  const logoUrl = absoluteUrl(site.logoPath);
+  const siteHost = site.url.replace(/^https?:\/\//, "");
+  const contactLinks: { label: string; href: string }[] = [
+    { label: "Website", href: site.url },
+    { label: "Call us", href: `tel:${site.phones.primary.e164}` },
+    { label: "WhatsApp", href: whatsappLink(`Hi ${site.name}, I have a question about my account.`) },
+    { label: "Email", href: `mailto:${site.email}` },
+    { label: "Get directions", href: site.mapsUrl },
+    ...site.sameAs.map((href) => ({ label: socialLabel(href), href })),
+  ];
+  const contactRow = contactLinks.map((link) => `<a href="${escapeHtml(link.href)}" style="color:${BLUE_700};text-decoration:none;font-weight:600;white-space:nowrap">${escapeHtml(link.label)}</a>`).join(`<span style="color:${LINE};padding:0 8px">·</span>`);
+
+  const html = `<!doctype html><html lang="en"><body style="margin:0;background:${BG}"><div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:28px 16px">
+<div style="background:#ffffff;border:1px solid ${LINE};border-radius:20px;overflow:hidden">
+  <div style="padding:22px 28px;border-bottom:1px solid ${LINE}">
+    <img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(site.name)}" height="32" style="display:block;height:32px;width:auto"/>
+  </div>
+  <div style="padding:28px">
+    <h1 style="font-size:22px;margin:0 0 16px;color:${INK}">${escapeHtml(mail.heading)}</h1>
+    ${mail.paragraphs.map((paragraph) => `<p style="line-height:1.55;margin:0 0 14px;color:${INK}">${escapeHtml(paragraph)}</p>`).join("\n")}
+    ${mail.code ? `<p style="font-size:32px;font-weight:bold;letter-spacing:8px;background:${BG};border:1.5px solid ${BLUE};border-radius:14px;color:${BLUE_700};padding:18px;text-align:center;margin:20px 0">${escapeHtml(mail.code)}</p>` : ""}
+    ${mail.action ? `<p style="margin:24px 0"><a href="${escapeHtml(mail.action.href)}" style="background:${BLUE};color:#ffffff;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:bold;display:inline-block">${escapeHtml(mail.action.label)}</a></p>` : ""}
+  </div>
+  <div style="padding:20px 28px;background:${BG};border-top:1px solid ${LINE}">
+    <p style="margin:0 0 10px;font-size:13px;line-height:1.6">${contactRow}</p>
+    <p style="color:${MUTED};font-size:12px;line-height:1.6;margin:0">${escapeHtml(site.name)} · ${escapeHtml(site.address.oneLine)}<br/><a href="${escapeHtml(site.url)}" style="color:${MUTED};text-decoration:none">${escapeHtml(siteHost)}</a></p>
+  </div>
+</div>
 </div></body></html>`;
   return { text, html };
 }
