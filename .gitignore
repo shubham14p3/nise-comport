@@ -6,11 +6,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-*.env
+
 node_modules
 dist
 dist-ssr
-*.local
 build
 
 # Editor directories and files
@@ -23,6 +22,23 @@ build
 *.njsproj
 *.sln
 *.sw?
+
+# Next.js and private customer uploads
+.next/
+.private-uploads/
+coverage/
+*.tsbuildinfo
+# Keep curated legacy brand and gallery assets available to Next.js.
+/public/csc/
+/public/nise-logo.png
+
+# Photo inbox: originals stay on your computer (npm run photos)
+/photo-inbox/*
+!/photo-inbox/README.md
+!/photo-inbox/*/
+/photo-inbox/*/*
+!/photo-inbox/*/.gitkeep
+/photo-inbox/_done/
 .next
 myexcel
 photo-index
