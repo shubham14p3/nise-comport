@@ -463,7 +463,8 @@ b, strong { font-weight: 600; }
 .float-card--lang svg { color: #ffc233; }
 
 /* ---------- Category tiles ---------- */
-.cat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+/* 3 columns: the category count (9) divides evenly, so the grid always ends full with no gaps. */
+.cat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .cat-tile { position: relative; display: grid; gap: 14px; align-content: start; padding: 22px; min-height: 196px; border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--line); overflow: hidden; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; animation: rise .5s ease both; }
 .cat-tile::before { content: ""; position: absolute; width: 180px; height: 180px; right: -70px; top: -70px; border-radius: 50%; background: radial-gradient(circle, var(--tone-soft), transparent 70%); transition: transform .3s ease; }
 .cat-tile:hover { transform: translateY(-6px); box-shadow: 0 26px 50px -24px color-mix(in srgb, var(--tone) 55%, transparent); border-color: color-mix(in srgb, var(--tone) 45%, var(--line)); }
