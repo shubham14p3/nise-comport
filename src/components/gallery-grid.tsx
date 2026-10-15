@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Expand, X } from "lucide-react";
-import ShowMore, { useShowMore } from "@/components/show-more";
+import { useShowMore } from "@/components/show-more";
 
 export type GalleryEntry = {
   key: string; src: string; width: number; height: number; title: string; alt: string; tag: "google" | "shop" | "services";
@@ -52,6 +52,17 @@ export default function GalleryGrid({ items }: { items: GalleryEntry[] }) {
   const subChips = [...counts.entries()].sort((a, b) => b[1].count - a[1].count);
   const current = open === null ? null : visible[open];
   const paging = useShowMore(12, filter);
+  const shown = Math.min(paging.count, visible.length);
+  const sentinel = useRef<HTMLDivElement>(null);
+
+  // Infinite scroll: load the next batch shortly before the sentinel scrolls into view.
+  useEffect(() => {
+    const node = sentinel.current;
+    if (!node || shown >= visible.length || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting)) paging.more(); }, { rootMargin: "600px 0px" });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [shown, visible.length]);
 
   useEffect(() => {
     if (open === null) return;
@@ -85,7 +96,11 @@ export default function GalleryGrid({ items }: { items: GalleryEntry[] }) {
           : item.href ? <Link href={item.href}>Learn more <ArrowRight size={14}/></Link> : null}
       </figcaption>
     </figure>)}</div>
-    <ShowMore shown={Math.min(paging.count, visible.length)} total={visible.length} onMore={paging.more} label="photos"/>
+    <div ref={sentinel} className="gallery-sentinel" aria-live="polite">
+      {shown < visible.length
+        ? <><p className="show-more__count">Showing {shown} of {visible.length} photos</p><button type="button" className="btn btn--ghost" onClick={paging.more}>Load more</button></>
+        : visible.length > 0 ? <p className="show-more__count">Showing all {visible.length} photos</p> : null}
+    </div>
     {current && <div className="lightbox" role="dialog" aria-modal="true" aria-label={current.title} onClick={() => setOpen(null)}>
       <button type="button" className="lightbox__close icon-btn" aria-label="Close" onClick={() => setOpen(null)}><X size={24}/></button>
       {visible.length > 1 && <button type="button" className="lightbox__nav lightbox__nav--prev icon-btn" aria-label="Previous" onClick={(event) => { event.stopPropagation(); setOpen((index) => index === null ? null : (index - 1 + visible.length) % visible.length); }}><ChevronLeft size={28}/></button>}

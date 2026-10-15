@@ -2118,3 +2118,7 @@ a.site-banner:hover { transform: translateY(-3px); }
 /* Doorstep option: visible but not selectable */
 .mode.is-soon { opacity: .55; cursor: not-allowed; filter: grayscale(.6); }
 .mode__soon { display: inline-block; margin-top: 6px; padding: 2px 8px; border-radius: 999px; background: var(--tint); font-size: .75rem; font-weight: 600; font-style: normal; color: var(--muted); }
+
+/* Gallery infinite scroll sentinel */
+.gallery-sentinel { display: grid; justify-items: center; gap: 10px; padding: 18px 0 8px; min-height: 64px; }
+.gallery-sentinel .btn { margin-top: 4px; }
