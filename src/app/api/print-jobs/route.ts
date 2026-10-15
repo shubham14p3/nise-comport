@@ -32,10 +32,10 @@ async function readDocumentPageCount(file: typeof storedFiles.$inferSelect) {
 }
 
 export async function POST(request: NextRequest) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Please sign in to place an order." }, { status: 401 });
-  if (user.role === "demo") return NextResponse.json({ error: "The local demo account can’t place print orders." }, { status: 403 });
   try {
+    const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ error: "Please sign in to place an order." }, { status: 401 });
+    if (user.role === "demo") return NextResponse.json({ error: "The local demo account can’t place print orders." }, { status: 403 });
     const data = schema.parse(await readJson(request));
     const jobFields = { id: printJobs.id, reference: printJobs.reference, status: printJobs.status, subtotal: printJobs.subtotal, discount: printJobs.discount, total: printJobs.total };
     if (data.idempotencyKey) {

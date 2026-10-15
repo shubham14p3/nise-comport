@@ -9,9 +9,9 @@ import { apiError } from "@/lib/http";
 
 const schema = z.object({ email: z.email().transform(value=>value.trim().toLowerCase()), amount: z.number().positive().max(100000), description: z.string().trim().min(3).max(160) });
 export async function POST(request: NextRequest) {
-  const actor = await getCurrentUser();
-  if (!hasPermission(actor, "wallet")) return NextResponse.json({ error: "Wallet access is required." }, { status: 403 });
   try {
+    const actor = await getCurrentUser();
+    if (!hasPermission(actor, "wallet")) return NextResponse.json({ error: "Wallet access is required." }, { status: 403 });
     const input = schema.parse(await request.json());
     const [customer] = await db.select({ id: users.id }).from(users).where(eq(users.email, input.email)).limit(1);
     if (!customer) return NextResponse.json({ error: "No customer account matches this email." }, { status: 404 });

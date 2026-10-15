@@ -53,13 +53,13 @@ async function convertWordToPdf(fileName: string, bytes: Buffer) {
 }
 
 export async function POST(request: NextRequest) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Please sign in before uploading documents." }, { status: 401 });
-  if (user.role === "demo") return NextResponse.json({ error: "The local demo account can’t upload documents." }, { status: 403 });
-  const declaredSize = Number(request.headers.get("content-length") ?? "0");
-  if (declaredSize > MAX_FILE_SIZE + 1024 * 1024) return NextResponse.json({ error: "Choose a file up to 20 MB." }, { status: 413 });
   let finalPath: string | undefined;
   try {
+    const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ error: "Please sign in before uploading documents." }, { status: 401 });
+    if (user.role === "demo") return NextResponse.json({ error: "The local demo account can’t upload documents." }, { status: 403 });
+    const declaredSize = Number(request.headers.get("content-length") ?? "0");
+    if (declaredSize > MAX_FILE_SIZE + 1024 * 1024) return NextResponse.json({ error: "Choose a file up to 20 MB." }, { status: 413 });
     await enforceRate(RATE_RULES.uploadsPerUserDay, identity("user", user.id), "You’ve uploaded many files today. Please bring the remaining documents to the service desk or try tomorrow.");
     const form = await request.formData();
     const file = form.get("file");
@@ -106,31 +106,35 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Please sign in." }, { status: 401 });
-  const id = request.nextUrl.searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "File id is required." }, { status: 400 });
-  const [file] = await db.select().from(storedFiles).where(and(eq(storedFiles.id, id), eq(storedFiles.userId, user.id))).limit(1);
-  if (!file) return NextResponse.json({ error: "File not found." }, { status: 404 });
   try {
-    const bytes = await readFile(privateStoragePath(file.objectKey));
-    return new NextResponse(bytes, { headers: { "Content-Type": file.mimeType, "Content-Disposition": "inline", "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" } });
-  } catch {
-    return NextResponse.json({ error: "The private file is no longer available." }, { status: 404 });
-  }
+    const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ error: "Please sign in." }, { status: 401 });
+    const id = request.nextUrl.searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "File id is required." }, { status: 400 });
+    const [file] = await db.select().from(storedFiles).where(and(eq(storedFiles.id, id), eq(storedFiles.userId, user.id))).limit(1);
+    if (!file) return NextResponse.json({ error: "File not found." }, { status: 404 });
+    try {
+      const bytes = await readFile(privateStoragePath(file.objectKey));
+      return new NextResponse(bytes, { headers: { "Content-Type": file.mimeType, "Content-Disposition": "inline", "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" } });
+    } catch {
+      return NextResponse.json({ error: "The private file is no longer available." }, { status: 404 });
+    }
+  } catch (error) { return apiError(error); }
 }
 
 export async function DELETE(request: NextRequest) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Please sign in." }, { status: 401 });
-  const id = request.nextUrl.searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "File id is required." }, { status: 400 });
-  const [file] = await db.select().from(storedFiles).where(and(eq(storedFiles.id, id), eq(storedFiles.userId, user.id))).limit(1);
-  if (!file) return NextResponse.json({ error: "File not found." }, { status: 404 });
-  if (file.requestId) return NextResponse.json({ error: "This file is attached to a service request." }, { status: 409 });
-  const linked = await db.select({ id: printJobs.id }).from(printJobs).where(eq(printJobs.fileId, id)).limit(1);
-  if (linked.length) return NextResponse.json({ error: "This file is attached to a print order." }, { status: 409 });
-  await db.delete(storedFiles).where(eq(storedFiles.id, id));
-  await rm(privateStoragePath(file.objectKey), { force: true }).catch(() => undefined);
-  return NextResponse.json({ ok: true });
+  try {
+    const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ error: "Please sign in." }, { status: 401 });
+    const id = request.nextUrl.searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "File id is required." }, { status: 400 });
+    const [file] = await db.select().from(storedFiles).where(and(eq(storedFiles.id, id), eq(storedFiles.userId, user.id))).limit(1);
+    if (!file) return NextResponse.json({ error: "File not found." }, { status: 404 });
+    if (file.requestId) return NextResponse.json({ error: "This file is attached to a service request." }, { status: 409 });
+    const linked = await db.select({ id: printJobs.id }).from(printJobs).where(eq(printJobs.fileId, id)).limit(1);
+    if (linked.length) return NextResponse.json({ error: "This file is attached to a print order." }, { status: 409 });
+    await db.delete(storedFiles).where(eq(storedFiles.id, id));
+    await rm(privateStoragePath(file.objectKey), { force: true }).catch(() => undefined);
+    return NextResponse.json({ ok: true });
+  } catch (error) { return apiError(error); }
 }
