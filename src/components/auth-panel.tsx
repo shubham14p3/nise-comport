@@ -14,6 +14,8 @@ import { findOffer } from "@/lib/offers";
 import { promoDict, shortDate } from "@/lib/promo-i18n";
 import { useLocale } from "@/lib/use-locale";
 import { takeReturn } from "@/lib/after-login";
+import { secureApi } from "@/lib/secure-api-client";
+import { isStaffRole, STAFF_HOME } from "@/lib/staff-routes";
 import { passwordProblem, PASSWORD_MIN } from "@/lib/validation";
 
 type Mode = "signin" | "signup";
@@ -57,7 +59,17 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
     if (result.retryAfter && result.retryAfter <= 120) setResendIn(result.retryAfter);
   }
 
-  function done() { router.push(takeReturn()); router.refresh(); }
+  // Staff with no saved page to return to go straight to the staff desk.
+  async function done() {
+    let target = takeReturn();
+    if (target === "/profile") {
+      try {
+        const session = await secureApi<{ user: { role: string } | null }>("C4w7G2hN6kP9");
+        if (isStaffRole(session.user?.role)) target = STAFF_HOME;
+      } catch { /* keep the profile fallback */ }
+    }
+    router.push(target); router.refresh();
+  }
 
   async function submitDetails(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(""); setSuccess(""); setFieldErrors({});

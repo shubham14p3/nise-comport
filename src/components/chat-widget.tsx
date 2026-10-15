@@ -119,7 +119,7 @@ export default function ChatWidget({ whatsapp, phone, mapsUrl, hours, services }
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  if (pathname.startsWith("/admin")) return null;
+  if (pathname.startsWith("/desk")) return null;
 
   function dismissTeaser() {
     setTeaser(false);

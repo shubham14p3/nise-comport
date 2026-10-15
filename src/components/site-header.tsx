@@ -6,13 +6,14 @@ import LanguageMenu from "@/components/language-menu";
 import OfferTicker from "@/components/offer-ticker";
 import { ServicesMegaDesktop, ServicesMegaMobile } from "@/components/services-mega-menu";
 import { WhatsAppIcon } from "@/components/icons";
-import { ArrowRight, LogOut, Menu, Phone, UserRound, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowRight, LayoutDashboard, LogOut, Menu, Phone, ShieldCheck, UserRound, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { secureApi } from "@/lib/secure-api-client";
 import { dict } from "@/lib/i18n";
 import { useLocale } from "@/lib/use-locale";
 import { PHONE_E164 as PHONE, whatsappHref } from "@/lib/public-contact";
+import { isStaffRole, STAFF_HOME } from "@/lib/staff-routes";
 
 type HeaderUser = { id: string; name: string; email: string; role: string };
 
@@ -28,6 +29,8 @@ export default function SiteHeader() {
   const [signingOut, setSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPath, setMenuPath] = useState(pathname);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
 
   // Close the mobile menu after navigation.
   if (menuPath !== pathname) { setMenuPath(pathname); setMenuOpen(false); }
@@ -48,6 +51,17 @@ export default function SiteHeader() {
     window.addEventListener("keydown", onKey);
     return () => { document.documentElement.classList.remove("no-scroll"); window.removeEventListener("keydown", onKey); };
   }, [menuOpen]);
+
+  // Close the account menu on outside click or Escape, and after navigation.
+  useEffect(() => { setAccountOpen(false); }, [pathname]);
+  useEffect(() => {
+    if (!accountOpen) return;
+    const onPointer = (event: MouseEvent) => { if (!accountRef.current?.contains(event.target as Node)) setAccountOpen(false); };
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setAccountOpen(false); };
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onPointer); document.removeEventListener("keydown", onKey); };
+  }, [accountOpen]);
 
   async function signOut() {
     setSigningOut(true);
@@ -83,10 +97,21 @@ export default function SiteHeader() {
           <LanguageMenu locale={locale} label={t.changeLanguage} compact/>
           {!sessionLoaded ? <span className="nav-placeholder" aria-hidden="true"/> : user
             ? <>
-              <Link className="account-chip" href="/profile" title={t.myProfile}><span className="account-avatar">{firstName.slice(0, 1).toUpperCase() || <UserRound size={16}/>}</span><span className="account-name">{firstName || t.myProfile}</span></Link>
+              <div className="account-menu" ref={accountRef}>
+                <button className="account-chip" type="button" aria-haspopup="menu" aria-expanded={accountOpen} onClick={() => setAccountOpen((open) => !open)} title={t.myProfile}>
+                  <span className="account-avatar">{firstName.slice(0, 1).toUpperCase() || <UserRound size={16}/>}</span><span className="account-name">{firstName || t.myProfile}</span>
+                </button>
+                {accountOpen && <div className="account-dropdown" role="menu">
+                  <Link role="menuitem" href="/profile"><UserRound size={16}/>My profile</Link>
+                  {isStaffRole(user.role) && <Link role="menuitem" href={STAFF_HOME}><LayoutDashboard size={16}/>Staff desk</Link>}
+                </div>}
+              </div>
               <button className="icon-btn nav-signout" type="button" onClick={() => void signOut()} disabled={signingOut} title={t.signOut} aria-label={t.signOut}><LogOut size={18}/></button>
             </>
-            : <Link className="nav-signin" href="/login">{t.signIn}</Link>}
+            : <>
+              <Link className="nav-admin" href="/login" title="Staff and owner sign in"><ShieldCheck size={16}/>Admin login</Link>
+              <Link className="nav-signin" href="/login">{t.signIn}</Link>
+            </>}
           <Link className="btn btn--primary btn--sm nav-cta" href="/request">{t.startRequest}<ArrowRight size={16}/></Link>
           <button className="menu-toggle" type="button" aria-expanded={menuOpen} aria-controls="mobile-sheet" onClick={() => setMenuOpen((value) => !value)}>
             {menuOpen ? <X size={22}/> : <Menu size={22}/>}<span className="sr-only">{menuOpen ? t.close : t.menu}</span>
@@ -104,9 +129,10 @@ export default function SiteHeader() {
         <div className="mobile-sheet__lang"><span>{t.changeLanguage}</span><LanguageMenu locale={locale} label={t.changeLanguage} inline/></div>
         <div className="mobile-sheet__actions">
           <Link className="btn btn--primary btn--block" href="/request">{t.startRequest}<ArrowRight size={18}/></Link>
+          {sessionLoaded && user && isStaffRole(user.role) && <Link className="btn btn--ghost btn--block" href={STAFF_HOME}><LayoutDashboard size={18}/>Staff desk</Link>}
           {sessionLoaded && user
             ? <div className="mobile-sheet__row"><Link className="btn btn--ghost" href="/profile"><UserRound size={18}/>{t.myProfile}</Link><button className="btn btn--ghost" type="button" onClick={() => void signOut()} disabled={signingOut}><LogOut size={18}/>{signingOut ? t.signingOut : t.signOut}</button></div>
-            : <Link className="btn btn--ghost btn--block" href="/login">{t.signIn}</Link>}
+            : <><Link className="btn btn--ghost btn--block" href="/login"><ShieldCheck size={18}/>Admin login</Link><Link className="btn btn--ghost btn--block" href="/login">{t.signIn}</Link></>}
           <div className="mobile-sheet__row"><a className="btn btn--wa" href={WHATSAPP} target="_blank" rel="noopener noreferrer"><WhatsAppIcon/>{t.whatsapp}</a><a className="btn btn--ghost" href={`tel:${PHONE}`}><Phone size={18}/>{t.call}</a></div>
         </div>
       </nav>

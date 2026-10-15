@@ -84,7 +84,9 @@ test("legacy redirects point at pages that exist", () => {
   for (const redirect of legacyRedirects()) {
     assert.ok(!sources.has(redirect.source), `duplicate redirect ${redirect.source}`);
     sources.add(redirect.source);
-    assert.ok(routePaths.has(redirect.destination), `${redirect.source} → ${redirect.destination} is not a public page`);
+    // Old staff URLs send people to sign-in, which then routes staff to the desk. Sign-in is not indexed, so it is the one allowed non-public target.
+    const allowedTarget = redirect.destination === "/login";
+    assert.ok(allowedTarget || routePaths.has(redirect.destination), `${redirect.source} → ${redirect.destination} is not a public page`);
     assert.ok(!routePaths.has(redirect.source), `${redirect.source} is both a page and a redirect`);
   }
 });
