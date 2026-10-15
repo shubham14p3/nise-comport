@@ -45,9 +45,8 @@ const QUICK_PICKS: Record<string, string[]> = {
   education: ["Exam form", "Scholarship form", "Admission form", "Photo & signature resize"],
   "fee-payments": ["Electricity bill", "Mobile / DTH recharge", "School or college fee"],
   "form-filing": ["ITR filing help", "GST help", "Udyam registration", "Rent agreement"],
-  "it-services": ["Printing / scanning", "Computer repair", "CCTV enquiry", "Website for my shop"],
-  hardware: ["Laptop repair", "PC build quote", "Parts price", "Printer repair"],
-  "extra-services": ["Photo studio", "Photo print", "A4 print", "A3 print"],
+  "it-services": ["Printing / scanning", "Photo print", "A4 print", "Website for my shop"],
+  hardware: ["Laptop repair", "PC build quote", "Parts price", "Computer, printer & CCTV help"],
   travel: ["Train ticket", "Bus ticket", "Flight ticket", "Hotel booking"],
   other: ["I’m not sure which service", "Documents check", "General question"],
 };
@@ -300,10 +299,10 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     return words.every((word) => `${item.name} ${serviceName(item.slug, item.name, locale)} ${item.description}`.toLowerCase().includes(word));
   });
   const savedAddress = addresses.find((item) => item.id === draft.addressId);
-  const modeCards: { id: Mode; icon: typeof Store; title: string; sub: string }[] = [
+  const modeCards: { id: Mode; icon: typeof Store; title: string; sub: string; soon?: boolean }[] = [
     { id: "walkin", icon: Store, title: t.walkin, sub: t.walkinSub },
     { id: "callback", icon: Headphones, title: t.callback, sub: t.callbackSub },
-    { id: "doorstep", icon: House, title: t.doorstep, sub: t.doorstepSub },
+    { id: "doorstep", icon: House, title: t.doorstep, sub: t.doorstepSub, soon: true },
     { id: "online", icon: Laptop, title: t.online, sub: t.onlineSub },
   ];
   const slotLabel = (slot: Slot | "") => slot ? t[slot] : "";
@@ -379,7 +378,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
 
       {draft.step === 2 && <section>
         <h2>{t.s3Title}</h2><p className="wizard-form__sub">{t.s3Sub}</p>
-        <div className="mode-grid" role="radiogroup" aria-label={t.s3Title}>{modeCards.map(({ id, icon: Icon, title, sub }) => <button key={id} type="button" role="radio" aria-checked={draft.mode === id} className={draft.mode === id ? "mode is-selected" : "mode"} onClick={() => update({ mode: id })}><span className="mode__icon"><Icon size={22}/></span><b>{title}</b><small>{sub}</small></button>)}</div>
+        <div className="mode-grid" role="radiogroup" aria-label={t.s3Title}>{modeCards.map(({ id, icon: Icon, title, sub, soon }) => soon ? <button key={id} type="button" role="radio" aria-checked="false" aria-disabled="true" disabled className="mode is-soon"><span className="mode__icon"><Icon size={22}/></span><b>{title}</b><small>{sub}</small><em className="mode__soon">Coming soon</em></button> : <button key={id} type="button" role="radio" aria-checked={draft.mode === id} className={draft.mode === id ? "mode is-selected" : "mode"} onClick={() => update({ mode: id })}><span className="mode__icon"><Icon size={22}/></span><b>{title}</b><small>{sub}</small></button>)}</div>
         {draft.mode === "walkin" && <div className="slot-picker">
           <span className="field__label">{t.day}</span>
           <div className="day-row">{days.map((day) => <button key={day.iso} type="button" className={draft.day === day.iso ? "day is-active" : "day"} onClick={() => update({ day: day.iso })}><small>{day.offset === 0 ? t.today : day.offset === 1 ? t.tomorrow : day.weekday}</small><b>{day.date}</b></button>)}</div>
