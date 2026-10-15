@@ -274,7 +274,7 @@ b, strong { font-weight: 600; }
 .ticker__all { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: #8fd6ff; white-space: nowrap; }
 
 /* ---------- Header ---------- */
-.site-header { position: sticky; top: 0; z-index: 50; background: rgb(255 255 255 / .86); backdrop-filter: saturate(160%) blur(16px); -webkit-backdrop-filter: saturate(160%) blur(16px); border-bottom: 1px solid rgb(226 230 243 / .8); }
+.site-header { position: sticky; top: 0; z-index: 90; background: rgb(255 255 255 / .86); backdrop-filter: saturate(160%) blur(16px); -webkit-backdrop-filter: saturate(160%) blur(16px); border-bottom: 1px solid rgb(226 230 243 / .8); }
 .nav-wrap { display: flex; align-items: center; gap: 20px; height: var(--header-h); }
 .brand { display: inline-flex; align-items: center; flex: none; }
 .brand-lockup { display: grid; gap: 3px; line-height: 1; }
@@ -2114,9 +2114,14 @@ a.site-banner:hover { transform: translateY(-3px); }
 .mega__all:hover { background: #eaf3ff; }
 @media (max-width: 1060px) { .mega__panel { width: min(640px, calc(100vw - 32px)); } .mega__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
-/* Services accordion (mobile sheet) */
-.mobile-mega { display: grid; border-bottom: 1px solid var(--line); }
-.mobile-mega__all { display: flex; align-items: center; justify-content: space-between; padding: 14px 4px; font-size: 1.1875rem; font-weight: 600; border-bottom: 1px solid var(--line); }
+/* Services accordion (mobile sheet). The whole thing is a <details> closed by default, so it
+   doesn't push every other link down the sheet until someone taps it open. */
+.mobile-mega { display: block; border-bottom: 1px solid var(--line); }
+.mobile-mega__all { display: flex; align-items: center; justify-content: space-between; padding: 14px 4px; font-size: 1.1875rem; font-weight: 600; cursor: pointer; list-style: none; }
+.mobile-mega__all::-webkit-details-marker { display: none; }
+.mobile-mega[open] > .mobile-mega__all { color: var(--blue-700); }
+.mobile-mega[open] > .mobile-mega__all .mobile-mega__chevron { transform: rotate(180deg); }
+.mobile-mega__viewall { display: flex; align-items: center; justify-content: space-between; padding: 10px 4px; margin-bottom: 4px; font-weight: 600; color: var(--tone, var(--blue-700)); border-bottom: 1px solid var(--line); }
 .mobile-mega__group summary { display: flex; align-items: center; gap: 12px; padding: 12px 4px; font-size: 1.05rem; font-weight: 600; cursor: pointer; list-style: none; border-bottom: 1px solid var(--line); }
 .mobile-mega__group summary::-webkit-details-marker { display: none; }
 .mobile-mega__group .mega__icon { background: var(--tone-soft, var(--tint)); color: var(--tone, var(--blue-700)); }
@@ -2127,6 +2132,12 @@ a.site-banner:hover { transform: translateY(-3px); }
 .mobile-mega__group ul { list-style: none; margin: 0; padding: 4px 0 12px 42px; display: grid; gap: 2px; }
 .mobile-mega__group li a { display: block; padding: 10px 4px; font-size: 1rem; font-weight: 500; color: var(--ink-2); }
 .mobile-mega__group li a.mega__more { color: var(--tone, var(--blue-700)); font-weight: 600; }
+
+/* Mobile search bar (mobile sheet) */
+.mobile-sheet__search { display: flex; align-items: center; gap: 10px; margin: 14px 0; padding: 10px 14px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); }
+.mobile-sheet__search svg { color: var(--muted); flex-shrink: 0; }
+.mobile-sheet__search input { flex: 1; min-width: 0; border: 0; background: none; font: inherit; color: var(--ink); }
+.mobile-sheet__search input:focus { outline: none; }
 
 /* Doorstep option: visible but not selectable */
 .mode.is-soon { opacity: .55; cursor: not-allowed; filter: grayscale(.6); }
@@ -2143,6 +2154,3 @@ a.site-banner:hover { transform: translateY(-3px); }
 .account-dropdown a { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; font-weight: 500; color: var(--ink-2); }
 .account-dropdown a:hover { background: var(--tint); color: var(--ink); }
 .account-dropdown svg { color: var(--muted); }
-.nav-admin { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 12px; border: 1.5px solid var(--line); font-weight: 600; font-size: .9rem; color: var(--ink-2); white-space: nowrap; }
-.nav-admin:hover { border-color: var(--blue); color: var(--blue-700); }
-@media (max-width: 960px) { .nav-admin { display: none; } }

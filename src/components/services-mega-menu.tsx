@@ -67,11 +67,18 @@ export function ServicesMegaDesktop({ label, active }: { label: string; active: 
   );
 }
 
-/** Mobile: each category is an expandable row, so the full list fits without a long scroll. */
+/**
+ * Mobile: the whole services section is collapsed behind one toggle, so it doesn't push every
+ * other link down the sheet by default. Opening it reveals the per-category expandable rows.
+ */
 export function ServicesMegaMobile({ label }: { label: string }) {
   return (
-    <div className="mobile-mega">
-      <Link className="mobile-mega__all" href="/services">{label}<span aria-hidden="true">→</span></Link>
+    <details className="mobile-mega">
+      <summary className="mobile-mega__all">
+        {label}
+        <ChevronDown size={18} aria-hidden="true" className="mobile-mega__chevron"/>
+      </summary>
+      <Link className="mobile-mega__viewall" href="/services">View all services<span aria-hidden="true">→</span></Link>
       {groups.map((group) => (
         <details key={group.slug} className="mobile-mega__group">
           <summary>
@@ -87,6 +94,6 @@ export function ServicesMegaMobile({ label }: { label: string }) {
           </ul>
         </details>
       ))}
-    </div>
+    </details>
   );
 }

@@ -80,7 +80,7 @@ export default function SiteFooter() {
     </div>
     <div className="container footer-bottom">
       <p>NISE COMPORT is an independent CSC / Pragya Kendra service centre, not a government office, bank or insurer. Official and third-party fees are separate from our service charge; final approvals rest with the relevant authority.</p>
-      <div className="footer-bottom__row"><span>© {YEAR} {site.name}. All rights reserved.</span><span><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/contact">Contact</Link></span></div>
+      <div className="footer-bottom__row"><span>© {YEAR} {site.name}. All rights reserved.</span><span><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/contact">Contact</Link><Link href="/login">Admin login</Link></span></div>
     </div>
   </footer>;
 }

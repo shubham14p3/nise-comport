@@ -6,8 +6,8 @@ import LanguageMenu from "@/components/language-menu";
 import OfferTicker from "@/components/offer-ticker";
 import { ServicesMegaDesktop, ServicesMegaMobile } from "@/components/services-mega-menu";
 import { WhatsAppIcon } from "@/components/icons";
-import { ArrowRight, LayoutDashboard, LogOut, Menu, Phone, ShieldCheck, UserRound, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { ArrowRight, LayoutDashboard, LogOut, Menu, Phone, Search, UserRound, X } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { secureApi } from "@/lib/secure-api-client";
 import { dict } from "@/lib/i18n";
@@ -31,6 +31,14 @@ export default function SiteHeader() {
   const [menuPath, setMenuPath] = useState(pathname);
   const [accountOpen, setAccountOpen] = useState(false);
   const accountRef = useRef<HTMLDivElement>(null);
+  const [mobileQuery, setMobileQuery] = useState("");
+
+  function submitMobileSearch(event: FormEvent) {
+    event.preventDefault();
+    const value = mobileQuery.trim();
+    setMenuOpen(false);
+    router.push(value ? `/services?q=${encodeURIComponent(value)}` : "/services");
+  }
 
   // Close the mobile menu after navigation.
   if (menuPath !== pathname) { setMenuPath(pathname); setMenuOpen(false); }
@@ -108,10 +116,7 @@ export default function SiteHeader() {
               </div>
               <button className="icon-btn nav-signout" type="button" onClick={() => void signOut()} disabled={signingOut} title={t.signOut} aria-label={t.signOut}><LogOut size={18}/></button>
             </>
-            : <>
-              <Link className="nav-admin" href="/login" title="Staff and owner sign in"><ShieldCheck size={16}/>Admin login</Link>
-              <Link className="nav-signin" href="/login">{t.signIn}</Link>
-            </>}
+            : <Link className="nav-signin" href="/login">{t.signIn}</Link>}
           <Link className="btn btn--primary btn--sm nav-cta" href="/request">{t.startRequest}<ArrowRight size={16}/></Link>
           <button className="menu-toggle" type="button" aria-expanded={menuOpen} aria-controls="mobile-sheet" onClick={() => setMenuOpen((value) => !value)}>
             {menuOpen ? <X size={22}/> : <Menu size={22}/>}<span className="sr-only">{menuOpen ? t.close : t.menu}</span>
@@ -123,6 +128,11 @@ export default function SiteHeader() {
       <div className="mobile-sheet__backdrop" onClick={() => setMenuOpen(false)}/>
       <nav className="mobile-sheet__panel" aria-label="Mobile navigation">
         <div className="mobile-sheet__top"><Link className="brand" href={home}><BrandWordmark/></Link><button className="icon-btn" type="button" onClick={() => setMenuOpen(false)} aria-label={t.close}><X size={22}/></button></div>
+        <form role="search" className="mobile-sheet__search" onSubmit={submitMobileSearch}>
+          <Search size={18} aria-hidden="true"/>
+          <label className="sr-only" htmlFor="mobile-search">Search services</label>
+          <input id="mobile-search" type="search" value={mobileQuery} onChange={(event) => setMobileQuery(event.target.value)} placeholder="Search services…" autoComplete="off" enterKeyHint="search"/>
+        </form>
         <div className="mobile-sheet__links">
           {[{ href: home, label: t.home }, ...links, { href: "/about", label: t.about }, { href: "/areas-we-serve", label: t.areas }, { href: "/faq", label: t.faq }, { href: "/pan", label: t.pan }].map((link, index) => link.href === "/services" ? <ServicesMegaMobile key={link.href} label={link.label}/> : <Link key={link.href} href={link.href} style={{ animationDelay: `${index * 30}ms` }}>{link.label}<ArrowRight size={18}/></Link>)}
         </div>
@@ -132,7 +142,7 @@ export default function SiteHeader() {
           {sessionLoaded && user && isStaffRole(user.role) && <Link className="btn btn--ghost btn--block" href={STAFF_HOME}><LayoutDashboard size={18}/>Staff desk</Link>}
           {sessionLoaded && user
             ? <div className="mobile-sheet__row"><Link className="btn btn--ghost" href="/profile"><UserRound size={18}/>{t.myProfile}</Link><button className="btn btn--ghost" type="button" onClick={() => void signOut()} disabled={signingOut}><LogOut size={18}/>{signingOut ? t.signingOut : t.signOut}</button></div>
-            : <><Link className="btn btn--ghost btn--block" href="/login"><ShieldCheck size={18}/>Admin login</Link><Link className="btn btn--ghost btn--block" href="/login">{t.signIn}</Link></>}
+            : <Link className="btn btn--ghost btn--block" href="/login">{t.signIn}</Link>}
           <div className="mobile-sheet__row"><a className="btn btn--wa" href={WHATSAPP} target="_blank" rel="noopener noreferrer"><WhatsAppIcon/>{t.whatsapp}</a><a className="btn btn--ghost" href={`tel:${PHONE}`}><Phone size={18}/>{t.call}</a></div>
         </div>
       </nav>
