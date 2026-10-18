@@ -8,11 +8,14 @@ import { isStaffRole } from "@/lib/staff-routes";
 export const metadata: Metadata = { title: "Staff dashboard", robots: { index: false, follow: false } };
 export const dynamic = "force-dynamic";
 
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   if (!isStaffRole(user.role)) redirect("/profile");
   // Queue/customer data is deliberately not serialized into the server-component payload;
   // only the signed-in person's name, role and permissions (which tabs to show).
-  return <AdminDashboard me={{ name: user.name, role: user.role, permissions: permissionsOf(user) }}/>;
+  const { view } = await searchParams;
+  // Only the owner can switch; a real staff account always sees its normal staff view.
+  const viewAsStaff = user.role === "admin" && view === "staff";
+  return <AdminDashboard me={{ name: user.name, role: user.role, permissions: permissionsOf(user) }} viewAsStaff={viewAsStaff}/>;
 }

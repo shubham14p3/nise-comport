@@ -19,7 +19,8 @@ import SiteContentPanel from "@/components/site-content-panel";
 import GalleryPanel from "@/components/gallery-panel";
 import TestimonialsPanel from "@/components/testimonials-panel";
 import RecordsPanel from "@/components/records-panel";
-import type { Permission } from "@/lib/permissions";
+import { STAFF_PERMISSIONS, type Permission } from "@/lib/permissions";
+import Link from "next/link";
 
 type Row = { id: string; reference: string; name: string; email: string; phone: string | null; whatsapp?: string | null; status: string; createdAt: string };
 type Job = Row & { fileName: string; pageCount: number; total: string; fulfillment: string; scheduledAt: string | null };
@@ -230,8 +231,14 @@ const subscribeHash = (callback: () => void) => { window.addEventListener("hashc
  * Staff workspace. Each tab needs a permission (see src/lib/permissions.ts); the owner sees all
  * of them plus Team, where staff are added and their access is set.
  */
-export default function AdminDashboard({ me }: { me: { name: string; role: string; permissions: Permission[] } }) {
-  const tabs = TABS.filter((tab) => tab.needs === "staff" ? true : tab.needs === "admin" ? me.role === "admin" : me.permissions.includes(tab.needs));
+export default function AdminDashboard({ me, viewAsStaff = false }: { me: { name: string; role: string; permissions: Permission[] }; viewAsStaff?: boolean }) {
+  // The owner can preview the desk as a staff member would see it (hides the owner-only Team
+  // tab) via "Staff view" in the account menu, without actually losing any access — they can
+  // always switch back to "Admin view". Only meaningful when me.role is "admin"; for a real
+  // staff account viewAsStaff is always false and changes nothing.
+  const isOwner = me.role === "admin" && !viewAsStaff;
+  const effectivePermissions = viewAsStaff ? [...STAFF_PERMISSIONS] : me.permissions;
+  const tabs = TABS.filter((tab) => tab.needs === "staff" ? true : tab.needs === "admin" ? isOwner : isOwner || effectivePermissions.includes(tab.needs));
   const [summary, setSummary] = useState<{ unread: number; waiting: number; callbacks: number } | null>(null);
   const unread = summary?.unread ?? 0;
   useEffect(() => {
@@ -249,17 +256,22 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
   function choose(tab: Tab) { setPicked(tab); window.history.replaceState(null, "", `#${tab}`); }
   const first = me.name.split(/\s+/)[0] || "there";
   const current = tabs.find((tab) => tab.id === active);
-  const can = (permission: Permission) => me.role === "admin" || me.permissions.includes(permission);
+  const can = (permission: Permission) => isOwner || effectivePermissions.includes(permission);
   return <main className="page page--app profile admin-desk"><SiteHeader/>
     <section className="profile__hero">
       <div className="page-hero__bg" aria-hidden="true"><span className="blob blob--1"/><span className="blob blob--2"/></div>
       <div className="container profile__hero-inner">
         <span className="profile__avatar profile__avatar--staff" aria-hidden="true">{first.slice(0, 1).toUpperCase()}</span>
         <div className="profile__hello">
-          <span className="eyebrow eyebrow--light"><ShieldCheck size={13}/> TEAM WORKSPACE · {me.role === "admin" ? "OWNER" : "STAFF"}</span>
+          <span className="eyebrow eyebrow--light"><ShieldCheck size={13}/> TEAM WORKSPACE · {isOwner ? "OWNER" : "STAFF"}</span>
           <h1>Hi {first}, <span className="grad-text grad-text--warm">here’s the desk.</span></h1>
           <p>Private data travels over the encrypted staff channel. You see only the areas the owner has given you.</p>
         </div>
+        {me.role === "admin" && <div className="profile__hero-switch">
+          {viewAsStaff
+            ? <><span className="chip chip--soft">Viewing as staff</span><Link className="btn btn--ghost btn--sm" href="/desk">Switch to admin view</Link></>
+            : <Link className="btn btn--ghost btn--sm" href="/desk?view=staff">Preview staff view</Link>}
+        </div>}
       </div>
     </section>
     <div className="container profile__layout">

@@ -6,7 +6,7 @@ import LanguageMenu from "@/components/language-menu";
 import OfferTicker from "@/components/offer-ticker";
 import { ServicesMegaDesktop, ServicesMegaMobile } from "@/components/services-mega-menu";
 import { WhatsAppIcon } from "@/components/icons";
-import { ArrowRight, LayoutDashboard, LogOut, Menu, Phone, Search, UserRound, X } from "lucide-react";
+import { ArrowRight, LayoutDashboard, LogOut, Menu, Phone, Search, ShieldCheck, UserRound, X } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { secureApi } from "@/lib/secure-api-client";
@@ -110,8 +110,9 @@ export default function SiteHeader() {
                   <span className="account-avatar">{firstName.slice(0, 1).toUpperCase() || <UserRound size={16}/>}</span><span className="account-name">{firstName || t.myProfile}</span>
                 </button>
                 {accountOpen && <div className="account-dropdown" role="menu">
-                  <Link role="menuitem" href="/profile"><UserRound size={16}/>My profile</Link>
-                  {isStaffRole(user.role) && <Link role="menuitem" href={STAFF_HOME}><LayoutDashboard size={16}/>Staff desk</Link>}
+                  <Link role="menuitem" href="/profile"><UserRound size={16}/>Normal view</Link>
+                  {isStaffRole(user.role) && <Link role="menuitem" href={user.role === "admin" ? `${STAFF_HOME}?view=staff` : STAFF_HOME}><LayoutDashboard size={16}/>Staff view</Link>}
+                  {user.role === "admin" && <Link role="menuitem" href={STAFF_HOME}><ShieldCheck size={16}/>Admin view</Link>}
                 </div>}
               </div>
               <button className="icon-btn nav-signout" type="button" onClick={() => void signOut()} disabled={signingOut} title={t.signOut} aria-label={t.signOut}><LogOut size={18}/></button>
@@ -139,7 +140,8 @@ export default function SiteHeader() {
         <div className="mobile-sheet__lang"><span>{t.changeLanguage}</span><LanguageMenu locale={locale} label={t.changeLanguage} inline/></div>
         <div className="mobile-sheet__actions">
           <Link className="btn btn--primary btn--block" href="/request">{t.startRequest}<ArrowRight size={18}/></Link>
-          {sessionLoaded && user && isStaffRole(user.role) && <Link className="btn btn--ghost btn--block" href={STAFF_HOME}><LayoutDashboard size={18}/>Staff desk</Link>}
+          {sessionLoaded && user && isStaffRole(user.role) && <Link className="btn btn--ghost btn--block" href={user.role === "admin" ? `${STAFF_HOME}?view=staff` : STAFF_HOME}><LayoutDashboard size={18}/>Staff view</Link>}
+          {sessionLoaded && user && user.role === "admin" && <Link className="btn btn--ghost btn--block" href={STAFF_HOME}><ShieldCheck size={18}/>Admin view</Link>}
           {sessionLoaded && user
             ? <div className="mobile-sheet__row"><Link className="btn btn--ghost" href="/profile"><UserRound size={18}/>{t.myProfile}</Link><button className="btn btn--ghost" type="button" onClick={() => void signOut()} disabled={signingOut}><LogOut size={18}/>{signingOut ? t.signingOut : t.signOut}</button></div>
             : <Link className="btn btn--ghost btn--block" href="/login">{t.signIn}</Link>}
