@@ -1108,6 +1108,8 @@ h1 em, h2 em { font-style: normal; background: var(--grad); -webkit-background-c
 a.pan-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
 .pan-card h2, .pan-card h3 { font-size: 1.15rem; }
 .pan-card p { color: var(--muted); font-size: .9375rem; }
+.pan-card__by { display: flex; align-items: center; gap: 10px; }
+.avatar-initials { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; min-width: 36px; border-radius: 50%; color: #fff; font-weight: 700; font-size: .8125rem; letter-spacing: .02em; }
 .pan-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
 .pan-tabs a { padding: 10px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); font-weight: 500; }
 .pan-review { display: grid; gap: 0; margin: 0; border-radius: 14px; border: 1px solid var(--line); overflow: hidden; }

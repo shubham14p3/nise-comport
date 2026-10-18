@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Eye, EyeOff, Star, Trash2 } from "lucide-react";
 import { secureApi } from "@/lib/secure-api-client";
 import { publishedServiceDetails } from "@/lib/services";
+import { colorFor, initialsFor } from "@/lib/avatar";
 
 type Testimonial = {
   id: string; authorName: string; rating: number; body: string; category: string;
@@ -105,10 +106,13 @@ export default function TestimonialsPanel() {
 
     <div className="record-list">
       {rows.map((row) => <article key={row.id} className={row.visible ? "admin-row" : "admin-row is-hidden"}>
-        <div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <span aria-hidden="true" className="avatar-initials" style={{ background: colorFor(row.authorName), flexShrink: 0 }}>{initialsFor(row.authorName)}</span>
+          <div>
           <b>{row.authorName} · {stars(row.rating)}</b>
           <small>{row.category === "general" ? "General" : publishedServiceDetails.find((service) => service.slug === row.serviceSlug)?.title ?? row.serviceSlug}{row.reviewedOn ? ` · ${row.reviewedOn}` : ""}{row.featured ? " · Featured" : ""}{!row.visible ? " · Hidden" : ""}</small>
           <p>“{row.body}”</p>
+          </div>
         </div>
         <div className="gallery-admin__actions">
           <button type="button" className="icon-btn" disabled={busy === row.id} title={row.visible ? "Hide from the website" : "Show on the website"} aria-label={row.visible ? "Hide" : "Show"} onClick={() => void patch(row.id, { visible: !row.visible }, row.visible ? "Hidden from the site." : "Shown on the site.")}>{row.visible ? <EyeOff size={16}/> : <Eye size={16}/>}</button>
