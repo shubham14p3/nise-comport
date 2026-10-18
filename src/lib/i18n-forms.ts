@@ -178,7 +178,12 @@ export function fillText(text: string, values: Record<string, string>) {
 export const SERVICE_NAMES: Record<string, { hi: string; bn: string }> = {
   "pan-card": { hi: "पैन कार्ड आवेदन और सुधार", bn: "প্যান কার্ড আবেদন ও সংশোধন" },
   aadhaar: { hi: "आधार सेवा मार्गदर्शन", bn: "আধার পরিষেবা সহায়তা" },
-  "income-caste-residence-certificate": { hi: "आय, जाति, निवास और EWS प्रमाण पत्र", bn: "আয়, জাতি, বাসস্থান ও EWS সার্টিফিকেট" },
+  "income-caste-residence-certificate": { hi: "आय प्रमाण पत्र", bn: "আয় সার্টিফিকেট" },
+  "local-resident-certificate": { hi: "स्थानीय निवास प्रमाण पत्र", bn: "স্থানীয় বাসস্থান সার্টিফিকেট" },
+  "caste-certificate-ebc1-bc2": { hi: "EBC-I / BC-II (OBC) जाति प्रमाण पत्र", bn: "EBC-I / BC-II (OBC) জাতি সার্টিফিকেট" },
+  "caste-certificate-sc": { hi: "SC जाति प्रमाण पत्र", bn: "SC জাতি সার্টিফিকেট" },
+  "caste-certificate-st": { hi: "ST जाति प्रमाण पत्र", bn: "ST জাতি সার্টিফিকেট" },
+  "marriage-registration-certificate": { hi: "विवाह पंजीकरण प्रमाण पत्र", bn: "বিবাহ নিবন্ধন সার্টিফিকেট" },
   "voter-id": { hi: "वोटर आईडी सेवाएँ", bn: "ভোটার আইডি পরিষেবা" },
   "passport-driving-licence": { hi: "पासपोर्ट और ड्राइविंग लाइसेंस फ़ॉर्म", bn: "পাসপোর্ট ও ড্রাইভিং লাইসেন্স ফর্ম" },
   "aeps-money-transfer": { hi: "AEPS बैंकिंग और मनी ट्रांसफ़र", bn: "AEPS ব্যাংকিং ও টাকা পাঠানো" },

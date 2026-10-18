@@ -128,13 +128,34 @@ function cleanName(text: string) {
   return name.replace(/\S+/g, (word) => word.length > 2 && word === word.toUpperCase() ? word[0] + word.slice(1).toLowerCase() : word);
 }
 
+/** Registers sometimes leave the mobile column unlabelled (the header cell is blank or a typo like
+ * "LMobile#4"): pick the column that mostly holds valid 10-digit Indian mobile numbers. */
+function guessMobileColumn(rows: string[][], taken: Set<number>) {
+  const sample = rows.slice(0, 60);
+  let best = -1; let bestCount = 0;
+  const width = Math.max(0, ...sample.map((row) => row.length));
+  for (let column = 0; column < width; column++) {
+    if (taken.has(column)) continue;
+    const values = sample.map((row) => row[column] ?? "").filter(Boolean);
+    const mobiles = values.filter((value) => mobileFrom(value) !== null);
+    if (mobiles.length >= Math.max(3, values.length * 0.6) && mobiles.length > bestCount) { best = column; bestCount = mobiles.length; }
+  }
+  return best;
+}
+
 /** Finds the header row: the row in the first eight with the most recognised column names. */
 function findHeader(rows: string[][]) {
   let best = -1; let bestScore = 0;
   rows.slice(0, 8).forEach((row, index) => {
     const roles = row.map(roleOf);
     const score = roles.filter((role) => role && role !== "secret").length + (roles.includes("name") ? 2 : 0);
-    const usable = roles.includes("mobile") || roles.includes("whatsapp") || roles.includes("pan") || roles.includes("aadhaar");
+    let usable = roles.includes("mobile") || roles.includes("whatsapp") || roles.includes("pan") || roles.includes("aadhaar");
+    // The header cell for the contact column is sometimes blank or unrecognised; check the data
+    // itself for a mobile-number column below this candidate header before giving up on the sheet.
+    if (!usable) {
+      const taken = new Set(roles.flatMap((role, column) => role ? [column] : []));
+      usable = guessMobileColumn(rows.slice(index + 1, index + 61), taken) >= 0;
+    }
     if (usable && score > bestScore) { best = index; bestScore = score; }
   });
   return best;
@@ -170,6 +191,12 @@ export function parseWorkbook(fileName: string, sheets: SheetInput[]): { records
     if (!service) { report.reason = "Not a customer list (accounts, rates or a register without names)."; report.rows = rows.length; continue; }
     if (headerIndex < 0) { report.reason = "No mobile, PAN or Aadhaar column, so these people can't be contacted."; report.rows = rows.length; continue; }
     const roles = headers.map(roleOf);
+    if (!roles.includes("mobile") && !roles.includes("whatsapp") && !roles.includes("pan") && !roles.includes("aadhaar")) {
+      // The header text didn't name a contact column (blank or unrecognised cell); findHeader()
+      // only picked this row because the data below it has one. Find it again so it's actually used.
+      const guessedMobile = guessMobileColumn(rows.slice(headerIndex + 1), new Set(roles.flatMap((role, index) => role ? [index] : [])));
+      if (guessedMobile >= 0) { roles[guessedMobile] = "mobile"; headers[guessedMobile] = headers[guessedMobile]?.trim() || "Mobile"; }
+    }
     if (!roles.includes("name")) {
       const guessed = guessNameColumn(rows.slice(headerIndex + 1), new Set(roles.flatMap((role, index) => role ? [index] : [])));
       if (guessed < 0) { report.reason = "No column with customer names."; continue; }
