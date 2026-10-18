@@ -12,7 +12,7 @@ export async function GET() {
   try {
     const user = await requireUser();
     const [requests, jobs, wallet, activeCoupons, activeSessions, openWork] = await Promise.all([
-      db.select({ reference: serviceRequests.reference, serviceSlug: serviceRequests.serviceSlug, serviceName: serviceRequests.serviceName, status: serviceRequests.status, details: serviceRequests.details, createdAt: serviceRequests.createdAt })
+      db.select({ reference: serviceRequests.reference, serviceSlug: serviceRequests.serviceSlug, serviceName: serviceRequests.serviceName, status: serviceRequests.status, details: serviceRequests.details, createdAt: serviceRequests.createdAt, officialReference: serviceRequests.officialReference, officialReferenceLabel: serviceRequests.officialReferenceLabel })
         .from(serviceRequests).where(eq(serviceRequests.userId, user.id)).orderBy(desc(serviceRequests.createdAt)).limit(50),
       db.select({ reference: printJobs.reference, status: printJobs.status, total: printJobs.total, fulfillment: printJobs.fulfillment, createdAt: printJobs.createdAt })
         .from(printJobs).where(eq(printJobs.userId, user.id)).orderBy(desc(printJobs.createdAt)).limit(50),

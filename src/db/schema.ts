@@ -47,6 +47,14 @@ export const serviceRequests = pgTable("service_requests", {
   details: jsonb("details").notNull().default({}), serviceFee: numeric("service_fee", { precision: 10, scale: 2 }).notNull().default("0"),
   externalFee: numeric("external_fee", { precision: 10, scale: 2 }).notNull().default("0"), notes: text("notes"),
   idempotencyKey: text("idempotency_key"),
+  // The internal `reference` above is NISE COMPORT's own tracking number, assigned the moment the
+  // request is submitted on the site. Once staff actually file it with the real government portal
+  // (ServicePlus, ECI) or insurer, that system issues its own number — application number,
+  // certificate number, EPIC number, policy number. These three columns hold that *official* one,
+  // added later by staff; both numbers are kept and shown side by side.
+  officialReference: text("official_reference"),
+  officialReferenceLabel: text("official_reference_label"),
+  officialReferenceSetAt: timestamp("official_reference_set_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index("service_requests_user_created_idx").on(table.userId, table.createdAt),

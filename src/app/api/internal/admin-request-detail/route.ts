@@ -25,6 +25,8 @@ export async function GET(request: NextRequest) {
       request: {
         id: row.request.id, reference: row.request.reference, serviceName: row.request.serviceName, status: row.request.status,
         statusLabel: statusLabel(row.request.status), details: row.request.details, createdAt: row.request.createdAt.toISOString(),
+        officialReference: row.request.officialReference, officialReferenceLabel: row.request.officialReferenceLabel,
+        officialReferenceSetAt: row.request.officialReferenceSetAt?.toISOString() ?? null,
       },
       customer: row.customer,
       events: events.map((event) => ({ ...event, fromLabel: event.fromStatus ? statusLabel(event.fromStatus) : null, toLabel: statusLabel(event.toStatus), createdAt: event.createdAt.toISOString() })),

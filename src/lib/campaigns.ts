@@ -338,18 +338,19 @@ async function handleStatusQuery(phone: string, text: string): Promise<boolean> 
   }
   const reference = text.match(REFERENCE_PATTERN)?.[1]?.toUpperCase();
   if (reference) {
-    const [service] = await db.select({ reference: serviceRequests.reference, name: serviceRequests.serviceName, status: serviceRequests.status }).from(serviceRequests).where(and(eq(serviceRequests.reference, reference), eq(serviceRequests.userId, account.id))).limit(1);
+    const [service] = await db.select({ reference: serviceRequests.reference, name: serviceRequests.serviceName, status: serviceRequests.status, officialReference: serviceRequests.officialReference, officialReferenceLabel: serviceRequests.officialReferenceLabel }).from(serviceRequests).where(and(eq(serviceRequests.reference, reference), eq(serviceRequests.userId, account.id))).limit(1);
     const [print] = service ? [] : await db.select({ reference: printJobs.reference, name: printJobs.fileName, status: printJobs.status }).from(printJobs).where(and(eq(printJobs.reference, reference), eq(printJobs.userId, account.id))).limit(1);
     const found = service ?? print;
-    await sendText(phone, found ? `${found.reference} (${found.name}): ${statusLabel(found.status)}.` : `We couldn't find ${reference} on your account. Check the reference number, or call the desk.`);
+    const officialLine = found && "officialReference" in found && found.officialReference ? ` · ${found.officialReferenceLabel || "Official ref"}: ${found.officialReference}` : "";
+    await sendText(phone, found ? `${found.reference} (${found.name}): ${statusLabel(found.status)}${officialLine}.` : `We couldn't find ${reference} on your account. Check the reference number, or call the desk.`);
     return true;
   }
   const recent = [
-    ...(await db.select({ reference: serviceRequests.reference, name: serviceRequests.serviceName, status: serviceRequests.status, updatedAt: serviceRequests.updatedAt }).from(serviceRequests).where(eq(serviceRequests.userId, account.id)).orderBy(desc(serviceRequests.updatedAt)).limit(5)),
-    ...(await db.select({ reference: printJobs.reference, name: printJobs.fileName, status: printJobs.status, updatedAt: printJobs.updatedAt }).from(printJobs).where(eq(printJobs.userId, account.id)).orderBy(desc(printJobs.updatedAt)).limit(5)),
+    ...(await db.select({ reference: serviceRequests.reference, name: serviceRequests.serviceName, status: serviceRequests.status, updatedAt: serviceRequests.updatedAt, officialReference: serviceRequests.officialReference, officialReferenceLabel: serviceRequests.officialReferenceLabel }).from(serviceRequests).where(eq(serviceRequests.userId, account.id)).orderBy(desc(serviceRequests.updatedAt)).limit(5)),
+    ...(await db.select({ reference: printJobs.reference, name: printJobs.fileName, status: printJobs.status, updatedAt: printJobs.updatedAt, officialReference: sql<string | null>`null`, officialReferenceLabel: sql<string | null>`null` }).from(printJobs).where(eq(printJobs.userId, account.id)).orderBy(desc(printJobs.updatedAt)).limit(5)),
   ].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()).slice(0, 3);
   await sendText(phone, recent.length
-    ? `Your latest requests:\n${recent.map((item) => `${item.reference} (${item.name}): ${statusLabel(item.status)}`).join("\n")}`
+    ? `Your latest requests:\n${recent.map((item) => `${item.reference} (${item.name}): ${statusLabel(item.status)}${item.officialReference ? ` · ${item.officialReferenceLabel || "Official ref"}: ${item.officialReference}` : ""}`).join("\n")}`
     : "We don't see any requests on your account yet. Start one at nisecomport.com or visit the desk.");
   return true;
 }

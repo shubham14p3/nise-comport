@@ -20,7 +20,7 @@ import { secureApi } from "@/lib/secure-api-client";
 import { whatsappHref } from "@/lib/public-contact";
 import type { CustomerVoucher } from "@/lib/promo-view";
 
-type RequestItem = { reference: string; serviceSlug: string; serviceName: string; status: string; description: string; createdAt: string };
+type RequestItem = { reference: string; serviceSlug: string; serviceName: string; status: string; description: string; createdAt: string; officialReference: string | null; officialReferenceLabel: string | null };
 type WalletItem = { amount: string; kind: string; description: string; reference: string | null; createdAt: string };
 type PrintItem = { reference: string; status: string; total: string; fulfillment: string; createdAt: string };
 type ProfileUser = {
@@ -45,6 +45,7 @@ type RequestDetail = {
   request: {
     reference: string; serviceSlug: string; serviceName: string; status: string; statusLabel: string;
     details: Record<string, unknown>; createdAt: string; cancellable: boolean;
+    officialReference: string | null; officialReferenceLabel: string | null;
   };
   files: { name: string; createdAt: string }[];
   events: { toStatus: string; label: string; createdAt: string }[];
@@ -179,7 +180,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
     if (!rows.length) return <EmptyState icon={<FileText size={22}/>} title="No requests here yet" text="Send your first request in four quick steps. Its reference number and live status will appear here." action={<Link className="btn btn--primary" href="/request">Start a request <ArrowRight size={16}/></Link>} />;
     return <div className="record-list">{rows.map((item) => <article className="record" key={item.reference}>
       <span className="record__icon"><FileText size={20}/></span>
-      <div className="record__body"><b>{serviceName(item.serviceSlug, item.serviceName, locale)}</b><small>{item.reference} · {dateLabel(item.createdAt)}</small>{item.description && <p>{item.description}</p>}</div>
+      <div className="record__body"><b>{serviceName(item.serviceSlug, item.serviceName, locale)}</b><small>{item.reference} · {dateLabel(item.createdAt)}</small>{item.officialReference && <small>{item.officialReferenceLabel || "Official reference"}: {item.officialReference}</small>}{item.description && <p>{item.description}</p>}</div>
       <span className={statusClass(item.status)}>{statusText(item.status, locale)}</span>
       <button className="btn btn--ghost btn--sm" type="button" onClick={() => void viewRequest(item.reference)}>Details <ArrowRight size={15}/></button>
     </article>)}</div>;
@@ -217,6 +218,11 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
           {requestDetailBusy && <p className="muted">Opening private request details…</p>}
           {requestDetailError && <div className="alert alert--error">{requestDetailError}</div>}
           {requestDetail && <>
+            {requestDetail.request.officialReference ? (
+              <p className="muted">{requestDetail.request.officialReferenceLabel || "Official reference"}: <b>{requestDetail.request.officialReference}</b></p>
+            ) : (
+              <p className="muted">Official reference: not yet submitted to the portal/insurer — we’ll add it here once it’s filed.</p>
+            )}
             <PanSavedDetails details={requestDetail.request.details}/>
             <RequestExtras details={requestDetail.request.details} fallback={focusRequest.description}/>
             {requestDetail.events.length > 0 && <ol className="timeline">{requestDetail.events.map((event, index) => <li key={`${event.createdAt}-${index}`}><b>{event.label}</b><small>{dateTime(event.createdAt)}</small></li>)}</ol>}

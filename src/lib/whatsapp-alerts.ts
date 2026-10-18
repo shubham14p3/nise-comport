@@ -47,3 +47,19 @@ export function sendStatusWhatsApp(input: { name: string; phone: string | null; 
     if (!result.ok) console.error("[whatsapp] status update failed:", result.error);
   });
 }
+
+/**
+ * WhatsApp copy of the official application/certificate/policy number, once staff add it — kept
+ * separate from sendStatusWhatsApp because it needs its own approved WHATSAPP_OFFICIAL_REF_TEMPLATE
+ * (body {{1}} name, {{2}} our reference, {{3}} official reference label, {{4}} official reference).
+ * Without the template, the official-reference email still goes out as before.
+ */
+export function sendOfficialReferenceWhatsApp(input: { name: string; phone: string | null; reference: string; officialReference: string; officialReferenceLabel: string; lang?: "en" | "hi" | "bn" }) {
+  if (!cloudApiConfigured() || !input.phone) return;
+  const template = process.env.WHATSAPP_OFFICIAL_REF_TEMPLATE?.trim();
+  if (!template) return;
+  after(async () => {
+    const result = await sendTemplate({ to: input.phone!, template, lang: input.lang ?? "en", bodyParams: [input.name, input.reference, input.officialReferenceLabel, input.officialReference] });
+    if (!result.ok) console.error("[whatsapp] official reference message failed:", result.error);
+  });
+}

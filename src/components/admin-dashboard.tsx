@@ -22,10 +22,10 @@ import type { Permission } from "@/lib/permissions";
 
 type Row = { id: string; reference: string; name: string; email: string; phone: string | null; whatsapp?: string | null; status: string; createdAt: string };
 type Job = Row & { fileName: string; pageCount: number; total: string; fulfillment: string; scheduledAt: string | null };
-type RequestRow = Row & { serviceName: string; fileName: string | null };
+type RequestRow = Row & { serviceName: string; fileName: string | null; officialReference: string | null; officialReferenceLabel: string | null };
 type Snapshot = { jobs: Job[]; requests: RequestRow[]; filters: { status: string; q: string } };
 type RequestDetail = {
-  request: { id: string; reference: string; serviceName: string; status: string; statusLabel: string; details: Record<string, unknown>; createdAt: string };
+  request: { id: string; reference: string; serviceName: string; status: string; statusLabel: string; details: Record<string, unknown>; createdAt: string; officialReference: string | null; officialReferenceLabel: string | null; officialReferenceSetAt: string | null };
   customer: { name: string; email: string; phone: string | null; whatsapp?: string | null; preferredContact: string };
   events: { fromStatus: string | null; toStatus: string; fromLabel: string | null; toLabel: string; note: string | null; createdAt: string; actor: string | null }[];
 };
@@ -45,6 +45,9 @@ function RequestQueue() {
   const [saving, setSaving] = useState("");
   const [detail, setDetail] = useState<RequestDetail | null>(null);
   const [detailBusy, setDetailBusy] = useState(false);
+  const [officialRef, setOfficialRef] = useState("");
+  const [officialRefLabel, setOfficialRefLabel] = useState("");
+  const [officialRefSaving, setOfficialRefSaving] = useState(false);
   const jobPages = useShowMore(20, `${q}|${status}|${jobs.length}`);
   const requestPages = useShowMore(20, `${q}|${status}|${requests.length}`);
 
@@ -95,9 +98,30 @@ function RequestQueue() {
 
   async function openDetail(id: string) {
     setDetailBusy(true); setError("");
-    try { setDetail(await secureApi<RequestDetail>("B6r1K8mQ3cT9", { id })); }
+    try {
+      const result = await secureApi<RequestDetail>("B6r1K8mQ3cT9", { id });
+      setDetail(result);
+      setOfficialRef(result.request.officialReference ?? "");
+      setOfficialRefLabel(result.request.officialReferenceLabel ?? "");
+    }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not open request details."); }
     finally { setDetailBusy(false); }
+  }
+
+  async function saveOfficialReference() {
+    if (!detail) return;
+    const id = detail.request.id;
+    setOfficialRefSaving(true); setError(""); setNotice("");
+    try {
+      await secureApi("R1k5V8nD3sJ9", {
+        id, kind: "service", status: detail.request.status, expectedStatus: detail.request.status,
+        officialReference: officialRef.trim(), officialReferenceLabel: officialRefLabel.trim(),
+      });
+      setRequests(rows => rows.map(row => row.id === id ? { ...row, officialReference: officialRef.trim() || null, officialReferenceLabel: officialRefLabel.trim() || null } : row));
+      setNotice(officialRef.trim() ? "Official reference saved. The customer will be notified." : "Official reference cleared.");
+      await openDetail(id);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save the official reference."); }
+    finally { setOfficialRefSaving(false); }
   }
 
   async function openPrivateFile(operation: string, id: string) {
@@ -137,7 +161,7 @@ function RequestQueue() {
     <section className="admin-queue"><h2><ClipboardList size={17}/> Service requests <span>{requests.length}</span></h2>
       {requests.length ? requests.slice(0, requestPages.count).map(item => <article className="admin-row" key={item.id}><div>
         <b>{item.reference} · {item.serviceName}</b>
-        <small>{item.name} · {when(item.createdAt)}</small>
+        <small>{item.name} · {when(item.createdAt)}{item.officialReference ? ` · ${item.officialReferenceLabel || "Official ref"}: ${item.officialReference}` : " · Official ref: not yet submitted"}</small>
         <ContactLinks name={item.name} phone={item.phone} whatsapp={item.whatsapp} email={item.email} reference={item.reference}/>
         <button type="button" className="profile-text-button" onClick={() => void openDetail(item.id)}>Read submitted request details</button>
         {item.fileName && <button type="button" className="profile-text-button" onClick={() => void openPrivateFile("V8d4K1rF7nT5", item.id)}>Open supporting file · {item.fileName}</button>}
@@ -153,6 +177,18 @@ function RequestQueue() {
         <p><b>{detail.customer.name}</b></p>
         <ContactLinks name={detail.customer.name} phone={detail.customer.phone} whatsapp={detail.customer.whatsapp} email={detail.customer.email} reference={detail.request.reference}/>
         <p>Preferred contact: {typeof detail.request.details.preferredContact === "string" ? detail.request.details.preferredContact : detail.customer.preferredContact}</p>
+        <article className="pan-card">
+          <h3>Official reference</h3>
+          <p className="admin-note" style={{ margin: "0 0 10px" }}>
+            {detail.request.reference} is our own internal tracking number. Once this is actually filed with the government portal or insurer, enter their official application/certificate/policy number here — the customer gets an email and WhatsApp with both numbers.
+          </p>
+          <div className="admin-filters" style={{ marginBottom: 0 }}>
+            <label>What is it<input value={officialRefLabel} onChange={event => setOfficialRefLabel(event.target.value)} placeholder="e.g. ServicePlus application no., EPIC no., Policy no." maxLength={60}/></label>
+            <label>Official reference<input value={officialRef} onChange={event => setOfficialRef(event.target.value)} placeholder="Leave blank to clear" maxLength={80}/></label>
+            <button type="button" className="btn btn--primary btn--sm" disabled={officialRefSaving} onClick={() => void saveOfficialReference()}>{officialRefSaving ? "Saving…" : "Save official reference"}</button>
+          </div>
+          {detail.request.officialReferenceSetAt && <small>Last set {when(detail.request.officialReferenceSetAt)}</small>}
+        </article>
         <PanSavedDetails details={detail.request.details}/>
         <article className="pan-card"><h3>Customer request</h3><RequestExtras details={detail.request.details} fallback="No note provided."/></article>
         <article className="pan-card"><h3>History</h3>{detail.events.length ? <ol className="request-timeline">{detail.events.map((event, index) => <li key={`${event.createdAt}-${index}`}><b>{event.fromLabel ? `${event.fromLabel} → ` : ""}{event.toLabel}</b> <small>{when(event.createdAt)}{event.actor ? ` · ${event.actor}` : ""}</small>{event.note ? <p>{event.note}</p> : null}</li>)}</ol> : <p>No history recorded yet.</p>}</article>
