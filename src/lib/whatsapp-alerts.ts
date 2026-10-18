@@ -30,3 +30,20 @@ export function sendRequestWhatsApp(input: { name: string; phone: string | null;
     }
   });
 }
+
+/**
+ * WhatsApp copy of a status change, to the customer. Needs the same Cloud API settings as
+ * sendRequestWhatsApp, plus an approved WHATSAPP_STATUS_TEMPLATE (body {{1}} name, {{2}} reference,
+ * {{3}} service, {{4}} new status) — a status change is business-initiated, so (unlike a reply to
+ * an inbound "status" query) it must use an approved template, not a free-form sendText().
+ * Without the template, the email-only status update still goes out as before.
+ */
+export function sendStatusWhatsApp(input: { name: string; phone: string | null; reference: string; service: string; status: string; lang?: "en" | "hi" | "bn" }) {
+  if (!cloudApiConfigured() || !input.phone) return;
+  const template = process.env.WHATSAPP_STATUS_TEMPLATE?.trim();
+  if (!template) return;
+  after(async () => {
+    const result = await sendTemplate({ to: input.phone!, template, lang: input.lang ?? "en", bodyParams: [input.name, input.reference, input.service, input.status] });
+    if (!result.ok) console.error("[whatsapp] status update failed:", result.error);
+  });
+}

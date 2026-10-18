@@ -1,13 +1,14 @@
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNull, lte, or, sql, type SQL } from "drizzle-orm";
-import { campaignMessages, campaigns, contacts } from "@/db/schema";
+import { campaignMessages, campaigns, contacts, printJobs, serviceRequests, users } from "@/db/schema";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { clampPacing, istDayStartOf, planRound, type Pacing } from "@/lib/campaign-pacing";
 import { CAMPAIGN_SERVICES, classifyReply, consentAllows, DEFAULT_MESSAGES, isLang, renderMessage, whatsappLink, type CampaignKind, type Lang, type Text3 } from "@/lib/campaign-text";
 import { isPosterUrl, posterFor } from "@/lib/poster-library";
+import { statusLabel } from "@/lib/requests";
 import { site } from "@/lib/site";
 import { normalizePhone } from "@/lib/validation";
-import { cloudApiConfigured, sendTemplate, type InboundEvent } from "@/lib/whatsapp";
+import { cloudApiConfigured, sendTemplate, sendText, type InboundEvent } from "@/lib/whatsapp";
 
 type CampaignRow = typeof campaigns.$inferSelect;
 const KINDS: CampaignKind[] = ["renewal", "offer", "optin"];
@@ -319,6 +320,40 @@ export async function markMessage(id: string, status: "sent" | "skipped" | "fail
 }
 
 /** STOP / YES replies and delivery receipts from the WhatsApp webhook. */
+const REFERENCE_PATTERN = /\b([A-Z]{2,3}-\d{6}-[A-Z0-9]{6})\b/i;
+
+/**
+ * "What's the status?" self-serve reply. Only replies within Meta's 24h customer-service window
+ * (it's always a reply to the customer's own inbound message, never business-initiated), and only
+ * to requests owned by the account whose phone/WhatsApp number matches the sender — so one
+ * customer's WhatsApp number can never be used to read another customer's status.
+ * Returns true if the message was handled as a status query (caller should skip STOP/YES parsing).
+ */
+async function handleStatusQuery(phone: string, text: string): Promise<boolean> {
+  if (!cloudApiConfigured() || !/^\s*(status|stat|track|track\s*my\s*(order|request))\b/i.test(text)) return false;
+  const [account] = await db.select({ id: users.id }).from(users).where(or(eq(users.phone, phone), eq(users.whatsapp, phone))).limit(1);
+  if (!account) {
+    await sendText(phone, "We couldn't find a NISE COMPORT account for this WhatsApp number. Reply with your reference number (e.g. NC-261018-AB12CD), or call the desk and we'll check for you.");
+    return true;
+  }
+  const reference = text.match(REFERENCE_PATTERN)?.[1]?.toUpperCase();
+  if (reference) {
+    const [service] = await db.select({ reference: serviceRequests.reference, name: serviceRequests.serviceName, status: serviceRequests.status }).from(serviceRequests).where(and(eq(serviceRequests.reference, reference), eq(serviceRequests.userId, account.id))).limit(1);
+    const [print] = service ? [] : await db.select({ reference: printJobs.reference, name: printJobs.fileName, status: printJobs.status }).from(printJobs).where(and(eq(printJobs.reference, reference), eq(printJobs.userId, account.id))).limit(1);
+    const found = service ?? print;
+    await sendText(phone, found ? `${found.reference} (${found.name}): ${statusLabel(found.status)}.` : `We couldn't find ${reference} on your account. Check the reference number, or call the desk.`);
+    return true;
+  }
+  const recent = [
+    ...(await db.select({ reference: serviceRequests.reference, name: serviceRequests.serviceName, status: serviceRequests.status, updatedAt: serviceRequests.updatedAt }).from(serviceRequests).where(eq(serviceRequests.userId, account.id)).orderBy(desc(serviceRequests.updatedAt)).limit(5)),
+    ...(await db.select({ reference: printJobs.reference, name: printJobs.fileName, status: printJobs.status, updatedAt: printJobs.updatedAt }).from(printJobs).where(eq(printJobs.userId, account.id)).orderBy(desc(printJobs.updatedAt)).limit(5)),
+  ].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()).slice(0, 3);
+  await sendText(phone, recent.length
+    ? `Your latest requests:\n${recent.map((item) => `${item.reference} (${item.name}): ${statusLabel(item.status)}`).join("\n")}`
+    : "We don't see any requests on your account yet. Start one at nisecomport.com or visit the desk.");
+  return true;
+}
+
 export async function handleInbound(events: InboundEvent[]) {
   let consentChanges = 0;
   for (const event of events) {
@@ -326,6 +361,8 @@ export async function handleInbound(events: InboundEvent[]) {
       if (event.status === "failed") await db.update(campaignMessages).set({ status: "failed", error: event.error ?? "Delivery failed" }).where(eq(campaignMessages.providerMessageId, event.id));
       continue;
     }
+    const statusPhone = normalizePhone(event.from);
+    if (statusPhone && await handleStatusQuery(statusPhone, event.text)) continue;
     const intent = classifyReply(event.text);
     if (!intent) continue;
     const phone = normalizePhone(event.from);

@@ -10,6 +10,7 @@ import { deliverNotifications, queueNotification } from "@/lib/notifications";
 import { releaseRedemptions } from "@/lib/promotions";
 import { recordEvent, REQUEST_STATUSES, statusLabel } from "@/lib/requests";
 import { logActivity } from "@/lib/activity";
+import { sendStatusWhatsApp } from "@/lib/whatsapp-alerts";
 
 const schema = z.object({
   kind: z.enum(["print", "service"]),
@@ -46,15 +47,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (input.status === "cancelled") await releaseRedemptions(input.kind, id);
 
     if (input.notifyCustomer && current.status !== input.status) {
-      const [customer] = await db.select({ name: users.name, email: users.email, deletedAt: users.deletedAt }).from(users).where(eq(users.id, current.userId)).limit(1);
+      const [customer] = await db.select({ name: users.name, email: users.email, phone: users.phone, whatsapp: users.whatsapp, deletedAt: users.deletedAt }).from(users).where(eq(users.id, current.userId)).limit(1);
       if (customer && !customer.deletedAt) {
+        const label = input.kind === "print" ? "print order" : current.label;
+        const statusText = statusLabel(input.status);
         try {
           const notificationId = await queueNotification(current.userId, "status_update", {
-            name: customer.name, email: customer.email, reference: current.reference,
-            label: input.kind === "print" ? "print order" : current.label, status: statusLabel(input.status),
+            name: customer.name, email: customer.email, reference: current.reference, label, status: statusText,
           });
           after(async () => { try { await deliverNotifications([notificationId]); } catch (error) { console.error("[admin] status email failed; cron will retry", error); } });
         } catch (error) { console.error("[admin] could not queue status email", error); }
+        sendStatusWhatsApp({ name: customer.name, phone: customer.whatsapp ?? customer.phone ?? null, reference: current.reference, service: label, status: statusText });
       }
     }
     return NextResponse.json({ ok: true, status: input.status });
