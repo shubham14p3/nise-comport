@@ -4,14 +4,14 @@ import { testimonials } from "@/db/schema";
 
 export type Testimonial = {
   id: string; authorName: string; rating: number; body: string; category: string;
-  serviceSlug: string | null; source: string; reviewedOn: string | null; featured: boolean; visible: boolean;
+  serviceSlug: string | null; source: string; sourceId: string | null; reviewedOn: string | null; featured: boolean; visible: boolean;
   createdAt: string; updatedAt: string;
 };
 
 function serialize(row: typeof testimonials.$inferSelect): Testimonial {
   return {
     id: row.id, authorName: row.authorName, rating: row.rating, body: row.body, category: row.category,
-    serviceSlug: row.serviceSlug, source: row.source, reviewedOn: row.reviewedOn,
+    serviceSlug: row.serviceSlug, source: row.source, sourceId: row.sourceId, reviewedOn: row.reviewedOn,
     featured: row.featured, visible: row.visible,
     createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString(),
   };
@@ -48,4 +48,22 @@ export async function updateTestimonial(id: string, patch: Partial<{ authorName:
 
 export async function deleteTestimonial(id: string) {
   await db.delete(testimonials).where(eq(testimonials.id, id));
+}
+
+/**
+ * Used by both the one-off bulk seed (scripts/seed-testimonials.mjs) and the automated Google
+ * Business Profile sync (src/lib/google-business-reviews.ts): insert a review keyed by its
+ * (source, sourceId) pair, or update it in place if it's already been imported — so re-running
+ * either path is always safe and never creates a duplicate.
+ */
+export async function upsertTestimonialFromSource(input: { authorName: string; rating: number; body: string; category: string; serviceSlug: string | null; source: string; sourceId: string; reviewedOn: string | null; featured?: boolean; visible?: boolean }) {
+  const [row] = await db.insert(testimonials).values({
+    authorName: input.authorName, rating: input.rating, body: input.body, category: input.category,
+    serviceSlug: input.serviceSlug, source: input.source, sourceId: input.sourceId, reviewedOn: input.reviewedOn,
+    featured: input.featured ?? false, visible: input.visible ?? input.rating >= 4,
+  }).onConflictDoUpdate({
+    target: [testimonials.source, testimonials.sourceId],
+    set: { authorName: input.authorName, rating: input.rating, body: input.body, reviewedOn: input.reviewedOn, updatedAt: new Date() },
+  }).returning();
+  return serialize(row);
 }

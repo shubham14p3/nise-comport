@@ -26,6 +26,8 @@ export default function TestimonialsPanel() {
   const [busy, setBusy] = useState("");
   const [draft, setDraft] = useState(emptyDraft);
   const [adding, setAdding] = useState(false);
+  const [syncConfigured, setSyncConfigured] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const load = useCallback(async () => {
     try { setRows((await secureApi<{ testimonials: Testimonial[] }>("F2q6N9vK3xT5")).testimonials); setError(""); }
@@ -33,6 +35,16 @@ export default function TestimonialsPanel() {
     finally { setLoaded(true); }
   }, []);
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => { secureApi<{ configured: boolean }>("K6w3H9pL2vN7").then((result) => setSyncConfigured(result.configured)).catch(() => undefined); }, []);
+
+  async function syncFromGoogle() {
+    setSyncing(true); setError(""); setNotice("");
+    try {
+      const result = await secureApi<{ ok: true; imported: number }>("D5x8Q1mT4rV6");
+      setNotice(`Synced ${result.imported} reviews from Google.`); await load();
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not sync from Google."); }
+    finally { setSyncing(false); }
+  }
 
   async function add(event: FormEvent) {
     event.preventDefault();
@@ -70,6 +82,9 @@ export default function TestimonialsPanel() {
     <div className="panel__head"><div>
       <h2>Testimonials</h2>
       <p className="muted">Paste in reviews copied from your Google Business Profile — Google's public API only ever exposes up to 5 of your reviews, so this is how the rest get on the site. Tag a review to a service to also show it on that service's page; leave it general for the homepage mix.</p>
+      {syncConfigured
+        ? <button type="button" className="btn btn--ghost btn--sm" disabled={syncing} onClick={() => void syncFromGoogle()}>{syncing ? "Syncing…" : "Sync from Google now"}</button>
+        : <p className="muted" style={{ fontSize: 13 }}>Automated sync isn’t set up yet — it needs Google’s Business Profile API access (a manual approval from Google) plus OAuth credentials in the server’s environment. Until then, paste reviews in below, or run the one-off <code>npm run testimonials:seed</code> import.</p>}
     </div></div>
 
     <form className="admin-filters" onSubmit={add}>

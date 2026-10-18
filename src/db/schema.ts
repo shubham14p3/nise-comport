@@ -223,12 +223,16 @@ export const testimonials = pgTable("testimonials", {
   authorName: text("author_name").notNull(), rating: integer("rating").notNull().default(5),
   body: text("body").notNull(), category: text("category").notNull().default("general"),
   serviceSlug: text("service_slug"), source: text("source").notNull().default("google"),
+  /** The Google review ID (or other source's id), so a re-import or the automated sync never
+   * creates a duplicate — null for a testimonial typed straight into the admin panel. */
+  sourceId: text("source_id"),
   reviewedOn: date("reviewed_on"), featured: boolean("featured").notNull().default(false), visible: boolean("visible").notNull().default(true),
   createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index("testimonials_visible_idx").on(table.visible, table.featured),
   index("testimonials_service_idx").on(table.serviceSlug),
+  uniqueIndex("testimonials_source_unique_idx").on(table.source, table.sourceId),
 ]);
 
 /** Poster images uploaded in the admin area. Public by design: served at /media/<id>. */
