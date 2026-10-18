@@ -7,7 +7,7 @@ import { site } from "@/lib/site";
 const MAX_ATTEMPTS = 5;
 
 type StatusPayload = { name: string; email: string; reference: string; label: string; status: string; officialReference?: string; officialReferenceLabel?: string };
-type ReceivedPayload = { name: string; email: string; reference: string; label: string };
+type ReceivedPayload = { name: string; email: string; reference: string; label: string; fields?: { label: string; value: string }[] };
 type StaffPayload = { email: string; subject: string; lines: string[] };
 type OfficialReferencePayload = { name: string; email: string; reference: string; label: string; status: string; officialReference: string; officialReferenceLabel?: string };
 type ReviewRequestPayload = { name: string; email: string; reference: string; label: string };
@@ -27,7 +27,9 @@ async function deliverOne(item: typeof notifications.$inferSelect) {
   const text = (key: string) => (typeof payload[key] === "string" ? (payload[key] as string) : "");
   if (item.kind === "request_received") {
     if (!text("email") || !text("reference")) throw new Error("Notification payload is incomplete.");
-    await sendRequestReceivedEmail(text("email"), text("name") || "there", text("reference"), text("label") || "service");
+    const rawFields = Array.isArray(payload.fields) ? payload.fields : [];
+    const fields = rawFields.filter((row): row is { label: string; value: string } => Boolean(row) && typeof row === "object" && typeof (row as { label?: unknown }).label === "string" && typeof (row as { value?: unknown }).value === "string");
+    await sendRequestReceivedEmail(text("email"), text("name") || "there", text("reference"), text("label") || "service", fields);
   } else if (item.kind === "customer_message") {
     const lines = Array.isArray(payload.lines) ? payload.lines.filter((line): line is string => typeof line === "string") : [];
     if (!text("email") || !text("subject")) throw new Error("Notification payload is incomplete.");

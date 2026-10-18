@@ -4,17 +4,22 @@ import { z } from "zod";
 import { serviceRequests } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { PublicError } from "@/lib/errors";
+import { isUnavailable, PublicError } from "@/lib/errors";
 import { apiError, readJson } from "@/lib/http";
 import { panIntakeSchema, panServiceLabels } from "@/lib/pan-validation";
 import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
 import { isIdempotencyConflict, notifyNewRequest, recordEvent, withUniqueReference } from "@/lib/requests";
+import { sendDbDownFallbackWhatsApp } from "@/lib/whatsapp-alerts";
 
 const envelope = z.object({ idempotencyKey: z.uuid().optional() }).passthrough();
 
 export async function POST(request: NextRequest) {
+  // Hoisted (not declared inside the try) so the catch below can still reach them for the
+  // DB-down WhatsApp fallback — a const declared inside try {} isn't visible in its catch.
+  let user: Awaited<ReturnType<typeof requireUser>> | undefined;
+  let pan: Omit<z.infer<typeof panIntakeSchema>, "fileId"> | undefined;
   try {
-    const user = await requireUser();
+    user = await requireUser();
     if (!user.emailVerifiedAt) throw new PublicError("Verify your email first.", 403, { code: "unverified" });
     const body = await readJson(request);
     const { idempotencyKey } = envelope.parse(body);
@@ -24,7 +29,8 @@ export async function POST(request: NextRequest) {
       for (const issue of parsed.error.issues) { const key = String(issue.path[0] ?? "form"); if (!fields[key]) fields[key] = issue.message; }
       throw new PublicError(parsed.error.issues[0]?.message ?? "Please check the form.", 400, { code: "invalid_input", fields });
     }
-    const { fileId, ...pan } = parsed.data;
+    const { fileId, ...panInput } = parsed.data;
+    pan = panInput;
     if (fileId) throw new PublicError("Document attachments are arranged after review.", 400);
 
     if (idempotencyKey) {
@@ -53,7 +59,18 @@ export async function POST(request: NextRequest) {
       throw error;
     }
     await recordEvent("service", created.id, user.id, null, "submitted", "PAN assistance form");
-    await notifyNewRequest(user, created.reference, `PAN assistance – ${label}`, [`Applicant: ${pan.fullName}`, `Contact: ${pan.contactName} · ${pan.phone}`]);
+    await notifyNewRequest(user, created.reference, `PAN assistance – ${label}`, [
+      `Applicant: ${pan.fullName}`, `Contact: ${pan.contactName} · ${pan.phone}`, `Email: ${pan.email}`,
+      `Address: ${pan.address}`, `City: ${pan.city}`, `State / province: ${pan.state}`, `Country: ${pan.country}`, `PIN / postal code: ${pan.postalCode}`,
+    ]);
     return NextResponse.json({ reference: created.reference }, { status: 201 });
-  } catch (error) { return apiError(error); }
+  } catch (error) {
+    if (isUnavailable(error) && user) {
+      sendDbDownFallbackWhatsApp({
+        name: user.name, phone: user.whatsapp ?? user.phone ?? null, email: user.email, service: "PAN assistance",
+        details: pan ? `Applicant: ${pan.fullName} · Contact: ${pan.contactName} ${pan.phone} · ${pan.city}, ${pan.state}` : "(form details unavailable)",
+      });
+    }
+    return apiError(error);
+  }
 }

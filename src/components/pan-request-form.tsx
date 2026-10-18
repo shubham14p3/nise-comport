@@ -7,6 +7,7 @@ import { Check, LockKeyhole } from "lucide-react";
 import { OfferRail, OfferStrip, WizardActions, WizardFrame } from "@/components/wizard";
 import { CitySelect, StateSelect } from "@/components/state-city-fields";
 import { COUNTRIES, INDIA_STATES } from "@/lib/india-geo";
+import ConsentModal from "@/components/consent-modal";
 import { newIdempotencyKey } from "@/lib/client-id";
 import { panIntakeSchema, panServiceLabels, panServices, type PanIntake } from "@/lib/pan-validation";
 import { secureApi } from "@/lib/secure-api-client";
@@ -38,6 +39,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [showConsent, setShowConsent] = useState(false);
   const idempotencyKey = useRef<string | null>(null);
 
   useEffect(() => {
@@ -125,7 +127,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
 
   if (!signedIn) return frame(<div className="callout callout--center"><LockKeyhole size={28}/><b>Sign in to keep your PAN request private</b><span>Your contact details prefill from your profile. You can review everything before sending.</span><div className="callout__actions"><Link className="btn btn--primary" href="/login" onClick={() => rememberReturn("/pan/request")}>Sign in to continue</Link><Link className="btn btn--ghost" href="/signup" onClick={() => rememberReturn("/pan/request")}>Create a free account</Link></div></div>);
 
-  return frame(<form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (step === 3) void submit(); else next(); }}>
+  return <>{frame(<form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (step === 3) { if (demo) void submit(); else setShowConsent(true); } else next(); }}>
     {demo && <p className="alert alert--info">Local preview: entered information is not saved or sent.</p>}
     {step === 0 && <section>
       <h2>Which PAN service do you need?</h2><p className="wizard-form__sub">Pick one. We’ll adapt the next questions.</p>
@@ -193,5 +195,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
     {Object.keys(errors).length > 0 && step !== 3 && <div className="alert alert--error" role="alert">Please check the highlighted details.</div>}
     {message && <p className="alert alert--info" role="status">{message}</p>}
     <WizardActions locale={locale} onBack={step > 0 ? () => go(step - 1) : undefined} nextLabel={step === 3 ? demo ? "Validate preview" : "Send PAN request" : undefined} busy={busy}/>
-  </form>);
+  </form>)}
+  <ConsentModal open={showConsent} onClose={() => setShowConsent(false)} busy={busy} serviceLabel={panServiceLabels[data.service]} onConfirm={() => { setShowConsent(false); void submit(); }}/>
+  </>;
 }

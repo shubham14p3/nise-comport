@@ -16,4 +16,28 @@ const pool = globalForDb.pool ?? new Pool({
 
 if (process.env.NODE_ENV !== "production") globalForDb.pool = pool;
 
+// pg's Pool emits "error" on any idle client whose connection drops (ECONNRESET, remote DB
+// restart, a flaky network hop) — not just on a failed query. With no listener, Node treats that
+// as an uncaught exception and kills the whole process, taking down every other request with it.
+// Log it and let the pool recycle the client; the next query gets a fresh connection automatically.
+if (!(globalForDb as { poolErrorHandlerAttached?: boolean }).poolErrorHandlerAttached) {
+  pool.on("error", (error) => {
+    console.error("[db] pool connection error (non-fatal, pool will reconnect):", error instanceof Error ? error.message : error);
+  });
+  (globalForDb as { poolErrorHandlerAttached?: boolean }).poolErrorHandlerAttached = true;
+}
+
 export const db = drizzle(pool, { schema });
+
+/** True once a query actually succeeds against the database; used by health checks and the WhatsApp fallback below. */
+export async function dbReachable(timeoutMs = 4_000) {
+  try {
+    await Promise.race([
+      pool.query("select 1"),
+      new Promise((_resolve, reject) => setTimeout(() => reject(new Error("db health check timed out")), timeoutMs)),
+    ]);
+    return true;
+  } catch {
+    return false;
+  }
+}

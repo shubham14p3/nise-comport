@@ -87,23 +87,30 @@ function render(mail: Mail) {
   </table>` : "";
 
   const html = `<!doctype html><html lang="en"><body style="margin:0;background:${BG}"><div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:28px 16px">
-<div style="background:#ffffff;border:1px solid ${LINE};border-radius:20px;overflow:hidden">
-  <div style="padding:22px 28px;border-bottom:1px solid ${LINE};background:${BG}">
-    <img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(site.name)}" height="32" style="display:block;height:32px;width:auto"/>
+<div style="background:#ffffff;border:1px solid ${LINE};border-radius:20px;overflow:hidden;text-align:center">
+  <div style="padding:26px 28px;border-bottom:1px solid ${LINE};background:${BG};text-align:center">
+    <img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(site.name)}" height="40" style="display:inline-block;height:40px;width:auto"/>
   </div>
-  <div style="padding:28px">
+  <div style="padding:32px 28px;text-align:center">
     <h1 style="font-size:22px;margin:0 0 16px;color:${INK}">${escapeHtml(mail.heading)}</h1>
-    ${mail.paragraphs.map((paragraph) => `<p style="line-height:1.55;margin:0 0 14px;color:${INK}">${escapeHtml(paragraph)}</p>`).join("\n")}
-    ${detailsCard}
+    <div style="text-align:left">
+      ${mail.paragraphs.map((paragraph) => `<p style="line-height:1.55;margin:0 0 14px;color:${INK}">${escapeHtml(paragraph)}</p>`).join("\n")}
+      ${detailsCard}
+    </div>
     ${mail.code ? `<p style="font-size:32px;font-weight:bold;letter-spacing:8px;background:${BG};border:1.5px solid ${BLUE};border-radius:14px;color:${BLUE_700};padding:18px;text-align:center;margin:20px 0">${escapeHtml(mail.code)}</p>` : ""}
-    ${mail.action ? `<p style="margin:24px 0 4px"><a href="${escapeHtml(mail.action.href)}" style="background:${BLUE};color:#ffffff;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:bold;display:inline-block">${escapeHtml(mail.action.label)}</a></p>` : ""}
+    ${mail.action ? `<p style="margin:24px 0 4px;text-align:center"><a href="${escapeHtml(mail.action.href)}" style="background:${BLUE};color:#ffffff;padding:12px 26px;border-radius:999px;text-decoration:none;font-weight:bold;display:inline-block">${escapeHtml(mail.action.label)}</a></p>` : ""}
   </div>
-  <div style="padding:20px 28px;background:${BG};border-top:1px solid ${LINE}">
+  <div style="padding:24px 28px;background:${BG};border-top:1px solid ${LINE};text-align:center">
+    <img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(site.name)}" height="22" style="display:inline-block;height:22px;width:auto;opacity:.85;margin-bottom:14px"/>
     <p style="margin:0 0 4px;font-size:12px;color:${MUTED};font-weight:600;text-transform:uppercase;letter-spacing:.04em">Need help? Reach us directly</p>
-    <p style="margin:0 0 14px">${contactRow}</p>
-    <p style="color:${MUTED};font-size:12px;line-height:1.6;margin:0;border-top:1px solid ${LINE};padding-top:14px">${escapeHtml(site.name)} · ${escapeHtml(site.address.oneLine)}<br/><a href="${escapeHtml(site.url)}" style="color:${MUTED};text-decoration:none">${escapeHtml(siteHost)}</a></p>
+    <p style="margin:0 0 16px;text-align:center">${contactRow}</p>
+    <p style="color:${MUTED};font-size:12px;line-height:1.7;margin:0;border-top:1px solid ${LINE};padding-top:16px;text-align:center">
+      <b style="color:${INK}">${escapeHtml(site.name)}</b><br/>${escapeHtml(site.address.oneLine)}<br/>
+      <a href="${escapeHtml(site.url)}" style="color:${BLUE_700};text-decoration:none;font-weight:600">${escapeHtml(siteHost)}</a>
+    </p>
   </div>
 </div>
+<p style="text-align:center;color:${MUTED};font-size:11px;margin:18px 0 0">You're receiving this because you have a NISE COMPORT account or submitted a request to us.</p>
 </div></body></html>`;
   return { text, html };
 }
@@ -195,13 +202,20 @@ export async function sendStatusEmail(to: string, name: string, reference: strin
   });
 }
 
-export async function sendRequestReceivedEmail(to: string, name: string, reference: string, label: string) {
+export async function sendRequestReceivedEmail(to: string, name: string, reference: string, label: string, submitted: { label: string; value: string }[] = []) {
   await sendMail({
     to, subject: `We received your request ${reference}`, heading: "Request received",
-    paragraphs: [`Hello ${name},`, "Thank you — we received your request. Our team will review it and contact you with the document checklist and any service charge before any work starts.", "This reference is our own internal tracking number for now. Once we file your application with the government portal or insurer, we’ll add their official application/certificate number here too and let you know. Please don’t send OTPs, PINs or passwords to anyone."],
+    paragraphs: [
+      `Hello ${name},`,
+      "Thank you — we received your request. Our team will review it and reach out with the document checklist and any service charge before any work starts.",
+      "We may contact you again later — by call, WhatsApp or email — for extra information, or for documents we still need, including hard copies where the government portal or insurer requires an original. By sending this request, you're giving NISE COMPORT consent to collect and use the details and documents you share with us, solely to provide this service on your behalf.",
+      "This reference is our own internal tracking number for now. Once we file your application with the government portal or insurer, we’ll add their official application/certificate number here too and let you know.",
+      "If anything about your request needs sorting out, we’ll get back to you directly on these details — and you’re always welcome to reach us the same way. Please don’t send OTPs, PINs or passwords to anyone, including us.",
+    ],
     details: [
       { label: "Service", value: label },
       { label: "Our reference", value: reference, emphasis: true },
+      ...submitted,
     ],
     action: { label: "Open my account", href: `${site.url}/profile` },
   });
