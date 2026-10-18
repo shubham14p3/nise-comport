@@ -8,14 +8,18 @@ import { avatarSrc } from "@/lib/avatar";
  * mix; pass one on a service page to also show reviews tagged to that service.
  */
 function Card({ item }: { item: Awaited<ReturnType<typeof publicTestimonials>>[number] }) {
-  return <article className="pan-card testimonial-slide">
-    <p aria-hidden="true" style={{ color: "#f5a623", letterSpacing: 2 }}>{"★".repeat(item.rating)}{"☆".repeat(5 - item.rating)}</p>
-    <p>“{item.body}”</p>
-    <p className="muted pan-card__by">
-      {/* eslint-disable-next-line @next/next/no-img-element -- static pre-generated SVG, no Image optimization needed */}
-      <img src={avatarSrc(item.authorName)} alt="" width={36} height={36} className="avatar-initials" loading="lazy"/>
-      <span><b>{item.authorName}</b>{item.reviewedOn ? ` · ${new Date(item.reviewedOn).toLocaleDateString("en-IN", { month: "short", year: "numeric" })}` : ""} · Google review</span>
-    </p>
+  return <article className="testimonial-card">
+    <span className="testimonial-card__quote" aria-hidden="true">“</span>
+    <div className="testimonial-card__stars" aria-hidden="true">{"★".repeat(item.rating)}{"☆".repeat(5 - item.rating)}</div>
+    <p className="testimonial-card__body">{item.body}</p>
+    <div className="testimonial-card__by">
+      {/* eslint-disable-next-line @next/next/no-img-element -- static pre-generated/captured avatar file, no Image optimization needed */}
+      <img src={avatarSrc(item.authorName)} alt="" width={40} height={40} className="avatar-initials" loading="lazy"/>
+      <div>
+        <b>{item.authorName}</b>
+        <small>{item.reviewedOn ? new Date(item.reviewedOn).toLocaleDateString("en-IN", { month: "short", year: "numeric" }) + " · " : ""}Google review</small>
+      </div>
+    </div>
   </article>;
 }
 
