@@ -211,6 +211,26 @@ export const serviceReviews = pgTable("service_reviews", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("service_reviews_user_idx").on(table.userId, table.createdAt)]);
 
+/**
+ * Google reviews curated by staff for display on the site (homepage + service pages), since the
+ * public Places API only ever returns up to 5 "most relevant" reviews — nowhere near enough for a
+ * business with hundreds. Staff copy the text from the real Google Business Profile by hand;
+ * `category` is "general" for a broad shout-out, or a service slug for a review that mentions a
+ * specific service, so it can show on that service's page too.
+ */
+export const testimonials = pgTable("testimonials", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  authorName: text("author_name").notNull(), rating: integer("rating").notNull().default(5),
+  body: text("body").notNull(), category: text("category").notNull().default("general"),
+  serviceSlug: text("service_slug"), source: text("source").notNull().default("google"),
+  reviewedOn: date("reviewed_on"), featured: boolean("featured").notNull().default(false), visible: boolean("visible").notNull().default(true),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("testimonials_visible_idx").on(table.visible, table.featured),
+  index("testimonials_service_idx").on(table.serviceSlug),
+]);
+
 /** Poster images uploaded in the admin area. Public by design: served at /media/<id>. */
 export const media = pgTable("media", {
   id: uuid("id").defaultRandom().primaryKey(), objectKey: text("object_key").notNull(), originalName: text("original_name").notNull(),
