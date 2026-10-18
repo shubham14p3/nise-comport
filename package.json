@@ -18,6 +18,7 @@
     "data:check": "node scripts/data-check.mjs",
     "testimonials:seed": "node scripts/seed-testimonials.mjs",
     "avatars:generate": "node scripts/generate-avatars.mjs",
+    "avatars:import-real": "node scripts/import-real-avatars.mjs",
     "photos": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types scripts/photos.mjs",
     "db:setup": "npm run db:check && npm run db:migrate && npm run db:check && npm run offers:sync",
     "smtp:check": "node scripts/smtp-check.mjs",
