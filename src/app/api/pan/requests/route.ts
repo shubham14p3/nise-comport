@@ -32,36 +32,40 @@ export async function POST(request: NextRequest) {
     const { fileId, ...panInput } = parsed.data;
     pan = panInput;
     if (fileId) throw new PublicError("Document attachments are arranged after review.", 400);
+    // const copies so TS carries the "definitely assigned" narrowing into the closure below —
+    // the hoisted `let`s above stay typed `T | undefined` inside a nested function either way.
+    const currentUser = user;
+    const currentPan = pan;
 
     if (idempotencyKey) {
       const [existing] = await db.select({ reference: serviceRequests.reference }).from(serviceRequests).where(and(eq(serviceRequests.userId, user.id), eq(serviceRequests.idempotencyKey, idempotencyKey))).limit(1);
       if (existing) return NextResponse.json({ reference: existing.reference, duplicate: true });
     }
-    const userKey = identity("user", user.id);
+    const userKey = identity("user", currentUser.id);
     await enforceRate(RATE_RULES.requestsPerUserHour, userKey, "You’ve sent several requests in the last hour. If it’s urgent, call or WhatsApp us.");
     await enforceRate(RATE_RULES.requestsPerUserDay, userKey, "You’ve reached today’s online request limit. Please call or WhatsApp us.");
 
-    const label = panServiceLabels[pan.service];
+    const label = panServiceLabels[currentPan.service];
     let created: { id: string; reference: string };
     try {
       created = await withUniqueReference("PAN", async (reference) => {
         const [row] = await db.insert(serviceRequests).values({
-          reference, userId: user.id, serviceSlug: "pan-card", serviceName: label,
-          details: { kind: "pan", description: pan.notes || label, pan }, serviceFee: "0.00", externalFee: "0.00", idempotencyKey: idempotencyKey ?? null,
+          reference, userId: currentUser.id, serviceSlug: "pan-card", serviceName: label,
+          details: { kind: "pan", description: currentPan.notes || label, pan: currentPan }, serviceFee: "0.00", externalFee: "0.00", idempotencyKey: idempotencyKey ?? null,
         }).returning({ id: serviceRequests.id, reference: serviceRequests.reference });
         return row;
       });
     } catch (error) {
       if (idempotencyKey && isIdempotencyConflict(error)) {
-        const [existing] = await db.select({ reference: serviceRequests.reference }).from(serviceRequests).where(and(eq(serviceRequests.userId, user.id), eq(serviceRequests.idempotencyKey, idempotencyKey))).limit(1);
+        const [existing] = await db.select({ reference: serviceRequests.reference }).from(serviceRequests).where(and(eq(serviceRequests.userId, currentUser.id), eq(serviceRequests.idempotencyKey, idempotencyKey))).limit(1);
         if (existing) return NextResponse.json({ reference: existing.reference, duplicate: true });
       }
       throw error;
     }
-    await recordEvent("service", created.id, user.id, null, "submitted", "PAN assistance form");
-    await notifyNewRequest(user, created.reference, `PAN assistance – ${label}`, [
-      `Applicant: ${pan.fullName}`, `Contact: ${pan.contactName} · ${pan.phone}`, `Email: ${pan.email}`,
-      `Address: ${pan.address}`, `City: ${pan.city}`, `State / province: ${pan.state}`, `Country: ${pan.country}`, `PIN / postal code: ${pan.postalCode}`,
+    await recordEvent("service", created.id, currentUser.id, null, "submitted", "PAN assistance form");
+    await notifyNewRequest(currentUser, created.reference, `PAN assistance – ${label}`, [
+      `Applicant: ${currentPan.fullName}`, `Contact: ${currentPan.contactName} · ${currentPan.phone}`, `Email: ${currentPan.email}`,
+      `Address: ${currentPan.address}`, `City: ${currentPan.city}`, `State / province: ${currentPan.state}`, `Country: ${currentPan.country}`, `PIN / postal code: ${currentPan.postalCode}`,
     ]);
     return NextResponse.json({ reference: created.reference }, { status: 201 });
   } catch (error) {
