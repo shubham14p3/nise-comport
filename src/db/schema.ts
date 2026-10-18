@@ -195,6 +195,22 @@ export const requestEvents = pgTable("request_events", {
   note: text("note"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("request_events_request_idx").on(table.requestKind, table.requestId, table.createdAt)]);
 
+/**
+ * One rating + feedback per completed service request, collected from the /review/<reference>
+ * page the customer gets emailed/WhatsApped once their request is marked "completed". A high
+ * rating (4-5) is the moment we ask them to also post it on Google (site.reviewUrl); every rating
+ * gives us their own "what could we do better" note, visible to staff in the request detail panel.
+ */
+export const serviceReviews = pgTable("service_reviews", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  requestId: uuid("request_id").notNull().unique().references(() => serviceRequests.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(), feedback: text("feedback"),
+  postedGoogleReview: boolean("posted_google_review").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("service_reviews_user_idx").on(table.userId, table.createdAt)]);
+
 /** Poster images uploaded in the admin area. Public by design: served at /media/<id>. */
 export const media = pgTable("media", {
   id: uuid("id").defaultRandom().primaryKey(), objectKey: text("object_key").notNull(), originalName: text("original_name").notNull(),

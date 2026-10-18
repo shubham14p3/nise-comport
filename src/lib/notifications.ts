@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray, lt, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { notifications } from "@/db/schema";
-import { sendCustomerMessageEmail, sendOfficialReferenceEmail, sendRequestReceivedEmail, sendStaffAlertEmail, sendStatusEmail, smtpConfigured } from "@/lib/email";
+import { sendCustomerMessageEmail, sendOfficialReferenceEmail, sendRequestReceivedEmail, sendReviewRequestEmail, sendStaffAlertEmail, sendStatusEmail, smtpConfigured } from "@/lib/email";
 import { site } from "@/lib/site";
 
 const MAX_ATTEMPTS = 5;
@@ -10,13 +10,14 @@ type StatusPayload = { name: string; email: string; reference: string; label: st
 type ReceivedPayload = { name: string; email: string; reference: string; label: string };
 type StaffPayload = { email: string; subject: string; lines: string[] };
 type OfficialReferencePayload = { name: string; email: string; reference: string; label: string; status: string; officialReference: string; officialReferenceLabel?: string };
+type ReviewRequestPayload = { name: string; email: string; reference: string; label: string };
 
 /** Staff mailbox for new-request alerts. Falls back to the public contact address. */
 export function staffAlertEmail() {
   return process.env.STAFF_ALERT_EMAIL?.trim() || site.email;
 }
 
-export async function queueNotification(userId: string, kind: "status_update" | "request_received" | "staff_alert" | "customer_message" | "official_reference", payload: StatusPayload | ReceivedPayload | StaffPayload | OfficialReferencePayload) {
+export async function queueNotification(userId: string, kind: "status_update" | "request_received" | "staff_alert" | "customer_message" | "official_reference" | "review_request", payload: StatusPayload | ReceivedPayload | StaffPayload | OfficialReferencePayload | ReviewRequestPayload) {
   const [row] = await db.insert(notifications).values({ userId, channel: "email", kind, payload, status: "queued" }).returning({ id: notifications.id });
   return row.id;
 }
@@ -38,6 +39,9 @@ async function deliverOne(item: typeof notifications.$inferSelect) {
   } else if (item.kind === "official_reference") {
     if (!text("email") || !text("reference") || !text("officialReference")) throw new Error("Notification payload is incomplete.");
     await sendOfficialReferenceEmail(text("email"), text("name") || "there", text("reference"), text("label") || "request", text("status") || "", { reference: text("officialReference"), label: text("officialReferenceLabel") });
+  } else if (item.kind === "review_request") {
+    if (!text("email") || !text("reference")) throw new Error("Notification payload is incomplete.");
+    await sendReviewRequestEmail(text("email"), text("name") || "there", text("reference"), text("label") || "service");
   } else {
     if (!text("email") || !text("reference") || !text("status")) throw new Error("Notification payload is incomplete.");
     await sendStatusEmail(text("email"), text("name") || "there", text("reference"), text("label") || "request", text("status"), text("officialReference") ? { reference: text("officialReference"), label: text("officialReferenceLabel") } : null);

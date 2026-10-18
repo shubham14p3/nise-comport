@@ -10,7 +10,8 @@ import { deliverNotifications, queueNotification } from "@/lib/notifications";
 import { releaseRedemptions } from "@/lib/promotions";
 import { recordEvent, REQUEST_STATUSES, statusLabel } from "@/lib/requests";
 import { logActivity } from "@/lib/activity";
-import { sendOfficialReferenceWhatsApp, sendStatusWhatsApp } from "@/lib/whatsapp-alerts";
+import { sendOfficialReferenceWhatsApp, sendReviewRequestWhatsApp, sendStatusWhatsApp } from "@/lib/whatsapp-alerts";
+import { site } from "@/lib/site";
 
 const schema = z.object({
   kind: z.enum(["print", "service"]),
@@ -100,6 +101,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
             after(async () => { try { await deliverNotifications([notificationId]); } catch (error) { console.error("[admin] status email failed; cron will retry", error); } });
           } catch (error) { console.error("[admin] could not queue status email", error); }
           sendStatusWhatsApp({ name: customer.name, phone: customer.whatsapp ?? customer.phone ?? null, reference: current.reference, service: label, status: statusText });
+          // Service requests marked complete are the moment to ask for a rating — never for print orders.
+          if (input.kind === "service" && input.status === "completed") {
+            try {
+              const reviewNotificationId = await queueNotification(current.userId, "review_request", {
+                name: customer.name, email: customer.email, reference: current.reference, label,
+              });
+              after(async () => { try { await deliverNotifications([reviewNotificationId]); } catch (error) { console.error("[admin] review request email failed; cron will retry", error); } });
+            } catch (error) { console.error("[admin] could not queue review request email", error); }
+            sendReviewRequestWhatsApp({ name: customer.name, phone: customer.whatsapp ?? customer.phone ?? null, reference: current.reference, service: label, reviewLink: `${site.url}/review/${encodeURIComponent(current.reference)}` });
+          }
         }
       }
     }

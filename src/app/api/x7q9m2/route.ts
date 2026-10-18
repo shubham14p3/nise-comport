@@ -134,6 +134,15 @@ function targetFor(operation: string, input: Record<string, unknown>) {
       const id = stringValue(input, "id", 80);
       return { method: "GET", path: `/api/internal/admin-request-detail?id=${encodeURIComponent(id)}` };
     }
+    case "X3n6Q1vT8mK4": {
+      const reference = stringValue(input, "reference", 80);
+      return { method: "GET", path: `/api/requests/${encodeURIComponent(reference)}/review` };
+    }
+    case "Y7k2V5pN9rD1": {
+      const reference = stringValue(input, "reference", 80);
+      const body = Object.fromEntries(Object.entries(input).filter(([key]) => key !== "reference"));
+      return { method: "POST", path: `/api/requests/${encodeURIComponent(reference)}/review`, body };
+    }
     default:
       return null;
   }

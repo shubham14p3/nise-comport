@@ -63,3 +63,18 @@ export function sendOfficialReferenceWhatsApp(input: { name: string; phone: stri
     if (!result.ok) console.error("[whatsapp] official reference message failed:", result.error);
   });
 }
+
+/**
+ * WhatsApp nudge to rate the finished request, sent once it's marked "completed". Needs its own
+ * approved WHATSAPP_REVIEW_TEMPLATE (body {{1}} name, {{2}} reference, {{3}} service, {{4}} link
+ * to /review/<reference>). Without the template, the review-request email still goes out as usual.
+ */
+export function sendReviewRequestWhatsApp(input: { name: string; phone: string | null; reference: string; service: string; reviewLink: string; lang?: "en" | "hi" | "bn" }) {
+  if (!cloudApiConfigured() || !input.phone) return;
+  const template = process.env.WHATSAPP_REVIEW_TEMPLATE?.trim();
+  if (!template) return;
+  after(async () => {
+    const result = await sendTemplate({ to: input.phone!, template, lang: input.lang ?? "en", bodyParams: [input.name, input.reference, input.service, input.reviewLink] });
+    if (!result.ok) console.error("[whatsapp] review request failed:", result.error);
+  });
+}

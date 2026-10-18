@@ -27,6 +27,7 @@ type Snapshot = { jobs: Job[]; requests: RequestRow[]; filters: { status: string
 type RequestDetail = {
   request: { id: string; reference: string; serviceName: string; status: string; statusLabel: string; details: Record<string, unknown>; createdAt: string; officialReference: string | null; officialReferenceLabel: string | null; officialReferenceSetAt: string | null };
   customer: { name: string; email: string; phone: string | null; whatsapp?: string | null; preferredContact: string };
+  review: { rating: number; feedback: string | null; postedGoogleReview: boolean; createdAt: string } | null;
   events: { fromStatus: string | null; toStatus: string; fromLabel: string | null; toLabel: string; note: string | null; createdAt: string; actor: string | null }[];
 };
 
@@ -189,6 +190,11 @@ function RequestQueue() {
           </div>
           {detail.request.officialReferenceSetAt && <small>Last set {when(detail.request.officialReferenceSetAt)}</small>}
         </article>
+        {detail.review && <article className="pan-card">
+          <h3>Customer rating</h3>
+          <p>{"★".repeat(detail.review.rating)}{"☆".repeat(5 - detail.review.rating)} ({detail.review.rating}/5) · {when(detail.review.createdAt)}</p>
+          {detail.review.feedback && <p>“{detail.review.feedback}”</p>}
+        </article>}
         <PanSavedDetails details={detail.request.details}/>
         <article className="pan-card"><h3>Customer request</h3><RequestExtras details={detail.request.details} fallback="No note provided."/></article>
         <article className="pan-card"><h3>History</h3>{detail.events.length ? <ol className="request-timeline">{detail.events.map((event, index) => <li key={`${event.createdAt}-${index}`}><b>{event.fromLabel ? `${event.fromLabel} → ` : ""}{event.toLabel}</b> <small>{when(event.createdAt)}{event.actor ? ` · ${event.actor}` : ""}</small>{event.note ? <p>{event.note}</p> : null}</li>)}</ol> : <p>No history recorded yet.</p>}</article>

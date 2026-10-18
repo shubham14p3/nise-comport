@@ -227,6 +227,20 @@ export async function sendCustomerMessageEmail(to: string, subject: string, line
   await sendMail({ to, subject, heading: subject, paragraphs: lines, action: { label: "Open my account", href: link } });
 }
 
+/** Sent once a service request is marked "completed", asking the customer to rate the help they got. */
+export async function sendReviewRequestEmail(to: string, name: string, reference: string, label: string) {
+  await sendMail({
+    to, subject: `How did we do with ${label}?`, heading: "Rate your experience",
+    paragraphs: [
+      `Hello ${name},`,
+      `Your ${label} (${reference}) is complete. We'd love to know how it went — it takes under a minute and helps us get better.`,
+      "Rate us 1 to 5 and tell us anything we could improve. If you had a great experience, we'll also ask if you'd share it on Google — that's the single biggest way neighbours find honest local help.",
+    ],
+    details: [{ label: "Service", value: label }, { label: "Our reference", value: reference }],
+    action: { label: "Rate your experience", href: `${site.url}/review/${encodeURIComponent(reference)}` },
+  });
+}
+
 export async function sendStaffAlertEmail(to: string, subject: string, lines: string[], link: string) {
   await sendMail({ to, subject, heading: subject, paragraphs: lines, action: { label: "Open staff dashboard", href: link } });
 }
