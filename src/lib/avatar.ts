@@ -23,3 +23,14 @@ export function colorFor(name: string) {
   for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
   return PALETTE[hash % PALETTE.length]!;
 }
+
+/** Filesystem-safe slug used as the avatar file's name — must match scripts/generate-avatars.mjs. */
+export function slugFor(name: string) {
+  const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return slug || "reviewer";
+}
+
+/** Path to this reviewer's pre-generated avatar file under /public — run `npm run avatars:generate` after new reviews come in. */
+export function avatarSrc(name: string) {
+  return `/avatars/${slugFor(name)}.svg`;
+}

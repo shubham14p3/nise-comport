@@ -4,7 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { Eye, EyeOff, Star, Trash2 } from "lucide-react";
 import { secureApi } from "@/lib/secure-api-client";
 import { publishedServiceDetails } from "@/lib/services";
-import { colorFor, initialsFor } from "@/lib/avatar";
+import { avatarSrc } from "@/lib/avatar";
 
 type Testimonial = {
   id: string; authorName: string; rating: number; body: string; category: string;
@@ -107,7 +107,8 @@ export default function TestimonialsPanel() {
     <div className="record-list">
       {rows.map((row) => <article key={row.id} className={row.visible ? "admin-row" : "admin-row is-hidden"}>
         <div style={{ display: "flex", gap: 10 }}>
-          <span aria-hidden="true" className="avatar-initials" style={{ background: colorFor(row.authorName), flexShrink: 0 }}>{initialsFor(row.authorName)}</span>
+          {/* eslint-disable-next-line @next/next/no-img-element -- static pre-generated SVG, no Image optimization needed */}
+          <img src={avatarSrc(row.authorName)} alt="" width={36} height={36} className="avatar-initials" style={{ flexShrink: 0 }}/>
           <div>
           <b>{row.authorName} · {stars(row.rating)}</b>
           <small>{row.category === "general" ? "General" : publishedServiceDetails.find((service) => service.slug === row.serviceSlug)?.title ?? row.serviceSlug}{row.reviewedOn ? ` · ${row.reviewedOn}` : ""}{row.featured ? " · Featured" : ""}{!row.visible ? " · Hidden" : ""}</small>
