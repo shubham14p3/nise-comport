@@ -57,6 +57,7 @@ export default function SiteFooter() {
         <strong>Help</strong>
         <Link href="/request">Start a request</Link>
         <Link href="/profile#requests">Track a request</Link>
+        <Link href="/track">Track certificate / voter ID</Link>
         <Link href="/offers">Offers</Link>
         <Link href="/gallery">Gallery</Link>
         <Link href="/blog">Local guides</Link>

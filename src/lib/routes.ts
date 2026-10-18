@@ -49,6 +49,7 @@ export function publicRoutes(): PublicRoute[] {
     { path: "/hardware", lastModified: SITE_CONTENT_DATE, priority: 0.8, changeFrequency: "weekly" },
     { path: "/blog", lastModified: SITE_CONTENT_DATE, priority: 0.8, changeFrequency: "weekly" },
     { path: "/faq", lastModified: SITE_CONTENT_DATE, priority: 0.6, changeFrequency: "monthly" },
+    { path: "/track", lastModified: SITE_CONTENT_DATE, priority: 0.6, changeFrequency: "monthly" },
     { path: "/about", lastModified: SITE_CONTENT_DATE, priority: 0.6, changeFrequency: "yearly" },
     { path: "/team", lastModified: SITE_CONTENT_DATE, priority: 0.5, changeFrequency: "yearly" },
     { path: "/gallery", lastModified: SITE_CONTENT_DATE, priority: 0.5, changeFrequency: "monthly", images: [...ownPhotos.map((photo) => photo.src), ...localGallery.map((item) => item.src)] },
