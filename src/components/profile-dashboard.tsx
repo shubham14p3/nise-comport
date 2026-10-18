@@ -4,6 +4,7 @@ import { serviceName, statusText } from "@/lib/i18n-forms";
 import { useLocale } from "@/lib/use-locale";
 import SiteHeader from "@/components/site-header";
 import AddressManager from "@/components/address-manager";
+import { CitySelect, StateSelect } from "@/components/state-city-fields";
 import AccountSecurityPanel from "@/components/account-security-panel";
 import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
@@ -244,8 +245,8 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
           <label className="field"><span className="field__label">Mobile number</span><input type="tel" inputMode="tel" maxLength={20} autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} aria-invalid={Boolean(profileFieldErrors.phone)}/><span className={profileFieldErrors.phone ? "field__error" : "field__hint"}>{profileFieldErrors.phone ?? "Needed for phone or WhatsApp updates."}</span></label>
           <label className="field"><span className="field__label">WhatsApp number <em>if different</em></span><input type="tel" inputMode="tel" maxLength={20} autoComplete="tel" value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} placeholder="Same as mobile" aria-invalid={Boolean(profileFieldErrors.whatsapp)}/><span className={profileFieldErrors.whatsapp ? "field__error" : "field__hint"}>{profileFieldErrors.whatsapp ?? "We send updates and offers here only if you choose WhatsApp."}</span></label>
           <label className="field"><span className="field__label">Preferred update channel</span><select value={preferredContact} onChange={(event) => setPreferredContact(event.target.value as ProfileUser["preferredContact"])}><option value="email">Email</option><option value="phone">Phone call</option><option value="whatsapp">WhatsApp</option></select>{profileFieldErrors.preferredContact && <span className="field__error">{profileFieldErrors.preferredContact}</span>}</label>
-          <label className="field"><span className="field__label">City</span><input maxLength={100} autoComplete="address-level2" value={city} onChange={(event) => setCity(event.target.value)}/></label>
-          <label className="field"><span className="field__label">State</span><input maxLength={100} autoComplete="address-level1" value={state} onChange={(event) => setState(event.target.value)}/></label>
+          <label className="field"><span className="field__label">State</span><StateSelect value={state} onChange={(next) => { setState(next); setCity(""); }}/></label>
+          <label className="field"><span className="field__label">City</span><CitySelect state={state} value={city} onChange={setCity}/></label>
           <label className="field"><span className="field__label">PIN code</span><input inputMode="numeric" pattern="[1-9][0-9]{5}" maxLength={6} autoComplete="postal-code" value={postalCode} onChange={(event) => setPostalCode(event.target.value.replace(/\D/g, "").slice(0, 6))} aria-invalid={Boolean(profileFieldErrors.postalCode)}/>{profileFieldErrors.postalCode && <span className="field__error">{profileFieldErrors.postalCode}</span>}</label>
           <span className="field field--spacer" aria-hidden="true"/>
           <label className="field field--full"><span className="field__label">A note for our team <em>optional</em></span><textarea maxLength={500} rows={4} value={profileSummary} onChange={(event) => setProfileSummary(event.target.value)}/><span className="field__hint">{profileSummary.length}/500 · Don’t enter passwords, OTPs or identity numbers.</span></label>

@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, LockKeyhole } from "lucide-react";
 import { OfferRail, OfferStrip, WizardActions, WizardFrame } from "@/components/wizard";
+import { CitySelect, StateSelect } from "@/components/state-city-fields";
+import { COUNTRIES, INDIA_STATES } from "@/lib/india-geo";
 import { newIdempotencyKey } from "@/lib/client-id";
 import { panIntakeSchema, panServiceLabels, panServices, type PanIntake } from "@/lib/pan-validation";
 import { secureApi } from "@/lib/secure-api-client";
@@ -150,9 +152,18 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
       </div>
       <div className="form-grid">
         <div className="field--full">{input("address", "Communication address", "text", { autoComplete: "street-address" })}</div>
-        {input("city", "City", "text", { autoComplete: "address-level2" })}
-        {input("state", "State / province", "text", { autoComplete: "address-level1" })}
-        {input("country", "Country", "text", { autoComplete: "country-name" })}
+        <label className="field" key="country"><span className="field__label">Country</span>
+          <select value={data.country} onChange={(event) => { update("country", event.target.value as never); if (event.target.value === "India" && data.state && !INDIA_STATES.includes(data.state as never)) update("state", "" as never); }} aria-invalid={Boolean(errors.country)}>
+            {COUNTRIES.map((item) => <option key={item} value={item}>{item}</option>)}
+          </select>
+          {err("country")}
+        </label>
+        {data.country === "India"
+          ? <label className="field" key="state"><span className="field__label">State / province</span><StateSelect value={data.state} onChange={(next) => { update("state", next as never); update("city", "" as never); }}/>{err("state")}</label>
+          : input("state", "State / province", "text", { autoComplete: "address-level1" })}
+        {data.country === "India"
+          ? <label className="field" key="city"><span className="field__label">City</span><CitySelect state={data.state} value={data.city} onChange={(next) => update("city", next as never)}/>{err("city")}</label>
+          : input("city", "City", "text", { autoComplete: "address-level2" })}
         {input("postalCode", "PIN / postal code", "text", { inputMode: "numeric", autoComplete: "postal-code" })}
       </div>
       {["correction", "marriage", "minor-to-major"].includes(data.service) && <fieldset className="field"><legend className="field__label">Which details need updating?</legend>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LoaderCircle, LocateFixed, MapPin, PencilLine, Search } from "lucide-react";
 import { secureApi } from "@/lib/secure-api-client";
+import { CitySelect, StateSelect } from "@/components/state-city-fields";
 
 export type AddressValue = {
   line1: string; line2: string; landmark: string; city: string; state: string; postalCode: string;
@@ -115,8 +116,8 @@ export default function AddressPicker({ value, onChange, compact = false }: { va
       <label className="field field--full"><span className="field__label">House / flat, building &amp; street</span><input value={value.line1} onChange={set("line1")} maxLength={160} autoComplete="address-line1" required/></label>
       <label className="field"><span className="field__label">Area / locality</span><input value={value.line2} onChange={set("line2")} maxLength={160} autoComplete="address-line2" placeholder="e.g. Kharangajhar"/></label>
       <label className="field"><span className="field__label">Landmark <em>optional</em></span><input value={value.landmark} onChange={set("landmark")} maxLength={120} placeholder="e.g. near Hanuman Mandir"/></label>
-      <label className="field"><span className="field__label">City</span><input value={value.city} onChange={set("city")} maxLength={80} autoComplete="address-level2" required/></label>
-      <label className="field"><span className="field__label">State</span><input value={value.state} onChange={set("state")} maxLength={80} autoComplete="address-level1" required/></label>
+      <label className="field"><span className="field__label">State</span><StateSelect value={value.state} onChange={(state) => onChange({ ...value, state, city: "" })} required/></label>
+      <label className="field"><span className="field__label">City</span><CitySelect state={value.state} value={value.city} onChange={(city) => onChange({ ...value, city })} required/></label>
       <label className="field"><span className="field__label">PIN code</span><input value={value.postalCode} onChange={set("postalCode")} inputMode="numeric" maxLength={6} autoComplete="postal-code" required placeholder="831004"/></label>
     </div>}
   </div>;
