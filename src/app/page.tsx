@@ -84,14 +84,14 @@ export default async function HomePage() {
             <span className="pill pill--glass"><i className="live-dot"/> Kharangajhar · Telco · Jamshedpur</span>
             <h1 className="hero__title"><span className="hero__kicker">CSC &amp; Pragya Kendra in Telco, Jamshedpur</span>Sarkari &amp; digital kaam, <span className="grad-text">sorted in one visit.</span></h1>
             <p className="hero__lead">PAN, Aadhaar help, certificates, AEPS banking, insurance, bills, forms and printing. Start online in 4 quick steps, track it live, and walk in only when you need to.</p>
-            <HeroSearch popular={popular}/>
+            <HeroSearch popular={popular} services={publishedServiceDetails.map((item) => ({ slug: item.slug, title: item.title }))}/>
             <div className="hero__ctas">
               <Link href="/request" className="btn btn--primary btn--lg">Start a request <ArrowRight size={20}/></Link>
               <a href={whatsappLink("Hi NISE COMPORT, I need help with a service.")} className="btn btn--glass btn--lg" target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={20}/> Chat on WhatsApp</a>
             </div>
             <ul className="hero__trust">
-              <li><BadgeCheck size={18}/> Clear fees upfront</li>
-              <li><Clock3 size={18}/> Live request tracking</li>
+              <li><BadgeCheck size={18}/> Service over money, always</li>
+              <li><Clock3 size={18}/> Every charge told before we begin</li>
               <li><Languages size={18}/> English · हिन्दी · বাংলা</li>
             </ul>
             {place?.rating ? <a className="rating-chip" href={place.mapsUri ?? site.mapsUrl} target="_blank" rel="noopener noreferrer"><Star size={16} fill="currentColor"/> <b>{place.rating.toFixed(1)}</b> on Google · {place.ratingCount} reviews</a> : null}

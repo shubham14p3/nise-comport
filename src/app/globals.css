@@ -2374,3 +2374,37 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .footer-policies { display: flex; flex-wrap: wrap; gap: 10px; }
 .footer-policies a { padding: 8px 16px; border-radius: 999px; border: 1px solid rgb(255 255 255 / .25); color: #fff; font-weight: 600; font-size: .875rem; transition: background .15s ease; }
 .footer-policies a:hover { background: rgb(255 255 255 / .14); }
+
+/* ---------- Home search list, phone brand, mobile alignment ---------- */
+.hero-search__list { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 8px; max-height: 128px; overflow-y: auto; padding: 4px 2px; scrollbar-width: thin; scrollbar-color: rgb(255 255 255 / .4) transparent; overscroll-behavior: contain; }
+.hero-search__list a { padding: 6px 14px; border-radius: 999px; font-size: .875rem; background: rgb(255 255 255 / .1); border: 1px solid rgb(255 255 255 / .18); color: #fff; white-space: nowrap; }
+.hero-search__list a:hover { background: rgb(255 255 255 / .2); }
+.hero-search__empty { font-size: .875rem; color: rgb(255 255 255 / .8); }
+.phone__brand { display: grid; line-height: 1.15; letter-spacing: .02em; }
+.phone__brand small { font-weight: 500; opacity: .65; font-size: .6875rem; letter-spacing: 0; }
+.phone__foot { margin-top: 8px; text-align: center; font-size: .625rem; letter-spacing: .08em; opacity: .55; font-weight: 600; }
+
+@media (max-width: 640px) {
+  .hero__copy { justify-items: center; text-align: center; }
+  .hero__title, .hero__lead { text-align: center; }
+  .hero__lead { text-wrap: balance; }
+  .hero__ctas { justify-content: center; width: 100%; }
+  .hero__trust { justify-content: center; text-align: left; }
+  .rating-chip { justify-self: center; }
+  .hero-search__list { max-height: 112px; justify-content: center; }
+  .section-head, .section-head--left { text-align: center; justify-items: center; }
+  .content-hero .container { text-align: center; justify-items: center; }
+  .content-hero .content-location { justify-content: center; }
+  .legal-content p, .legal-content li, .detail__main p, .content-page .container > p, .about-story p, .editorial-card p, .team-card__bio { text-align: justify; hyphens: auto; -webkit-hyphens: auto; text-justify: inter-word; }
+  .legal-content h1, .legal-content h2, .legal-content .eyebrow { text-align: center; }
+  .footer-brand { justify-items: center; text-align: center; }
+  .footer-cta, .footer-langs { justify-content: center; }
+  .footer-col { text-align: center; justify-items: center; }
+  .footer-col > a { justify-content: center; }
+  .footer-trust { text-align: center; justify-items: center; }
+  .partner-strip, .footer-pride, .footer-policies { justify-content: center; }
+  .footer-visit { padding: 20px 18px; border-radius: 20px; background: rgb(255 255 255 / .07); border: 1px solid rgb(255 255 255 / .14); justify-items: stretch; text-align: left; }
+  .footer-visit strong { text-align: center; }
+  .footer-visit .footer-directions { justify-content: center; padding: 10px 14px; border-radius: 999px; background: rgb(255 255 255 / .1); }
+  .footer-bottom p { text-align: justify; hyphens: auto; }
+}
