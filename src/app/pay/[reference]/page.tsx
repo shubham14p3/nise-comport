@@ -4,10 +4,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import PayPanel from "@/components/pay-panel";
 import { getCurrentUser } from "@/lib/auth";
-import { paymentForReference, paymentOptions, syncCashfreePayment } from "@/lib/payments";
-import { convenienceFee, refundBreakdown, TICKET_AFTER_HOURS, upiLink } from "@/lib/payments-core";
+import { paymentForReference, paymentOptions, syncCashfreePayment, upiQrSeconds } from "@/lib/payments";
+import { convenienceFee, refundBreakdown, TICKET_AFTER_HOURS } from "@/lib/payments-core";
 import { privateMetadata } from "@/lib/seo";
-import { qrSvg } from "@/lib/qr";
 import { whatsappLink } from "@/lib/site";
 
 export const metadata: Metadata = privateMetadata("Pay for your request");
@@ -23,7 +22,6 @@ export default async function PayPage({ params }: { params: Promise<{ reference:
   const found = (await paymentForReference(reference.toUpperCase(), user)) ?? first;
   const { payment, request } = found;
   const options = paymentOptions();
-  const upi = options.upi ? upiLink({ vpa: options.upi.vpa, name: options.upi.name, amountPaise: payment.amountPaise, note: payment.reference }) : null;
   const fee = convenienceFee(payment.amountPaise, options.feePercent);
   const paid = payment.amountPaise + payment.feePaise;
   const estimates = (["wallet", "original", "cash"] as const).map((choice) => ({ choice, net: refundBreakdown({ paidPaise: paid, method: payment.method, choice, feePercent: options.feePercent }).netPaise }));
@@ -34,7 +32,7 @@ export default async function PayPage({ params }: { params: Promise<{ reference:
       <h1>Pay for <em>{request.serviceName}.</em></h1>
       <PayPanel
         reference={payment.reference} status={payment.status} amountPaise={payment.amountPaise} feePaise={fee} note={payment.note}
-        paidVia={payment.method} upi={upi} qr={upi ? qrSvg(upi, { size: 220 }) : null} vpa={options.upi?.vpa ?? null}
+        paidVia={payment.method} upiSlots={(options.upi ?? []).map((item) => ({ slot: item.slot, label: item.label }))} qrSeconds={upiQrSeconds()}
         helpHref={whatsappLink(`Hello NISE COMPORT, I want to pay ${payment.reference}. Please share the payment details.`)} failureReason={payment.failureReason} ticketRaised={Boolean(payment.issueRaisedAt)} ticketOpen={ticketOpen} refundStatus={payment.refundStatus} refundChoice={payment.refundChoice} refundPaise={payment.refundPaise} estimates={estimates}
         razorpay={options.razorpay} cashfree={options.cashfree} feePercent={options.feePercent}/>
       <p className="legal-updated">Questions? See <Link href="/refund-policy">refunds</Link> or call us from the <Link href="/contact">contact page</Link>.</p>

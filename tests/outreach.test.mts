@@ -126,3 +126,11 @@ test("lastBirthday finds the most recent birthday, across the new year", () => {
   assert.equal(lastBirthday({ month: 12, day: 30 }, "2027-01-02"), "2026-12-30");
   assert.equal(lastBirthday({ month: 2, day: 29 }, "2027-03-01"), "2027-02-28");
 });
+
+import { parseUpiAccounts } from "../src/lib/payments-core.ts";
+
+test("up to three UPI IDs are read, with labels, and bad ones are skipped", () => {
+  const found = parseUpiAccounts(["shop@sbi|SBI account", "", "not an id", "other@okaxis"].concat("third@ybl", "fourth@ybl"), "NISE COMPORT");
+  assert.deepEqual(found.map((item) => [item.slot, item.vpa, item.label]), [[0, "shop@sbi", "SBI account"], [1, "other@okaxis", "UPI 2"], [2, "third@ybl", "UPI 3"]]);
+  assert.deepEqual(parseUpiAccounts([undefined, ""], "x"), []);
+});

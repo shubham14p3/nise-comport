@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     await requirePermission("requests");
     const status = request.nextUrl.searchParams.get("status") ?? "";
     const options = paymentOptions();
-    return NextResponse.json({ payments: await listPayments(status || undefined), summary: await paymentSummary(), options: { upi: Boolean(options.upi), razorpay: options.razorpay, cashfree: options.cashfree, feePercent: options.feePercent } }, { headers: { "cache-control": "private, no-store" } });
+    return NextResponse.json({ payments: await listPayments(status || undefined), summary: await paymentSummary(), options: { upi: options.upi?.length ?? 0, razorpay: options.razorpay, cashfree: options.cashfree, feePercent: options.feePercent } }, { headers: { "cache-control": "private, no-store" } });
   } catch (error) { return apiError(error); }
 }
 

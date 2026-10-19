@@ -74,3 +74,13 @@ export function customerWhatsAppLink(phone: string | null | undefined, text: str
   const number = digits.length === 10 ? `91${digits}` : digits.length >= 11 ? digits : "";
   return number ? `https://wa.me/${number}?text=${encodeURIComponent(text)}` : null;
 }
+
+export type UpiAccount = { slot: number; vpa: string; label: string; name: string };
+
+/** Reads up to three UPI IDs ("id@bank" or "id@bank|Label"), skipping blanks and anything that isn't a valid UPI ID. */
+export function parseUpiAccounts(values: (string | undefined)[], name: string): UpiAccount[] {
+  return values.flatMap((raw) => {
+    const [vpa, label] = (raw ?? "").split("|").map((part) => part.trim());
+    return vpa && /^[a-zA-Z0-9._-]{2,256}@[a-zA-Z0-9]{2,64}$/.test(vpa) ? [{ vpa, label: label || "" }] : [];
+  }).slice(0, 3).map((account, index) => ({ ...account, name, slot: index, label: account.label || `UPI ${index + 1}` }));
+}
