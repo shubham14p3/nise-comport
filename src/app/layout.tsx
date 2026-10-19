@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import ScrollToTop from "@/components/scroll-to-top";
 import "./globals.css";
 import { Hind_Siliguri, Poppins } from "next/font/google";
+import BirthdayGreeting from "@/components/birthday-greeting";
 import ChatWidget from "@/components/chat-widget";
 import JsonLd from "@/components/json-ld";
 import MobileDock from "@/components/mobile-dock";
@@ -70,6 +71,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <div id="main-content">{children}</div>
         <SiteFooter/>
         <MobileDock/>
+        <BirthdayGreeting/>
         <ChatWidget whatsapp={site.whatsapp.primary} phone={site.phones.primary.e164} mapsUrl={site.mapsUrl} hours={site.openingHours} services={chatServices}/>
       </OffersProvider>
       <JsonLd data={siteGraph["@graph"]}/>

@@ -7,11 +7,12 @@ import { db } from "@/lib/db";
 import { sendMail } from "@/lib/email";
 import { PublicError } from "@/lib/errors";
 import {
-  addDays, birthdayEmail, birthdayLabel, birthdayWhatsApp, birthFromFields, DEFAULT_SETTINGS, daysBetween, daysUntilBirthday, instagramCaption, istToday, mayMessage,
+  addDays, birthdayEmail, birthdayLabel, birthdayWhatsApp, birthFromFields, DEFAULT_SETTINGS, daysBetween, daysUntilBirthday, instagramCaption, istToday, lastBirthday, mayMessage,
   pickBirthdayTemplate, pickRenewalTemplate, renewalEmail, renewalWhatsApp, sanitizeBirthdayTemplates, sanitizeRenewalTemplates, sanitizeSettings, vehicleFrom,
-  type BirthdayTemplate, type Lang, type OutreachSettings, type RenewalTemplate, type Vehicle,
+  type BirthdayCouponInfo, type BirthdayTemplate, type Lang, type OutreachSettings, type RenewalTemplate, type Vehicle,
 } from "@/lib/outreach-core";
 import { addContacts, CONTACT_SERVICE, type Person } from "@/lib/records";
+import { ensureBirthdayCoupon } from "@/lib/birthday-coupon";
 import { site } from "@/lib/site";
 import { blindIndex, open } from "@/lib/vault";
 
@@ -34,6 +35,12 @@ async function writeSetting(key: string, value: unknown) {
 export async function loadConfig() {
   const [settings, birthday, renewal] = await Promise.all([readSetting("settings"), readSetting("birthday_templates"), readSetting("renewal_templates")]);
   return { settings: settings ? sanitizeSettings(settings) : DEFAULT_SETTINGS, birthdayTemplates: sanitizeBirthdayTemplates(birthday), renewalTemplates: sanitizeRenewalTemplates(renewal) };
+}
+
+/** Just the on/off switches and the coupon settings (cheap enough to read on a customer's login). */
+export async function loadSettings() {
+  const settings = await readSetting("settings");
+  return settings ? sanitizeSettings(settings) : DEFAULT_SETTINGS;
 }
 
 /** Everything the Templates screen needs, plus a real (signed) preview of each saved card in the three languages. */
@@ -173,8 +180,8 @@ async function claim(contactId: string, kind: "birthday" | "renewal", channel: "
 }
 const release = (id: string) => db.delete(outreachLog).where(eq(outreachLog.id, id));
 
-async function mailBirthday(contact: typeof contacts.$inferSelect, template: BirthdayTemplate, lang: Lang) {
-  const mail = birthdayEmail(template, contact.name, lang);
+async function mailBirthday(contact: typeof contacts.$inferSelect, template: BirthdayTemplate, lang: Lang, coupon: BirthdayCouponInfo | null) {
+  const mail = birthdayEmail(template, contact.name, lang, coupon);
   await sendMail({ to: contact.email!, subject: mail.subject, heading: mail.heading, paragraphs: mail.paragraphs, image: { src: cardUrl(template.id, lang, contact.name), alt: template.title[lang] }, unsubscribe: unsubscribeUrl(contact.id) });
 }
 
@@ -185,6 +192,13 @@ export async function sendBirthdays(input: { ids: string[]; channels: ("email" |
   const template = pickBirthdayTemplate(config.birthdayTemplates, input.template);
   const today = istToday();
   const year = Number(today.slice(0, 4));
+  const gift = config.settings.birthday.coupon;
+  /** The gift coupon for one person, or null when the gift is switched off or could not be made (the wish still goes out). */
+  const couponFor = async (contact: typeof contacts.$inferSelect): Promise<BirthdayCouponInfo | null> => {
+    if (!gift.enabled || contact.birthMonth === null || contact.birthDay === null) return null;
+    try { return await ensureBirthdayCoupon(contact, gift, lastBirthday({ month: contact.birthMonth, day: contact.birthDay }, today)); }
+    catch (error) { console.error("[birthday] coupon failed", error instanceof Error ? error.message : error); return null; }
+  };
   const ids = [...new Set(input.ids)].slice(0, 2000);
   const rows = ids.length ? await db.select().from(contacts).where(inArray(contacts.id, ids)) : [];
   const deadline = Date.now() + (input.budgetMs ?? 40_000);
@@ -202,7 +216,7 @@ export async function sendBirthdays(input: { ids: string[]; channels: ("email" |
         const marker = await claim(contact.id, "birthday", "email", year);
         if (!marker) report.alreadySent++;
         else {
-          try { await mailBirthday(contact, template, lang); report.emailSent++; }
+          try { await mailBirthday(contact, template, lang, await couponFor(contact)); report.emailSent++; }
           catch (error) { await release(marker); report.failed++; if (report.errors.length < 3) report.errors.push(error instanceof Error ? error.message : "Email failed."); }
         }
       }
@@ -214,7 +228,7 @@ export async function sendBirthdays(input: { ids: string[]; channels: ("email" |
         if (!marker) report.alreadySent++;
         else {
           queueClaims.push(marker);
-          queue.push({ contactId: contact.id, phone: contact.phone, name: contact.name, locale: lang, body: renderMessage(birthdayWhatsApp(template, lang), { lang, kind: "birthday", name: contact.name, phone: shopPhone() }), posterUrl: cardUrl(template.id, lang, contact.name) });
+          queue.push({ contactId: contact.id, phone: contact.phone, name: contact.name, locale: lang, body: renderMessage(birthdayWhatsApp(template, lang, await couponFor(contact)), { lang, kind: "birthday", name: contact.name, phone: shopPhone() }), posterUrl: cardUrl(template.id, lang, contact.name) });
         }
       }
     }

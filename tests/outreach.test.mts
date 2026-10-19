@@ -99,3 +99,30 @@ test("importing a register picks up the birthday and the vehicle", () => {
   assert.deepEqual([records[0].birthMonth, records[0].birthDay, records[0].vehicle], [3, 12, "bike"]);
   assert.deepEqual([records[1].birthMonth, records[1].birthDay, records[1].vehicle], [null, null, "car"]);
 });
+
+import { birthdayCouponText, lastBirthday, sanitizeBirthdayCoupon, birthdayEmail as emailWith, birthdayWhatsApp as waWith, DEFAULT_BIRTHDAY_COUPON, DEFAULT_BIRTHDAY_TEMPLATES as TEMPLATES } from "../src/lib/outreach-core.ts";
+
+test("birthday coupon settings are kept in range", () => {
+  assert.deepEqual(sanitizeBirthdayCoupon(undefined), DEFAULT_BIRTHDAY_COUPON);
+  assert.deepEqual(sanitizeBirthdayCoupon({ enabled: false, percent: 99, validDays: 500 }), { enabled: false, percent: 50, validDays: 90 });
+  assert.deepEqual(sanitizeBirthdayCoupon({ percent: 0, validDays: 0 }), { enabled: true, percent: 1, validDays: 1 });
+});
+
+test("the coupon goes into the email and the WhatsApp wish, in every language", () => {
+  const coupon = { code: "BDAY-ABC234", percent: 10, until: "2026-11-18" };
+  for (const lang of ["en", "hi", "bn"] as const) {
+    const text = birthdayCouponText(coupon, lang);
+    assert.ok(text.includes("BDAY-ABC234") && text.includes("10%"), lang);
+    assert.ok(emailWith(TEMPLATES[0], "Anita Devi", lang, coupon).paragraphs.at(-1)!.includes("BDAY-ABC234"));
+    assert.ok(waWith(TEMPLATES[0], lang, coupon).includes("BDAY-ABC234"));
+    assert.ok(!emailWith(TEMPLATES[0], "Anita Devi", lang).paragraphs.join(" ").includes("BDAY-"));
+  }
+  assert.match(birthdayCouponText(coupon, "en"), /not to government fees or insurance premium/);
+});
+
+test("lastBirthday finds the most recent birthday, across the new year", () => {
+  assert.equal(lastBirthday({ month: 10, day: 19 }, "2026-10-19"), "2026-10-19");
+  assert.equal(lastBirthday({ month: 10, day: 17 }, "2026-10-19"), "2026-10-17");
+  assert.equal(lastBirthday({ month: 12, day: 30 }, "2027-01-02"), "2026-12-30");
+  assert.equal(lastBirthday({ month: 2, day: 29 }, "2027-03-01"), "2027-02-28");
+});

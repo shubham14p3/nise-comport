@@ -166,14 +166,34 @@ export function fillText(template: string, values: Partial<Record<"name" | "vehi
 }
 
 /** Subject, heading and body of a birthday email. */
-export function birthdayEmail(template: BirthdayTemplate, name: string, lang: Lang) {
+export function birthdayEmail(template: BirthdayTemplate, name: string, lang: Lang, coupon?: BirthdayCouponInfo | null) {
   const who = friendly(name, lang);
   const subject = { en: `Happy Birthday, ${who}! 🎂`, hi: `जन्मदिन मुबारक, ${who}! 🎂`, bn: `শুভ জন্মদিন, ${who}! 🎂` }[lang];
-  return { subject, heading: `${template.title[lang]}, ${who}!`, paragraphs: fillText(template.email[lang], { name: who }).split(/\n{2,}/).filter(Boolean) };
+  return { subject, heading: `${template.title[lang]}, ${who}!`, paragraphs: [...fillText(template.email[lang], { name: who }).split(/\n{2,}/).filter(Boolean), ...(coupon ? [birthdayCouponText(coupon, lang)] : [])] };
 }
 
 /** WhatsApp text of a birthday wish (the STOP line is added later by renderMessage, which fills {name}). */
-export function birthdayWhatsApp(template: BirthdayTemplate, lang: Lang) { return template.whatsapp[lang]; }
+export function birthdayWhatsApp(template: BirthdayTemplate, lang: Lang, coupon?: BirthdayCouponInfo | null) { return coupon ? `${template.whatsapp[lang]}\n\n${birthdayCouponText(coupon, lang)}` : template.whatsapp[lang]; }
+
+export type BirthdayCouponInfo = { code: string; percent: number; until: string };
+
+/** The coupon sentence for the wish: what they get, the code, how long it lasts and what it does not cover. */
+export function birthdayCouponText(coupon: BirthdayCouponInfo, lang: Lang) {
+  const until = dateLabel(coupon.until, lang);
+  return {
+    en: `🎁 Your birthday gift: ${coupon.percent}% off our service charge. Use code ${coupon.code} when you place a request, valid until ${until}. It applies to our service fee only, not to government fees or insurance premium.`,
+    hi: `🎁 आपके जन्मदिन का तोहफ़ा: हमारे सेवा शुल्क पर ${coupon.percent}% की छूट। अनुरोध देते समय कोड ${coupon.code} इस्तेमाल करें, ${until} तक मान्य। यह केवल हमारे सेवा शुल्क पर लागू है, सरकारी शुल्क या बीमा प्रीमियम पर नहीं।`,
+    bn: `🎁 আপনার জন্মদিনের উপহার: আমাদের সার্ভিস চার্জে ${coupon.percent}% ছাড়। অনুরোধ করার সময় কোড ${coupon.code} দিন, ${until} পর্যন্ত বৈধ। এটি শুধু আমাদের সার্ভিস ফি-তে প্রযোজ্য, সরকারি ফি বা বিমার প্রিমিয়ামে নয়।`,
+  }[lang];
+}
+
+/** The most recent birthday on or before `today` (yyyy-mm-dd), so a login a few days late can still get the gift. */
+export function lastBirthday(birth: Birth, today: string) {
+  const [year] = today.split("-").map(Number);
+  const on = (y: number) => `${y}-${String(birth.month).padStart(2, "0")}-${String(birth.month === 2 && birth.day === 29 && !isLeap(y) ? 28 : birth.day).padStart(2, "0")}`;
+  const thisYear = on(year);
+  return thisYear <= today ? thisYear : on(year - 1);
+}
 
 export const VEHICLE_NAME: Record<Vehicle | "other", Text3> = {
   bike: { en: "bike insurance", hi: "बाइक बीमा", bn: "বাইকের বিমা" },
@@ -199,22 +219,36 @@ export function renewalEmail(template: RenewalTemplate, name: string, vehicle: V
 // Settings
 // ---------------------------------------------------------------------------------------------
 
+/** The birthday gift: a personal coupon (percent off our service charge) that goes in the wish and pops up when the person logs in. */
+export type BirthdayCouponSettings = { enabled: boolean; percent: number; validDays: number };
+export const DEFAULT_BIRTHDAY_COUPON: BirthdayCouponSettings = { enabled: true, percent: 10, validDays: 30 };
+
 export type OutreachSettings = {
-  birthday: { enabled: boolean; template: string; email: boolean; whatsapp: boolean };
+  birthday: { enabled: boolean; template: string; email: boolean; whatsapp: boolean; coupon: BirthdayCouponSettings };
   renewal: { enabled: boolean; template: string; daysBefore: number; email: boolean; whatsapp: boolean };
 };
 
 export const DEFAULT_SETTINGS: OutreachSettings = {
-  birthday: { enabled: false, template: "confetti", email: true, whatsapp: true },
+  birthday: { enabled: false, template: "confetti", email: true, whatsapp: true, coupon: DEFAULT_BIRTHDAY_COUPON },
   renewal: { enabled: false, template: "standard", daysBefore: 7, email: true, whatsapp: true },
 };
+
+export function sanitizeBirthdayCoupon(value: unknown): BirthdayCouponSettings {
+  const c = (value && typeof value === "object" ? value : {}) as Record<string, unknown>;
+  const percent = Number(c.percent); const days = Number(c.validDays);
+  return {
+    enabled: c.enabled !== false,
+    percent: Number.isFinite(percent) ? Math.max(1, Math.min(50, Math.round(percent))) : DEFAULT_BIRTHDAY_COUPON.percent,
+    validDays: Number.isFinite(days) ? Math.max(1, Math.min(90, Math.round(days))) : DEFAULT_BIRTHDAY_COUPON.validDays,
+  };
+}
 
 export function sanitizeSettings(value: unknown): OutreachSettings {
   const input = (value && typeof value === "object" ? value : {}) as Partial<Record<keyof OutreachSettings, Record<string, unknown>>>;
   const b = input.birthday ?? {}; const r = input.renewal ?? {};
   const days = Number(r.daysBefore);
   return {
-    birthday: { enabled: b.enabled === true, template: slug(b.template, "confetti"), email: b.email !== false, whatsapp: b.whatsapp !== false },
+    birthday: { enabled: b.enabled === true, template: slug(b.template, "confetti"), email: b.email !== false, whatsapp: b.whatsapp !== false, coupon: sanitizeBirthdayCoupon(b.coupon) },
     renewal: { enabled: r.enabled === true, template: slug(r.template, "standard"), daysBefore: Number.isFinite(days) ? Math.max(1, Math.min(45, Math.round(days))) : 7, email: r.email !== false, whatsapp: r.whatsapp !== false },
   };
 }
