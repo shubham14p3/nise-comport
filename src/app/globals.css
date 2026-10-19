@@ -2446,9 +2446,9 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .loop-wrap.is-still .loop-scroller { cursor: auto; justify-content: center; }
 .loop-wrap.is-still .loop-scroller__group { padding-right: 0; }
 .loop-scroller--offers { padding: 4px 2px 14px; }
-.loop-scroller--offers .loop-scroller__group > * { flex: none; width: min(320px, 82vw); min-width: 0; }
-.hero-search__row .loop-scroller__group > a { flex: none; display: inline-flex; align-items: center; padding: 8px 16px; border-radius: 999px; font-size: .875rem; background: rgb(255 255 255 / .1); border: 1px solid rgb(255 255 255 / .18); color: #fff; white-space: nowrap; user-select: none; -webkit-user-drag: none; }
-.hero-search__row .loop-scroller__group > a:hover { background: rgb(255 255 255 / .2); }
+.loop-scroller--offers .loop-rep > * { flex: none; width: min(320px, 82vw); min-width: 0; }
+.hero-search__row .loop-scroller__group a { flex: none; display: inline-flex; align-items: center; padding: 8px 16px; border-radius: 999px; font-size: .875rem; background: rgb(255 255 255 / .1); border: 1px solid rgb(255 255 255 / .18); color: #fff; white-space: nowrap; user-select: none; -webkit-user-drag: none; }
+.hero-search__row .loop-scroller__group a:hover { background: rgb(255 255 255 / .2); }
 .loop-arrow { position: absolute; top: calc(50% - 7px); transform: translateY(-50%); z-index: 3; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: rgb(255 255 255 / .92); color: var(--ink); box-shadow: 0 8px 24px -8px rgb(0 0 0 / .5); }
 .loop-arrow--prev { left: 6px; } .loop-arrow--next { right: 6px; }
 @media (hover: none) { .loop-arrow { display: none; } }

@@ -38,7 +38,7 @@ export default function HeroSearch({ popular, services = [] }: { popular: { labe
     </form>
     {services.length > 0
       ? matches.length
-        ? <LoopScroller className="hero-search__row" label="Services" gap={8} loop={matches.length > 3}>{matches.map((item) => <Link key={item.slug} role="listitem" href={`/services/${item.slug}`}>{item.title}</Link>)}</LoopScroller>
+        ? <LoopScroller className="hero-search__row" label="Services" gap={8} loop={matches.length > 3} auto>{matches.map((item) => <Link key={item.slug} role="listitem" href={`/services/${item.slug}`}>{item.title}</Link>)}</LoopScroller>
         : <span className="hero-search__empty">No service matches “{query}”. Press Search or message us.</span>
       : <div className="hero-search__chips" aria-label="Popular">
           {popular.map((item) => <Link key={item.href} href={item.href}>{item.label}</Link>)}
