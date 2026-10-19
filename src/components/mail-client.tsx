@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, CheckCircle2, Clock, Download, Eye, HardDrive, Inbox, Link2, Lock, Mail, Paperclip, PenSquare, Printer, RefreshCw, RotateCcw, Search, Send, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Clock, Download, Eye, HardDrive, Hourglass, Inbox, Link2, Lock, Mail, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen, Paperclip, PenSquare, Printer, RefreshCw, RotateCcw, Search, Send, X } from "lucide-react";
 import { secureApi, secureFile, SecureApiError } from "@/lib/secure-api-client";
 import {
   findReferences, formatBytes, QUICK_REPLIES, STAFF_STATUS_LABEL, STATUS_LABEL, TICKET_STATUSES, type MailAttachmentInfo, type MailMeta, type MailTicketDetail, type MailTicketSummary, type TicketStatus,
@@ -19,6 +19,7 @@ const CUSTOMER_BOXES: Box[] = [
   { id: "active", label: "Open" }, { id: "awaiting_customer", label: "Waiting for your reply" }, { id: "resolved", label: "Resolved" }, { id: "closed", label: "Closed" }, { id: "all", label: "All messages" },
 ];
 
+const BOX_ICON: Record<string, typeof Inbox> = { open: Inbox, active: Inbox, awaiting_customer: Clock, get_back_soon: Hourglass, resolved: CheckCircle2, closed: Lock, all: Mail };
 const IST = "Asia/Kolkata";
 function listTime(iso: string) {
   const date = new Date(iso); const now = new Date();
@@ -64,6 +65,11 @@ export default function MailClient({ mode, onUnread }: { mode: "customer" | "sta
   const [viewer, setViewer] = useState<{ items: FileSource[]; index: number } | null>(null);
   const [toast, setToast] = useState("");
   const [syncing, setSyncing] = useState(false);
+  // Wider reading: fold the folder column into a slim rail, or hide the list while reading. Remembered on this device.
+  const [rail, setRail] = useState(false);
+  const [wide, setWide] = useState(false);
+  useEffect(() => { try { setRail(window.localStorage.getItem("nc-mail-rail") === "1"); } catch { /* storage blocked */ } }, []);
+  const toggleRail = () => setRail((value) => { try { window.localStorage.setItem("nc-mail-rail", value ? "0" : "1"); } catch { /* storage blocked */ } return !value; });
   const listRequest = useRef(0);
   const selectedRef = useRef<string | null>(null);
   useEffect(() => { selectedRef.current = selected; }, [selected]);
@@ -129,13 +135,16 @@ export default function MailClient({ mode, onUnread }: { mode: "customer" | "sta
   const counts = meta?.counts ?? {};
   const closeThread = () => { setSelected(null); setDetail(null); setDetailState("idle"); };
 
-  return <section className={`mbx${selected ? " mbx--reading" : ""}${staff ? " mbx--staff" : ""}`} aria-label="Messages">
+  return <section className={`mbx${selected ? " mbx--reading" : ""}${staff ? " mbx--staff" : ""}${rail ? " mbx--rail" : ""}${wide && selected ? " mbx--wide" : ""}`} aria-label="Messages">
     <aside className="mbx-side" aria-label="Folders">
-      <button type="button" className="mbx-compose" onClick={() => setCompose(true)}><PenSquare size={17}/> {staff ? "New message" : "Write to us"}</button>
+      <div className="mbx-side__top">
+        <button type="button" className="mbx-compose" onClick={() => setCompose(true)} title={staff ? "New message" : "Write to us"}><PenSquare size={17}/><span className="mbx-compose__text">{staff ? "New message" : "Write to us"}</span></button>
+        <button type="button" className="mbx-icon-btn mbx-rail-toggle" aria-label={rail ? "Expand the folder panel" : "Collapse the folder panel"} aria-pressed={rail} title={rail ? "Expand the folder panel" : "Collapse the folder panel"} onClick={toggleRail}>{rail ? <PanelLeftOpen size={18}/> : <PanelLeftClose size={18}/>}</button>
+      </div>
       <nav>
-        <ul>{boxes.map((item) => <li key={item.id}><button type="button" className={box === item.id ? "is-active" : undefined} aria-current={box === item.id ? "true" : undefined} onClick={() => { setBox(item.id); closeThread(); }}>
-          <span>{item.label}</span>{(counts[item.id] ?? 0) > 0 && <small>{counts[item.id]}</small>}
-        </button></li>)}</ul>
+        <ul>{boxes.map((item) => { const Icon = BOX_ICON[item.id] ?? Inbox; const count = counts[item.id] ?? 0; return <li key={item.id}><button type="button" className={box === item.id ? "is-active" : undefined} aria-current={box === item.id ? "true" : undefined} aria-label={`${item.label}${count ? `, ${count}` : ""}`} title={item.label} onClick={() => { setBox(item.id); closeThread(); }}>
+          <Icon size={16} aria-hidden="true"/><span className="mbx-folder__name">{item.label}</span>{count > 0 && <small>{count}</small>}
+        </button></li>; })}</ul>
       </nav>
       {staff && meta?.storage && <StoragePanel meta={meta} onSync={syncMailbox} syncing={syncing}/>}
       {!staff && <p className="mbx-side__note"><Lock size={13} aria-hidden="true"/> Your messages and files are private to you and our team.</p>}
@@ -173,7 +182,7 @@ export default function MailClient({ mode, onUnread }: { mode: "customer" | "sta
       {!selected && <div className="mbx-read__empty"><Mail size={34} aria-hidden="true"/><b>Select a message to read it</b><p>{staff ? "Replies you send go to the customer by email and stay on this ticket." : "Replies from our team appear here and in your email."}</p></div>}
       {selected && detailState === "loading" && <div className="mbx-read__empty"><p>Opening…</p></div>}
       {selected && detailState === "error" && <div className="mbx-read__empty"><p>This message could not be opened.</p><button type="button" className="mbx-btn mbx-btn--ghost" onClick={() => void openTicket(selected)}>Try again</button><button type="button" className="mbx-btn mbx-btn--ghost mbx-only-narrow" onClick={closeThread}>Back</button></div>}
-      {selected && detail && <Thread key={detail.ticket.id} detail={detail} staff={staff} onBack={closeThread} onChanged={() => afterChange(detail.ticket.id)} onView={(items, index) => setViewer({ items, index })} flash={flash}/>}
+      {selected && detail && <Thread key={detail.ticket.id} detail={detail} staff={staff} wide={wide} onToggleWide={() => setWide((value) => !value)} onBack={closeThread} onChanged={() => afterChange(detail.ticket.id)} onView={(items, index) => setViewer({ items, index })} flash={flash}/>}
     </div>
 
     {compose && <ComposeDialog staff={staff} onClose={() => setCompose(false)} onSent={async (id, code) => { setCompose(false); flash(`Sent. Your ticket is ${code}.`); setBox(boxes[0].id); await Promise.all([loadList(true), loadMeta()]); void openTicket(id); }}/>}
@@ -220,7 +229,7 @@ function AttachmentGrid({ files, ticketId, onView }: { files: MailAttachmentInfo
   </li>)}</ul>;
 }
 
-function Thread({ detail, staff, onBack, onChanged, onView, flash }: { detail: MailTicketDetail; staff: boolean; onBack: () => void; onChanged: () => Promise<void>; onView: (items: FileSource[], index: number) => void; flash: (message: string) => void }) {
+function Thread({ detail, staff, wide, onToggleWide, onBack, onChanged, onView, flash }: { detail: MailTicketDetail; staff: boolean; wide: boolean; onToggleWide: () => void; onBack: () => void; onChanged: () => Promise<void>; onView: (items: FileSource[], index: number) => void; flash: (message: string) => void }) {
   const { ticket, messages, link } = detail;
   const [busy, setBusy] = useState(false);
   const [linking, setLinking] = useState(false);
@@ -248,6 +257,7 @@ function Thread({ detail, staff, onBack, onChanged, onView, flash }: { detail: M
         <p><span className="mbx-code">{ticket.code}</span><StatusTag status={ticket.status} staff={staff}/>{staff && <span className="mbx-thread__from">{ticket.fromName ? `${ticket.fromName} · ` : ""}{ticket.fromEmail}{ticket.source === "email" ? " · via email" : ""}</span>}<span>Opened {fullTime(ticket.createdAt)}</span></p>
       </div>
       <div className="mbx-thread__actions">
+        <button type="button" className="mbx-icon-btn mbx-only-wide" aria-pressed={wide} aria-label={wide ? "Show the message list" : "Widen the reading area"} title={wide ? "Show the message list" : "Widen the reading area"} onClick={onToggleWide}>{wide ? <Minimize2 size={17}/> : <Maximize2 size={17}/>}</button>
         {totalFiles > 0 && <button type="button" className="mbx-btn mbx-btn--ghost mbx-btn--sm" disabled={busy} onClick={() => void zip()} title="Download every file of this ticket as one zip"><Download size={15}/> All files</button>}
         {staff && <label className="mbx-select"><span className="mbx-sr">Status</span><select value={ticket.status} disabled={busy} onChange={(event) => void act({ action: "status", id: ticket.id, status: event.target.value })}>{TICKET_STATUSES.map((status) => <option key={status} value={status}>{STAFF_STATUS_LABEL[status]}</option>)}</select></label>}
         {!staff && !closed && <button type="button" className="mbx-btn mbx-btn--ghost mbx-btn--sm" disabled={busy} onClick={() => { if (window.confirm("Close this message? You can reopen it later.")) void act({ action: "status", id: ticket.id, status: "closed" }, "Closed."); }}><CheckCircle2 size={15}/> Close</button>}

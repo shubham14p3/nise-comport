@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Check, LoaderCircle, TicketPercent, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, ChevronRight, LoaderCircle, TicketPercent, X } from "lucide-react";
 import { fill, type Locale } from "@/lib/i18n";
 import { promoDict } from "@/lib/promo-i18n";
 import { secureApi } from "@/lib/secure-api-client";
@@ -26,6 +26,13 @@ export default function PromoCodeField({ locale, value, applied, onChange, onApp
   const t = promoDict(locale);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [picking, setPicking] = useState(false);
+  useEffect(() => {
+    if (!picking) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setPicking(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [picking]);
 
   async function apply(raw = value) {
     const code = raw.trim().toUpperCase();
@@ -44,9 +51,12 @@ export default function PromoCodeField({ locale, value, applied, onChange, onApp
 
   function clear() { onChange(""); onApplied(null); setError(""); }
 
-  const shown = suggestions.filter((item) => item.code !== applied?.code).slice(0, 5);
+  const shown = suggestions.filter((item) => item.code !== applied?.code);
   return <div className="promo-field">
-    <span className="field__label">{t.promoLabel} <em>{t.promoOptional}</em></span>
+    <div className="promo-field__head">
+      <span className="field__label">{t.promoLabel} <em>{t.promoOptional}</em></span>
+      {shown.length > 0 && !applied && <button type="button" className="promo-field__see" onClick={() => setPicking(true)}>{fill(t.seeCodes, { n: String(shown.length) })}<ChevronRight size={15}/></button>}
+    </div>
     <div className={`coupon${applied ? " is-applied" : ""}`}>
       <TicketPercent size={20}/>
       <input value={value} onChange={(event) => { onChange(event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 40)); onApplied(null); setError(""); }}
@@ -60,8 +70,17 @@ export default function PromoCodeField({ locale, value, applied, onChange, onApp
       : fill(t.promoSaved, { code: applied.code, amount: rupees(applied.discount), min: applied.minimum })}</p>}
     {!applied && value && !signedIn && !error && <p className="field__hint">{t.promoLater}</p>}
     {error && <p className="field__error" role="alert">{error}</p>}
-    {shown.length > 0 && !applied && <div className="promo-field__chips"><span>{t.promoSuggest}</span>{shown.map((item) => <button key={item.code} type="button" className={`code-chip${item.personal ? " code-chip--personal" : ""}`} onClick={() => void apply(item.code)} title={item.label}>
-      {item.emoji && <span aria-hidden="true">{item.emoji}</span>}<b>{item.code}</b>{item.personal && <small>{t.yourCoupon}</small>}
-    </button>)}</div>}
+    {picking && <div className="promo-modal" role="dialog" aria-modal="true" aria-labelledby="promo-modal-title" onMouseDown={(event) => { if (event.target === event.currentTarget) setPicking(false); }}>
+      <div className="promo-modal__card">
+        <header><div><h3 id="promo-modal-title">{t.pickTitle}</h3><p>{t.pickHint}</p></div><button type="button" className="promo-modal__close" aria-label={t.closeLabel} onClick={() => setPicking(false)}><X size={18}/></button></header>
+        <ul>{shown.map((item) => <li key={item.code}>
+          <button type="button" className={`promo-modal__item${item.personal ? " is-personal" : ""}`} onClick={() => { setPicking(false); void apply(item.code); }}>
+            <span className="promo-modal__icon" aria-hidden="true"><TicketPercent size={18}/></span>
+            <span className="promo-modal__text"><b>{item.code}</b><small>{item.label}{item.personal ? ` · ${t.yourCoupon}` : ""}</small></span>
+            <span className="promo-modal__apply">{t.useCode}</span>
+          </button>
+        </li>)}</ul>
+      </div>
+    </div>}
   </div>;
 }
