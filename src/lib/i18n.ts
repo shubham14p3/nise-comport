@@ -142,7 +142,7 @@ const en = {
   rail: {
     live: "Live offers", validTill: "Valid till", claim: "Claim", applies: "Applies here", firstOnly: "First time only",
     helpTitle: "Stuck somewhere?", helpSub: "Chat on WhatsApp, a real person replies.", helpCta: "Ask on WhatsApp",
-    trust: ["Service over money, always", "Every charge told before we begin", "Help in English, हिन्दी & বাংলা"],
+    trust: ["Serving since 1995", "18,000+ jobs done", "600+ positive Google reviews"],
   },
   auth: {
     language: "Language",
@@ -265,7 +265,7 @@ const hi: Dictionary = {
   rail: {
     live: "लाइव ऑफ़र", validTill: "मान्य", claim: "पाएँ", applies: "यहाँ लागू", firstOnly: "केवल पहली बार",
     helpTitle: "कहीं अटक गए?", helpSub: "व्हाट्सऐप पर चैट करें, असली व्यक्ति जवाब देगा।", helpCta: "व्हाट्सऐप पर पूछें",
-    trust: ["पैसे से पहले सेवा, हमेशा", "काम शुरू करने से पहले हर शुल्क की जानकारी", "English, हिन्दी और বাংলা में मदद"],
+    trust: ["1995 से सेवा में", "18,000+ काम पूरे", "600+ सकारात्मक Google रिव्यू"],
   },
   auth: {
     language: "भाषा",
@@ -386,7 +386,7 @@ const bn: Dictionary = {
   rail: {
     live: "লাইভ অফার", validTill: "বৈধ", claim: "নিন", applies: "এখানে প্রযোজ্য", firstOnly: "শুধু প্রথমবার",
     helpTitle: "কোথাও আটকে গেছেন?", helpSub: "হোয়াটসঅ্যাপে চ্যাট করুন, সত্যিকারের মানুষ উত্তর দেবেন।", helpCta: "হোয়াটসঅ্যাপে জিজ্ঞেস করুন",
-    trust: ["টাকার আগে সেবা, সবসময়", "কাজ শুরুর আগে প্রতিটি খরচ জানানো হয়", "English, हिन्दी ও বাংলায় সাহায্য"],
+    trust: ["১৯৯৫ সাল থেকে সেবায়", "১৮,০০০+ কাজ সম্পন্ন", "৬০০+ ইতিবাচক Google রিভিউ"],
   },
   auth: {
     language: "ভাষা",
