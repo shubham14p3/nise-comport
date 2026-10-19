@@ -457,3 +457,16 @@ export const servicePrices = pgTable("service_prices", {
   updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** Every WhatsApp chat message (customer, bot and staff), so staff can see and continue conversations in Admin → Chats. */
+export const whatsappMessages = pgTable("whatsapp_messages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  phone: text("phone").notNull(),
+  direction: text("direction").notNull(),
+  body: text("body").notNull(),
+  sender: text("sender").notNull().default("customer"),
+  name: text("name"),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  needsHuman: boolean("needs_human").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("whatsapp_messages_phone_created_idx").on(table.phone, table.createdAt), index("whatsapp_messages_human_idx").on(table.needsHuman, table.createdAt)]);

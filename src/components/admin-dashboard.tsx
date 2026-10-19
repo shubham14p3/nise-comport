@@ -17,6 +17,7 @@ import TeamPanel from "@/components/team-panel";
 import SiteTeamPanel from "@/components/site-team-panel";
 import PaymentsPanel from "@/components/payments-panel";
 import PricesPanel from "@/components/prices-panel";
+import ChatsPanel from "@/components/chats-panel";
 import InboxPanel from "@/components/inbox-panel";
 import SiteContentPanel from "@/components/site-content-panel";
 import GalleryPanel from "@/components/gallery-panel";
@@ -211,7 +212,7 @@ function RequestQueue() {
   </>;
 }
 
-type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices";
+type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "chats";
 const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | "admin" | "staff" }[] = [
   { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
   { id: "requests", label: "Requests", icon: ClipboardList, needs: "requests" },
@@ -221,6 +222,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "gallery", label: "Gallery photos", icon: Images, needs: "content" },
   { id: "testimonials", label: "Testimonials", icon: Star, needs: "content" },
   { id: "campaigns", label: "WhatsApp", icon: Megaphone, needs: "campaigns" },
+  { id: "chats", label: "WhatsApp chats", icon: Megaphone, needs: "campaigns" },
   { id: "contacts", label: "Contacts", icon: Contact, needs: "campaigns" },
   { id: "team", label: "Team", icon: UsersRound, needs: "admin" },
   { id: "pan", label: "PAN data", icon: Database, needs: "pan" },
@@ -302,6 +304,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { name
         {active === "testimonials" && <TestimonialsPanel/>}
         {active === "campaigns" && <CampaignsPanel/>}
         {active === "contacts" && <ContactsPanel/>}
+        {active === "chats" && <ChatsPanel/>}
         {active === "prices" && <PricesPanel/>}
         {active === "payments" && <PaymentsPanel/>}
         {active === "team" && <><TeamPanel meRole={me.role}/><SiteTeamPanel/></>}
