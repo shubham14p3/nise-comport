@@ -85,6 +85,7 @@ const OPS = {
   "Z6n2K9cR4vP1": { method: "POST", path: "/api/mail" },
   "Y3d7N5qV1mP8": { method: "POST", path: "/api/pay" },
   "H6k2B9tW4xC7": { method: "POST", path: "/api/admin/payments" },
+  "O3bQ7mT5xK2n": { method: "POST", path: "/api/admin/outreach" },
 } as const;
 
 /** Encrypted file uploads: customer documents, and posters in the admin area. */
@@ -157,6 +158,12 @@ function targetFor(operation: string, input: Record<string, unknown>) {
       if (input.imports) params.set("imports", "1");
       if (typeof input.page === "number") params.set("page", String(Math.max(0, Math.floor(input.page))));
       return { method: "GET", path: `/api/admin/records?${params.toString()}` };
+    }
+    case "B5dY8rN2cV6w": {
+      const query = new URLSearchParams();
+      for (const [key, max] of [["view", 12], ["range", 8], ["month", 3], ["q", 80], ["template", 40], ["days", 3], ["vehicle", 8]] as const) { const value = stringValue(input, key, max); if (value) query.set(key, value); }
+      if (input.overdue) query.set("overdue", "1");
+      return { method: "GET", path: `/api/admin/outreach?${query.toString()}` };
     }
     case "D4q8M2wS7kF1": {
       const q = stringValue(input, "q", 80);

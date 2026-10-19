@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { runCampaigns } from "@/lib/campaigns";
+import { runDailyOutreach } from "@/lib/outreach";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -22,7 +23,10 @@ function authorised(request: NextRequest) {
 async function run(request: NextRequest) {
   if (!authorised(request)) return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   try {
-    return NextResponse.json({ ok: true, ...(await runCampaigns()) });
+    const report = await runCampaigns();
+    // Automatic birthday wishes and insurance reminders (only when switched on in Admin → Birthdays & renewals).
+    const outreach = await runDailyOutreach().catch((error) => { console.error("[cron] birthdays/renewals failed", error); return { error: "failed" }; });
+    return NextResponse.json({ ok: true, ...report, outreach });
   } catch (error) {
     console.error("[cron] whatsapp campaigns failed", error);
     return NextResponse.json({ ok: false, error: "Campaign run failed; see server logs." }, { status: 500 });

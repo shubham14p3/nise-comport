@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, timestamp, uuid, integer, boolean, jsonb, numeric, uniqueIndex, index, doublePrecision, date } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, integer, smallint, boolean, jsonb, numeric, uniqueIndex, index, doublePrecision, date } from "drizzle-orm/pg-core";
 import type { ServiceDetail } from "../lib/services";
 
 /** Text in the three interface languages. */
@@ -257,9 +257,28 @@ export const contacts = pgTable("contacts", {
   /** [{ service: "insurance", renewalOn: "2026-11-02", note }] */
   services: jsonb("services").$type<{ service: string; renewalOn?: string | null; note?: string | null }[]>().notNull().default([]),
   consent: text("consent").notNull().default("unknown"), consentAt: timestamp("consent_at", { withTimezone: true }),
+  /** Email address and the person's email consent (unknown | opted_in | opted_out), separate from the WhatsApp YES/STOP. */
+  email: text("email"), emailConsent: text("email_consent").notNull().default("unknown"), emailConsentAt: timestamp("email_consent_at", { withTimezone: true }),
+  /** Birthday without the year (day and month are enough to wish someone). */
+  birthMonth: smallint("birth_month"), birthDay: smallint("birth_day"),
   source: text("source"), notes: text("notes"), lastMessagedAt: timestamp("last_messaged_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [uniqueIndex("contacts_phone_unique").on(table.phone), index("contacts_consent_idx").on(table.consent)]);
+}, (table) => [uniqueIndex("contacts_phone_unique").on(table.phone), index("contacts_consent_idx").on(table.consent), index("contacts_birthday_idx").on(table.birthMonth, table.birthDay)]);
+
+/** One row per wish or reminder sent, so nobody gets the same one twice in a year. */
+export const outreachLog = pgTable("outreach_log", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  contactId: uuid("contact_id").references(() => contacts.id, { onDelete: "cascade" }),
+  /** birthday | renewal */
+  kind: text("kind").notNull(), channel: text("channel").notNull(), year: integer("year").notNull(), ref: text("ref").notNull().default(""),
+  status: text("status").notNull().default("sent"), error: text("error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [uniqueIndex("outreach_log_once").on(table.contactId, table.kind, table.channel, table.year, table.ref)]);
+
+/** Admin switches for the daily automatic birthday wishes and renewal reminders. */
+export const outreachSettings = pgTable("outreach_settings", {
+  key: text("key").primaryKey(), value: jsonb("value").notNull(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 /** WhatsApp campaigns: who gets what, and how fast (see src/lib/campaign-pacing.ts). */
 export const campaigns = pgTable("campaigns", {
@@ -348,6 +367,8 @@ export const customerRecords = pgTable("customer_records", {
   /** Sealed { whatsapp, altMobiles, email, address } for the people list. */
   contactEnc: text("contact_enc"),
   recordDate: date("record_date"), renewalOn: date("renewal_on"),
+  /** Birthday (no year) and, for insurance, "bike" or "car", read from the register. */
+  birthMonth: smallint("birth_month"), birthDay: smallint("birth_day"), vehicle: text("vehicle"),
   payloadEnc: text("payload_enc").notNull(), rowHash: text("row_hash").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [

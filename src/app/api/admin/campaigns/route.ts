@@ -18,7 +18,7 @@ const text3 = z.object({ en: z.string().max(1000).optional(), hi: z.string().max
 const saveSchema = z.object({
   id: z.uuid().optional(),
   name: z.string().trim().min(3).max(100),
-  kind: z.enum(["renewal", "offer", "optin"]),
+  kind: z.enum(["renewal", "offer", "optin", "birthday"]),
   service: z.string().max(40).nullable().optional(),
   message: text3.optional(),
   posters: z.object({ en: z.string().max(200).optional(), hi: z.string().max(200).optional(), bn: z.string().max(200).optional() }).nullable().optional(),

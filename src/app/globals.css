@@ -2840,3 +2840,33 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
   .profile__layout--rail .profile__nav button small { position: absolute; top: 4px; right: 4px; min-width: 18px; height: 18px; font-size: .6875rem; padding: 0 4px; }
 }
 @media (max-width: 1060px) { .profile__nav-toggle { display: none; } }
+
+/* Admin → Birthdays & insurance renewals */
+.outreach-body, .outreach-templates { display: grid; gap: 14px; }
+.outreach-send { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 16px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); }
+.outreach-send small { flex-basis: 100%; color: var(--muted); font-size: .8125rem; }
+.outreach-channels { display: inline-flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; min-height: 42px; }
+.outreach .check { display: inline-flex; align-items: center; gap: 6px; font-size: .875rem; }
+.outreach-all { padding: 0 4px; }
+.outreach-row { grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; }
+.outreach-row > .contact-row__actions { flex-wrap: wrap; justify-content: flex-end; }
+.outreach-row__state { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 4px; font-size: .8125rem; color: var(--muted); }
+.outreach-row__state em { display: inline-flex; align-items: center; gap: 3px; font-style: normal; color: #14804a; }
+.outreach-edit { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.outreach-note { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: .8125rem; }
+.outreach-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.outreach-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 14px; }
+.outreach-card { display: grid; gap: 10px; align-content: start; padding: 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); }
+.outreach-card textarea { width: 100%; }
+.outreach-card__preview { position: relative; display: grid; gap: 4px; justify-items: center; padding: 22px 16px; border-radius: 14px; text-align: center; overflow: hidden; }
+.outreach-card__preview b { font-size: 1.25rem; }
+.outreach-card__preview span { font-size: 1.5rem; font-weight: 700; }
+.outreach-card__preview small { font-size: .8125rem; opacity: .95; }
+.outreach-card__preview i { position: absolute; right: 12px; top: 10px; width: 14px; height: 14px; border-radius: 50%; opacity: .85; }
+.outreach-card__real img { display: block; width: 100%; max-width: 320px; height: auto; margin-top: 8px; border-radius: 12px; }
+.outreach-colours { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.outreach-colour { display: inline-flex; align-items: center; gap: 6px; font-size: .8125rem; color: var(--ink-2); }
+.outreach-colour input { width: 34px; height: 28px; padding: 0; border: 1px solid var(--line); border-radius: 8px; background: none; }
+.outreach-card__actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.outreach-save { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; gap: 10px; padding: 12px 0; background: linear-gradient(transparent, var(--bg) 40%); }
+@media (max-width: 640px) { .outreach-row { grid-template-columns: auto minmax(0, 1fr); } .outreach-row > .contact-row__actions { grid-column: 1 / -1; justify-content: flex-start; } }

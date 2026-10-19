@@ -17,6 +17,8 @@ export type ParsedRecord = {
   /** WhatsApp number when the sheet has its own column, other mobiles (e.g. "L.Mob"), email and address. */
   whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null;
   recordDate: string | null; renewalOn: string | null;
+  /** Birthday (no year) and "bike" / "car" for insurance rows, read from the register. */
+  birthMonth: number | null; birthDay: number | null; vehicle: "bike" | "car" | null;
   fields: Record<string, string>;
   /** Stable text for duplicate detection (hashed before storage). */
   dedupeKey: string;
@@ -121,6 +123,55 @@ function valid(year: number, month: number, day: number) {
   return date.getUTCMonth() === month - 1 ? date.toISOString().slice(0, 10) : null;
 }
 function addYear(iso: string) { const [year, month, day] = iso.split("-").map(Number); return valid(year + 1, month, day) ?? valid(year + 1, month, day - 1); }
+
+// Birthday and vehicle, read from a register row
+export type Birth = { month: number; day: number };
+
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+
+/** Day and month from a date of birth written as 12-03-1985, 1985-03-12, 12/3/85, "12 Mar 1985" or an Excel serial. The year is not kept. */
+export function birthFromText(text: string | null | undefined): Birth | null {
+  const value = (text ?? "").trim();
+  if (!value) return null;
+  const iso = dateFrom(value);
+  if (iso) return { month: Number(iso.slice(5, 7)), day: Number(iso.slice(8, 10)) };
+  const named = value.match(/^(\d{1,2})(?:st|nd|rd|th)?[\s-]+([A-Za-z]{3,9})\.?,?[\s-]+(\d{2,4})$/);
+  if (named) {
+    const month = MONTHS.indexOf(named[2].slice(0, 3).toLowerCase()) + 1;
+    const day = Number(named[1]);
+    if (month > 0 && day >= 1 && day <= daysIn(month)) return { month, day };
+  }
+  return null;
+}
+
+function daysIn(month: number) { return [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1] ?? 0; }
+
+const DOB_LABEL = /^(dob|d\.?o\.?b\.?|date\s*of\s*birth|birth\s*date|birthday|जन्म\s*तिथि|जन्मतिथि|জন্ম\s*তারিখ)\b/i;
+
+/** The date of birth among a row's saved fields (by column name), if there is one. */
+export function birthFromFields(fields: Record<string, string>): Birth | null {
+  for (const [label, value] of Object.entries(fields)) {
+    if (DOB_LABEL.test(label.trim())) { const birth = birthFromText(value); if (birth) return birth; }
+  }
+  return null;
+}
+
+export type Vehicle = "bike" | "car";
+const BIKE = /\b(bike|bikes|motor\s*cycle|motorcycle|two[\s-]*wheel(?:er)?|2[\s-]*w(?:heeler)?|scooter|scooty|moped|activa|splendor|pulsar|bullet|royal\s*enfield)\b/i;
+const CAR = /\b(car|cars|four[\s-]*wheel(?:er)?|4[\s-]*w(?:heeler)?|suv|sedan|hatchback|swift|alto|i10|i20|creta|innova|bolero|scorpio|tata|maruti)\b/i;
+const VEHICLE_LABEL = /vehicle|veh\b|type|class|make|model|reg|policy\s*for|cover\s*for/i;
+
+/** "bike" or "car" for an insurance row: from a vehicle column, the sheet or file name, then any value in the row. */
+export function vehicleFrom(fields: Record<string, string>, source = ""): Vehicle | null {
+  const test = (text: string): Vehicle | null => (BIKE.test(text) ? "bike" : CAR.test(text) ? "car" : null);
+  for (const [label, value] of Object.entries(fields)) if (VEHICLE_LABEL.test(label)) { const found = test(value); if (found) return found; }
+  const fromSource = test(source.replace(/^.*›/, ""));
+  if (fromSource) return fromSource;
+  const fromSheet = test(source);
+  if (fromSheet) return fromSheet;
+  for (const value of Object.values(fields)) { const found = test(value); if (found) return found; }
+  return null;
+}
 
 function cleanName(text: string) {
   const name = text.replace(/[^\p{L}\p{M}\s.'-]/gu, " ").replace(/\s+/g, " ").trim();
@@ -231,7 +282,10 @@ export function parseWorkbook(fileName: string, sheets: SheetInput[]): { records
       const dedupeKey = [service, name.toLowerCase(), mobile, pan, aadhaar, recordDate, JSON.stringify(Object.entries(fields).sort())].join("|");
       if (seen.has(dedupeKey)) { report.skipped++; continue; }
       seen.add(dedupeKey);
-      records.push({ service, source: `${fileName} › ${sheet.name.trim()}`, name, mobile, pan, aadhaar, whatsapp: whatsapp && whatsapp !== mobile ? whatsapp : null, altMobiles, email, address, recordDate, renewalOn, fields, dedupeKey });
+      const source = `${fileName} › ${sheet.name.trim()}`;
+      const birth = birthFromText(at("dob")) ?? birthFromFields(fields);
+      const vehicle = service === "insurance" ? vehicleFrom(fields, source) : null;
+      records.push({ service, source, name, mobile, pan, aadhaar, whatsapp: whatsapp && whatsapp !== mobile ? whatsapp : null, altMobiles, email, address, recordDate, renewalOn, birthMonth: birth?.month ?? null, birthDay: birth?.day ?? null, vehicle, fields, dedupeKey });
       report.records++;
     }
   }

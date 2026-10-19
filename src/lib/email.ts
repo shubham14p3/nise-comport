@@ -37,6 +37,10 @@ export function escapeHtml(value: string) {
 type Mail = {
   to: string; subject: string; heading: string; paragraphs: string[]; code?: string;
   action?: { label: string; href: string }; footer?: string;
+  /** A picture shown under the text (for example a birthday card). */
+  image?: { src: string; alt: string };
+  /** Link that stops this kind of email. Shown in the footer and sent as the List-Unsubscribe header. */
+  unsubscribe?: string;
   /** A tidy key/value card (reference numbers, status, service name) instead of a paragraph of run-on text. */
   details?: { label: string; value: string; emphasis?: boolean }[];
   /** Message-centre mail: threading headers, a specific From and real attachments. */
@@ -66,7 +70,7 @@ function socialLabel(href: string) {
 function render(mail: Mail) {
   const footer = mail.footer ?? `${site.name} · ${site.address.oneLine} · ${site.phones.primary.display}`;
   const detailLines = mail.details?.map((row) => `${row.label}: ${row.value}`) ?? [];
-  const text = [mail.heading, "", ...mail.paragraphs, ...(detailLines.length ? ["", ...detailLines] : []), ...(mail.code ? ["", `Code: ${mail.code}`] : []), ...(mail.action ? ["", `${mail.action.label}: ${mail.action.href}`] : []), "", footer].join("\n");
+  const text = [mail.heading, "", ...mail.paragraphs, ...(detailLines.length ? ["", ...detailLines] : []), ...(mail.code ? ["", `Code: ${mail.code}`] : []), ...(mail.image ? ["", `${mail.image.alt}: ${mail.image.src}`] : []), ...(mail.action ? ["", `${mail.action.label}: ${mail.action.href}`] : []), ...(mail.unsubscribe ? ["", `Stop these emails: ${mail.unsubscribe}`] : []), "", footer].join("\n");
 
   const logoUrl = absoluteUrl(site.logoPath);
   const siteHost = site.url.replace(/^https?:\/\//, "");
@@ -99,6 +103,7 @@ function render(mail: Mail) {
       ${mail.paragraphs.map((paragraph) => `<p style="line-height:1.55;margin:0 0 14px;color:${INK}">${escapeHtml(paragraph).replace(/\n/g, "<br/>")}</p>`).join("\n")}
       ${detailsCard}
     </div>
+    ${mail.image ? `<p style="margin:18px 0 6px;text-align:center"><img src="${escapeHtml(mail.image.src)}" alt="${escapeHtml(mail.image.alt)}" width="480" style="display:inline-block;max-width:100%;height:auto;border-radius:16px"/></p>` : ""}
     ${mail.code ? `<p style="font-size:32px;font-weight:bold;letter-spacing:8px;background:${BG};border:1.5px solid ${BLUE};border-radius:14px;color:${BLUE_700};padding:18px;text-align:center;margin:20px 0">${escapeHtml(mail.code)}</p>` : ""}
     ${mail.action ? `<p style="margin:24px 0 4px;text-align:center"><a href="${escapeHtml(mail.action.href)}" style="background:${BLUE};color:#ffffff;padding:12px 26px;border-radius:999px;text-decoration:none;font-weight:bold;display:inline-block">${escapeHtml(mail.action.label)}</a></p>` : ""}
   </div>
@@ -112,7 +117,7 @@ function render(mail: Mail) {
     </p>
   </div>
 </div>
-<p style="text-align:center;color:${MUTED};font-size:11px;margin:18px 0 0">You're receiving this because you have a NISE COMPORT account or submitted a request to us.</p>
+<p style="text-align:center;color:${MUTED};font-size:11px;margin:18px 0 0">${mail.unsubscribe ? `You're receiving this because you agreed to hear from NISE COMPORT. <a href="${escapeHtml(mail.unsubscribe)}" style="color:${MUTED}">Stop these emails</a>.` : "You're receiving this because you have a NISE COMPORT account or submitted a request to us."}</p>
 </div></body></html>`;
   return { text, html };
 }
@@ -142,7 +147,7 @@ export async function sendMail(mail: Mail) {
     ...(mail.extra?.messageId ? { messageId: mail.extra.messageId } : {}),
     ...(mail.extra?.inReplyTo ? { inReplyTo: mail.extra.inReplyTo } : {}),
     ...(mail.extra?.references?.length ? { references: mail.extra.references } : {}),
-    ...(mail.extra?.headers ? { headers: mail.extra.headers } : {}),
+    ...(mail.extra?.headers || mail.unsubscribe ? { headers: { ...(mail.unsubscribe ? { "List-Unsubscribe": `<${mail.unsubscribe}>` } : {}), ...mail.extra?.headers } } : {}),
     ...(mail.extra?.attachments?.length ? { attachments: mail.extra.attachments } : {}),
   });
 }

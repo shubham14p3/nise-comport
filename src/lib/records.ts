@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
 import { contacts, customerRecords, recordImports } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import { db } from "@/lib/db";
@@ -12,7 +12,7 @@ type Sealed = { mobile: string | null; pan: string | null; aadhaar: string | nul
 type ContactInfo = { whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null };
 
 /** Which WhatsApp-contact service an imported register belongs to. */
-const CONTACT_SERVICE: Record<string, string> = {
+export const CONTACT_SERVICE: Record<string, string> = {
   pan: "pan", insurance: "insurance", passport: "passport", itr: "itr", "driving-licence": "driving-licence", "aadhaar-update": "aadhaar",
   ayushman: "ayushman", "voter-id": "voter-id", "bank-account": "banking", "caste-certificate": "income-caste", "income-certificate": "income-caste",
   "ews-certificate": "income-caste", "residence-certificate": "residence",
@@ -26,14 +26,14 @@ export async function importRecords(fileName: string, sheets: SheetInput[], acto
   const parsed = parseWorkbook(fileName.replace(/\.(xlsx|xlsm|csv)$/i, ""), sheets);
   const [batch] = await db.insert(recordImports).values({ fileName: fileName.slice(0, 200), uploadedBy: actor.id, sheets: parsed.sheets }).returning({ id: recordImports.id });
   let imported = 0;
-  const people = new Map<string, { name: string; services: Map<string, string | null>; area?: string | null }>();
+  const people = new Map<string, Person>();
   for (let offset = 0; offset < parsed.records.length; offset += 400) {
     const values = parsed.records.slice(offset, offset + 400).map((record) => ({
       importId: batch.id, service: record.service, source: record.source.slice(0, 200), name: record.name,
       mobileHash: record.mobile ? blindIndex("mobile", record.mobile) : null,
       mobileEnc: record.mobile ? seal(record.mobile) : null, mobileLast4: record.mobile ? record.mobile.slice(-4) : null,
       panHash: record.pan ? blindIndex("pan", record.pan) : null, aadhaarHash: record.aadhaar ? blindIndex("aadhaar", record.aadhaar) : null,
-      recordDate: record.recordDate, renewalOn: record.renewalOn,
+      recordDate: record.recordDate, renewalOn: record.renewalOn, birthMonth: record.birthMonth, birthDay: record.birthDay, vehicle: record.vehicle,
       phoneHashes: [...new Set([record.mobile, record.whatsapp, ...record.altMobiles].filter((value): value is string => Boolean(value)))].map((value) => blindIndex("mobile", value)),
       emailHash: record.email ? blindIndex("email", record.email) : null,
       contactEnc: record.whatsapp || record.altMobiles.length || record.email || record.address ? seal({ whatsapp: record.whatsapp, altMobiles: record.altMobiles, email: record.email, address: record.address } satisfies ContactInfo) : null,
@@ -45,7 +45,9 @@ export async function importRecords(fileName: string, sheets: SheetInput[], acto
       // WhatsApp campaigns go to the WhatsApp number when the sheet has one.
       const phone = record.whatsapp ?? record.mobile;
       if (!phone) continue;
-      const person = people.get(phone) ?? { name: record.name, services: new Map(), area: record.address };
+      const person: Person = people.get(phone) ?? { name: record.name, services: new Map(), area: record.address };
+      person.email ??= record.email;
+      if (record.birthMonth && record.birthDay) person.birth ??= { month: record.birthMonth, day: record.birthDay };
       const service = CONTACT_SERVICE[record.service];
       if (service) {
         const previous = person.services.get(service);
@@ -63,8 +65,10 @@ export async function importRecords(fileName: string, sheets: SheetInput[], acto
   return { id: batch.id, imported, duplicates, skipped, contactsAdded, totalRows, sheets: parsed.sheets };
 }
 
-/** Adds imported people to WhatsApp contacts (consent "not asked"). Existing contacts keep their YES/STOP and gain the new services. */
-async function addContacts(people: Map<string, { name: string; services: Map<string, string | null>; area?: string | null }>, fileName: string) {
+export type Person = { name: string; services: Map<string, string | null>; area?: string | null; email?: string | null; birth?: { month: number; day: number } | null };
+
+/** Adds imported people to WhatsApp contacts (consent "not asked"). Existing contacts keep their YES/STOP and gain the new services, email and birthday. */
+export async function addContacts(people: Map<string, Person>, fileName: string) {
   let added = 0;
   const entries = [...people.entries()];
   for (let offset = 0; offset < entries.length; offset += 300) {
@@ -76,7 +80,7 @@ async function addContacts(people: Map<string, { name: string; services: Map<str
       const fresh = [...person.services.entries()].map(([service, renewalOn]) => ({ service, renewalOn, note: null }));
       const current = known.get(phone);
       if (!current) {
-        const result = await db.insert(contacts).values({ name: person.name.slice(0, 100), phone, services: fresh, area: person.area?.slice(0, 80) || null, source: `import: ${fileName}`.slice(0, 40) }).onConflictDoNothing().returning({ id: contacts.id });
+        const result = await db.insert(contacts).values({ name: person.name.slice(0, 100), phone, services: fresh, area: person.area?.slice(0, 80) || null, email: person.email ?? null, birthMonth: person.birth?.month ?? null, birthDay: person.birth?.day ?? null, source: `import: ${fileName}`.slice(0, 40) }).onConflictDoNothing().returning({ id: contacts.id });
         added += result.length;
       } else {
         const merged = [...current];
@@ -86,6 +90,9 @@ async function addContacts(people: Map<string, { name: string; services: Map<str
           else if (item.renewalOn && (!merged[index].renewalOn || item.renewalOn > (merged[index].renewalOn ?? ""))) merged[index] = { ...merged[index], renewalOn: item.renewalOn };
         }
         if (merged.length !== current.length || JSON.stringify(merged) !== JSON.stringify(current)) await db.update(contacts).set({ services: merged.slice(0, 12), updatedAt: new Date() }).where(eq(contacts.phone, phone));
+        // Fill in an email address or birthday the contact didn't have yet (never overwrites what is saved).
+        if (person.email) await db.update(contacts).set({ email: person.email }).where(and(eq(contacts.phone, phone), isNull(contacts.email)));
+        if (person.birth) await db.update(contacts).set({ birthMonth: person.birth.month, birthDay: person.birth.day }).where(and(eq(contacts.phone, phone), isNull(contacts.birthMonth)));
       }
     }
   }

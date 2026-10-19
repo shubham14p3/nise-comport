@@ -8,11 +8,12 @@ import PanImportPanel from "@/components/pan-import-panel";
 import WalletCreditForm from "@/components/wallet-credit-form";
 import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
-import { ArrowRight, Bell, ClipboardList, Contact, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ArrowRight, Bell, Cake, ClipboardList, Contact, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
 import PromotionsPanel from "@/components/promotions-panel";
 import CampaignsPanel from "@/components/campaigns-panel";
 import ContactsPanel from "@/components/contacts-panel";
+import OutreachPanel from "@/components/outreach-panel";
 import TeamPanel from "@/components/team-panel";
 import SiteTeamPanel from "@/components/site-team-panel";
 import PaymentsPanel from "@/components/payments-panel";
@@ -215,7 +216,7 @@ function RequestQueue() {
   </>;
 }
 
-type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "legal" | "loyalty" | "chats" | "mail";
+type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "legal" | "loyalty" | "chats" | "mail" | "outreach";
 const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | "admin" | "staff" }[] = [
   { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
   { id: "mail", label: "Messages", icon: Mail, needs: "mail" },
@@ -228,6 +229,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "campaigns", label: "WhatsApp", icon: Megaphone, needs: "campaigns" },
   { id: "chats", label: "WhatsApp chats", icon: Megaphone, needs: "campaigns" },
   { id: "contacts", label: "Contacts", icon: Contact, needs: "campaigns" },
+  { id: "outreach", label: "Birthdays & renewals", icon: Cake, needs: "staff" },
   { id: "team", label: "Team", icon: UsersRound, needs: "admin" },
   { id: "pan", label: "PAN data", icon: Database, needs: "pan" },
   { id: "wallet", label: "Wallet", icon: WalletCards, needs: "wallet" },
@@ -325,6 +327,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
         {active === "testimonials" && <TestimonialsPanel/>}
         {active === "campaigns" && <CampaignsPanel/>}
         {active === "contacts" && <ContactsPanel/>}
+        {active === "outreach" && <OutreachPanel/>}
         {active === "chats" && <ChatsPanel/>}
         {active === "prices" && <PricesPanel/>}
         {active === "legal" && <LegalPanel/>}
