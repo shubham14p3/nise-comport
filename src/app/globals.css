@@ -2482,3 +2482,17 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .offer-strip .offer-strip__item { max-width: 82vw; }
 .admin-tabs, .profile__nav, .day-row { scrollbar-width: none; -ms-overflow-style: none; }
 .admin-tabs::-webkit-scrollbar, .profile__nav::-webkit-scrollbar, .day-row::-webkit-scrollbar { display: none; }
+
+.loyalty-switch { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.loyalty-rules { display: grid; gap: 14px; margin: 14px 0; }
+.loyalty-rule { display: grid; gap: 10px; padding: 14px; border-radius: 14px; border: 1px solid var(--line); }
+.loyalty-rule label { display: grid; gap: 4px; font-size: .875rem; }
+.loyalty-rule input:not([type="checkbox"]), .loyalty-rule select { min-height: 42px; padding: 0 12px; border-radius: 10px; border: 1.5px solid var(--line-2); font: inherit; }
+.loyalty-rule__row { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; }
+.loyalty-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+.loyalty-result { padding: 12px 14px; border-radius: 12px; background: var(--tint); }
+
+.phone-verify { display: grid; gap: 6px; margin-top: 6px; }
+.phone-verify--ok { display: flex; align-items: center; gap: 6px; color: var(--green); font-size: .875rem; font-weight: 600; }
+.phone-verify__row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.phone-verify__row input { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1.5px solid var(--line-2); width: 150px; letter-spacing: .3em; }

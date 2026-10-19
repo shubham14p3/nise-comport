@@ -9,6 +9,7 @@ import { isUniqueViolation, PublicError, RateLimitError, humanDuration } from "@
 import { clearRate, enforceRate, hitRate, identity, peekRate, RATE_RULES } from "@/lib/rate-limit";
 import { secondsUntilWindowEnds } from "@/lib/rate-limit-core";
 import { cleanName, isSixDigitCode, looksLikeEmail, normalizeEmail, normalizePhone, passwordProblem } from "@/lib/validation";
+import { smsConfigured } from "@/lib/sms";
 import { hasPermission, type Permission } from "@/lib/permissions";
 
 export type User = typeof users.$inferSelect;
@@ -74,7 +75,7 @@ export async function createDemoSession() {
   return { id: demoUser.id, name: demoUser.name, email: demoUser.email };
 }
 
-async function createSession(userId: string) {
+export async function createSession(userId: string) {
   const rawToken = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60_000);
   await db.insert(sessions).values({ userId, tokenHash: hashToken(rawToken), expiresAt });
@@ -219,7 +220,9 @@ async function resolveLoginEmail(input: string) {
   if (input.includes("@")) return normalizeEmail(input);
   const phone = normalizePhone(input);
   if (!phone) return normalizeEmail(input);
-  const rows = await db.select({ email: users.email }).from(users).where(and(eq(users.phone, phone), isNull(users.deletedAt))).limit(2);
+  // Once SMS codes are switched on, only numbers proven with a code can be used to sign in.
+  const proven = smsConfigured() !== null ? sql`${users.phoneVerifiedAt} is not null` : undefined;
+  const rows = await db.select({ email: users.email }).from(users).where(and(eq(users.phone, phone), isNull(users.deletedAt), proven)).limit(2);
   return rows.length === 1 ? rows[0].email : `phone-${phone.replace(/\D/g, "")}@unmatched.invalid`;
 }
 

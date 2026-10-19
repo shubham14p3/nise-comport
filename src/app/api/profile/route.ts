@@ -43,7 +43,7 @@ export async function PATCH(request: NextRequest) {
       ? and(eq(users.id, user.id), sql`date_trunc('milliseconds', ${users.updatedAt}) = ${expected.toISOString()}::timestamptz`)
       : eq(users.id, user.id);
     const [updated] = await db.update(users).set({
-      name, phone, whatsapp: whatsapp && whatsapp !== phone ? whatsapp : null, city: input.city || null, state: input.state || null, postalCode: input.postalCode || null,
+      name, phone, ...(phone === user.phone ? {} : { phoneVerifiedAt: null }), whatsapp: whatsapp && whatsapp !== phone ? whatsapp : null, city: input.city || null, state: input.state || null, postalCode: input.postalCode || null,
       profileSummary: input.profileSummary || null, preferredContact: input.preferredContact, updatedAt: new Date(),
     }).where(guard).returning(returning);
     if (!updated) throw new PublicError("Your profile was changed in another tab or device. Reload the page to see the latest details, then try again.", 409, { code: "stale_profile" });

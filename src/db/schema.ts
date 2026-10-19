@@ -18,6 +18,8 @@ export const users = pgTable("users", {
   permissions: jsonb("permissions").$type<string[]>().notNull().default([]),
   /** When this staff member last opened the admin inbox (unread count = newer activity). */
   inboxSeenAt: timestamp("inbox_seen_at", { withTimezone: true }),
+  /** Set when the mobile number in `phone` was confirmed with an SMS code. */
+  phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
 }, (table) => [uniqueIndex("users_email_unique").on(table.email)]);
 
 export const emailOtps = pgTable("email_otps", {
@@ -478,3 +480,24 @@ export const legalPages = pgTable("legal_pages", {
   updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** Thank-you credit rules edited in Admin → Loyalty credit (one row, id "main"). No row = the built-in rules. */
+export const loyaltySettings = pgTable("loyalty_settings", {
+  id: text("id").primaryKey(),
+  settings: jsonb("settings").notNull(),
+  updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** One-time codes sent by SMS to prove a mobile number belongs to an account. */
+export const phoneOtps = pgTable("phone_otps", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  phone: text("phone").notNull(),
+  codeHash: text("code_hash").notNull(),
+  purpose: text("purpose").notNull().default("verify"),
+  attempts: integer("attempts").notNull().default(0),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("phone_otps_user_idx").on(table.userId, table.createdAt)]);

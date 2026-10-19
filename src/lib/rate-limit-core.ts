@@ -34,6 +34,11 @@ export const RATE_RULES = {
   passwordPerIp15m: { name: "password-ip", limit: 60, windowSeconds: 900 },
   passwordFailuresPerEmail15m: { name: "password-fail-email", limit: 5, windowSeconds: 900 },
   passwordFailuresPerEmailDay: { name: "password-fail-email", limit: 20, windowSeconds: 86400 },
+  /** SMS costs money: one code a minute per number, a few a day. */
+  smsSendPerPhoneMinute: { name: "sms-send-phone", limit: 1, windowSeconds: 60 },
+  smsSendPerPhoneDay: { name: "sms-send-phone", limit: 6, windowSeconds: 86400 },
+  smsSendPerIpHour: { name: "sms-send-ip", limit: 30, windowSeconds: 3600 },
+  smsVerifyPerIpHour: { name: "sms-verify-ip", limit: 100, windowSeconds: 3600 },
   accountChangePerUserHour: { name: "account-change", limit: 10, windowSeconds: 3600 },
   requestsPerUserHour: { name: "service-request", limit: 10, windowSeconds: 3600 },
   requestsPerUserDay: { name: "service-request", limit: 30, windowSeconds: 86400 },

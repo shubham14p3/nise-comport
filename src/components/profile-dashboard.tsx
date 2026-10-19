@@ -1,5 +1,6 @@
 "use client";
 
+import PhoneVerify from "@/components/phone-verify";
 import { serviceName, statusText } from "@/lib/i18n-forms";
 import { useLocale } from "@/lib/use-locale";
 import SiteHeader from "@/components/site-header";
@@ -25,7 +26,7 @@ type RequestItem = { reference: string; serviceSlug: string; serviceName: string
 type WalletItem = { amount: string; kind: string; description: string; reference: string | null; createdAt: string };
 type PrintItem = { reference: string; status: string; total: string; fulfillment: string; createdAt: string };
 type ProfileUser = {
-  name: string; email: string; phone: string | null; whatsapp?: string | null; emailVerified: boolean;
+  name: string; email: string; phone: string | null; whatsapp?: string | null; emailVerified: boolean; phoneVerified?: boolean; smsEnabled?: boolean;
   city: string; state: string; postalCode: string; profileSummary: string;
   preferredContact: "email" | "phone" | "whatsapp";
   updatedAt?: string;
@@ -242,7 +243,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
         <form className="form-grid profile-form" onSubmit={saveProfile}>
           <label className="field"><span className="field__label">Full name</span><input required minLength={2} maxLength={100} autoComplete="name" value={name} onChange={(event) => setName(event.target.value)}/></label>
           <label className="field"><span className="field__label">Email address</span><input value={user.email} readOnly/><span className="field__hint">Change it under “Sign-in &amp; privacy”.</span></label>
-          <label className="field"><span className="field__label">Mobile number</span><input type="tel" inputMode="tel" maxLength={20} autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} aria-invalid={Boolean(profileFieldErrors.phone)}/><span className={profileFieldErrors.phone ? "field__error" : "field__hint"}>{profileFieldErrors.phone ?? "Needed for phone or WhatsApp updates."}</span></label>
+          <label className="field"><span className="field__label">Mobile number</span><input type="tel" inputMode="tel" maxLength={20} autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} aria-invalid={Boolean(profileFieldErrors.phone)}/><span className={profileFieldErrors.phone ? "field__error" : "field__hint"}>{profileFieldErrors.phone ?? "Needed for phone or WhatsApp updates."}</span><PhoneVerify phone={phone} verified={Boolean(user.phoneVerified) && phone === (user.phone ?? "")} enabled={Boolean(user.smsEnabled) && phone === (user.phone ?? "")} onVerified={() => window.location.reload()}/></label>
           <label className="field"><span className="field__label">WhatsApp number <em>if different</em></span><input type="tel" inputMode="tel" maxLength={20} autoComplete="tel" value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} placeholder="Same as mobile" aria-invalid={Boolean(profileFieldErrors.whatsapp)}/><span className={profileFieldErrors.whatsapp ? "field__error" : "field__hint"}>{profileFieldErrors.whatsapp ?? "We send updates and offers here only if you choose WhatsApp."}</span></label>
           <label className="field"><span className="field__label">Preferred update channel</span><select value={preferredContact} onChange={(event) => setPreferredContact(event.target.value as ProfileUser["preferredContact"])}><option value="email">Email</option><option value="phone">Phone call</option><option value="whatsapp">WhatsApp</option></select>{profileFieldErrors.preferredContact && <span className="field__error">{profileFieldErrors.preferredContact}</span>}</label>
           <label className="field"><span className="field__label">State</span><StateSelect value={state} onChange={(next) => { setState(next); setCity(""); }}/></label>

@@ -24,9 +24,9 @@ type ApiResult = { error?: string; fields?: Record<string, string>; retryAfter?:
 
 const DEV = process.env.NODE_ENV !== "production";
 const EXTRA = {
-  en: { idLabel: "Email or mobile number", idPh: "you@example.com or 98765 43210", signinTitle: "Welcome back", signinSub: "Sign in to track your requests.", signupTitle: "Create your account", signupSub: "Start with your email. We will send a 6-digit code.", sendCode: "Send code", next: "Continue", finishTitle: "Almost done", finishSub: "Add a few details to finish.", create: "Create my account", mobileHint: "Optional. Lets you sign in with your mobile number too.", noAccount: "Don’t have an account?", haveAccount: "Already have an account?", signUpCta: "Create an account", signInCta: "Sign in", codeFirst: "Email sign-in code needs an email address.", back: "Change email" },
-  hi: { idLabel: "ईमेल या मोबाइल नंबर", idPh: "you@example.com या 98765 43210", signinTitle: "वापस स्वागत है", signinSub: "अपने अनुरोध देखने के लिए साइन इन करें।", signupTitle: "अपना खाता बनाएँ", signupSub: "अपने ईमेल से शुरू करें। हम 6 अंकों का कोड भेजेंगे।", sendCode: "कोड भेजें", next: "आगे बढ़ें", finishTitle: "बस थोड़ा और", finishSub: "पूरा करने के लिए कुछ जानकारी जोड़ें।", create: "मेरा खाता बनाएँ", mobileHint: "वैकल्पिक। इससे आप मोबाइल नंबर से भी साइन इन कर सकेंगे।", noAccount: "खाता नहीं है?", haveAccount: "पहले से खाता है?", signUpCta: "खाता बनाएँ", signInCta: "साइन इन", codeFirst: "ईमेल कोड से साइन इन के लिए ईमेल पता चाहिए।", back: "ईमेल बदलें" },
-  bn: { idLabel: "ইমেইল বা মোবাইল নম্বর", idPh: "you@example.com বা 98765 43210", signinTitle: "আবার স্বাগত", signinSub: "আপনার অনুরোধ দেখতে সাইন ইন করুন।", signupTitle: "অ্যাকাউন্ট তৈরি করুন", signupSub: "ইমেইল দিয়ে শুরু করুন। আমরা ৬ অঙ্কের কোড পাঠাব।", sendCode: "কোড পাঠান", next: "এগিয়ে যান", finishTitle: "প্রায় শেষ", finishSub: "শেষ করতে কিছু তথ্য দিন।", create: "আমার অ্যাকাউন্ট তৈরি করুন", mobileHint: "ঐচ্ছিক। মোবাইল নম্বর দিয়েও সাইন ইন করতে পারবেন।", noAccount: "অ্যাকাউন্ট নেই?", haveAccount: "আগেই অ্যাকাউন্ট আছে?", signUpCta: "অ্যাকাউন্ট তৈরি করুন", signInCta: "সাইন ইন", codeFirst: "ইমেইল কোডে সাইন ইনের জন্য ইমেইল ঠিকানা লাগবে।", back: "ইমেইল বদলান" },
+  en: { idLabel: "Email or mobile number", idPh: "you@example.com or 98765 43210", signinTitle: "Welcome back", signinSub: "Sign in to track your requests.", signupTitle: "Create your account", signupSub: "Start with your email. We will send a 6-digit code.", sendCode: "Send code", next: "Continue", finishTitle: "Almost done", finishSub: "Add a few details to finish.", create: "Create my account", mobileHint: "Optional. Lets you sign in with your mobile number too.", noAccount: "Don’t have an account?", haveAccount: "Already have an account?", signUpCta: "Create an account", signInCta: "Sign in", codeFirst: "Email sign-in code needs an email address.", back: "Change email", smsCode: "Send a code by SMS" },
+  hi: { idLabel: "ईमेल या मोबाइल नंबर", idPh: "you@example.com या 98765 43210", signinTitle: "वापस स्वागत है", signinSub: "अपने अनुरोध देखने के लिए साइन इन करें।", signupTitle: "अपना खाता बनाएँ", signupSub: "अपने ईमेल से शुरू करें। हम 6 अंकों का कोड भेजेंगे।", sendCode: "कोड भेजें", next: "आगे बढ़ें", finishTitle: "बस थोड़ा और", finishSub: "पूरा करने के लिए कुछ जानकारी जोड़ें।", create: "मेरा खाता बनाएँ", mobileHint: "वैकल्पिक। इससे आप मोबाइल नंबर से भी साइन इन कर सकेंगे।", noAccount: "खाता नहीं है?", haveAccount: "पहले से खाता है?", signUpCta: "खाता बनाएँ", signInCta: "साइन इन", codeFirst: "ईमेल कोड से साइन इन के लिए ईमेल पता चाहिए।", back: "ईमेल बदलें", smsCode: "SMS से कोड भेजें" },
+  bn: { idLabel: "ইমেইল বা মোবাইল নম্বর", idPh: "you@example.com বা 98765 43210", signinTitle: "আবার স্বাগত", signinSub: "আপনার অনুরোধ দেখতে সাইন ইন করুন।", signupTitle: "অ্যাকাউন্ট তৈরি করুন", signupSub: "ইমেইল দিয়ে শুরু করুন। আমরা ৬ অঙ্কের কোড পাঠাব।", sendCode: "কোড পাঠান", next: "এগিয়ে যান", finishTitle: "প্রায় শেষ", finishSub: "শেষ করতে কিছু তথ্য দিন।", create: "আমার অ্যাকাউন্ট তৈরি করুন", mobileHint: "ঐচ্ছিক। মোবাইল নম্বর দিয়েও সাইন ইন করতে পারবেন।", noAccount: "অ্যাকাউন্ট নেই?", haveAccount: "আগেই অ্যাকাউন্ট আছে?", signUpCta: "অ্যাকাউন্ট তৈরি করুন", signInCta: "সাইন ইন", codeFirst: "ইমেইল কোডে সাইন ইনের জন্য ইমেইল ঠিকানা লাগবে।", back: "ইমেইল বদলান", smsCode: "SMS-এ কোড পাঠান" },
 } as const;
 export const RESET_EMAIL_KEY = "nise-reset-email";
 
@@ -35,7 +35,7 @@ async function post(operation: string, body: unknown): Promise<{ ok: boolean; st
 }
 
 /** Sign in / sign up with email verification. Interface text follows the chosen language. */
-export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; demoEnabled?: boolean }) {
+export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = false }: { mode: Mode; demoEnabled?: boolean; smsEnabled?: boolean }) {
   const router = useRouter();
   const locale = useLocale();
   const t = dict(locale).auth;
@@ -49,6 +49,8 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
   const [showPassword, setShowPassword] = useState(false); const [busy, setBusy] = useState(false);
   const [error, setError] = useState(""); const [success, setSuccess] = useState(""); const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [resendIn, setResendIn] = useState(0);
+  const [viaSms, setViaSms] = useState(false);
+  const isMobileInput = mode === "signin" && !email.includes("@") && /^[+\d\s()-]{8,}$/.test(email.trim());
   const passwordHint = mode === "signup" && password ? passwordProblem(password, { email, name }) : "";
   // Sign-up advertises the ₹50 welcome coupon; sign-in shows the festival / match code ending soonest.
   const offer = mode === "signup" ? findOffer("welcome-50") : codes[0] ?? findOffer("welcome-50");
@@ -102,7 +104,17 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
     } finally { setBusy(false); }
   }
 
+  async function requestSmsCode() {
+    setBusy(true); setError(""); setSuccess(""); setFieldErrors({});
+    try {
+      const { ok, result } = await post("P3s7K1mW8xQ4", { action: "send", phone: email, website });
+      if (!ok) { showFailure(result, t.failSend); return; }
+      setViaSms(true); setStage("otp"); setResendIn(result.resendAfter ?? 60); setSuccess(result.message ?? "");
+    } finally { setBusy(false); }
+  }
+
   async function resend() {
+    if (viaSms) { await requestSmsCode(); setOtp(""); return; }
     setBusy(true); setError(""); setSuccess("");
     try {
       const { ok, result } = await post("N5c8R1xT6bW3", { email, purpose: mode, website });
@@ -114,6 +126,15 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
   async function verify(event: FormEvent) {
     event.preventDefault(); setError(""); setFieldErrors({});
     // Sign-up: the code is checked together with the account details on the next step.
+    if (viaSms) {
+      setBusy(true);
+      try {
+        const { ok, result } = await post("P3s7K1mW8xQ4", { action: "verify", phone: email, code: otp.trim() });
+        if (!ok) { showFailure(result, t.failVerify); return; }
+        await done();
+      } finally { setBusy(false); }
+      return;
+    }
     if (mode === "signup" && stage === "otp") { setStage("profile"); return; }
     await createOrVerify();
   }
@@ -166,7 +187,7 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
       <section className="auth__card" aria-labelledby="auth-heading">
         <div className="auth__lang"><span><Languages size={17}/>{t.language}</span><LanguageMenu locale={locale} label={t.language} inline/></div>
         <h1 id="auth-heading">{heading}</h1>
-        {stage !== "welcome" && <p className="auth__sub">{stage === "otp" ? <>{t.otpSub} <b>{email}</b>. {t.otpSpam}</> : stage === "profile" ? x.finishSub : mode === "signup" ? x.signupSub : x.signinSub}</p>}
+        {stage !== "welcome" && <p className="auth__sub">{stage === "otp" ? <>{viaSms ? "We sent a 6-digit code by SMS to" : t.otpSub} <b>{email}</b>.{viaSms ? "" : ` ${t.otpSpam}`}</> : stage === "profile" ? x.finishSub : mode === "signup" ? x.signupSub : x.signinSub}</p>}
         {mode === "signup" && (stage === "details" || stage === "profile") && <p className="gift-strip"><Gift size={18}/><span>{p.signupGift}</span><b>₹50</b></p>}
 
         {mode === "signin" && demoEnabled && stage === "details" && <div className="demo-card"><strong>Local preview login</strong><span>Email: <code>demo@nisecomport.test</code></span><span>Password: <code>LocalDemo#2026</code></span><button type="button" className="btn btn--ghost btn--sm" onClick={() => { setEmail("demo@nisecomport.test"); setPassword("LocalDemo#2026"); }}>Fill demo details</button><small>Preview only: this account is temporary and does not use the database or email.</small></div>}
@@ -197,7 +218,7 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
           <div className="hp-field" aria-hidden="true"><label>Website<input tabIndex={-1} autoComplete="off" value={website} onChange={e => setWebsite(e.target.value)}/></label></div>
           {error && <div className="alert alert--error" role="alert">{error}</div>}{success && <div className="alert alert--success" role="status">{success}</div>}
           <button className="btn btn--primary btn--lg btn--block" disabled={busy}>{busy ? t.wait : mode === "signup" ? x.sendCode : t.signin}<ArrowRight size={18}/></button>
-          {mode === "signin" && <div className="auth__links"><button type="button" className="link-btn" disabled={busy} onClick={() => void requestSignInCode()}>{t.codeSignin}</button><Link className="link-btn" href="/forgot-password" onClick={rememberEmailForReset}>{t.forgot}</Link></div>}
+          {mode === "signin" && <div className="auth__links">{isMobileInput && smsEnabled ? <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSmsCode()}>{x.smsCode}</button> : <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSignInCode()}>{t.codeSignin}</button>}<Link className="link-btn" href="/forgot-password" onClick={rememberEmailForReset}>{t.forgot}</Link></div>}
         </form> : <form onSubmit={verify} className="auth__form" noValidate>
           <label className="field"><span className="field__label">{t.codeLabel}</span><input inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6}" maxLength={6} value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="••••••" className="otp-input" aria-invalid={Boolean(fieldErrors.code)} autoFocus/></label>
           {DEV && <p className="alert alert--dev"><Terminal size={18}/>{t.devHint}</p>}
@@ -205,7 +226,7 @@ export default function AuthPanel({ mode, demoEnabled = false }: { mode: Mode; d
           <button className="btn btn--primary btn--lg btn--block" disabled={busy || otp.length !== 6}>{busy ? t.verifying : mode === "signup" ? x.next : t.verify}<ArrowRight size={18}/></button>
           <div className="auth__links">
             <button type="button" className="link-btn" disabled={busy || resendIn > 0} onClick={() => void resend()}>{resendIn > 0 ? fill(t.resendIn, { s: resendIn }) : t.resend}</button>
-            <button type="button" className="link-btn" disabled={busy} onClick={() => { setStage("details"); setOtp(""); setError(""); setSuccess(""); }}>{mode === "signup" ? x.back : t.differentEmail}</button>
+            <button type="button" className="link-btn" disabled={busy} onClick={() => { setStage("details"); setViaSms(false); setOtp(""); setError(""); setSuccess(""); }}>{mode === "signup" ? x.back : t.differentEmail}</button>
           </div>
           <p className="auth__legal">{t.codeRules}</p>
         </form>}
