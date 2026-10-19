@@ -1,0 +1,8 @@
+# Netlify is used only for preview deploys of the public pages. The live site runs on cPanel (see docs/deploy.md).
+[build]
+  command = "npm install --legacy-peer-deps && npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_TELEMETRY_DISABLED = "1"
