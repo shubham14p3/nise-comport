@@ -60,5 +60,10 @@ export const RATE_RULES = {
   /** Staff browsing customer records: plenty for real work, stops bulk copying with a stolen session. */
   recordOpensPerUserHour: { name: "record-open", limit: 150, windowSeconds: 3600 },
   recordPagesPerUserHour: { name: "record-page", limit: 600, windowSeconds: 3600 },
+  /** Message centre: normal conversation is far below these; they stop scripts and mail floods. */
+  mailSendPerUserHour: { name: "mail-send", limit: 30, windowSeconds: 3600 },
+  mailNewTicketPerUserDay: { name: "mail-new", limit: 15, windowSeconds: 86400 },
+  mailAttachPerUserHour: { name: "mail-attach", limit: 80, windowSeconds: 3600 },
+  mailSyncPerUserMinute: { name: "mail-sync", limit: 3, windowSeconds: 60 },
   recordImportsPerUserHour: { name: "record-import", limit: 20, windowSeconds: 3600 },
 } as const satisfies Record<string, RateRule>;

@@ -12,11 +12,11 @@ import RequestExtras from "@/components/request-extras";
 import CancelRequestButton from "@/components/cancel-request-button";
 import VoucherBoard from "@/components/voucher-board";
 import Link from "next/link";
+import { MAIL_PATH } from "@/lib/mail-route";
 import { FormEvent, useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import {
   ArrowRight, Check, CircleHelp, FileText, Gift, History, LayoutDashboard,
-  MapPin, Plus, Printer, ShieldCheck, UserRound, WalletCards,
-} from "lucide-react";
+  MapPin, Plus, Printer, ShieldCheck, UserRound, WalletCards, Mail } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi } from "@/lib/secure-api-client";
 import { whatsappHref } from "@/lib/public-contact";
@@ -272,7 +272,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
     </section>
     <div className="container profile__layout">
       <aside className="profile__nav" aria-label="Account sections">
-        <nav>{navigation.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={section === id ? "is-active" : undefined} aria-current={section === id ? "page" : undefined} onClick={() => openSection(id)}><Icon size={19}/><span>{label}</span>{id === "requests" && activeRequests.length > 0 && <small>{activeRequests.length}</small>}</button>)}</nav>
+        <nav>{navigation.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={section === id ? "is-active" : undefined} aria-current={section === id ? "page" : undefined} onClick={() => openSection(id)}><Icon size={19}/><span>{label}</span>{id === "requests" && activeRequests.length > 0 && <small>{activeRequests.length}</small>}</button>)}<Link href={MAIL_PATH} className="profile__nav-link"><Mail size={19}/><span>Messages</span></Link></nav>
       </aside>
       <section className="profile__main" aria-live="polite" aria-label={current?.label}>{content}
         <p className="fine"><Check size={15}/> Account data loads over an encrypted connection. Final government and provider decisions rest with the relevant authority.</p>

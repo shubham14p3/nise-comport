@@ -18,6 +18,7 @@ import SiteTeamPanel from "@/components/site-team-panel";
 import PaymentsPanel from "@/components/payments-panel";
 import PricesPanel from "@/components/prices-panel";
 import LegalPanel from "@/components/legal-panel";
+import MailClient from "@/components/mail-client";
 import LoyaltyPanel from "@/components/loyalty-panel";
 import ChatsPanel from "@/components/chats-panel";
 import InboxPanel from "@/components/inbox-panel";
@@ -214,9 +215,10 @@ function RequestQueue() {
   </>;
 }
 
-type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "legal" | "loyalty" | "chats";
+type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "legal" | "loyalty" | "chats" | "mail";
 const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | "admin" | "staff" }[] = [
   { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
+  { id: "mail", label: "Messages", icon: Mail, needs: "mail" },
   { id: "requests", label: "Requests", icon: ClipboardList, needs: "requests" },
   { id: "records", label: "Records", icon: FolderLock, needs: "records" },
   { id: "promotions", label: "Promotions", icon: TicketPercent, needs: "promotions" },
@@ -259,6 +261,16 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { name
     const timer = window.setInterval(() => void check(), 60_000);
     return () => { active = false; window.clearInterval(timer); };
   }, []);
+  const canMail = isOwner || effectivePermissions.includes("mail");
+  const [mailUnread, setMailUnread] = useState(0);
+  useEffect(() => {
+    if (!canMail) return;
+    let active = true;
+    const check = () => secureApi<{ unread: number }>("Q3x8M5wT2kB7", { view: "meta" }).then((result) => { if (active) setMailUnread(result.unread); }).catch(() => undefined);
+    void check();
+    const timer = window.setInterval(() => void check(), 60_000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [canMail]);
   const hash = useSyncExternalStore(subscribeHash, readHash, () => "");
   const [picked, setPicked] = useState<Tab | null>(null);
   const fromHash = tabs.find((tab) => tab.id === hash)?.id;
@@ -288,7 +300,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { name
     <div className="container profile__layout">
       <aside className="profile__nav" aria-label="Admin sections">
         <nav>{tabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={active === id ? "is-active" : undefined} aria-current={active === id ? "page" : undefined} onClick={() => choose(id)}>
-          <Icon size={19}/><span>{label}</span>{id === "inbox" && unread > 0 && <small aria-label={`${unread} new`}>{unread > 99 ? "99+" : unread}</small>}
+          <Icon size={19}/><span>{label}</span>{id === "inbox" && unread > 0 && <small aria-label={`${unread} new`}>{unread > 99 ? "99+" : unread}</small>}{id === "mail" && mailUnread > 0 && <small aria-label={`${mailUnread} unread`}>{mailUnread > 99 ? "99+" : mailUnread}</small>}
         </button>)}</nav>
       </aside>
       <section className="profile__main admin-page" aria-live="polite" aria-label={current?.label}>
@@ -300,6 +312,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { name
           {can("records") && <AdminMetric tone="green" icon={<FolderLock size={22}/>} number="Search" label="Customer records" onClick={() => choose("records")}/>}
         </div>}
         {active === "inbox" && <InboxPanel onSeen={clearUnread}/>}
+        {active === "mail" && <MailClient mode="staff" onUnread={setMailUnread}/>}
         {active === "requests" && <RequestQueue/>}
         {active === "records" && <RecordsPanel/>}
         {active === "promotions" && <PromotionsPanel canEdit/>}

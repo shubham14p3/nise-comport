@@ -82,6 +82,7 @@ const OPS = {
   "V9n4X1rQ6bH3": { method: "POST", path: "/api/admin/loyalty" },
   "L4g8P2nT6vK1": { method: "GET", path: "/api/admin/legal" },
   "S7r3Q9mB5xD2": { method: "POST", path: "/api/admin/legal" },
+  "Z6n2K9cR4vP1": { method: "POST", path: "/api/mail" },
   "Y3d7N5qV1mP8": { method: "POST", path: "/api/pay" },
   "H6k2B9tW4xC7": { method: "POST", path: "/api/admin/payments" },
 } as const;
@@ -91,6 +92,7 @@ const BINARY_OPS = {
   "U7b3R8mQ4zL1": "/api/uploads",
   "P6m1T8vC3xK9": "/api/admin/media",
   "G5p8U2kV7nR3": "/api/admin/gallery/upload",
+  "A9d5W3tL7mX2": "/api/mail/attach",
 } as const;
 
 function stringValue(input: Record<string, unknown>, key: string, max = 200) {
@@ -101,6 +103,12 @@ function stringValue(input: Record<string, unknown>, key: string, max = 200) {
 function targetFor(operation: string, input: Record<string, unknown>) {
   if (operation in OPS) return OPS[operation as keyof typeof OPS];
   switch (operation) {
+    case "Q3x8M5wT2kB7": {
+      // Message centre reads: list, one ticket, counters.
+      const query = new URLSearchParams();
+      for (const [key, max] of [["view", 12], ["box", 24], ["q", 80], ["id", 60], ["before", 40]] as const) { const value = stringValue(input, key, max); if (value) query.set(key, value); }
+      return { method: "GET", path: `/api/mail?${query.toString()}` };
+    }
     case "U3j7P1xH5nQ9": {
       const phone = stringValue(input, "phone", 30);
       return { method: "GET", path: `/api/admin/chats${phone ? `?phone=${encodeURIComponent(phone)}` : ""}` };
@@ -179,6 +187,10 @@ function fileTarget(operation: string, input: Record<string, unknown>) {
   if (operation === "E1n6V2kP9cF5") return `/api/uploads?id=${encodeURIComponent(id)}`;
   if (operation === "H3q7M0xP6cL2") return `/api/admin/jobs/${encodeURIComponent(id)}/file`;
   if (operation === "V8d4K1rF7nT5") return `/api/admin/requests/${encodeURIComponent(id)}/file`;
+  // Message centre: an attachment, a ticket's files as one zip, and a file of the linked request or print order.
+  if (operation === "N4c8V1bH6qY3") return `/api/mail/file?id=${encodeURIComponent(id)}`;
+  if (operation === "T2m7S5xK9wD4") return `/api/mail/zip?id=${encodeURIComponent(id)}`;
+  if (operation === "B7p3L9zF2nR6") return `/api/mail/linked?id=${encodeURIComponent(id)}&t=${encodeURIComponent(stringValue(input, "t", 60))}`;
   return null;
 }
 

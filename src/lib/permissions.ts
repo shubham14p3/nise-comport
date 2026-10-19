@@ -4,7 +4,7 @@
  *
  * Plain module (no imports) so it can be used in the browser and in tests.
  */
-export const STAFF_PERMISSIONS = ["requests", "records", "pan", "promotions", "content", "campaigns", "wallet"] as const;
+export const STAFF_PERMISSIONS = ["requests", "records", "pan", "promotions", "content", "campaigns", "wallet", "mail"] as const;
 export type Permission = (typeof STAFF_PERMISSIONS)[number];
 
 export const PERMISSION_INFO: Record<Permission, { label: string; detail: string }> = {
@@ -15,6 +15,7 @@ export const PERMISSION_INFO: Record<Permission, { label: string; detail: string
   content: { label: "Site content", detail: "Banners on the website, adding new services and hiding old ones." },
   campaigns: { label: "WhatsApp campaigns", detail: "Contacts, campaigns and the send queue." },
   wallet: { label: "Wallet credits", detail: "Add credits to customer wallets." },
+  mail: { label: "Messages", detail: "Read and answer customer messages (tickets), including the files they attach." },
 };
 
 export type StaffLike = { role: string; permissions?: unknown };

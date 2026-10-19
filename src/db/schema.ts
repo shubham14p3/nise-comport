@@ -501,3 +501,77 @@ export const phoneOtps = pgTable("phone_otps", {
   consumedAt: timestamp("consumed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("phone_otps_user_idx").on(table.userId, table.createdAt)]);
+
+/** Message centre: one row per conversation (ticket) between a customer and the service desk. */
+export const mailTickets = pgTable("mail_tickets", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  /** Public ticket number, shown as NC-T1001. */
+  number: integer("number").generatedAlwaysAsIdentity({ startWith: 1001 }),
+  /** Short secret in the email subject so a stranger can't add messages to someone else's ticket. */
+  key: text("key").notNull(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  fromEmail: text("from_email").notNull(),
+  fromName: text("from_name"),
+  subject: text("subject").notNull(),
+  status: text("status").notNull().default("open"),
+  source: text("source").notNull().default("site"),
+  linkKind: text("link_kind"),
+  linkId: uuid("link_id"),
+  linkReference: text("link_reference"),
+  staffUnread: boolean("staff_unread").notNull().default(true),
+  customerUnread: boolean("customer_unread").notNull().default(false),
+  lastMessageAt: timestamp("last_message_at", { withTimezone: true }).notNull().defaultNow(),
+  lastCustomerAt: timestamp("last_customer_at", { withTimezone: true }),
+  lastStaffAt: timestamp("last_staff_at", { withTimezone: true }),
+  autoCloseAt: timestamp("auto_close_at", { withTimezone: true }),
+  closedAt: timestamp("closed_at", { withTimezone: true }),
+  closeReason: text("close_reason"),
+  closeNoticeSentAt: timestamp("close_notice_sent_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("mail_tickets_number_unique").on(table.number),
+  index("mail_tickets_user_last_idx").on(table.userId, table.lastMessageAt),
+  index("mail_tickets_status_last_idx").on(table.status, table.lastMessageAt),
+  index("mail_tickets_from_idx").on(table.fromEmail),
+]);
+
+export const mailMessages = pgTable("mail_messages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ticketId: uuid("ticket_id").notNull().references(() => mailTickets.id, { onDelete: "cascade" }),
+  /** "in" = from the customer, "out" = from the service desk. */
+  direction: text("direction").notNull(),
+  authorId: uuid("author_id").references(() => users.id, { onDelete: "set null" }),
+  authorName: text("author_name"),
+  body: text("body").notNull(),
+  source: text("source").notNull().default("site"),
+  rfcMessageId: text("rfc_message_id"),
+  /** For "out" messages: none | sent | failed. */
+  emailStatus: text("email_status").notNull().default("none"),
+  emailAttempts: integer("email_attempts").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("mail_messages_ticket_idx").on(table.ticketId, table.createdAt),
+  uniqueIndex("mail_messages_rfc_unique").on(table.rfcMessageId),
+]);
+
+export const mailAttachments = pgTable("mail_attachments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ticketId: uuid("ticket_id").references(() => mailTickets.id, { onDelete: "cascade" }),
+  messageId: uuid("message_id").references(() => mailMessages.id, { onDelete: "cascade" }),
+  uploaderId: uuid("uploader_id").references(() => users.id, { onDelete: "set null" }),
+  objectKey: text("object_key").notNull(),
+  name: text("name").notNull(),
+  mimeType: text("mime_type").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("mail_attachments_message_idx").on(table.messageId), index("mail_attachments_ticket_idx").on(table.ticketId)]);
+
+/** Where the support-mailbox reader stopped (one row, id "main"). */
+export const mailSync = pgTable("mail_sync", {
+  id: text("id").primaryKey(),
+  uidValidity: text("uid_validity"),
+  lastUid: integer("last_uid").notNull().default(0),
+  lastRunAt: timestamp("last_run_at", { withTimezone: true }),
+  lastError: text("last_error"),
+  lastImported: integer("last_imported").notNull().default(0),
+});
