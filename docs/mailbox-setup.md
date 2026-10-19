@@ -35,6 +35,11 @@ the answer joins the same ticket.
 - Files: pictures, PDF, Word, Excel, CSV, text; up to 10 per message and 15 MB each. Files are stored privately, never served as web pages.
 - **Storage used** is shown to staff in the left column (attachments, customer documents and free disk space). `MAIL_STORAGE_LIMIT_MB` sets the cap.
 
+## Who is told about new messages
+
+Every new customer message and every customer reply is emailed to **all owners**, **all staff who have the Messages permission**, and the shared
+address `STAFF_ALERT_EMAIL`. Disabled or deleted accounts are skipped. Each person gets their own copy with a button that opens the Messages tab.
+
 ## Safety rules built in
 
 - Emails from machines (bounces, out-of-office, newsletters) never open tickets or get answers.

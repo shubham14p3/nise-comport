@@ -6,7 +6,7 @@ import {
   allowedAttachmentType, cleanBody, cleanSubject, findReferences, htmlToText, looksAutomated, makeTicketKey, MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS_PER_MESSAGE,
   parseTicketTag, safeFileName, stripQuotedReply, validSignature,
 } from "@/lib/mail-core";
-import { imapConfigured, registerCustomerMessage, resolveLink, supportAddress, writeAttachment } from "@/lib/mail";
+import { alertStaff, imapConfigured, registerCustomerMessage, resolveLink, supportAddress, writeAttachment } from "@/lib/mail";
 import { sendTicketMail } from "@/lib/email";
 import { absoluteUrl, site } from "@/lib/site";
 import { MAIL_PATH } from "@/lib/mail-route";
@@ -93,9 +93,11 @@ export async function ingestInbound(input: { fromEmail: string; fromName: string
         from: `"${site.name} Support" <${supportAddress()}>`, replyTo: supportAddress(), inReplyTo: input.rfcMessageId ?? undefined, references: input.rfcMessageId ? [input.rfcMessageId] : undefined, automated: true,
       });
     } catch (error) { console.error("[mail] could not acknowledge an emailed message", error instanceof Error ? error.message : error); }
+    await alertStaff(ticket, body || "(no text)", "new");
     return "created" as const;
   }
   await registerCustomerMessage(ticket, body, now);
+  await alertStaff(ticket, body || "(no text)", "reply");
   return "added" as const;
 }
 

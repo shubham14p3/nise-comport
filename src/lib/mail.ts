@@ -300,14 +300,23 @@ async function sendAcknowledgement(ticket: typeof mailTickets.$inferSelect, orig
   } catch (error) { console.error("[mail] could not send the acknowledgement", error instanceof Error ? error.message : error); }
 }
 
-async function alertStaff(ticket: typeof mailTickets.$inferSelect, body: string) {
+/** Everyone who should hear about new customer messages: all owners, staff with the Messages permission, and the shared alert address. */
+async function alertRecipients() {
+  const people = await db.select({ email: users.email }).from(users).where(and(isNull(users.deletedAt), isNull(users.disabledAt), or(eq(users.role, "admin"), and(eq(users.role, "staff"), sql`${users.permissions} @> '["mail"]'::jsonb`))));
+  const shared = process.env.STAFF_ALERT_EMAIL?.trim() || site.email;
+  const seen = new Set<string>();
+  return [...people.map((person) => person.email), shared].map((email) => email.trim()).filter((email) => /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email) && !seen.has(email.toLowerCase()) && (seen.add(email.toLowerCase()), true)).slice(0, 25);
+}
+
+export async function alertStaff(ticket: typeof mailTickets.$inferSelect, body: string, kind: "new" | "reply" = "new") {
   try {
-    const to = process.env.STAFF_ALERT_EMAIL?.trim() || site.email;
-    await sendMail({
-      to, subject: `New message ${ticketCode(ticket.number)}: ${ticket.subject}`.slice(0, 200), heading: "New customer message",
-      paragraphs: [snippet(body, 400)], details: [{ label: "Ticket", value: ticketCode(ticket.number), emphasis: true }, { label: "From", value: ticket.fromName ? `${ticket.fromName} <${ticket.fromEmail}>` : ticket.fromEmail }],
+    const recipients = await alertRecipients();
+    const from = ticket.fromName ? `${ticket.fromName} <${ticket.fromEmail}>` : ticket.fromEmail;
+    await Promise.allSettled(recipients.map((to) => sendMail({
+      to, subject: `${kind === "new" ? "New message" : "New reply"} ${ticketCode(ticket.number)}: ${ticket.subject}`.slice(0, 200), heading: kind === "new" ? "New customer message" : "Customer replied",
+      paragraphs: [snippet(body, 400)], details: [{ label: "Ticket", value: ticketCode(ticket.number), emphasis: true }, { label: "From", value: from }],
       action: { label: "Open in the staff desk", href: absoluteUrl("/desk#mail") }, extra: { headers: { "Auto-Submitted": "auto-generated" } },
-    });
+    })));
   } catch (error) { console.error("[mail] could not alert staff", error instanceof Error ? error.message : error); }
 }
 
@@ -383,6 +392,7 @@ export async function replyToTicket(actor: MailActor, input: { id: string; body:
   const [message] = await db.insert(mailMessages).values({ ticketId: ticket.id, direction: "in", authorId: actor.user.id, authorName: actor.user.name, body, source: "site", rfcMessageId: rfc }).returning();
   await claimAttachments(ids, actor.user.id, ticket.id, message.id);
   await registerCustomerMessage(ticket, body, now);
+  await alertStaff(ticket, body || "(attachment only)", "reply");
   return { ok: true };
 }
 
