@@ -8,7 +8,7 @@ const shortcuts = [
   { href: "/services/pan-card", label: "PAN card help" },
   { href: "/services/aadhaar", label: "Aadhaar update help" },
   { href: "/services/income-caste-residence-certificate", label: "Income, caste & residence certificates" },
-  { href: "/print", label: "Online printing" },
+  { href: "/print", label: "Printing & photocopy" },
   { href: "/blog", label: "Local guides" },
   { href: "/contact", label: "Contact & directions" },
 ];

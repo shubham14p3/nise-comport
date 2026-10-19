@@ -17,7 +17,9 @@ const popularServices = [
   { href: "/services/income-caste-residence-certificate", label: "Income, caste & residence certificates" },
   { href: "/services/aeps-money-transfer", label: "AEPS & money transfer" },
   { href: "/services/bike-insurance", label: "Bike insurance" },
-  { href: "/services/printing-scanning", label: "Online printing & photocopy" },
+  { href: "/services/website-creation", label: "Website creation for business" },
+  { href: "/services/photo-studio", label: "Photo studio & passport photos" },
+  { href: "/services/printing-scanning", label: "Printing & photocopy" },
   { href: "/services/jeevan-pramaan", label: "Jeevan Pramaan life certificate" },
 ];
 
@@ -92,7 +94,7 @@ export default function SiteFooter() {
         <li>🇮🇳 Seva from Jamshedpur, Jharkhand</li>
         <li>Udyam-registered local business</li>
         <li>English · हिन्दी · বাংলা</li>
-        <li>Kharangajhar, Telco · Since 2010</li>
+        <li>Kharangajhar, Telco · Since 1995</li>
       </ul>
       {/* <nav className="footer-policies" aria-label="Policies">
         <Link href="/terms">Terms and Conditions</Link><Link href="/refund-policy">Refund &amp; Cancellation Policy</Link><Link href="/privacy">Privacy Policy</Link><Link href="/pricing">Pricing</Link>

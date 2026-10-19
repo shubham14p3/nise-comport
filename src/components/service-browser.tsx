@@ -48,7 +48,7 @@ export default function ServiceBrowser({ services }: { services: BrowserService[
       <label className="browser__search">
         <Search size={20} aria-hidden="true"/>
         <span className="sr-only">Search services</span>
-        <input type="search" value={query} placeholder="Search in English, हिन्दी or বাংলা, e.g. PAN, बीमा, বিদ্যুৎ বিল" onChange={(event) => { setTyped(event.target.value); syncUrl(event.target.value, category); }} enterKeyHint="search"/>
+        <input type="search" value={query} placeholder="Search in English, हिन्दी or বাংলা, e.g. PAN, बीमा, ওয়েবসাইট" onChange={(event) => { setTyped(event.target.value); syncUrl(event.target.value, category); }} enterKeyHint="search"/>
         {query && <button type="button" className="icon-btn" aria-label="Clear search" onClick={() => { setTyped(""); syncUrl("", category); }}><X size={18}/></button>}
       </label>
       <button type="button" className={`browser__filter${category !== "all" ? " has-filter" : ""}`} aria-expanded={filtersOpen} aria-controls="browser-cats" onClick={() => setFiltersOpen((open) => !open)}><SlidersHorizontal size={18}/><span>Filter</span>{category !== "all" && <i aria-hidden="true"/>}</button>

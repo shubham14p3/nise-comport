@@ -49,7 +49,7 @@ export default async function PricingPage() {
         {blackWhite.map((row) => <tr key={row.pages}><th scope="row">Black &amp; white, {row.pages}</th><td>₹{row.rate}</td></tr>)}
         <tr><th scope="row">Colour, any quantity</th><td>₹{COLOR_PAGE_RATE}</td></tr>
       </tbody></table>
-      <p>The online print order shows the estimate before you confirm. We may adjust it after checking the file, and delivery, if offered, is confirmed separately. <Link href="/print">Start a print order <ArrowRight size={13}/></Link></p>
+      <p>Rates can change with the file, size and quantity, so ask us for the exact price before you print. <Link href="/print">Ask for a printing price <ArrowRight size={13}/></Link></p>
 
       {named.length > 0 && <><h2>Our service charges</h2>
       <p>Our own charge for each service. Government, portal or courier fees are separate.</p>

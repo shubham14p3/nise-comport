@@ -210,7 +210,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
         <div className="panel"><SectionHeading eyebrow="RECENT ACTIVITY" title="Your latest requests" text="Open any request to see what you sent and its current status."/><RequestRows rows={requests.slice(0, 3)}/></div>
         <div className="quick-grid">
           <Link href="/request" className="quick tone-blue"><Plus size={20}/><span><b>Start a request</b><small>4 quick steps, any service.</small></span><ArrowRight size={18}/></Link>
-          <Link href="/print" className="quick tone-cyan"><Printer size={20}/><span><b>Print from your phone</b><small>Upload, pick pages, collect.</small></span><ArrowRight size={18}/></Link>
+          <Link href="/print" className="quick tone-cyan"><Printer size={20}/><span><b>Printing &amp; photocopy</b><small>Ask for a price.</small></span><ArrowRight size={18}/></Link>
           <button type="button" onClick={() => openSection("profile")} className="quick tone-violet"><UserRound size={20}/><span><b>Complete your profile</b><small>{completion}/5 details added.</small></span><ArrowRight size={18}/></button>
           <button type="button" onClick={() => openSection("addresses")} className="quick tone-green"><MapPin size={20}/><span><b>Saved addresses</b><small>For delivery and doorstep help.</small></span><ArrowRight size={18}/></button>
         </div>

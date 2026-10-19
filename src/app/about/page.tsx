@@ -19,7 +19,7 @@ export const revalidate = 300;
 
 export const metadata: Metadata = pageMetadata(
   "About NISE COMPORT – CSC & Pragya Kendra in Telco, Jamshedpur",
-  "Since 2010, NISE COMPORT has helped Jamshedpur residents with PAN, Aadhaar, certificates, banking, insurance, printing and computer needs. An independent CSC / Pragya Kendra service centre in Kharangajhar, Telco.",
+  "Since 1995, NISE COMPORT has helped Jamshedpur residents with PAN, Aadhaar, certificates, banking, insurance, printing and computer needs. An independent CSC / Pragya Kendra service centre in Kharangajhar, Telco.",
   "/about",
 );
 
@@ -31,7 +31,7 @@ const steps = [
 ];
 
 const promises = [
-  { icon: HeartHandshake, title: "Honest service, fair price", text: "The same ethic we started with in 2010: serve every person honestly, at the best price available in the market." },
+  { icon: HeartHandshake, title: "Honest service, fair price", text: "The same ethic we started with in 1995: serve every person honestly, at the best price available in the market." },
   { icon: ShieldCheck, title: "Your documents stay private", text: "Files are kept privately, used only for your request and deleted on schedule. Staff never ask for your OTP or PIN." },
   { icon: Users, title: "Real people, in person", text: "A friendly desk you can walk up to, in Hindi or English, with the same faces you saw last time." },
 ];
@@ -44,7 +44,7 @@ export default async function AboutPage() {
     <section className="content-hero about-hero"><div className="container about-hero__grid">
       <div>
         <Breadcrumbs items={[{ name: "Home", path: "/" }, { name: "About", path: "/about" }]}/>
-        <span className="eyebrow eyebrow-muted">SINCE 2010 · KHARANGAJHAR, TELCO</span>
+        <span className="eyebrow eyebrow-muted">SINCE 1995 · KHARANGAJHAR, TELCO</span>
         <h1>Your neighbourhood<br/><em>digital seva kendra.</em></h1>
         <p>NISE COMPORT is an independent CSC / Pragya Kendra service centre in Jamshedpur. We help you reach government, banking, insurance and digital services without the running around: clear steps, careful attention and a friendly face.</p>
         <div className="about-hero__actions">
@@ -56,7 +56,7 @@ export default async function AboutPage() {
     </div></section>
 
     <section className="container about-stats" aria-label="NISE COMPORT at a glance">
-      <div><b>2010</b><span>Serving Jamshedpur since</span></div>
+      <div><b>1995</b><span>Serving Jamshedpur since</span></div>
       <div><b>{categoryMeta.length}</b><span>Service categories under one roof</span></div>
       <div><b>{areas.length}+</b><span>Neighbourhoods we serve</span></div>
       <div><b>हिन्दी · English</b><span>Help in your language</span></div>
@@ -65,7 +65,7 @@ export default async function AboutPage() {
     <section className="container about-story">
       <div className="section-head section-head--left"><span className="eyebrow">OUR STORY</span><h2>From NISE to NISE COMPORT</h2></div>
       <div className="about-story__body">
-        <p>We began as <b>NISE</b> in 2010, a small computer and digital-services desk for our neighbourhood in Kharangajhar, Telco. People came for a print-out or a form, and stayed because someone patiently explained what to do next.</p>
+        <p>We began as <b>NISE</b> in 1995, a small computer and digital-services desk for our neighbourhood in Kharangajhar, Telco. People came for a print-out or a form, and stayed because someone patiently explained what to do next.</p>
         <p>Over the years that grew into <b>NISE COMPORT</b>: a CSC / Pragya Kendra service centre where families, students, shopkeepers and senior citizens find PAN and Aadhaar help, Jharkhand certificates, banking and AEPS, insurance, online forms, printing, and computer sales and repair, all in one place.</p>
         <p className="about-story__quote">“We have made our way from NISE to NISE COMPORT because of you. We have never forgotten our ethic: serve every person honestly, at the best price available today.”</p>
         <p>We look forward to continuing to serve our community, and to adding more services that help it grow.</p>
