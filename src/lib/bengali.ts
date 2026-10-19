@@ -5,6 +5,8 @@
  * can show the right language to each searcher.
  * Please have a native Bengali speaker review wording before launch.
  */
+import { bengaliServices1 } from "./translations/bengali-services-1.ts";
+
 export type BengaliService = {
   slug: string;
   title: string;
@@ -35,7 +37,7 @@ export const bengaliHome = {
   ],
 };
 
-export const bengaliServices: BengaliService[] = [
+const baseBengaliServices: BengaliService[] = [
   {
     slug: "pan-card",
     title: "জামশেদপুরে প্যান কার্ডের আবেদন ও সংশোধন",
@@ -166,6 +168,8 @@ export const bengaliServices: BengaliService[] = [
     faqs: [{ question: "21 দিন পরে কি রেজিস্ট্রেশন করা যায়?", answer: "হ্যাঁ, তবে দেরি অনুযায়ী অতিরিক্ত কাগজপত্র, ফি বা আদেশ লাগতে পারে। রেজিস্ট্রার তা ঠিক করেন।" }],
   },
 ];
+
+export const bengaliServices: BengaliService[] = [...baseBengaliServices, ...bengaliServices1];
 
 export function findBengaliService(slug: string) {
   return bengaliServices.find((service) => service.slug === slug);

@@ -16,6 +16,15 @@ const TRANSLATED = [
   "jeevan-pramaan",
   "land-mutation",
   "birth-death-certificate",
+  "local-resident-certificate",
+  "caste-certificate-ebc1-bc2",
+  "caste-certificate-sc",
+  "caste-certificate-st",
+  "marriage-registration-certificate",
+  "bike-insurance",
+  "car-insurance",
+  "health-life-insurance",
+  "itr-gst",
 ] as const;
 
 export const translatedSlugs: { hi: readonly string[]; bn: readonly string[] } = { hi: TRANSLATED, bn: TRANSLATED };

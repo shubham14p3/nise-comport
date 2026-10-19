@@ -11,6 +11,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { secureApi } from "@/lib/secure-api-client";
 import { dict } from "@/lib/i18n";
+import { lp, tr } from "@/lib/tr";
 import { useLocale } from "@/lib/use-locale";
 import { PHONE_E164 as PHONE, whatsappHref } from "@/lib/public-contact";
 import { isStaffRole, STAFF_HOME } from "@/lib/staff-routes";
@@ -37,7 +38,7 @@ export default function SiteHeader() {
     event.preventDefault();
     const value = mobileQuery.trim();
     setMenuOpen(false);
-    router.push(value ? `/services?q=${encodeURIComponent(value)}` : "/services");
+    router.push(value ? `${lp(locale, "/services")}?q=${encodeURIComponent(value)}` : lp(locale, "/services"));
   }
 
   // Close the mobile menu after navigation.
@@ -81,14 +82,16 @@ export default function SiteHeader() {
   }
 
   const home = locale === "en" ? "/" : `/${locale}`;
+  const tt = tr(locale);
   const links = [
-    { href: "/services", label: t.services },
+    { href: lp(locale, "/services"), label: t.services },
     { href: "/offers", label: t.offers, live: true },
-    { href: "/gallery", label: t.gallery },
-    { href: "/blog", label: t.guides },
-    { href: "/contact", label: t.contact },
+    { href: lp(locale, "/gallery"), label: t.gallery },
+    { href: lp(locale, "/blog"), label: t.guides },
+    { href: lp(locale, "/contact"), label: t.contact },
   ];
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const isServicesLink = (href: string) => href === lp(locale, "/services");
   const firstName = user?.name.trim().split(/\s+/)[0] ?? "";
 
   return <>
@@ -97,7 +100,7 @@ export default function SiteHeader() {
       <div className="container nav-wrap">
         <Link className="brand" href={home} aria-label="NISE COMPORT home"><BrandWordmark/></Link>
         <nav className="desktop-nav" aria-label="Main navigation">
-          {links.map((link) => link.href === "/services"
+          {links.map((link) => isServicesLink(link.href)
             ? <ServicesMegaDesktop key={link.href} label={link.label} active={isActive(link.href)}/>
             : <Link key={link.href} href={link.href} className={isActive(link.href) ? "is-active" : undefined} aria-current={isActive(link.href) ? "page" : undefined}>{link.label}{link.live && <i className="live-dot" aria-hidden="true"/>}</Link>)}
         </nav>
@@ -110,9 +113,9 @@ export default function SiteHeader() {
                   <span className="account-avatar">{firstName.slice(0, 1).toUpperCase() || <UserRound size={16}/>}</span><span className="account-name">{firstName || t.myProfile}</span>
                 </button>
                 {accountOpen && <div className="account-dropdown" role="menu">
-                  <Link role="menuitem" href="/profile"><UserRound size={16}/>Normal view</Link>
-                  {isStaffRole(user.role) && <Link role="menuitem" href={user.role === "admin" ? `${STAFF_HOME}?view=staff` : STAFF_HOME}><LayoutDashboard size={16}/>Staff view</Link>}
-                  {user.role === "admin" && <Link role="menuitem" href={STAFF_HOME}><ShieldCheck size={16}/>Admin view</Link>}
+                  <Link role="menuitem" href="/profile"><UserRound size={16}/>{tt("Normal view", "सामान्य व्यू", "সাধারণ ভিউ")}</Link>
+                  {isStaffRole(user.role) && <Link role="menuitem" href={user.role === "admin" ? `${STAFF_HOME}?view=staff` : STAFF_HOME}><LayoutDashboard size={16}/>{tt("Staff view", "स्टाफ़ व्यू", "স্টাফ ভিউ")}</Link>}
+                  {user.role === "admin" && <Link role="menuitem" href={STAFF_HOME}><ShieldCheck size={16}/>{tt("Admin view", "एडमिन व्यू", "অ্যাডমিন ভিউ")}</Link>}
                 </div>}
               </div>
               <button className="icon-btn nav-signout" type="button" onClick={() => void signOut()} disabled={signingOut} title={t.signOut} aria-label={t.signOut}><LogOut size={18}/></button>
@@ -131,17 +134,17 @@ export default function SiteHeader() {
         <div className="mobile-sheet__top"><Link className="brand" href={home}><BrandWordmark/></Link><button className="icon-btn" type="button" onClick={() => setMenuOpen(false)} aria-label={t.close}><X size={22}/></button></div>
         <form role="search" className="mobile-sheet__search" onSubmit={submitMobileSearch}>
           <Search size={18} aria-hidden="true"/>
-          <label className="sr-only" htmlFor="mobile-search">Search services</label>
-          <input id="mobile-search" type="search" value={mobileQuery} onChange={(event) => setMobileQuery(event.target.value)} placeholder="Search services…" autoComplete="off" enterKeyHint="search"/>
+          <label className="sr-only" htmlFor="mobile-search">{tt("Search services", "सेवाएँ खोजें", "পরিষেবা খুঁজুন")}</label>
+          <input id="mobile-search" type="search" value={mobileQuery} onChange={(event) => setMobileQuery(event.target.value)} placeholder={tt("Search services…", "सेवाएँ खोजें…", "পরিষেবা খুঁজুন…")} autoComplete="off" enterKeyHint="search"/>
         </form>
         <div className="mobile-sheet__links">
-          {[{ href: home, label: t.home }, ...links, { href: "/about", label: t.about }, { href: "/areas-we-serve", label: t.areas }, { href: "/faq", label: t.faq }, { href: "/track", label: "Track a request" }].map((link, index) => link.href === "/services" ? <ServicesMegaMobile key={link.href} label={link.label}/> : <Link key={link.href} href={link.href} style={{ animationDelay: `${index * 30}ms` }}>{link.label}<ArrowRight size={18}/></Link>)}
+          {[{ href: home, label: t.home }, ...links, { href: lp(locale, "/about"), label: t.about }, { href: lp(locale, "/areas-we-serve"), label: t.areas }, { href: lp(locale, "/faq"), label: t.faq }, { href: "/track", label: tt("Track a request", "अनुरोध ट्रैक करें", "অনুরোধ ট্র্যাক করুন") }].map((link, index) => isServicesLink(link.href) ? <ServicesMegaMobile key={link.href} label={link.label}/> : <Link key={link.href} href={link.href} style={{ animationDelay: `${index * 30}ms` }}>{link.label}<ArrowRight size={18}/></Link>)}
         </div>
         <div className="mobile-sheet__lang"><span>{t.changeLanguage}</span><LanguageMenu locale={locale} label={t.changeLanguage} inline/></div>
         <div className="mobile-sheet__actions">
           <Link className="btn btn--primary btn--block" href="/request">{t.startRequest}<ArrowRight size={18}/></Link>
-          {sessionLoaded && user && isStaffRole(user.role) && <Link className="btn btn--ghost btn--block" href={user.role === "admin" ? `${STAFF_HOME}?view=staff` : STAFF_HOME}><LayoutDashboard size={18}/>Staff view</Link>}
-          {sessionLoaded && user && user.role === "admin" && <Link className="btn btn--ghost btn--block" href={STAFF_HOME}><ShieldCheck size={18}/>Admin view</Link>}
+          {sessionLoaded && user && isStaffRole(user.role) && <Link className="btn btn--ghost btn--block" href={user.role === "admin" ? `${STAFF_HOME}?view=staff` : STAFF_HOME}><LayoutDashboard size={18}/>{tt("Staff view", "स्टाफ़ व्यू", "স্টাফ ভিউ")}</Link>}
+          {sessionLoaded && user && user.role === "admin" && <Link className="btn btn--ghost btn--block" href={STAFF_HOME}><ShieldCheck size={18}/>{tt("Admin view", "एडमिन व्यू", "অ্যাডমিন ভিউ")}</Link>}
           {sessionLoaded && user
             ? <div className="mobile-sheet__row"><Link className="btn btn--ghost" href="/profile"><UserRound size={18}/>{t.myProfile}</Link><button className="btn btn--ghost" type="button" onClick={() => void signOut()} disabled={signingOut}><LogOut size={18}/>{signingOut ? t.signingOut : t.signOut}</button></div>
             : <Link className="btn btn--ghost btn--block" href="/login">{t.signIn}</Link>}

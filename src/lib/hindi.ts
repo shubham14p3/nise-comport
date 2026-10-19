@@ -3,6 +3,8 @@
  * linked to it with hreflang, so Google can show the right language to each searcher.
  * Please have a native speaker review wording before launch.
  */
+import { hindiServices1 } from "./translations/hindi-services-1.ts";
+
 export type HindiService = {
   slug: string;
   title: string;
@@ -30,7 +32,7 @@ export const hindiHome = {
   ],
 };
 
-export const hindiServices: HindiService[] = [
+const baseHindiServices: HindiService[] = [
   {
     slug: "pan-card",
     title: "जमशेदपुर में पैन कार्ड आवेदन और सुधार",
@@ -161,6 +163,8 @@ export const hindiServices: HindiService[] = [
     faqs: [{ question: "21 दिन बाद पंजीकरण हो सकता है?", answer: "हाँ, लेकिन देरी के अनुसार अतिरिक्त दस्तावेज़, शुल्क या आदेश लग सकते हैं। रजिस्ट्रार तय करता है।" }],
   },
 ];
+
+export const hindiServices: HindiService[] = [...baseHindiServices, ...hindiServices1];
 
 export function findHindiService(slug: string) {
   return hindiServices.find((service) => service.slug === slug);

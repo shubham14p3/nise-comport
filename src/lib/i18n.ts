@@ -19,7 +19,7 @@ export const LOCALE_META: Record<Locale, { label: string; short: string; htmlLan
 export const LANG_COOKIE = "nc_lang";
 
 /** App screens (and /offers) follow the visitor's chosen language; content pages follow their URL (/, /hi, /bn). */
-export const APP_PATHS = ["/login", "/signup", "/forgot-password", "/profile", "/request", "/print", "/pan/request", "/desk", "/offers"];
+export const APP_PATHS = ["/login", "/signup", "/forgot-password", "/profile", "/request", "/print", "/pan/request", "/desk", "/offers", "/track", "/pay", "/review", "/mail-x7q2"];
 
 export function isLocale(value: unknown): value is Locale {
   return value === "en" || value === "hi" || value === "bn";
@@ -45,14 +45,15 @@ export function basePath(pathname: string) {
  * Where the language menu should go. Translated service pages keep the visitor on the same
  * service; other content pages go to the translated home page; app screens stay put.
  */
-export function localizedHref(pathname: string, target: Locale, translated: { hi: readonly string[]; bn: readonly string[] }) {
+export function localizedHref(pathname: string, target: Locale, _translated?: { hi: readonly string[]; bn: readonly string[] }) {
   if (isAppPath(pathname)) return null;
   const base = basePath(pathname);
-  const service = /^\/services\/([^/]+)$/.exec(base)?.[1];
   if (target === "en") return base;
-  if (service && translated[target].includes(service)) return `/${target}/services/${service}`;
-  return `/${target}`;
+  if (base === "/") return `/${target}`;
+  return hasTranslation(target, base) ? `/${target}${base}` : `/${target}`;
 }
+
+import { hasTranslation } from "./tr.ts";
 
 const en = {
   nav: {
