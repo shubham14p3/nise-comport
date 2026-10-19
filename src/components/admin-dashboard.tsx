@@ -14,6 +14,7 @@ import PromotionsPanel from "@/components/promotions-panel";
 import CampaignsPanel from "@/components/campaigns-panel";
 import ContactsPanel from "@/components/contacts-panel";
 import TeamPanel from "@/components/team-panel";
+import SiteTeamPanel from "@/components/site-team-panel";
 import InboxPanel from "@/components/inbox-panel";
 import SiteContentPanel from "@/components/site-content-panel";
 import GalleryPanel from "@/components/gallery-panel";
@@ -297,7 +298,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { name
         {active === "testimonials" && <TestimonialsPanel/>}
         {active === "campaigns" && <CampaignsPanel/>}
         {active === "contacts" && <ContactsPanel/>}
-        {active === "team" && <TeamPanel meRole={me.role}/>}
+        {active === "team" && <><TeamPanel meRole={me.role}/><SiteTeamPanel/></>}
         {active === "pan" && <PanImportPanel/>}
         {active === "wallet" && <WalletCreditForm/>}
       </section>

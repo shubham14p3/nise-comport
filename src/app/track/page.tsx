@@ -1,21 +1,53 @@
 import SiteHeader from "@/components/site-header";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowUpRight, FileText, Landmark, Phone, Search, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, FileText, Contact, Landmark, Phone, Search, ShieldCheck } from "lucide-react";
 import Breadcrumbs from "@/components/breadcrumbs";
 import JsonLd from "@/components/json-ld";
 import { pageMetadata } from "@/lib/seo";
 import { site, whatsappLink } from "@/lib/site";
 import { WhatsAppIcon } from "@/components/icons";
+import { PanStatusTool } from "@/components/pan-tools";
+import { panSources } from "@/lib/pan-content";
 import { breadcrumbLd } from "@/lib/structured-data";
 
 export const metadata: Metadata = pageMetadata(
-  "Track Your Application – Certificates, Voter ID",
-  "Track a Jharkhand certificate (income, caste, residence, marriage) on serviceonline.gov.in, or a voter ID application on voters.eci.gov.in. What reference number you need and where to check status.",
+  "Track a Request – NISE COMPORT, PAN, Certificates, Voter ID",
+  "One place to track your NISE COMPORT request, PAN application, Jharkhand certificate or voter ID: which reference number you need and where to check status.",
   "/track",
 );
 
 const trackers = [
+  {
+    key: "nise-comport",
+    icon: Landmark,
+    title: "Your NISE COMPORT Service Request",
+    portal: "Your NISE COMPORT customer profile",
+    reference: "The request reference we gave you when you submitted a request through this site or at our desk.",
+    steps: [
+      "Sign in to your NISE COMPORT profile.",
+      "Open “My requests” to see the current stage of every request you've sent us.",
+      "We also update you by email/WhatsApp when a request's status changes.",
+    ],
+    href: "/profile#requests",
+    hrefLabel: "Open your profile",
+  },
+  {
+    key: "pan",
+    icon: Contact,
+    title: "PAN Card Application",
+    portal: "Protean (NSDL) or UTIITSL, whichever provider took your application",
+    reference: "The 15-digit acknowledgement number (Protean) or the coupon/acknowledgement number (UTIITSL) shown on your PAN receipt.",
+    steps: [
+      "Check your receipt to see which provider processed the application.",
+      "Open that provider's PAN tracking page and enter the acknowledgement number.",
+      "Complete the captcha. Under processing, dispatched or documents required will be shown.",
+    ],
+    href: panSources.proteanTrack,
+    hrefLabel: "Track on Protean (NSDL)",
+    href2: panSources.utiTrack,
+    hrefLabel2: "Track on UTIITSL",
+  },
   {
     key: "certificates",
     icon: FileText,
@@ -44,20 +76,6 @@ const trackers = [
     href: "https://voters.eci.gov.in/",
     hrefLabel: "Track on voters.eci.gov.in",
   },
-  {
-    key: "nise-comport",
-    icon: Landmark,
-    title: "Your NISE COMPORT Service Request",
-    portal: "Your NISE COMPORT customer profile",
-    reference: "The request reference we gave you when you submitted a request through this site or at our desk.",
-    steps: [
-      "Sign in to your NISE COMPORT profile.",
-      "Open “My requests” to see the current stage of every request you've sent us.",
-      "We also update you by email/WhatsApp when a request's status changes.",
-    ],
-    href: "/profile#requests",
-    hrefLabel: "Open your profile",
-  },
 ];
 
 export default function TrackPage() {
@@ -68,8 +86,9 @@ export default function TrackPage() {
       <div className="page-hero__bg" aria-hidden="true"><span className="blob blob--1"/><span className="blob blob--2"/></div>
       <div className="container">
         <Breadcrumbs items={[{ name: "Home", path: "/" }, { name: "Track your application", path: "/track" }]}/>
-        <h1>Track your application</h1>
-        <p className="page-hero__lead">Government certificates and Voter ID applications are tracked on the <b>official government portal</b>, not on this website — we don't hold or proxy that data. Find the right tracker below and the reference number you'll need.</p>
+        <h1>Track a request</h1>
+        <p className="page-hero__lead">Everything in one place. Your NISE COMPORT requests are tracked in your profile. PAN, certificates and Voter ID are tracked on the <b>official portal</b>, which holds that data. Pick what you applied for below.</p>
+        <nav className="chip-row" aria-label="Jump to tracker">{trackers.map((item) => <a key={item.key} className="chip" href={`#${item.key}`}>{item.title.split(" – ")[0].replace("Your NISE COMPORT Service Request", "My NISE COMPORT request")}</a>)}</nav>
       </div>
     </section>
 
@@ -77,7 +96,7 @@ export default function TrackPage() {
       <div className="svc-grid">{trackers.map((item) => {
         const Icon = item.icon;
         const external = item.href.startsWith("http");
-        return <article key={item.key} className="svc-card tone-blue">
+        return <article key={item.key} id={item.key} className="svc-card tone-blue">
           <div className="svc-card__top"><span className="svc-card__icon"><Icon size={22}/></span></div>
           <h3>{item.title}</h3>
           <p><b>Portal:</b> {item.portal}</p>
@@ -87,10 +106,13 @@ export default function TrackPage() {
             {external
               ? <a className="btn btn--primary btn--sm" href={item.href} target="_blank" rel="noopener noreferrer">{item.hrefLabel} <ArrowUpRight size={16}/></a>
               : <Link className="btn btn--primary btn--sm" href={item.href}>{item.hrefLabel} <ArrowUpRight size={16}/></Link>}
+            {"href2" in item && item.href2 ? <a className="btn btn--ghost btn--sm" href={item.href2} target="_blank" rel="noopener noreferrer">{item.hrefLabel2} <ArrowUpRight size={16}/></a> : null}
           </div>
         </article>;
       })}</div>
     </div></section>
+
+    <section className="section section--flush"><div className="container"><PanStatusTool/></div></section>
 
     <section className="section section--tint"><div className="container">
       <div className="note-card"><Search size={22}/><p>Lost your reference number or not sure which portal to check? Send us a message with your name and roughly when you applied — we keep a note of applications we've helped submit and can help you find the right reference.</p></div>

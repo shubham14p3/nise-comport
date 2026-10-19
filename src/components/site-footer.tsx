@@ -56,12 +56,11 @@ export default function SiteFooter() {
       <nav className="footer-col" aria-label="Help and account">
         <strong>Help</strong>
         <Link href="/request">Start a request</Link>
-        <Link href="/profile#requests">Track a request</Link>
-        <Link href="/track">Track certificate / voter ID</Link>
+        <Link href="/track">Track a request</Link>
         <Link href="/offers">Offers</Link>
+        <Link href="/pricing">Pricing</Link>
         <Link href="/gallery">Gallery</Link>
         <Link href="/blog">Local guides</Link>
-        <Link href="/pan">PAN help centre</Link>
         <Link href="/faq">FAQs</Link>
         <Link href="/about">About us</Link>
         <Link href="/team">Our team</Link>
@@ -81,7 +80,7 @@ export default function SiteFooter() {
     </div>
     <div className="container footer-bottom">
       <p>NISE COMPORT is an independent CSC / Pragya Kendra service centre, not a government office, bank or insurer. Official and third-party fees are separate from our service charge; final approvals rest with the relevant authority.</p>
-      <div className="footer-bottom__row"><span>© {YEAR} {site.name}. All rights reserved.</span><span><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/contact">Contact</Link><Link href="/login">Admin login</Link></span></div>
+      <div className="footer-bottom__row"><span>© {YEAR} {site.name}. All rights reserved.</span><span><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/refund-policy">Refunds</Link><Link href="/pricing">Pricing</Link><Link href="/contact">Contact</Link><Link href="/login">Admin login</Link></span></div>
     </div>
   </footer>;
 }

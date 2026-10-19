@@ -1,0 +1,71 @@
+import SiteHeader from "@/components/site-header";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import Breadcrumbs from "@/components/breadcrumbs";
+import { COLOR_PAGE_RATE } from "@/lib/print-pricing";
+import { pageMetadata } from "@/lib/seo";
+import { site, whatsappLink } from "@/lib/site";
+
+export const metadata: Metadata = pageMetadata(
+  "Pricing & Service Charges",
+  "How NISE COMPORT charges: printing rates, service charges confirmed before work starts, and how government fees are shown separately.",
+  "/pricing",
+);
+
+const blackWhite = [
+  { pages: "1 – 10 pages", rate: 5 },
+  { pages: "11 – 50 pages", rate: 3 },
+  { pages: "51 pages and above", rate: 2 },
+];
+
+const confirmed = [
+  { service: "PAN card, Aadhaar updates, certificates, voter ID", note: "Our assistance charge is confirmed on WhatsApp or at the desk before work starts. Government and portal fees, if any, are shown separately." },
+  { service: "AEPS, money transfer, bill and fee payments", note: "A small service charge applies and is told to you before the transaction." },
+  { service: "Insurance, banking and student forms", note: "Our assistance charge is confirmed per form. Premiums and bank charges go to the insurer or bank." },
+  { service: "Laptop, printer and PC repair, hardware", note: "Quoted after checking the device. Parts are priced on the day, so we send the latest price on WhatsApp." },
+];
+
+export default function PricingPage() {
+  return <main className="content-page"><SiteHeader/>
+    <section className="content-hero"><div className="container">
+      <Breadcrumbs items={[{ name: "Home", path: "/" }, { name: "Pricing", path: "/pricing" }]}/>
+      <span className="eyebrow eyebrow-muted">HONEST, SEPARATE, CONFIRMED FIRST</span>
+      <h1>Simple pricing,<br/><em>nothing hidden.</em></h1>
+      <p>Our service charge is always shown separately from any government, portal, bank or insurer fee. You hear the amount before we start, and the receipt lists what was collected.</p>
+    </div></section>
+
+    <section className="container legal-content">
+      <h2>Printing and photocopy</h2>
+      <p>Prices are per page. Black &amp; white pricing depends on the total pages in the order.</p>
+      <table className="price-table"><thead><tr><th>Type</th><th>Rate per page</th></tr></thead><tbody>
+        {blackWhite.map((row) => <tr key={row.pages}><th scope="row">Black &amp; white, {row.pages}</th><td>₹{row.rate}</td></tr>)}
+        <tr><th scope="row">Colour, any quantity</th><td>₹{COLOR_PAGE_RATE}</td></tr>
+      </tbody></table>
+      <p>The online print order shows the estimate before you confirm. We may adjust it after checking the file, and delivery, if offered, is confirmed separately. <Link href="/print">Start a print order <ArrowRight size={13}/></Link></p>
+
+      <h2>Services quoted before work starts</h2>
+      <table className="price-table"><thead><tr><th>Service</th><th>How it is priced</th></tr></thead><tbody>
+        {confirmed.map((row) => <tr key={row.service}><th scope="row">{row.service}</th><td>{row.note}</td></tr>)}
+      </tbody></table>
+
+      <h2>What is never included</h2>
+      <ul>
+        <li>Government, portal, court, bank, insurer or other third-party fees. These go to them, not to us.</li>
+        <li>Delivery charges for print orders, unless stated.</li>
+        <li>Fees for correcting or re-filing an application that was wrong because of incomplete details.</li>
+      </ul>
+
+      <h2>Offers</h2>
+      <p>Promo codes and welcome coupons reduce our service charge only, never government fees. See current <Link href="/offers">offers</Link>.</p>
+
+      <h2>Payment</h2>
+      <p>You can pay at the desk in cash or UPI. Online payment is being added; when it is live, payments are confirmed on your request and a receipt is issued.</p>
+
+      <h2>Cancellations and refunds</h2>
+      <p>See the <Link href="/refund-policy">refund &amp; cancellation policy</Link>.</p>
+
+      <p>Need an exact figure? <a href={whatsappLink("Hello NISE COMPORT, please tell me the charge for: ")} target="_blank" rel="noopener noreferrer">WhatsApp us</a> or call {site.phones.primary.display}.</p>
+    </section>
+  </main>;
+}

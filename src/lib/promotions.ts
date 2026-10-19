@@ -64,7 +64,8 @@ export const getPromoCalendar = unstable_cache(loadPromoCalendar, ["promo-calend
 
 /** Codes that can be used today (for the ticker, offer rails and chat). */
 export async function getLivePromos() {
-  const { views } = await getPromoCalendar();
+  // A database or cache problem should hide the promo codes, not break every page that lists them.
+  const { views } = await getPromoCalendar().catch((error) => { console.error("[promotions] calendar unavailable", error instanceof Error ? error.message : error); return { views: [] as PromoView[] }; });
   const now = new Date();
   return views.filter((view) => isPromoLive(view, now)).sort((a, b) => a.endsOn.localeCompare(b.endsOn) || a.code.localeCompare(b.code));
 }

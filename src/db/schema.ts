@@ -398,3 +398,15 @@ export const galleryItems = pgTable("gallery_items", {
   createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [uniqueIndex("gallery_items_src_unique").on(table.src), index("gallery_items_tag_idx").on(table.tag)]);
+
+/**
+ * People shown on the public Team page and the About page, managed in Admin → Team (website).
+ * Separate from `users`: a person can be listed here without having a staff login, and the other way round.
+ */
+export const teamMembers = pgTable("team_members", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(), role: text("role").notNull(), bio: text("bio"), image: text("image"),
+  sortOrder: integer("sort_order").notNull().default(0), active: boolean("active").notNull().default(true),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("team_members_active_sort_idx").on(table.active, table.sortOrder)]);

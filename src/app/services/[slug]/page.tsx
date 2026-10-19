@@ -28,6 +28,7 @@ import { pageMetadata } from "@/lib/seo";
 import { serviceEditorial } from "@/lib/service-editorial";
 import { areas } from "@/lib/areas";
 import { FACILITATOR_NOTE } from "@/lib/motor-insurance";
+import { panGuides } from "@/lib/pan-content";
 import { categoryFor, findService, isServiceDetail, publishedServiceDetails, requestHrefFor, serviceCatalog, serviceSeoDescription, serviceSeoTitle, shortServiceName } from "@/lib/services";
 import { site, whatsappLink } from "@/lib/site";
 import { itemListLd, serviceLd } from "@/lib/structured-data";
@@ -184,6 +185,14 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
         </article>)}</div>
       </div>
     </section>}
+
+    {service.slug === "pan-card" ? <section className="section section--tint" id="pan-help">
+      <div className="container">
+        <div className="section-head section-head--left"><span className="eyebrow">PAN HELP</span><h2>PAN guides and tools</h2><p>Everything about PAN in one place: applying, corrections, Aadhaar linking, e-PAN, forms and fixing problems.</p></div>
+        <div className="pan-grid">{panGuides.map((guide) => <Link className="pan-card" key={guide.slug} href={`/pan/${guide.slug}`}><h3>{guide.title}</h3><p>{guide.intro}</p><span>Read guide →</span></Link>)}</div>
+        <div className="page-hero__ctas" style={{ marginTop: 16 }}><Link className="btn btn--primary" href="/pan/request">Start a PAN assistance request <ArrowRight size={16}/></Link><Link className="btn btn--ghost" href="/track#pan">Track a PAN application</Link></div>
+      </div>
+    </section> : null}
 
     {guides.length ? <section className="section section--tint">
       <div className="container">

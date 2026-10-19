@@ -16,6 +16,8 @@ import { articles } from "@/lib/content";
 import { localGallery } from "@/lib/gallery";
 import { livePhotos } from "@/lib/gallery-store";
 import { getPlaceSummary } from "@/lib/google-places";
+import { safely } from "@/lib/safe";
+import SafeImage from "@/components/safe-image";
 import { summarizeHours } from "@/lib/hours";
 import { liveOffers } from "@/lib/offers";
 import { getLivePromos } from "@/lib/promotions";
@@ -63,10 +65,10 @@ const homeFaqs = [
 export default async function HomePage() {
   const hours = summarizeHours(site.openingHours);
   // Three festival / match codes ending soonest, then the standing offers.
-  const offers = [...liveOfferCodes(await getLivePromos()).slice(0, 3), ...liveOffers()];
-  const place = await getPlaceSummary();
+  const offers = [...liveOfferCodes(await safely(() => getLivePromos(), [], "promo codes")).slice(0, 3), ...liveOffers()];
+  const place = await safely(() => getPlaceSummary(), null, "Google place summary");
   const galleryPreview = [
-    ...(await livePhotos()).filter((photo) => photo.tag === "shop" || photo.tag === "camps" || photo.tag === "training").slice(0, 4).map((photo) => ({ key: photo.src, src: photo.src, alt: photo.alt, title: photo.title, google: false })),
+    ...(await safely(() => livePhotos(), [], "gallery photos")).filter((photo) => photo.tag === "shop" || photo.tag === "camps" || photo.tag === "training").slice(0, 4).map((photo) => ({ key: photo.src, src: photo.src, alt: photo.alt, title: photo.title, google: false })),
     ...(place?.photos.slice(0, 3).map((photo) => ({ key: `g${photo.index}`, src: `/api/gallery/photo/${photo.index}`, alt: `Photo of NISE COMPORT by ${photo.author}`, title: `Photo · ${photo.author}`, google: true })) ?? []),
     ...localGallery.slice(0, 6).map((item) => ({ key: item.src, src: item.src, alt: item.alt, title: item.title, google: false })),
   ].slice(0, 6);
@@ -125,7 +127,7 @@ export default async function HomePage() {
             <h2>Deals that make it <span className="grad-text grad-text--warm">even easier.</span></h2>
             <p>Claim them right inside your request. Offers apply to our service charge, never to government fees.</p>
           </div>
-          <div className="offer-grid">{offers.map((offer) => <OfferCard key={offer.id} offer={offer}/>)}</div>
+          <div className={offers.length <= 4 ? "offer-grid offer-grid--rail is-short" : "offer-grid offer-grid--rail"} role="list" aria-label="Live offers. Scroll sideways to see more.">{offers.map((offer) => <div role="listitem" key={offer.id}><OfferCard offer={offer}/></div>)}</div>
           <div className="section-foot"><Link className="btn btn--glass" href="/offers">See all offers <ArrowRight size={18}/></Link></div>
         </div>
       </section>}
@@ -169,7 +171,7 @@ export default async function HomePage() {
             <Link className="btn btn--ghost" href="/gallery">Open gallery <ArrowUpRight size={18}/></Link>
           </div>
           <div className="gallery-strip">{galleryPreview.map((item) => <Link key={item.key} href="/gallery" className="gallery-strip__item">
-            <Image src={item.src} alt={item.alt} width={600} height={450} sizes="(max-width: 700px) 80vw, 33vw" unoptimized={item.google}/>
+            <SafeImage src={item.src} alt={item.alt} width={600} height={450} sizes="(max-width: 700px) 80vw, 33vw" unoptimized={item.google} fallbackSrc={localGallery[0]?.src}/>
             <span>{item.title}</span>
           </Link>)}</div>
         </div>

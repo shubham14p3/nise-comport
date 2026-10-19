@@ -32,8 +32,14 @@ export async function publicTestimonials(options: { serviceSlug?: string; limit?
   const where = options.serviceSlug
     ? and(eq(testimonials.visible, true), or(eq(testimonials.serviceSlug, options.serviceSlug), eq(testimonials.category, "general")))
     : eq(testimonials.visible, true);
-  const rows = await db.select().from(testimonials).where(where).orderBy(desc(testimonials.featured), desc(testimonials.reviewedOn), desc(testimonials.createdAt)).limit(limit);
-  return rows.map(serialize);
+  try {
+    const rows = await db.select().from(testimonials).where(where).orderBy(desc(testimonials.featured), desc(testimonials.reviewedOn), desc(testimonials.createdAt)).limit(limit);
+    return rows.map(serialize);
+  } catch (error) {
+    // Reviews are a nice extra; a database hiccup must not take the whole page down.
+    console.error("[testimonials] unavailable", error instanceof Error ? error.message : error);
+    return [];
+  }
 }
 
 export async function createTestimonial(input: { authorName: string; rating: number; body: string; category: string; serviceSlug: string | null; source: string; reviewedOn: string | null; featured: boolean; visible: boolean }, actorId: string) {
