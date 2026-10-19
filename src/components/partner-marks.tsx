@@ -1,6 +1,8 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { partners } from "@/lib/partners";
+import type { Locale } from "@/lib/i18n";
+import { partnerText } from "@/lib/translations/places";
 import LoopScroller from "@/components/loop-scroller";
 
 const EXTENSIONS = ["svg", "png", "webp", "jpg"] as const;
@@ -13,8 +15,9 @@ function logoFor(slug: string) {
   return null;
 }
 
-export default function PartnerMarks() {
+export default function PartnerMarks({ lang = "en" }: { lang?: Locale }) {
   return <div className="partner-grid">{partners.map((partner) => {
+    const text = partnerText(partner.slug, partner, lang);
     const logo = logoFor(partner.slug);
     const body = <>
       <span className={`partner-mark tone-${partner.tone}`} aria-hidden="true">
@@ -23,7 +26,7 @@ export default function PartnerMarks() {
           ? <img src={logo} alt="" loading="lazy"/>
           : <b>{partner.initials}</b>}
       </span>
-      <span className="partner-card__text"><b>{partner.name}</b><small>{partner.what}</small></span>
+      <span className="partner-card__text"><b>{text.name}</b><small>{text.what}</small></span>
     </>;
     return partner.href
       ? <a key={partner.slug} className="partner-card" href={partner.href} target="_blank" rel="noopener noreferrer nofollow">{body}</a>

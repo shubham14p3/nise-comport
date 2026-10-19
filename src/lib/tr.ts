@@ -24,7 +24,7 @@ function isUnprefixed(path: string) {
  * Content pages that exist in /hi and /bn. Add a page here when its translation is live; links and the
  * language menu send visitors to the translated page only when it is listed (otherwise they stay on English).
  */
-export const LOCALIZED_PAGES: string[] = ["/", "/services"];
+export const LOCALIZED_PAGES: string[] = ["/", "/services", "/about", "/faq", "/pricing", "/contact"];
 export const LOCALIZED_SECTIONS: string[] = [];
 
 export function hasTranslation(locale: Locale, path: string) {
