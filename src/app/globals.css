@@ -2322,3 +2322,39 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .chat-messages p { margin: 0; padding: .5rem .7rem; border-radius: 12px; max-width: 85%; white-space: pre-wrap; }
 .chat-in { background: rgb(124 77 255 / .1); justify-self: start; }
 .chat-out { background: rgb(26 157 92 / .12); justify-self: end; }
+
+/* ---------- Motion: content page heroes and the team page ---------- */
+@keyframes rise-in { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@keyframes orb-drift { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(24px, -18px) scale(1.08); } }
+@keyframes pop-in { from { opacity: 0; transform: translateY(26px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes shine { to { background-position: 200% 0; } }
+
+.content-hero .container > * { animation: rise-in .6s cubic-bezier(.2, .7, .2, 1) both; }
+.content-hero .container > :nth-child(2) { animation-delay: .06s; }
+.content-hero .container > :nth-child(3) { animation-delay: .12s; }
+.content-hero .container > :nth-child(4) { animation-delay: .2s; }
+.content-hero .container > :nth-child(5) { animation-delay: .28s; }
+.content-hero .container > :nth-child(6) { animation-delay: .36s; }
+
+.team-hero { position: relative; overflow: hidden; }
+.team-hero .container { position: relative; z-index: 1; }
+.team-hero__orb { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .45; pointer-events: none; animation: orb-drift 9s ease-in-out infinite; }
+.team-hero__orb--a { width: 280px; height: 280px; top: -80px; right: 8%; background: var(--cyan); }
+.team-hero__orb--b { width: 220px; height: 220px; bottom: -90px; left: 4%; background: #7c4dff; animation-delay: -4s; }
+.team-hero h1 em { background: linear-gradient(90deg, var(--blue), #7c4dff, var(--cyan), var(--blue)); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shine 6s linear infinite; }
+
+.team-card { animation: pop-in .6s cubic-bezier(.2, .7, .2, 1) both; animation-delay: calc(var(--i, 0) * 90ms + 150ms); }
+.team-card:hover { transform: translateY(-6px); box-shadow: 0 22px 44px -22px rgb(10 123 247 / .45); }
+.team-card__photo img { transition: transform .6s cubic-bezier(.2, .7, .2, 1); }
+.team-card:hover .team-card__photo img { transform: scale(1.07); }
+.team-card__initial { transition: transform .4s ease; }
+.team-card:hover .team-card__initial { transform: scale(1.1) rotate(-4deg); }
+.team-card h3 { position: relative; }
+.team-card h3::after { content: ""; display: block; height: 3px; width: 0; margin-top: 6px; border-radius: 2px; background: var(--grad); transition: width .35s ease; }
+.team-card:hover h3::after { width: 44px; }
+.team-block__title { animation: rise-in .6s ease both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .content-hero .container > *, .team-card, .team-block__title, .team-hero__orb, .team-hero h1 em { animation: none; }
+  .team-card:hover, .team-card:hover .team-card__photo img { transform: none; }
+}

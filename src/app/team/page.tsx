@@ -17,7 +17,7 @@ export default async function TeamPage() {
   const people = await publicTeam();
   return <main className="content-page"><SiteHeader/>
     <JsonLd data={webPageLd({ name: "The NISE COMPORT team", description: "The people at the NISE COMPORT service desk in Kharangajhar, Telco, Jamshedpur.", path: "/team" })}/>
-    <section className="content-hero"><div className="container">
+    <section className="content-hero team-hero"><span className="team-hero__orb team-hero__orb--a" aria-hidden="true"/><span className="team-hero__orb team-hero__orb--b" aria-hidden="true"/><div className="container">
       <Breadcrumbs items={[{ name: "Home", path: "/" }, { name: "Our team", path: "/team" }]}/>
       <span className="eyebrow eyebrow-muted">A LOCAL TEAM YOU CAN REACH</span>
       <h1>People who help<br/><em>get things moving.</em></h1>

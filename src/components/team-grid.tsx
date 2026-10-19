@@ -1,4 +1,5 @@
 import Image from "next/image";
+import type { CSSProperties } from "react";
 import type { TeamPerson } from "@/lib/team";
 
 function Portrait({ person }: { person: TeamPerson }) {
@@ -12,13 +13,13 @@ export default function TeamGrid({ people }: { people: TeamPerson[] }) {
   const isLeader = (person: TeamPerson) => /head|partner|director|owner|founder|manager/i.test(person.role);
   const leaders = people.filter(isLeader);
   const rest = people.filter((person) => !isLeader(person));
-  const card = (person: TeamPerson, large = false) => <article className={large ? "team-card team-card--lead" : "team-card"} key={person.id}>
+  const card = (person: TeamPerson, index: number, large = false) => <article className={large ? "team-card team-card--lead" : "team-card"} key={person.id} style={{ "--i": index } as CSSProperties}>
     <div className="team-card__photo"><Portrait person={person}/></div>
     <div><h3>{person.name}</h3><p className="team-card__role">{person.role}</p>{person.bio ? <p className="team-card__bio">{person.bio}</p> : null}</div>
   </article>;
   if (!people.length) return <p className="admin-empty">Our team details will be here soon.</p>;
   return <>
-    {leaders.length > 0 && <div className="team-block"><h2 className="team-block__title">Leadership</h2><div className="team-grid team-grid--lead">{leaders.map((person) => card(person, true))}</div></div>}
-    {rest.length > 0 && <div className="team-block"><h2 className="team-block__title">{leaders.length ? "The service desk" : "Our team"}</h2><div className="team-grid">{rest.map((person) => card(person))}</div></div>}
+    {leaders.length > 0 && <div className="team-block"><h2 className="team-block__title">Leadership</h2><div className="team-grid team-grid--lead">{leaders.map((person, index) => card(person, index, true))}</div></div>}
+    {rest.length > 0 && <div className="team-block"><h2 className="team-block__title">{leaders.length ? "The service desk" : "Our team"}</h2><div className="team-grid">{rest.map((person, index) => card(person, index))}</div></div>}
   </>;
 }
