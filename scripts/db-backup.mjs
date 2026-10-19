@@ -36,26 +36,48 @@ const out = createWriteStream(target, { encoding: "utf8" });
 const write = async (text) => { if (!out.write(text)) await once(out, "drain"); };
 const quote = (name) => `"${name.replace(/"/g, '""')}"`;
 
+const t0 = Date.now();
+const secs = () => `${((Date.now() - t0) / 1000).toFixed(0)}s`;
+const log = (text) => console.log(`[${secs().padStart(4)}] ${text}`);
+let lastTick = 0;
+const tick = (text) => { if (Date.now() - lastTick > 1500) { lastTick = Date.now(); log(text); } };
+const bar = (done, total) => { const w = 24, f = total ? Math.round((done / total) * w) : w; return `[${"#".repeat(f)}${".".repeat(w - f)}] ${total ? Math.round((done / total) * 100) : 100}%`; };
+
 try {
+  log(`Connecting to ${new URL(url).hostname}:${new URL(url).port || 5432} …`);
   const client = await pool.connect();
+  log("Connected.");
   try {
     // One consistent snapshot, so rows that point at each other still match.
     await client.query("begin transaction isolation level repeatable read read only");
     const tables = (await client.query("select table_name from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE' order by table_name")).rows.map((r) => r.table_name).filter((t) => !SKIP.includes(t));
     const identity = (await client.query("select table_name, column_name from information_schema.columns where table_schema = 'public' and is_identity = 'YES'")).rows;
+    log(`Counting rows in ${tables.length} tables …`);
+    const counts = new Map();
+    for (const table of tables) counts.set(table, (await client.query(`select count(*)::int n from ${quote(table)}`)).rows[0].n);
+    const grand = [...counts.values()].reduce((a, b) => a + b, 0);
+    log(`${grand} rows to save. Writing ${target}`);
     await write(`-- NISE COMPORT data backup, taken ${now.toISOString()} from ${new URL(url).hostname}\n-- Restore: create the tables with "npm run db:migrate" on an empty database, then "npm run db:restore -- ${target.replace(/\\/g, "/")}"\n`);
     await write("set session_replication_role = replica;\nbegin;\n");
-    let totalRows = 0;
+    let done = 0, index = 0;
     for (const table of tables) {
-      const rows = (await client.query(`select to_jsonb(t) as j from ${quote(table)} t`)).rows;
-      if (!rows.length) { console.log(`  ${table}: empty`); continue; }
-      for (let i = 0; i < rows.length; i += 200) {
-        const chunk = JSON.stringify(rows.slice(i, i + 200).map((r) => r.j));
+      index++;
+      const total = counts.get(table);
+      if (!total) { log(`(${index}/${tables.length}) ${table}: empty`); continue; }
+      // A cursor hands the rows over in small batches, so a big table never has to fit in memory at once.
+      await client.query(`declare nc_cur no scroll cursor for select to_jsonb(t) as j from ${quote(table)} t`);
+      let saved = 0;
+      for (;;) {
+        const { rows } = await client.query("fetch 200 from nc_cur");
+        if (!rows.length) break;
+        const chunk = JSON.stringify(rows.map((r) => r.j));
         let tag = "nc"; while (chunk.includes(`$${tag}$`)) tag += "x";
         await write(`insert into ${quote(table)} overriding system value select * from jsonb_populate_recordset(null::${quote(table)}, $${tag}$${chunk}$${tag}$::jsonb);\n`);
+        saved += rows.length; done += rows.length;
+        tick(`(${index}/${tables.length}) ${table}: ${saved}/${total}   overall ${bar(done, grand)}`);
       }
-      totalRows += rows.length;
-      console.log(`  ${table}: ${rows.length}`);
+      await client.query("close nc_cur");
+      log(`(${index}/${tables.length}) ${table}: ${saved} rows   overall ${bar(done, grand)}`);
     }
     for (const { table_name, column_name } of identity) {
       if (!tables.includes(table_name)) continue;
@@ -64,7 +86,7 @@ try {
     await write("commit;\nset session_replication_role = default;\n");
     await client.query("rollback");
     out.end(); await once(out, "finish");
-    console.log(`\n✓ Saved ${totalRows} rows from ${tables.length} tables to ${target} (${(statSync(target).size / 1024 / 1024).toFixed(2)} MB)`);
+    console.log(`\n✓ Saved ${done} rows from ${tables.length} tables to ${target} (${(statSync(target).size / 1024 / 1024).toFixed(2)} MB) in ${secs()}`);
     if (SKIP.length) console.log(`  Left out (temporary): ${SKIP.join(", ")}`);
     console.log("  Private uploaded files are not in the database; copy the server's .private-uploads folder too.");
   } finally { client.release(); }
