@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import test from "node:test";
-import { cleanUtr, convenienceFee, parseRupeesToPaise, upiLink, verifyCashfreeWebhook, verifyRazorpayPayment, verifyRazorpayWebhook } from "../src/lib/payments-core.ts";
+import { cleanUtr, convenienceFee, parseRupeesToPaise, upiLink } from "../src/lib/payments-core.ts";
+import { verifyCashfreeWebhook, verifyRazorpayPayment, verifyRazorpayWebhook } from "../src/lib/payments-verify.ts";
 import { qrMatrix, qrSvg } from "../src/lib/qr.ts";
 
 test("fee rounds up and is zero for zero percent", () => {

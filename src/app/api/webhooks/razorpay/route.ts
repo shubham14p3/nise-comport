@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { markFailed, markPaid, paymentByOrder } from "@/lib/payments";
-import { verifyRazorpayWebhook } from "@/lib/payments-core";
+import { verifyRazorpayWebhook } from "@/lib/payments-verify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

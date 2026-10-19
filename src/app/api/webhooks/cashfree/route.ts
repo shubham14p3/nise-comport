@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { markFailed, markPaid, paymentByOrder } from "@/lib/payments";
-import { verifyCashfreeWebhook } from "@/lib/payments-core";
+import { verifyCashfreeWebhook } from "@/lib/payments-verify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

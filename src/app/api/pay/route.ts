@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { apiError, readJson } from "@/lib/http";
 import { PublicError } from "@/lib/errors";
 import { createGatewayOrder, markPaid, paymentByOrder, raiseTicket, requestRefund, submitUtr } from "@/lib/payments";
-import { verifyRazorpayPayment } from "@/lib/payments-core";
+import { verifyRazorpayPayment } from "@/lib/payments-verify";
 import { enforceRate, identity } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
