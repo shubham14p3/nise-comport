@@ -30,9 +30,10 @@ export async function POST(request: NextRequest) {
     if (input.action === "refund") { await requestRefund(input.reference.trim().toUpperCase(), input.choice, input.details, user); return NextResponse.json({ ok: true }); }
     if (input.action === "order") return NextResponse.json(await createGatewayOrder(input.reference.trim().toUpperCase(), input.provider, user));
     const secret = process.env.RAZORPAY_KEY_SECRET;
-    if (!secret || !verifyRazorpayPayment(input.orderId, input.paymentId, input.signature, secret)) throw new PublicError("We could not confirm that payment. If money was deducted, call us and we will sort it out.", 400);
+    // Razorpay: verify against the order id WE stored, never the one the browser reports.
     const payment = await paymentByOrder(input.orderId);
-    if (!payment || payment.userId !== user.id) throw new PublicError("Payment not found.", 404);
+    if (!payment || payment.userId !== user.id || !payment.providerOrderId) throw new PublicError("Payment not found.", 404);
+    if (!secret || !verifyRazorpayPayment(payment.providerOrderId, input.paymentId, input.signature, secret)) throw new PublicError("We could not confirm that payment. If money was deducted, call us and we will sort it out.", 400);
     await markPaid(payment.id, { method: "razorpay", providerPaymentId: input.paymentId });
     return NextResponse.json({ ok: true });
   } catch (error) { return apiError(error); }

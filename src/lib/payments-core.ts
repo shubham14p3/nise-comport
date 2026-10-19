@@ -25,7 +25,7 @@ export function rupees(paise: number) {
 
 export function parseRupeesToPaise(input: string | number) {
   const value = typeof input === "number" ? input : Number(String(input).replace(/[₹,\s]/g, ""));
-  if (!Number.isFinite(value) || value <= 0 || value > 500000) return null;
+  if (!Number.isFinite(value) || value < 1 || value > 500000) return null;
   return Math.round(value * 100);
 }
 

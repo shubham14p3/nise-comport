@@ -24,7 +24,7 @@ No GST number is needed for a proprietorship or an individual. Typically asked:
 Steps: Sign up → complete KYC → add website → wait for review (usually 2–5 working days). Then Settings → API keys (Key ID + Secret) and Webhooks → URL `https://www.nisecomport.com/api/webhooks/razorpay`, events `payment.captured` and `order.paid`, set a secret → `RAZORPAY_WEBHOOK_SECRET`.
 
 ## 3. Cashfree — documents
-Same set: proprietor PAN, Aadhaar, Udyam (or other business proof), cancelled cheque/bank statement, website with policy pages. GST is optional for small businesses. Steps: sign up → submit KYC and business details (website + policies) → get Test mode keys immediately, Production after approval. Payment Gateway → Developers → API keys → `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`; Webhooks → `https://www.nisecomport.com/api/webhooks/cashfree`. Use `CASHFREE_ENV=sandbox` until approved, then `production`.
+Same set: proprietor PAN, Aadhaar, Udyam (or other business proof), cancelled cheque/bank statement, website with policy pages. GST is optional for small businesses. Steps: sign up → submit KYC and business details (website + policies) → get Test mode keys immediately, Production after approval. Payment Gateway → Developers → API keys → `CASHFREE_APP_ID`, `CASHFREE_SECRET_KEY`; Webhooks (payload version must be the same as `CASHFREE_API_VERSION`, or the 2025 and 2023 versions also work) → `https://www.nisecomport.com/api/webhooks/cashfree`. Use `CASHFREE_ENV=sandbox` until approved, then `production`.
 
 ## Notes
 - A gateway may ask what you sell: "assisted online government and digital services (CSC / Pragya Kendra), printing, insurance assistance". Do not describe it as government services provided directly.

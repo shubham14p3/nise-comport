@@ -3,6 +3,7 @@ import { payments, serviceRequests, users, walletEntries } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
+import { cashfreeCreateOrder, cashfreeOrderPayments, cashfreeRefund, razorpayCreateOrder, razorpayRefund } from "@/lib/gateways";
 import { sendPaymentAlertEmail, sendPaymentReceiptEmail } from "@/lib/email";
 import { cleanUtr, convenienceFee, onlineFeePercent, refundBreakdown, rupees, TICKET_AFTER_HOURS, type PayMethod, type RefundChoice } from "@/lib/payments-core";
 import { site } from "@/lib/site";
@@ -19,8 +20,6 @@ export function paymentOptions() {
     feePercent: onlineFeePercent(),
   };
 }
-
-const cashfreeBase = () => (process.env.CASHFREE_ENV === "production" ? "https://api.cashfree.com/pg" : "https://sandbox.cashfree.com/pg");
 
 /** The customer's open (or latest) payment for a request, loaded only if the request is theirs or the viewer is staff. */
 export async function paymentForReference(reference: string, viewer: { id: string; role: string }) {
@@ -102,13 +101,8 @@ export async function createGatewayOrder(reference: string, provider: "razorpay"
   const orderId = `${payment.reference}-${Date.now().toString(36)}`.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 40);
 
   if (provider === "razorpay") {
-    const auth = Buffer.from(`${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`).toString("base64");
-    const response = await fetch("https://api.razorpay.com/v1/orders", {
-      method: "POST", headers: { Authorization: `Basic ${auth}`, "content-type": "application/json" },
-      body: JSON.stringify({ amount: total, currency: "INR", receipt: orderId, notes: { reference: payment.reference, paymentId: payment.id } }),
-    });
-    const order = await response.json().catch(() => ({})) as { id?: string };
-    if (!response.ok || !order.id) { console.error("[pay] razorpay order failed", response.status, order); throw new PublicError("Online payment is busy right now. Please use the UPI QR or try again.", 502); }
+    const order = await razorpayCreateOrder({ amountPaise: total, receipt: orderId, notes: { reference: payment.reference, paymentId: payment.id } });
+    if (!order.ok) { console.error("[pay] razorpay order failed", order.status, order.body); throw new PublicError("Online payment is busy right now. Please use the UPI QR or try again.", 502); }
     await db.update(payments).set({ providerOrderId: order.id, feePaise: fee, method: "razorpay", updatedAt: new Date() }).where(eq(payments.id, payment.id));
     return { provider, keyId: process.env.RAZORPAY_KEY_ID, orderId: order.id, amount: total, name: site.name, reference: payment.reference };
   }
@@ -116,20 +110,31 @@ export async function createGatewayOrder(reference: string, provider: "razorpay"
   const [customer] = await db.select().from(users).where(eq(users.id, viewer.id)).limit(1);
   const phone = (customer?.phone ?? "").replace(/\D/g, "").slice(-10);
   if (phone.length !== 10) throw new PublicError("Please add your 10-digit mobile number in your profile to pay online.", 400, { code: "phone_required" });
-  const response = await fetch(`${cashfreeBase()}/orders`, {
-    method: "POST",
-    headers: { "x-client-id": process.env.CASHFREE_APP_ID!, "x-client-secret": process.env.CASHFREE_SECRET_KEY!, "x-api-version": "2023-08-01", "content-type": "application/json" },
-    body: JSON.stringify({
-      order_id: orderId, order_amount: Number((total / 100).toFixed(2)), order_currency: "INR",
-      customer_details: { customer_id: viewer.id.replace(/-/g, "").slice(0, 30), customer_phone: phone, customer_name: customer?.name?.slice(0, 80), customer_email: customer?.email },
-      order_meta: { return_url: `${site.url}/pay/${payment.reference}?order={order_id}`, notify_url: `${site.url}/api/webhooks/cashfree` },
-      order_note: payment.reference,
-    }),
+  const order = await cashfreeCreateOrder({
+    order_id: orderId, order_amount: Number((total / 100).toFixed(2)), order_currency: "INR",
+    customer_details: { customer_id: viewer.id.replace(/-/g, "").slice(0, 30), customer_phone: phone, ...((customer?.name?.length ?? 0) >= 3 ? { customer_name: customer!.name.slice(0, 100) } : {}), customer_email: customer?.email },
+    order_meta: { return_url: `${site.url}/pay/${payment.reference}?order={order_id}`, notify_url: `${site.url}/api/webhooks/cashfree` },
+    order_note: payment.reference,
   });
-  const order = await response.json().catch(() => ({})) as { order_id?: string; payment_session_id?: string };
-  if (!response.ok || !order.payment_session_id) { console.error("[pay] cashfree order failed", response.status, order); throw new PublicError("Online payment is busy right now. Please use the UPI QR or try again.", 502); }
-  await db.update(payments).set({ providerOrderId: order.order_id ?? orderId, feePaise: fee, method: "cashfree", updatedAt: new Date() }).where(eq(payments.id, payment.id));
-  return { provider, sessionId: order.payment_session_id, mode: process.env.CASHFREE_ENV === "production" ? "production" : "sandbox", reference: payment.reference };
+  if (!order.ok) { console.error("[pay] cashfree order failed", order.status, order.body); throw new PublicError("Online payment is busy right now. Please use the UPI QR or try again.", 502); }
+  await db.update(payments).set({ providerOrderId: order.orderId ?? orderId, feePaise: fee, method: "cashfree", updatedAt: new Date() }).where(eq(payments.id, payment.id));
+  return { provider, sessionId: order.sessionId, mode: process.env.CASHFREE_ENV === "production" ? "production" : "sandbox", reference: payment.reference };
+}
+
+/**
+ * When the customer comes back from Cashfree's page, ask Cashfree what happened instead of waiting for the webhook.
+ * Only a SUCCESS for exactly the amount we asked for marks the payment as paid.
+ */
+export async function syncCashfreePayment(payment: PaymentRow) {
+  if (payment.status === "paid" || payment.method !== "cashfree" || !payment.providerOrderId || !paymentOptions().cashfree) return;
+  try {
+    const list = await cashfreeOrderPayments(payment.providerOrderId);
+    const total = payment.amountPaise + payment.feePaise;
+    const success = list.find((item) => item.payment_status === "SUCCESS" && Math.round(Number(item.payment_amount) * 100) === total);
+    if (success) { await markPaid(payment.id, { method: "cashfree", providerPaymentId: String(success.cf_payment_id ?? "") }); return; }
+    const failed = list.find((item) => item.payment_status === "FAILED");
+    if (failed && list.every((item) => item.payment_status !== "SUCCESS" && item.payment_status !== "PENDING")) await markFailed(payment.id, failed.payment_message || "The payment did not go through.");
+  } catch (error) { console.error("[pay] cashfree sync failed", error); }
 }
 
 /** Looks a payment up by the gateway's order id (used by webhooks). */
@@ -190,8 +195,20 @@ export async function processRefund(id: string, actor: { id: string }, opts: { s
   const result = refundBreakdown({ paidPaise: paid, method: payment.method, choice, feePercent: onlineFeePercent(), serviceChargePaise: opts.serviceChargePaise });
   const [claimed] = await db.update(payments).set({ refundStatus: "done", refundPaise: result.netPaise, refundedAt: new Date(), updatedAt: new Date() }).where(and(eq(payments.id, id), eq(payments.refundStatus, "requested"))).returning({ id: payments.id });
   if (!claimed) throw new PublicError("This refund was already processed.", 409);
+  let gatewayNote = "";
+  if (choice !== "wallet" && payment.providerOrderId && (payment.method === "razorpay" || payment.method === "cashfree") && result.netPaise > 0) {
+    const outcome = payment.method === "razorpay" && payment.providerPaymentId
+      ? await razorpayRefund(payment.providerPaymentId, result.netPaise, `RF${payment.reference}`)
+      : payment.method === "cashfree" ? await cashfreeRefund(payment.providerOrderId, result.netPaise, `RF${payment.id}`) : null;
+    if (outcome && !outcome.ok) {
+      // Nothing was refunded, so put the request back for another try (or for paying by hand).
+      await db.update(payments).set({ refundStatus: "requested", refundPaise: null, refundedAt: null }).where(eq(payments.id, id));
+      throw new PublicError(`The payment provider did not accept the refund: ${outcome.error}`, 502);
+    }
+    if (outcome?.ok) gatewayNote = ` via ${payment.method}`;
+  }
   if (choice === "wallet") await db.insert(walletEntries).values({ userId: payment.userId, amount: (result.netPaise / 100).toFixed(2), kind: "credit", description: `Refund credit for ${payment.reference} (includes 5% bonus)`, reference: payment.reference });
-  await logActivity({ kind: "request", permission: "requests", title: `Refund of ${rupees(result.netPaise)} (${choice})`, detail: payment.reference, refType: "payment", refId: id, actorId: actor.id });
+  await logActivity({ kind: "request", permission: "requests", title: `Refund of ${rupees(result.netPaise)} (${choice}${gatewayNote})`, detail: payment.reference, refType: "payment", refId: id, actorId: actor.id });
   return result;
 }
 
