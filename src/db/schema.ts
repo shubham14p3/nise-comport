@@ -410,3 +410,32 @@ export const teamMembers = pgTable("team_members", {
   createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("team_members_active_sort_idx").on(table.active, table.sortOrder)]);
+
+/**
+ * Money owed for a service request and how it was paid. Staff create a "due" row (Admin → Payments);
+ * the customer pays on /pay/<reference> by UPI QR (staff confirm it) or online through Razorpay or
+ * Cashfree (confirmed automatically). Amounts are in paise to avoid rounding errors.
+ */
+export const payments = pgTable("payments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  requestId: uuid("request_id").notNull().references(() => serviceRequests.id, { onDelete: "cascade" }),
+  reference: text("reference").notNull(),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  amountPaise: integer("amount_paise").notNull(),
+  feePaise: integer("fee_paise").notNull().default(0),
+  status: text("status").notNull().default("due"),
+  method: text("method"),
+  providerOrderId: text("provider_order_id"),
+  providerPaymentId: text("provider_payment_id"),
+  utr: text("utr"),
+  note: text("note"),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  verifiedBy: uuid("verified_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("payments_reference_idx").on(table.reference),
+  index("payments_status_idx").on(table.status, table.createdAt),
+  uniqueIndex("payments_utr_unique").on(table.utr),
+  uniqueIndex("payments_provider_payment_unique").on(table.method, table.providerPaymentId),
+]);

@@ -1,0 +1,35 @@
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { getCurrentUser } from "@/lib/auth";
+import { apiError, readJson } from "@/lib/http";
+import { PublicError } from "@/lib/errors";
+import { createGatewayOrder, markPaid, paymentByOrder, submitUtr } from "@/lib/payments";
+import { verifyRazorpayPayment } from "@/lib/payments-core";
+import { enforceRate, identity } from "@/lib/rate-limit";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const schema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("utr"), reference: z.string().max(40), utr: z.string().max(40) }),
+  z.object({ action: z.literal("order"), reference: z.string().max(40), provider: z.enum(["razorpay", "cashfree"]) }),
+  z.object({ action: z.literal("razorpayDone"), orderId: z.string().max(60), paymentId: z.string().max(60), signature: z.string().max(200) }),
+]);
+
+/** Customer-side payment actions (reached through the encrypted browser endpoint). */
+export async function POST(request: NextRequest) {
+  try {
+    const user = await getCurrentUser();
+    if (!user) throw new PublicError("Please sign in to pay.", 401, { code: "unauthenticated" });
+    const input = schema.parse(await readJson(request));
+    await enforceRate({ name: "pay-user", limit: 20, windowSeconds: 600 }, identity("pay", user.id), "Too many payment attempts.");
+    if (input.action === "utr") { await submitUtr(input.reference.trim().toUpperCase(), input.utr, user); return NextResponse.json({ ok: true }); }
+    if (input.action === "order") return NextResponse.json(await createGatewayOrder(input.reference.trim().toUpperCase(), input.provider, user));
+    const secret = process.env.RAZORPAY_KEY_SECRET;
+    if (!secret || !verifyRazorpayPayment(input.orderId, input.paymentId, input.signature, secret)) throw new PublicError("We could not confirm that payment. If money was deducted, call us and we will sort it out.", 400);
+    const payment = await paymentByOrder(input.orderId);
+    if (!payment || payment.userId !== user.id) throw new PublicError("Payment not found.", 404);
+    await markPaid(payment.id, { method: "razorpay", providerPaymentId: input.paymentId });
+    return NextResponse.json({ ok: true });
+  } catch (error) { return apiError(error); }
+}

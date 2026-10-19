@@ -73,6 +73,8 @@ const OPS = {
   "D5x8Q1mT4rV6": { method: "POST", path: "/api/admin/testimonials/sync" },
   "T9q4M2xV7bL3": { method: "GET", path: "/api/admin/team" },
   "W5n8H1cK6zR4": { method: "POST", path: "/api/admin/team" },
+  "Y3d7N5qV1mP8": { method: "POST", path: "/api/pay" },
+  "H6k2B9tW4xC7": { method: "POST", path: "/api/admin/payments" },
 } as const;
 
 /** Encrypted file uploads: customer documents, and posters in the admin area. */
@@ -90,6 +92,10 @@ function stringValue(input: Record<string, unknown>, key: string, max = 200) {
 function targetFor(operation: string, input: Record<string, unknown>) {
   if (operation in OPS) return OPS[operation as keyof typeof OPS];
   switch (operation) {
+    case "A8s5L2nR7vE4": {
+      const status = stringValue(input, "status", 20);
+      return { method: "GET", path: `/api/admin/payments?status=${encodeURIComponent(status)}` };
+    }
     case "X1m7C4pV8qB3": {
       const id = stringValue(input, "id", 80);
       return { method: "DELETE", path: `/api/addresses?id=${encodeURIComponent(id)}` };

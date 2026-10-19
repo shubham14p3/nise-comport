@@ -60,7 +60,7 @@ export default function PricingPage() {
       <p>Promo codes and welcome coupons reduce our service charge only, never government fees. See current <Link href="/offers">offers</Link>.</p>
 
       <h2>Payment</h2>
-      <p>You can pay at the desk in cash or UPI. Online payment is being added; when it is live, payments are confirmed on your request and a receipt is issued.</p>
+      <p>You can pay at the desk in cash or UPI, or on your request's payment page: UPI QR is free (we confirm it manually, so it takes a little time), and instant card, net-banking or UPI payment adds a small payment-processing fee that is shown before you pay.</p>
 
       <h2>Cancellations and refunds</h2>
       <p>See the <Link href="/refund-policy">refund &amp; cancellation policy</Link>.</p>

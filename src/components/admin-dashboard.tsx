@@ -15,6 +15,7 @@ import CampaignsPanel from "@/components/campaigns-panel";
 import ContactsPanel from "@/components/contacts-panel";
 import TeamPanel from "@/components/team-panel";
 import SiteTeamPanel from "@/components/site-team-panel";
+import PaymentsPanel from "@/components/payments-panel";
 import InboxPanel from "@/components/inbox-panel";
 import SiteContentPanel from "@/components/site-content-panel";
 import GalleryPanel from "@/components/gallery-panel";
@@ -209,7 +210,7 @@ function RequestQueue() {
   </>;
 }
 
-type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet";
+type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments";
 const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | "admin" | "staff" }[] = [
   { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
   { id: "requests", label: "Requests", icon: ClipboardList, needs: "requests" },
@@ -223,6 +224,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "team", label: "Team", icon: UsersRound, needs: "admin" },
   { id: "pan", label: "PAN data", icon: Database, needs: "pan" },
   { id: "wallet", label: "Wallet", icon: WalletCards, needs: "wallet" },
+  { id: "payments", label: "Payments", icon: WalletCards, needs: "requests" },
 ];
 
 const readHash = () => window.location.hash.slice(1);
@@ -298,6 +300,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { name
         {active === "testimonials" && <TestimonialsPanel/>}
         {active === "campaigns" && <CampaignsPanel/>}
         {active === "contacts" && <ContactsPanel/>}
+        {active === "payments" && <PaymentsPanel/>}
         {active === "team" && <><TeamPanel meRole={me.role}/><SiteTeamPanel/></>}
         {active === "pan" && <PanImportPanel/>}
         {active === "wallet" && <WalletCreditForm/>}
