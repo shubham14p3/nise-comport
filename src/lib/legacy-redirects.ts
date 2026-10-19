@@ -5,6 +5,7 @@
  *
  * Old slugs were produced by the legacy slugify(title) helper, e.g. "Voter ID / EPIC" -> "voter-id-epic".
  */
+import { FEATURES } from "./features.ts";
 import { SERVICE_SLUG_RENAMES } from "./slug-renames.ts";
 import { translatedSlugs } from "./translated-slugs.ts";
 
@@ -19,7 +20,7 @@ const serviceDetails: Record<string, string> = {
   "form-filing": "/services/form-filing",
   "it-sales-service": "/services/it-services",
   "it-sales--service": "/services/it-services",
-  travel: "/services/travel",
+  travel: FEATURES.travel ? "/services/travel" : "/services",
 };
 
 const blogDetails: Record<string, string> = {
@@ -80,6 +81,14 @@ export function legacyRedirects(): LegacyRedirect[] {
     list.push({ source: `/services/${old}`, destination: `/services/${slug}`, permanent: true });
     if (translatedSlugs.hi.includes(slug)) list.push({ source: `/hi/services/${old}`, destination: `/hi/services/${slug}`, permanent: true });
     if (translatedSlugs.bn.includes(slug)) list.push({ source: `/bn/services/${old}`, destination: `/bn/services/${slug}`, permanent: true });
+  }
+  // Switched-off services (see features.ts) send visitors to the services list.
+  const hidden: string[] = [];
+  if (!FEATURES.billsAndRecharge) hidden.push("fee-payments", "bill-payment-recharge", "fee-bill-recharge-jamshedpur");
+  if (!FEATURES.travel) hidden.push("travel", "ticket-booking", "train-flight-bus-booking-jamshedpur");
+  for (const slug of hidden) {
+    if (list.some((item) => item.source === `/services/${slug}`)) continue;
+    list.push({ source: `/services/${slug}`, destination: "/services", permanent: true });
   }
   return list;
 }

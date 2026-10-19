@@ -1,5 +1,6 @@
 "use client";
 
+import { FEATURES, uploadsAllowed } from "@/lib/features";
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
@@ -357,7 +358,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
           </button>
         </div>
         {draft.serviceSlug === "pan-card" && <div className="callout"><b>PAN has a dedicated guided form.</b><span>It collects exactly what the PAN process needs.</span><Link className="btn btn--sm btn--primary" href="/pan/request">Open PAN form <ArrowRight size={16}/></Link></div>}
-        {draft.serviceSlug === "printing-scanning" && <div className="callout"><b>Printing has its own flow.</b><span>Upload your file, pick pages and see the estimate.</span><Link className="btn btn--sm btn--primary" href="/print">Open print flow <ArrowRight size={16}/></Link></div>}
+        {draft.serviceSlug === "printing-scanning" && FEATURES.printUploads && <div className="callout"><b>Printing has its own flow.</b><span>Upload your file, pick pages and see the estimate.</span><Link className="btn btn--sm btn--primary" href="/print">Open print flow <ArrowRight size={16}/></Link></div>}
       </section>}
 
       {draft.step === 1 && <section>
@@ -372,11 +373,12 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         </div></fieldset>
         <label className="field"><span className="field__label">{t.describe}</span><textarea value={draft.description} onChange={(event) => update({ description: event.target.value.slice(0, 1500) })} rows={4} maxLength={1500} required aria-invalid={describeBad}/>{describeBad && <span className="field__error">{t.errDescribe}</span>}<span className="field__hint">{t.describeHint} · {draft.description.length}/1500</span></label>
         <div className="quick-picks"><span>{t.quickPicks}</span>{picks.map((pick) => <button key={pick} type="button" className="chip-btn chip-btn--sm" onClick={() => update({ description: draft.description.includes(pick) ? draft.description : `${draft.description ? `${draft.description.trim()} ` : ""}${pick}.`.slice(0, 1500) })}>+ {pick}</button>)}</div>
-        <div className="field"><span className="field__label">{t.attach}</span>
+        {!uploadsAllowed(activeCategory) && <p className="field__hint">No file needed. Tell us what you want and we reply with the price.</p>}
+        {uploadsAllowed(activeCategory) && <div className="field"><span className="field__label">{t.attach}</span>
           {user ? file ? <div className="file-pill"><FileText size={18}/><span>{file.name}<small>{(file.size / 1024 / 1024).toFixed(1)} MB</small></span><button type="button" className="icon-btn" onClick={() => { setFile(null); idempotencyKey.current = null; }} aria-label={t.remove}><X size={16}/></button></div>
             : <label className="dropzone"><Upload size={22}/><b>{t.attach}</b><small>{t.attachHint}</small><input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,application/pdf" onChange={(event) => { setFile(event.target.files?.[0] ?? null); idempotencyKey.current = null; }}/></label>
             : <p className="field__hint">{t.attachLater}</p>}
-        </div>
+        </div>}
       </section>}
 
       {draft.step === 2 && <section>

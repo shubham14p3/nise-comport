@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import { FEATURES } from "@/lib/features";
 import { addresses, printJobs, storedFiles } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -33,6 +34,7 @@ async function readDocumentPageCount(file: typeof storedFiles.$inferSelect) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!FEATURES.printUploads) return NextResponse.json({ error: "Online print orders are paused. Please ask us for a price instead." }, { status: 403 });
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: "Please sign in to place an order." }, { status: 401 });
     if (user.role === "demo") return NextResponse.json({ error: "The local demo account can’t place print orders." }, { status: 403 });

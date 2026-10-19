@@ -9,7 +9,7 @@ import { legacyRedirects } from "../src/lib/legacy-redirects.ts";
 import { panGuides } from "../src/lib/pan-content.ts";
 import { publicRoutes } from "../src/lib/routes.ts";
 import { serviceEditorial } from "../src/lib/service-editorial.ts";
-import { allServiceItems, findService, publishedServiceDetails, serviceCatalog, serviceDetails, serviceSeoDescription, serviceSeoTitle } from "../src/lib/services.ts";
+import { allServiceCatalog, allServiceItems, findService, publishedServiceDetails, serviceCatalog, serviceDetails, serviceSeoDescription, serviceSeoTitle } from "../src/lib/services.ts";
 import { breadcrumbLd, faqLd, localBusinessLd, serializeJsonLd } from "../src/lib/structured-data.ts";
 import { site } from "../src/lib/site.ts";
 
@@ -105,7 +105,7 @@ test("Hindi pages mirror existing English services and have reciprocal hreflang"
 
 test("service editorial, categories and PAN guides are consistent", () => {
   for (const slug of Object.keys(serviceEditorial)) assert.ok(serviceDetails.some((service) => service.slug === slug), `editorial for unknown service ${slug}`);
-  for (const service of serviceDetails) assert.ok(serviceCatalog.some((group) => group.slug === service.categorySlug), `${service.slug}: unknown category`);
+  for (const service of serviceDetails) assert.ok(allServiceCatalog.some((group) => group.slug === service.categorySlug), `${service.slug}: unknown category`);
   for (const service of publishedServiceDetails) for (const link of service.officialLinks ?? []) assert.match(link.href, /^https:\/\//);
   assert.equal(new Set(panGuides.map((guide) => guide.slug)).size, panGuides.length);
 });

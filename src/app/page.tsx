@@ -14,6 +14,7 @@ import LoopScroller from "@/components/loop-scroller";
 import OpenStatus from "@/components/open-status";
 import TestimonialsSection from "@/components/testimonials-section";
 import { articles } from "@/lib/content";
+import { serviceCatalog } from "@/lib/services";
 import { localGallery } from "@/lib/gallery";
 import { livePhotos } from "@/lib/gallery-store";
 import { getPlaceSummary } from "@/lib/google-places";
@@ -101,7 +102,7 @@ export default async function HomePage() {
         </div>
         <div className="container hero__stats">
           <div><strong>{publishedServiceDetails.length}+</strong><span>services under one roof</span></div>
-          <div><strong>8</strong><span>categories, from PAN to travel</span></div>
+          <div><strong>{serviceCatalog.length}</strong><span>categories, from PAN to PC repair</span></div>
           <div><strong>3</strong><span>languages on the website</span></div>
           <div><strong><OpenStatus rules={site.openingHours}/>{!site.openingHours.length && "Mon–Sat"}</strong><span>{hours[0] ?? "Walk in or call first"}</span></div>
         </div>
