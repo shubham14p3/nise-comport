@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { partners } from "@/lib/partners";
+import LoopScroller from "@/components/loop-scroller";
 
 const EXTENSIONS = ["svg", "png", "webp", "jpg"] as const;
 
@@ -30,18 +31,22 @@ export default function PartnerMarks() {
   })}</div>;
 }
 
-/** Compact row of badges for the footer: who we help customers reach. Official logos in public/images/partners/ replace the lettered badges. */
+/** One endless line of badges for the footer: who we help customers reach. It drifts slowly, and can be dragged or swiped. Official logos in public/images/partners/ replace the lettered badges. */
 export function PartnerStrip({ limit = 12 }: { limit?: number }) {
-  return <ul className="partner-strip" aria-label="Services and portals we help with">{partners.slice(0, limit).map((partner) => {
-    const logo = logoFor(partner.slug);
-    return <li key={partner.slug} title={`${partner.name}: ${partner.what}`}>
-      <span className={`partner-mark partner-mark--sm tone-${partner.tone}`} aria-hidden="true">
-        {logo
-          // eslint-disable-next-line @next/next/no-img-element -- owner-supplied logo of unknown size
-          ? <img src={logo} alt="" loading="lazy"/>
-          : <b>{partner.initials}</b>}
-      </span>
-      <span>{partner.name}</span>
-    </li>;
-  })}</ul>;
+  return <div className="partner-strip">
+    <LoopScroller label="Services and portals we help with" gap={8} auto>
+      {partners.slice(0, limit).map((partner) => {
+        const logo = logoFor(partner.slug);
+        return <div key={partner.slug} role="listitem" className="partner-chip" title={`${partner.name}: ${partner.what}`}>
+          <span className={`partner-mark partner-mark--sm tone-${partner.tone}`} aria-hidden="true">
+            {logo
+              // eslint-disable-next-line @next/next/no-img-element -- owner-supplied logo of unknown size
+              ? <img src={logo} alt="" loading="lazy" draggable={false}/>
+              : <b>{partner.initials}</b>}
+          </span>
+          <span>{partner.name}</span>
+        </div>;
+      })}
+    </LoopScroller>
+  </div>;
 }

@@ -2368,8 +2368,8 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .footer-trust__head { display: grid; gap: 4px; }
 .footer-trust__head b { color: #fff; font-size: .8125rem; letter-spacing: .12em; text-transform: uppercase; }
 .footer-trust__head span { font-size: .8125rem; color: rgb(255 255 255 / .6); }
-.partner-strip { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; }
-.partner-strip li { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 5px 6px; border-radius: 999px; background: rgb(255 255 255 / .07); border: 1px solid rgb(255 255 255 / .12); color: rgb(255 255 255 / .85); font-size: .8125rem; font-weight: 600; }
+.partner-strip { min-width: 0; -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent); }
+.partner-strip .partner-chip { flex: none; white-space: nowrap; user-select: none; display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 5px 6px; border-radius: 999px; background: rgb(255 255 255 / .07); border: 1px solid rgb(255 255 255 / .12); color: rgb(255 255 255 / .85); font-size: .8125rem; font-weight: 600; }
 .partner-mark--sm { width: 28px; height: 28px; border-radius: 50%; }
 .partner-mark--sm b { font-size: .5625rem; }
 .partner-mark--sm img { padding: 3px; }
