@@ -7,9 +7,9 @@ import { db } from "@/lib/db";
 import { sendMail } from "@/lib/email";
 import { PublicError } from "@/lib/errors";
 import {
-  addDays, birthdayEmail, birthdayLabel, birthdayWhatsApp, birthFromFields, DEFAULT_SETTINGS, daysBetween, daysUntilBirthday, instagramCaption, istToday, lastBirthday, mayMessage,
+  addDays, birthdayEmail, birthdayLabel, birthdayWhatsApp, birthFromFields, DEFAULT_SETTINGS, daysBetween, daysUntilBirthday, instagramCaption, istToday, lastBirthday, markRefreshed, mayMessage, refreshStatus,
   pickBirthdayTemplate, pickRenewalTemplate, renewalEmail, renewalWhatsApp, sanitizeBirthdayTemplates, sanitizeRenewalTemplates, sanitizeSettings, vehicleFrom,
-  type BirthdayCouponInfo, type BirthdayTemplate, type Lang, type OutreachSettings, type RenewalTemplate, type Vehicle,
+  type BirthdayCouponInfo, type BirthdayTemplate, type Lang, type OutreachSettings, type RefreshState, type RenewalTemplate, type Vehicle,
 } from "@/lib/outreach-core";
 import { addContacts, CONTACT_SERVICE, type Person } from "@/lib/records";
 import { ensureBirthdayCoupon } from "@/lib/birthday-coupon";
@@ -93,6 +93,24 @@ type Sealed = { mobile: string | null; whatsapp?: string | null; email?: string 
  * data is read from the encrypted rows) for dates of birth and bike / car, and puts birthdays and email
  * addresses on the matching WhatsApp contacts (creating contacts for people who have none, "not asked yet").
  */
+export async function refreshState() {
+  return refreshStatus((await readSetting("refresh_state")) as RefreshState | undefined);
+}
+
+/** Refreshes the data (reads the saved records for birthdays and bike / car), but only once in the morning and once in the evening. Both tabs share the limit. */
+export async function refreshData(actor: { id: string; name: string }) {
+  const before = (await readSetting("refresh_state")) as RefreshState | undefined;
+  const status = refreshStatus(before);
+  if (!status.allowed) {
+    const when = status.nextAt ? new Date(status.nextAt).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" }) : "later";
+    throw new PublicError(`The data was already refreshed this ${status.slot}. The next refresh opens at ${when}.`, 429, { code: "refresh_limit" });
+  }
+  // Claim the slot first so two clicks at once cannot both run; give it back if the read fails.
+  await writeSetting("refresh_state", markRefreshed(before));
+  try { return { ...(await scanRecords(actor)), refresh: await refreshState() }; }
+  catch (error) { await writeSetting("refresh_state", before ?? {}); throw error; }
+}
+
 export async function scanRecords(actor: { id: string; name: string }) {
   const result = { scanned: 0, birthdays: 0, vehicles: 0, contactsAdded: 0 };
   const people = new Map<string, Person>();
@@ -412,4 +430,48 @@ export async function runDailyOutreach(now = new Date()) {
   }
   await writeSetting("daily_run", { day: today, done: remaining === 0 });
   return summary;
+}
+
+
+// ---------------------------------------------------------------------------------------------
+// Copy-and-paste messages (for sending by hand from WhatsApp)
+// ---------------------------------------------------------------------------------------------
+
+export type CopyItem = { id: string; name: string; phone: string; text: string };
+
+/** The WhatsApp text for each chosen person, ready to copy. Same opt-in rule as sending: people who have not said YES (birthdays) or said STOP (renewals) are left out. */
+export async function copyMessages(input: { kind: "birthday" | "renewal"; ids: string[]; template: string; days?: number }) {
+  const config = await loadConfig();
+  const items: CopyItem[] = []; let skipped = 0;
+  if (input.kind === "birthday") {
+    const template = pickBirthdayTemplate(config.birthdayTemplates, input.template);
+    const today = istToday();
+    const gift = config.settings.birthday.coupon;
+    const ids = [...new Set(input.ids)].slice(0, 500);
+    const rows = ids.length ? await db.select().from(contacts).where(inArray(contacts.id, ids)) : [];
+    for (const contact of rows) {
+      if (!mayMessage("birthday", "whatsapp", contact)) { skipped++; continue; }
+      let coupon: BirthdayCouponInfo | null = null;
+      if (gift.enabled && contact.birthMonth !== null && contact.birthDay !== null) {
+        try { coupon = await ensureBirthdayCoupon(contact, gift, lastBirthday({ month: contact.birthMonth, day: contact.birthDay }, today)); } catch { coupon = null; }
+      }
+      const lang = langOf(contact.locale);
+      items.push({ id: contact.id, name: contact.name, phone: contact.phone, text: renderMessage(birthdayWhatsApp(template, lang, coupon), { lang, kind: "birthday", name: contact.name, phone: shopPhone() }) });
+    }
+    return { items, skipped };
+  }
+  const template = pickRenewalTemplate(config.renewalTemplates, input.template);
+  const wanted = new Set(input.ids);
+  const due = await renewalsDue({ days: input.days ?? 45, overdue: true, template: template.id });
+  const people = due.people.filter((person) => wanted.has(person.key)).slice(0, 500);
+  const phones = people.map((person) => person.phone);
+  const rows = phones.length ? await db.select().from(contacts).where(inArray(contacts.phone, phones)) : [];
+  const byPhone = new Map(rows.map((contact) => [contact.phone, contact]));
+  for (const person of people) {
+    const contact = byPhone.get(person.phone);
+    if (!contact || !mayMessage("renewal", "whatsapp", contact)) { skipped++; continue; }
+    const lang = langOf(contact.locale);
+    items.push({ id: person.key, name: contact.name, phone: contact.phone, text: renderMessage(renewalWhatsApp(template, person.vehicle, person.renewalOn, lang, shopPhone()), { lang, kind: "renewal", name: contact.name, phone: shopPhone() }) });
+  }
+  return { items, skipped };
 }

@@ -272,3 +272,39 @@ export function mayMessage(kind: "birthday" | "renewal", channel: "email" | "wha
   if (contact.consent === "opted_out") return false;
   return kind === "birthday" ? contact.consent === "opted_in" : true;
 }
+
+// ---------------------------------------------------------------------------------------------
+// "Refresh the data": at most one in the morning and one in the evening (India time)
+// ---------------------------------------------------------------------------------------------
+
+/** The evening refresh opens at this hour (India time); before it, the morning refresh is the one available. */
+export const EVENING_FROM_HOUR = 15;
+
+export type RefreshState = { day?: string; am?: string; pm?: string };
+export type RefreshStatus = { allowed: boolean; usedToday: number; limit: 2; slot: "morning" | "evening"; nextAt: string | null; lastAt: string | null };
+
+/** Which refresh slot `now` falls in, and the day (India). */
+export function refreshSlot(now = new Date()) {
+  const ist = new Date(now.getTime() + 5.5 * 3_600_000);
+  return { day: ist.toISOString().slice(0, 10), slot: ist.getUTCHours() >= EVENING_FROM_HOUR ? ("evening" as const) : ("morning" as const) };
+}
+
+/** Can the data be refreshed now? One refresh per slot; when the slot is used, `nextAt` says when the next one opens. */
+export function refreshStatus(state: RefreshState | undefined, now = new Date()): RefreshStatus {
+  const { day, slot } = refreshSlot(now);
+  const today = state?.day === day ? state : {};
+  const usedToday = (today.am ? 1 : 0) + (today.pm ? 1 : 0);
+  const used = slot === "morning" ? today.am : today.pm;
+  const lastAt = [today.pm, today.am].find(Boolean) ?? (state?.pm ?? state?.am) ?? null;
+  // The next slot opens at 3 pm today (after the morning one) or at midnight (after the evening one).
+  const opens = slot === "morning" ? new Date(Date.parse(`${day}T${String(EVENING_FROM_HOUR).padStart(2, "0")}:00:00+05:30`)) : new Date(Date.parse(`${addDays(day, 1)}T00:00:00+05:30`));
+  return { allowed: !used, usedToday, limit: 2, slot, nextAt: used ? opens.toISOString() : null, lastAt };
+}
+
+/** The state after a refresh at `now`. */
+export function markRefreshed(state: RefreshState | undefined, now = new Date()): RefreshState {
+  const { day, slot } = refreshSlot(now);
+  const base: RefreshState = state?.day === day ? { ...state } : { day };
+  if (slot === "morning") base.am = now.toISOString(); else base.pm = now.toISOString();
+  return base;
+}

@@ -134,3 +134,20 @@ test("up to three UPI IDs are read, with labels, and bad ones are skipped", () =
   assert.deepEqual(found.map((item) => [item.slot, item.vpa, item.label]), [[0, "shop@sbi", "SBI account"], [1, "other@okaxis", "UPI 2"], [2, "third@ybl", "UPI 3"]]);
   assert.deepEqual(parseUpiAccounts([undefined, ""], "x"), []);
 });
+
+import { markRefreshed, refreshSlot, refreshStatus } from "../src/lib/outreach-core.ts";
+
+test("the data can be refreshed once in the morning and once in the evening (India time)", () => {
+  const morning = new Date("2026-10-20T04:00:00Z"); // 9:30 am IST
+  const evening = new Date("2026-10-20T11:00:00Z"); // 4:30 pm IST
+  assert.equal(refreshSlot(morning).slot, "morning"); assert.equal(refreshSlot(evening).slot, "evening");
+  assert.deepEqual([refreshStatus(undefined, morning).allowed, refreshStatus(undefined, morning).usedToday], [true, 0]);
+  const afterMorning = markRefreshed(undefined, morning);
+  const blocked = refreshStatus(afterMorning, new Date("2026-10-20T08:00:00Z")); // 1:30 pm IST, still morning
+  assert.equal(blocked.allowed, false); assert.equal(blocked.nextAt, "2026-10-20T09:30:00.000Z"); // opens 3 pm IST
+  assert.equal(refreshStatus(afterMorning, evening).allowed, true);
+  const afterEvening = markRefreshed(afterMorning, evening);
+  const none = refreshStatus(afterEvening, new Date("2026-10-20T16:00:00Z")); // 9:30 pm IST
+  assert.equal(none.allowed, false); assert.equal(none.usedToday, 2); assert.equal(none.nextAt, "2026-10-20T18:30:00.000Z"); // midnight IST
+  assert.equal(refreshStatus(afterEvening, new Date("2026-10-21T04:00:00Z")).allowed, true); // next morning
+});

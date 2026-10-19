@@ -2878,3 +2878,5 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .outreach-card__actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .outreach-save { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; gap: 10px; padding: 12px 0; background: linear-gradient(transparent, var(--bg) 40%); }
 @media (max-width: 640px) { .outreach-row { grid-template-columns: auto minmax(0, 1fr); } .outreach-row > .contact-row__actions { grid-column: 1 / -1; justify-content: flex-start; } }
+.outreach-refresh { display: inline-flex; flex-direction: column; gap: 2px; align-items: flex-start; }
+.outreach-refresh small { color: var(--muted); font-size: .78rem; }

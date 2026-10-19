@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Cake, CarFront, Check, ChevronDown, Copy, Download, Mail, MessageCircle, Pencil, Phone, ScanSearch, Search, Send, ShieldCheck } from "lucide-react";
+import { Cake, CarFront, Check, ChevronDown, Copy, Download, Mail, MessageCircle, Pencil, Phone, RefreshCw, Search, Send, ShieldCheck } from "lucide-react";
 import OutreachTemplates from "@/components/outreach-templates";
 import { secureApi } from "@/lib/secure-api-client";
-import type { BirthdayTemplate, Lang, RenewalTemplate } from "@/lib/outreach-core";
+import type { BirthdayTemplate, Lang, RefreshStatus, RenewalTemplate } from "@/lib/outreach-core";
 
 type Tab = "birthdays" | "renewals" | "templates";
 type Channel = "email" | "whatsapp";
@@ -12,12 +12,12 @@ type BirthdayPerson = {
   id: string; name: string; phone: string; email: string | null; locale: Lang; area: string | null; month: number; day: number; daysUntil: number; dateLabel: string;
   consent: string; emailConsent: string; wishedEmail: boolean; wishedWhatsApp: boolean; canEmail: boolean; canWhatsApp: boolean; cardUrl: string; caption: string;
 };
-type BirthdayList = { totals: { all: number; today: number; week: number; month: number }; matched: number; template: string; people: BirthdayPerson[] };
+type BirthdayList = { totals: { all: number; today: number; week: number; month: number }; matched: number; template: string; people: BirthdayPerson[]; refresh?: RefreshStatus };
 type RenewalPerson = {
   key: string; contactId: string | null; name: string; phone: string; email: string | null; vehicle: "bike" | "car" | null; renewalOn: string; daysLeft: number; locale: Lang;
   consent: string; emailConsent: string; canEmail: boolean; canWhatsApp: boolean; sentEmail: boolean; sentWhatsApp: boolean;
 };
-type RenewalList = { people: RenewalPerson[]; matched: number; totals: { bike: number; car: number; unknown: number }; template: string; from: string; to: string };
+type RenewalList = { people: RenewalPerson[]; matched: number; totals: { bike: number; car: number; unknown: number }; template: string; from: string; to: string; refresh?: RefreshStatus };
 type Report = { doneIds: string[]; emailSent: number; whatsappQueued: number; notAllowed: number; alreadySent: number; failed: number; remaining: number; errors: string[] };
 type Config = { settings: { birthday: { template: string }; renewal: { template: string } }; birthdayTemplates: BirthdayTemplate[]; renewalTemplates: RenewalTemplate[] };
 
@@ -70,6 +70,33 @@ const summary = (report: Report) => [
   report.remaining ? `${report.remaining} not done yet, press Send again` : "",
 ].filter(Boolean).join(" · ") || "Nothing to send.";
 
+const timeLabel = (iso: string) => new Date(iso).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" });
+const countdown = (ms: number) => { const total = Math.max(0, Math.ceil(ms / 60000)); const h = Math.floor(total / 60); const m = total % 60; return h ? `${h}h ${m}m` : `${m}m`; };
+
+type RefreshResult = { scanned: number; birthdays: number; vehicles: number; contactsAdded: number; refresh: RefreshStatus };
+
+/** "Refresh the data": reads the saved records again (new imports, new dates of birth). Allowed once in the morning and once in the evening; shows when the next one opens. */
+function RefreshData({ status, onDone, onError, onNotice }: { status?: RefreshStatus; onDone: (next: RefreshStatus) => void; onError: (message: string) => void; onNotice: (message: string) => void }) {
+  const [busy, setBusy] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 30_000); return () => window.clearInterval(timer); }, []);
+  const opensIn = status?.nextAt ? new Date(status.nextAt).getTime() - now : 0;
+  const locked = Boolean(status && !status.allowed && opensIn > 0);
+  async function run() {
+    setBusy(true); onError(""); onNotice("Reading your saved records… this can take up to a minute.");
+    try {
+      const result = await secureApi<RefreshResult>("O3bQ7mT5xK2n", { action: "scan" });
+      onNotice(`Data refreshed: ${result.scanned} records read, ${result.birthdays} birthdays found, ${result.vehicles} marked bike/car, ${result.contactsAdded} new contacts added.`);
+      onDone(result.refresh);
+    } catch (reason) { onNotice(""); onError(reason instanceof Error ? reason.message : "Could not refresh the data."); }
+    finally { setBusy(false); }
+  }
+  return <span className="outreach-refresh">
+    <button type="button" className="btn btn--ghost btn--sm" disabled={busy || locked || !status} onClick={() => void run()} title="Reads your saved records again for new dates of birth and bike / car. Allowed once in the morning and once in the evening."><RefreshCw size={15}/> {busy ? "Refreshing…" : "Refresh the data"}</button>
+    {status && <small>{locked ? `Next refresh opens at ${timeLabel(status.nextAt!)} (in ${countdown(opensIn)}). ` : ""}{status.usedToday} of {status.limit} used today{status.lastAt ? ` · last ${timeLabel(status.lastAt)}` : ""}</small>}
+  </span>;
+}
+
 function ChannelPick({ value, onChange }: { value: Channel[]; onChange: (next: Channel[]) => void }) {
   const toggle = (channel: Channel) => onChange(value.includes(channel) ? value.filter((item) => item !== channel) : [...value, channel]);
   return <span className="outreach-channels"><label className="check"><input type="checkbox" checked={value.includes("email")} onChange={() => toggle("email")}/> <Mail size={14}/> Email</label><label className="check"><input type="checkbox" checked={value.includes("whatsapp")} onChange={() => toggle("whatsapp")}/> <MessageCircle size={14}/> WhatsApp</label></span>;
@@ -116,12 +143,23 @@ function Birthdays({ config }: { config: Config | null }) {
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not send."); }
     finally { setBusy(""); }
   }
-  async function scan() {
-    setBusy("scan"); setError(""); setNotice("Reading your saved records… this can take up to a minute.");
+  async function copyAll() {
+    setBusy("copy"); setError(""); setNotice("");
     try {
-      const result = await secureApi<{ scanned: number; birthdays: number; vehicles: number; contactsAdded: number }>("O3bQ7mT5xK2n", { action: "scan" });
-      setNotice(`Read ${result.scanned} records: ${result.birthdays} birthdays found, ${result.vehicles} marked bike/car, ${result.contactsAdded} new contacts added.`); await load();
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not read the records."); setNotice(""); }
+      const result = await secureApi<{ items: { id: string; name: string; phone: string; text: string }[]; skipped: number }>("O3bQ7mT5xK2n", { action: "copy", kind: "birthday", ids: selected.map((person) => person.id), template: chosen });
+      await navigator.clipboard.writeText(result.items.map((item) => `${item.name} · ${item.phone}\n${item.text}`).join("\n\n----------\n\n"));
+      setNotice(`Copied ${result.items.length} message${result.items.length === 1 ? "" : "s"}${result.skipped ? `. ${result.skipped} left out because they have not said YES` : ""}. Paste into WhatsApp or a note.`);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not copy the messages."); }
+    finally { setBusy(""); }
+  }
+  async function copyOne(person: BirthdayPerson) {
+    setBusy(person.id); setError("");
+    try {
+      const result = await secureApi<{ items: { text: string }[]; skipped: number }>("O3bQ7mT5xK2n", { action: "copy", kind: "birthday", ids: [person.id], template: chosen });
+      if (!result.items.length) { setError(`${person.name} has not said YES on WhatsApp yet, so no message was prepared.`); return; }
+      await navigator.clipboard.writeText(result.items[0].text);
+      setCopied(`msg-${person.id}`); setTimeout(() => setCopied(""), 1500);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not copy the message."); }
     finally { setBusy(""); }
   }
   async function consent(person: BirthdayPerson, kind: "whatsapp" | "email", next: "opted_in" | "opted_out" | "unknown") {
@@ -148,7 +186,8 @@ function Birthdays({ config }: { config: Config | null }) {
       <ChannelPick value={channels} onChange={setChannels}/>
       <button type="button" className="btn btn--primary" disabled={busy === "send" || !selected.length || !channels.length} onClick={() => void send()}><Send size={16}/> {busy === "send" ? "Sending…" : `Send to ${selected.length} selected`}</button>
       {selected.length > 0 && <small>{channels.includes("email") ? `${willEmail} email` : ""}{channels.includes("email") && channels.includes("whatsapp") ? " · " : ""}{channels.includes("whatsapp") ? `${willWhatsApp} WhatsApp` : ""} will go out (people without YES or already wished are skipped)</small>}
-      <button type="button" className="btn btn--ghost btn--sm" disabled={busy === "scan"} onClick={() => void scan()} title="Finds dates of birth and bike / car in the Excel files you already imported"><ScanSearch size={15}/> {busy === "scan" ? "Reading…" : "Find birthdays in my records"}</button>
+      <button type="button" className="btn btn--ghost btn--sm" disabled={busy === "copy" || !selected.length} onClick={() => void copyAll()} title="Copies each selected person's WhatsApp message with their name and number, to paste into WhatsApp"><Copy size={15}/> {busy === "copy" ? "Preparing…" : `Copy ${selected.length || ""} WhatsApp message${selected.length === 1 ? "" : "s"}`}</button>
+      <RefreshData status={data?.refresh} onDone={() => void load()} onError={setError} onNotice={setNotice}/>
     </div>
     {error && <div className="alert alert--error" role="alert">{error}</div>}
     {notice && <div className="alert alert--success" role="status">{notice}</div>}
@@ -166,12 +205,13 @@ function Birthdays({ config }: { config: Config | null }) {
         <a className="profile-text-button" href={`tel:${person.phone}`}><Phone size={13}/> Call</a>
         {person.consent !== "opted_out" && <a className="profile-text-button" href={waLink(person.phone)} target="_blank" rel="noreferrer"><MessageCircle size={13}/> Chat</a>}
         <a className="profile-text-button" href={person.cardUrl} target="_blank" rel="noreferrer" title="Open the card to save it, then post it on Instagram or WhatsApp status"><Download size={13}/> Card</a>
+        <button type="button" className="profile-text-button" disabled={busy === person.id} onClick={() => void copyOne(person)} title="Copies this person's WhatsApp message to paste into WhatsApp"><Copy size={13}/> {copied === `msg-${person.id}` ? "Copied" : "WhatsApp text"}</button>
         <button type="button" className="profile-text-button" onClick={() => void copy(person.caption, person.id)} title="Caption for Instagram"><Copy size={13}/> {copied === person.id ? "Copied" : "Instagram caption"}</button>
         <button type="button" className="profile-text-button" onClick={() => setEditing(editing === person.id ? null : person.id)}><Pencil size={13}/> Edit</button>
       </div>
       {editing === person.id && <ContactEdit person={person} onDone={() => { setEditing(null); void load(); }} onError={setError}/>}
     </article>)}</div>
-    {data && !people.length && <p className="admin-empty">{data.totals.all ? "No birthdays in this view." : "No birthdays saved yet. Press “Find birthdays in my records” to read them from the Excel files you imported, or add a date of birth with Edit on a contact."}</p>}
+    {data && !people.length && <p className="admin-empty">{data.totals.all ? "No birthdays in this view." : "No birthdays saved yet. Press “Refresh the data” to read them from the Excel files you imported, or add a date of birth with Edit on a contact."}</p>}
     <p className="outreach-note"><ShieldCheck size={14}/> Instagram does not allow a business to message people first, so use <b>Card</b> + <b>Instagram caption</b> to post the wish on your page or story and tag them.</p>
   </div>;
 }
@@ -223,6 +263,15 @@ function Renewals({ config }: { config: Config | null }) {
 
   const people = useMemo(() => data?.people ?? [], [data]);
   const selected = people.filter((person) => picked.has(person.key));
+  async function copyAll() {
+    setBusy("copy"); setError(""); setNotice("");
+    try {
+      const result = await secureApi<{ items: { id: string; name: string; phone: string; text: string }[]; skipped: number }>("O3bQ7mT5xK2n", { action: "copy", kind: "renewal", ids: selected.map((person) => person.key), template: chosen, days: Math.max(days, 45) });
+      await navigator.clipboard.writeText(result.items.map((item) => `${item.name} · ${item.phone}\n${item.text}`).join("\n\n----------\n\n"));
+      setNotice(`Copied ${result.items.length} message${result.items.length === 1 ? "" : "s"}${result.skipped ? `. ${result.skipped} left out (stopped or not in contacts)` : ""}. Paste into WhatsApp or a note.`);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not copy the messages."); }
+    finally { setBusy(""); }
+  }
   async function send() {
     setBusy("send"); setError(""); setNotice("");
     try {
@@ -244,6 +293,8 @@ function Renewals({ config }: { config: Config | null }) {
       <label className="field"><span className="field__label">Reminder wording</span><select value={chosen} onChange={(event) => setTemplate(event.target.value)}>{(config?.renewalTemplates ?? []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
       <ChannelPick value={channels} onChange={setChannels}/>
       <button type="button" className="btn btn--primary" disabled={busy === "send" || !selected.length || !channels.length} onClick={() => void send()}><Send size={16}/> {busy === "send" ? "Sending…" : `Remind ${selected.length} selected`}</button>
+      <button type="button" className="btn btn--ghost btn--sm" disabled={busy === "copy" || !selected.length} onClick={() => void copyAll()} title="Copies each selected person's WhatsApp reminder with their name and number, to paste into WhatsApp"><Copy size={15}/> {busy === "copy" ? "Preparing…" : `Copy ${selected.length || ""} WhatsApp message${selected.length === 1 ? "" : "s"}`}</button>
+      <RefreshData status={data?.refresh} onDone={() => void load()} onError={setError} onNotice={setNotice}/>
     </div>
     {error && <div className="alert alert--error" role="alert">{error}</div>}
     {notice && <div className="alert alert--success" role="status">{notice}</div>}
@@ -260,7 +311,7 @@ function Renewals({ config }: { config: Config | null }) {
         {person.consent !== "opted_out" && <a className="profile-text-button" href={waLink(person.phone)} target="_blank" rel="noreferrer"><MessageCircle size={13}/> Chat</a>}
       </div>
     </article>)}</div>
-    {data && !people.length && <p className="admin-empty"><CarFront size={16}/> No policies end in this period. Import an insurance register in Records, then press “Find birthdays in my records” on the Birthdays tab to mark bike and car.</p>}
+    {data && !people.length && <p className="admin-empty"><CarFront size={16}/> No policies end in this period. Import an insurance register in Records, then press “Refresh the data” to mark bike and car.</p>}
     <p className="outreach-note"><ChevronDown size={14}/> To send these automatically {days} days before, open “Cards, wording &amp; automatic”.</p>
   </div>;
 }
