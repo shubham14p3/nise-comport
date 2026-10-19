@@ -280,7 +280,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       <div className="success-card">
         <div className="confetti" aria-hidden="true">{Array.from({ length: 18 }, (_, index) => <i key={index} style={{ left: `${(index * 53) % 100}%`, animationDelay: `${(index % 6) * 0.12}s` }}/>)}</div>
         <span className="success-card__icon"><PartyPopper size={34}/></span>
-        <h1>{t.successTitle}</h1>
+        <h1>{t.successTitle.replace(/\s*🎉/u, "")}</h1>
         <p>{t.successSub}</p>
         <strong className="success-card__ref">{done.reference}</strong>
         <p>{t.successNext}</p>

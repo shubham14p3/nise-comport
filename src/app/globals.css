@@ -2813,3 +2813,15 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
   .mbx-side nav button svg { display: none; }
   .mbx-side nav button.is-active { background: var(--mbx-accent-soft); border-color: #b9d3f7; }
 }
+
+/* "Request sent" fits one screen under the header, with the actions visible without scrolling. */
+.wizard--done { min-height: calc(100dvh - var(--header-h, 72px)); display: grid; align-items: center; padding-block: 12px; }
+.wizard--done .success-card { gap: 8px; padding: clamp(18px, 3.2vh, 32px) clamp(18px, 4vw, 40px); max-height: calc(100dvh - var(--header-h, 72px) - 24px); overflow-y: auto; }
+.wizard--done .success-card__icon { width: 56px; height: 56px; border-radius: 18px; box-shadow: 0 12px 26px -12px #ff3d8b; }
+.wizard--done .success-card__icon svg { width: 26px; height: 26px; }
+.wizard--done .success-card h1 { margin: 2px 0 0; font-size: clamp(1.5rem, 1.1rem + 1.6vh, 2.1rem); line-height: 1.15; }
+.wizard--done .success-card p { margin: 0; font-size: .9375rem; line-height: 1.4; }
+.wizard--done .success-card__ref { font-size: clamp(1.25rem, 1rem + 1.2vh, 1.7rem); padding: 6px 16px; border-radius: 12px; }
+.wizard--done .success-card .alert { margin: 0; padding: 8px 12px; font-size: .875rem; }
+.wizard--done .success-card__actions { margin-top: 6px; }
+.wizard--done .success-card__actions .btn--lg { min-height: 46px; padding-inline: 18px; }
