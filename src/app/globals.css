@@ -2306,3 +2306,8 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .pay-card section { display: grid; gap: .6rem; padding-top: .8rem; border-top: 1px solid var(--line, #e5e5ee); }
 .admin-form-row { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin: .8rem 0; }
 .table-scroll { overflow-x: auto; }
+.pay-notice--bad { background: rgb(220 38 38 / .1); }
+.pay-choice { display: flex; gap: .5rem; align-items: center; }
+.pay-summary { display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); margin: .8rem 0; }
+.pay-summary div { padding: .7rem; border-radius: 12px; border: 1px solid var(--line, #e5e5ee); display: grid; }
+.pay-summary small { opacity: .7; }

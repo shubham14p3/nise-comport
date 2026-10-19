@@ -1,9 +1,10 @@
 import { and, desc, eq, sql } from "drizzle-orm";
-import { payments, serviceRequests, users } from "@/db/schema";
+import { payments, serviceRequests, users, walletEntries } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
-import { cleanUtr, convenienceFee, onlineFeePercent, type PayMethod } from "@/lib/payments-core";
+import { sendPaymentAlertEmail, sendPaymentReceiptEmail } from "@/lib/email";
+import { cleanUtr, convenienceFee, onlineFeePercent, refundBreakdown, rupees, TICKET_AFTER_HOURS, type PayMethod, type RefundChoice } from "@/lib/payments-core";
 import { site } from "@/lib/site";
 
 export type PaymentRow = typeof payments.$inferSelect;
@@ -35,7 +36,7 @@ export async function listPayments(status?: string) {
   const rows = await db.select({
     payment: payments, requestName: serviceRequests.serviceName, customer: users.name, phone: users.phone,
   }).from(payments).innerJoin(serviceRequests, eq(payments.requestId, serviceRequests.id)).innerJoin(users, eq(payments.userId, users.id))
-    .where(status ? eq(payments.status, status) : undefined).orderBy(desc(payments.createdAt)).limit(200);
+    .where(status === "issues" ? sql`(${payments.issueRaisedAt} is not null and coalesce(${payments.refundStatus},'') <> 'done') or ${payments.refundStatus} = 'requested'` : status ? eq(payments.status, status) : undefined).orderBy(desc(payments.createdAt)).limit(200);
   return rows.map((row) => ({ ...row.payment, requestName: row.requestName, customer: row.customer, phone: row.phone }));
 }
 
@@ -61,7 +62,10 @@ export async function markPaid(id: string, details: { method: PayMethod; provide
     status: "paid", method: details.method, providerPaymentId: details.providerPaymentId ?? null, utr: details.utr ?? null,
     ...(details.feePaise !== undefined ? { feePaise: details.feePaise } : {}), verifiedBy: details.verifiedBy ?? null, paidAt: new Date(), updatedAt: new Date(),
   }).where(and(eq(payments.id, id), sql`${payments.status} <> 'paid'`)).returning();
-  if (row) await logActivity({ kind: "request", permission: "requests", title: `Payment received: ₹${(row.amountPaise + row.feePaise) / 100} (${details.method})`, detail: row.reference, refType: "payment", refId: row.id, actorId: details.verifiedBy ?? null });
+  if (row) {
+    await logActivity({ kind: "request", permission: "requests", title: `Payment received: ${rupees(row.amountPaise + row.feePaise)} (${details.method})`, detail: row.reference, refType: "payment", refId: row.id, actorId: details.verifiedBy ?? null });
+    await notifyPaid(row);
+  }
   return row ?? null;
 }
 
@@ -71,7 +75,7 @@ export async function submitUtr(reference: string, rawUtr: string, viewer: { id:
   if (!utr) throw new PublicError("That reference number doesn’t look right. UPI reference numbers are usually 12 digits.", 400, { code: "invalid_input" });
   const [request] = await db.select().from(serviceRequests).where(eq(serviceRequests.reference, reference)).limit(1);
   if (!request || request.userId !== viewer.id) throw new PublicError("Payment not found.", 404);
-  const [payment] = await db.select().from(payments).where(and(eq(payments.requestId, request.id), eq(payments.status, "due"))).limit(1);
+  const [payment] = await db.select().from(payments).where(and(eq(payments.requestId, request.id), sql`${payments.status} in ('due','failed')`)).limit(1);
   if (!payment) throw new PublicError("There is nothing to pay on this request right now.", 409);
   try {
     await db.update(payments).set({ status: "verifying", method: "upi_qr", utr, updatedAt: new Date() }).where(eq(payments.id, payment.id));
@@ -88,7 +92,7 @@ export async function createGatewayOrder(reference: string, provider: "razorpay"
   if (!options[provider]) throw new PublicError("This payment option is not available yet. Please use the UPI QR.", 503);
   const [request] = await db.select().from(serviceRequests).where(eq(serviceRequests.reference, reference)).limit(1);
   if (!request || request.userId !== viewer.id) throw new PublicError("Payment not found.", 404);
-  const [payment] = await db.select().from(payments).where(and(eq(payments.requestId, request.id), sql`${payments.status} in ('due','verifying')`)).limit(1);
+  const [payment] = await db.select().from(payments).where(and(eq(payments.requestId, request.id), sql`${payments.status} in ('due','verifying','failed')`)).limit(1);
   if (!payment) throw new PublicError("There is nothing to pay on this request right now.", 409);
   const fee = convenienceFee(payment.amountPaise, options.feePercent);
   const total = payment.amountPaise + fee;
@@ -129,4 +133,73 @@ export async function createGatewayOrder(reference: string, provider: "razorpay"
 export async function paymentByOrder(orderId: string) {
   const [row] = await db.select().from(payments).where(eq(payments.providerOrderId, orderId)).limit(1);
   return row ?? null;
+}
+
+/** Emails the owner (who paid, mobile, amount, service, ticket) and the customer a receipt. Never throws. */
+async function notifyPaid(row: PaymentRow) {
+  try {
+    const [info] = await db.select({ name: users.name, phone: users.phone, email: users.email, service: serviceRequests.serviceName }).from(users).innerJoin(serviceRequests, eq(serviceRequests.id, row.requestId)).where(eq(users.id, row.userId)).limit(1);
+    if (!info) return;
+    const amount = rupees(row.amountPaise + row.feePaise);
+    const method = row.method === "razorpay" ? "Razorpay" : row.method === "cashfree" ? "Cashfree" : row.method === "cash" ? "Cash at desk" : "UPI QR";
+    await Promise.allSettled([
+      sendPaymentAlertEmail({ customer: info.name, phone: info.phone, email: info.email, service: info.service, reference: row.reference, amount, method, utr: row.utr }),
+      sendPaymentReceiptEmail(info.email, info.name, { reference: row.reference, service: info.service, amount }),
+    ]);
+  } catch (error) { console.error("[pay] could not send payment emails", error); }
+}
+
+/** A gateway reported a failed payment. The customer sees why and can retry. Never downgrades a paid payment. */
+export async function markFailed(id: string, reason: string) {
+  await db.update(payments).set({ status: "failed", failureReason: reason.slice(0, 200), updatedAt: new Date() }).where(and(eq(payments.id, id), sql`${payments.status} <> 'paid'`));
+}
+
+/** Customer: money left their account (or the status is stuck) for over 24 hours, so they ask us to check with the gateway. */
+export async function raiseTicket(reference: string, note: string, viewer: { id: string }) {
+  const [request] = await db.select().from(serviceRequests).where(eq(serviceRequests.reference, reference)).limit(1);
+  if (!request || request.userId !== viewer.id) throw new PublicError("Payment not found.", 404);
+  const [payment] = await db.select().from(payments).where(eq(payments.requestId, request.id)).orderBy(desc(payments.createdAt)).limit(1);
+  if (!payment || payment.status === "paid" || payment.status === "cancelled") throw new PublicError("There is no pending payment to check.", 409);
+  const waitedMs = Date.now() - payment.updatedAt.getTime();
+  if (waitedMs < TICKET_AFTER_HOURS * 3600_000) throw new PublicError(`Please wait ${TICKET_AFTER_HOURS} hours after paying. Most payments are confirmed well before that. If it is still missing then, raise a ticket.`, 409, { code: "too_early" });
+  await db.update(payments).set({ issueNote: note.slice(0, 500), issueRaisedAt: new Date(), updatedAt: payment.updatedAt }).where(eq(payments.id, payment.id));
+  await logActivity({ kind: "request", permission: "requests", title: "Payment ticket raised", detail: `${reference} · ${note.slice(0, 120)}`, refType: "payment", refId: payment.id });
+}
+
+/** Customer asks for money back and says how they want it. Staff then approve it in Admin → Payments. */
+export async function requestRefund(reference: string, choice: RefundChoice, details: string, viewer: { id: string }) {
+  const [request] = await db.select().from(serviceRequests).where(eq(serviceRequests.reference, reference)).limit(1);
+  if (!request || request.userId !== viewer.id) throw new PublicError("Payment not found.", 404);
+  const [payment] = await db.select().from(payments).where(eq(payments.requestId, request.id)).orderBy(desc(payments.createdAt)).limit(1);
+  if (!payment || payment.refundStatus) throw new PublicError("A refund was already requested or paid for this payment.", 409);
+  if (payment.status !== "paid" && !payment.issueRaisedAt) throw new PublicError("A refund can be requested after a payment was received, or after you raise a ticket for a missing one.", 409);
+  if (choice === "original" && !details.trim()) throw new PublicError("Please share the bank account or UPI ID to send the money to.", 400, { code: "invalid_input" });
+  await db.update(payments).set({ refundChoice: choice, refundStatus: "requested", refundDetails: details.slice(0, 300) || null, updatedAt: new Date() }).where(eq(payments.id, payment.id));
+  await logActivity({ kind: "request", permission: "requests", title: "Refund requested", detail: `${reference} · ${choice}`, refType: "payment", refId: payment.id });
+}
+
+/** Staff: pays out a requested refund. Wallet refunds add the 5% bonus and credit the customer's profile straight away. */
+export async function processRefund(id: string, actor: { id: string }, opts: { serviceChargePaise?: number } = {}) {
+  const [payment] = await db.select().from(payments).where(eq(payments.id, id)).limit(1);
+  if (!payment || payment.refundStatus !== "requested" || !payment.refundChoice) throw new PublicError("No refund is waiting on this payment.", 409);
+  const choice = payment.refundChoice as RefundChoice;
+  const paid = payment.amountPaise + payment.feePaise;
+  const result = refundBreakdown({ paidPaise: paid, method: payment.method, choice, feePercent: onlineFeePercent(), serviceChargePaise: opts.serviceChargePaise });
+  const [claimed] = await db.update(payments).set({ refundStatus: "done", refundPaise: result.netPaise, refundedAt: new Date(), updatedAt: new Date() }).where(and(eq(payments.id, id), eq(payments.refundStatus, "requested"))).returning({ id: payments.id });
+  if (!claimed) throw new PublicError("This refund was already processed.", 409);
+  if (choice === "wallet") await db.insert(walletEntries).values({ userId: payment.userId, amount: (result.netPaise / 100).toFixed(2), kind: "credit", description: `Refund credit for ${payment.reference} (includes 5% bonus)`, reference: payment.reference });
+  await logActivity({ kind: "request", permission: "requests", title: `Refund of ${rupees(result.netPaise)} (${choice})`, detail: payment.reference, refType: "payment", refId: id, actorId: actor.id });
+  return result;
+}
+
+/** Totals for the dashboard header. */
+export async function paymentSummary() {
+  const rows = await db.select({
+    method: payments.method, status: payments.status, count: sql<number>`count(*)::int`, amount: sql<number>`coalesce(sum(${payments.amountPaise}),0)::bigint`, fee: sql<number>`coalesce(sum(${payments.feePaise}),0)::bigint`,
+  }).from(payments).groupBy(payments.method, payments.status);
+  const paid = rows.filter((r) => r.status === "paid");
+  const byMethod = ["upi_qr", "razorpay", "cashfree", "cash"].map((m) => { const r = paid.filter((x) => x.method === m); return { method: m, count: r.reduce((a, x) => a + x.count, 0), paise: r.reduce((a, x) => a + Number(x.amount) + (m === "razorpay" || m === "cashfree" ? Number(x.fee) : 0), 0) }; });
+  const count = (status: string) => rows.filter((r) => r.status === status).reduce((a, x) => a + x.count, 0);
+  const [attention] = await db.select({ n: sql<number>`count(*)::int` }).from(payments).where(sql`${payments.issueRaisedAt} is not null and coalesce(${payments.refundStatus},'') <> 'done' or ${payments.refundStatus} = 'requested'`);
+  return { byMethod, totalPaise: byMethod.reduce((a, x) => a + x.paise, 0), verifying: count("verifying"), failed: count("failed"), due: count("due"), attention: attention?.n ?? 0 };
 }

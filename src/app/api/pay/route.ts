@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { apiError, readJson } from "@/lib/http";
 import { PublicError } from "@/lib/errors";
-import { createGatewayOrder, markPaid, paymentByOrder, submitUtr } from "@/lib/payments";
+import { createGatewayOrder, markPaid, paymentByOrder, raiseTicket, requestRefund, submitUtr } from "@/lib/payments";
 import { verifyRazorpayPayment } from "@/lib/payments-core";
 import { enforceRate, identity } from "@/lib/rate-limit";
 
@@ -13,6 +13,8 @@ export const dynamic = "force-dynamic";
 const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("utr"), reference: z.string().max(40), utr: z.string().max(40) }),
   z.object({ action: z.literal("order"), reference: z.string().max(40), provider: z.enum(["razorpay", "cashfree"]) }),
+  z.object({ action: z.literal("ticket"), reference: z.string().max(40), note: z.string().max(500) }),
+  z.object({ action: z.literal("refund"), reference: z.string().max(40), choice: z.enum(["wallet", "original", "cash"]), details: z.string().max(300).default("") }),
   z.object({ action: z.literal("razorpayDone"), orderId: z.string().max(60), paymentId: z.string().max(60), signature: z.string().max(200) }),
 ]);
 
@@ -24,6 +26,8 @@ export async function POST(request: NextRequest) {
     const input = schema.parse(await readJson(request));
     await enforceRate({ name: "pay-user", limit: 20, windowSeconds: 600 }, identity("pay", user.id), "Too many payment attempts.");
     if (input.action === "utr") { await submitUtr(input.reference.trim().toUpperCase(), input.utr, user); return NextResponse.json({ ok: true }); }
+    if (input.action === "ticket") { await raiseTicket(input.reference.trim().toUpperCase(), input.note, user); return NextResponse.json({ ok: true }); }
+    if (input.action === "refund") { await requestRefund(input.reference.trim().toUpperCase(), input.choice, input.details, user); return NextResponse.json({ ok: true }); }
     if (input.action === "order") return NextResponse.json(await createGatewayOrder(input.reference.trim().toUpperCase(), input.provider, user));
     const secret = process.env.RAZORPAY_KEY_SECRET;
     if (!secret || !verifyRazorpayPayment(input.orderId, input.paymentId, input.signature, secret)) throw new PublicError("We could not confirm that payment. If money was deducted, call us and we will sort it out.", 400);

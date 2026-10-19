@@ -31,3 +31,11 @@ test("qr renders", () => {
   assert.ok(qrMatrix(link).length >= 21);
   assert.match(qrSvg(link), /^<svg/);
 });
+
+import { refundBreakdown } from "../src/lib/payments-core.ts";
+test("refund: wallet adds 5%, online bank refund deducts commission and GST, UPI deducts nothing", () => {
+  assert.equal(refundBreakdown({ paidPaise: 10000, method: "razorpay", choice: "wallet" }).netPaise, 10500);
+  const bank = refundBreakdown({ paidPaise: 10000, method: "razorpay", choice: "original", feePercent: 2 });
+  assert.deepEqual([bank.gatewayPaise, bank.gstPaise, bank.netPaise], [200, 36, 9764]);
+  assert.equal(refundBreakdown({ paidPaise: 10000, method: "upi_qr", choice: "cash", serviceChargePaise: 2000 }).netPaise, 8000);
+});

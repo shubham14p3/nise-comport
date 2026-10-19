@@ -258,3 +258,27 @@ export async function sendReviewRequestEmail(to: string, name: string, reference
 export async function sendStaffAlertEmail(to: string, subject: string, lines: string[], link: string) {
   await sendMail({ to, subject, heading: subject, paragraphs: lines, action: { label: "Open staff dashboard", href: link } });
 }
+
+/** Tells the owner/staff inbox the moment a payment lands, with everything needed to match it to a ticket. */
+export async function sendPaymentAlertEmail(info: { customer: string; phone: string | null; email: string; service: string; reference: string; amount: string; method: string; utr?: string | null }) {
+  const to = process.env.PAYMENT_ALERT_EMAIL || site.email;
+  await sendMail({
+    to, subject: `Payment received ${info.amount} · ${info.reference}`, heading: "Payment received",
+    paragraphs: [`${info.customer} has paid for ${info.service}.`],
+    details: [
+      { label: "Amount", value: info.amount, emphasis: true }, { label: "Ticket reference", value: info.reference, emphasis: true },
+      { label: "Customer", value: info.customer }, { label: "Mobile", value: info.phone || "not given" }, { label: "Email", value: info.email },
+      { label: "Service", value: info.service }, { label: "Paid via", value: info.method }, ...(info.utr ? [{ label: "UTR", value: info.utr }] : []),
+    ],
+    action: { label: "Open Payments", href: `${site.url}/desk` },
+  });
+}
+
+export async function sendPaymentReceiptEmail(to: string, name: string, info: { reference: string; service: string; amount: string }) {
+  await sendMail({
+    to, subject: `Payment received for ${info.reference}`, heading: "Payment received",
+    paragraphs: [`Hello ${name},`, "Thank you. We have received your payment. Keep this email as your receipt."],
+    details: [{ label: "Service", value: info.service }, { label: "Our reference", value: info.reference }, { label: "Amount paid", value: info.amount, emphasis: true }],
+    action: { label: "Open my account", href: `${site.url}/profile` },
+  });
+}

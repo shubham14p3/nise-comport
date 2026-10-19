@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 /** Pure payment helpers (no database), so they can be unit-tested. Money is always in paise. */
 
-export const PAYMENT_STATUSES = ["due", "verifying", "paid", "cancelled"] as const;
+export const PAYMENT_STATUSES = ["due", "verifying", "paid", "failed", "cancelled"] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 export type PayMethod = "upi_qr" | "razorpay" | "cashfree" | "cash";
 
@@ -63,4 +63,30 @@ export function verifyRazorpayWebhook(rawBody: string, signature: string, secret
 /** Cashfree webhook: base64 HMAC-SHA256(timestamp + rawBody) with the client secret. */
 export function verifyCashfreeWebhook(rawBody: string, timestamp: string, signature: string, secret: string) {
   return safeEqual(createHmac("sha256", secret).update(timestamp + rawBody).digest("base64"), signature);
+}
+
+/** After this long without a result, the customer may raise a ticket for a pending/deducted payment. */
+export const TICKET_AFTER_HOURS = 24;
+export const WALLET_BONUS_PERCENT = 5;
+export const GST_ON_FEE_PERCENT = 18;
+
+export type RefundChoice = "wallet" | "original" | "cash";
+
+/**
+ * What a customer gets back. Wallet credit is the best deal (+5% bonus, nothing deducted).
+ * Money back to the bank or in cash loses what we already paid the gateway (its commission plus
+ * 18% GST on that commission) and any service charge for work already done. UPI QR and cash
+ * payments carry no gateway commission, so nothing is deducted for them.
+ */
+export function refundBreakdown(opts: { paidPaise: number; method: string | null; choice: RefundChoice; feePercent?: number; serviceChargePaise?: number }) {
+  const percent = opts.feePercent ?? onlineFeePercent();
+  const online = opts.method === "razorpay" || opts.method === "cashfree";
+  if (opts.choice === "wallet") {
+    const bonus = Math.floor((opts.paidPaise * WALLET_BONUS_PERCENT) / 100);
+    return { gatewayPaise: 0, gstPaise: 0, servicePaise: 0, bonusPaise: bonus, netPaise: opts.paidPaise + bonus };
+  }
+  const commission = online ? Math.ceil((opts.paidPaise * percent) / 100) : 0;
+  const gst = Math.ceil((commission * GST_ON_FEE_PERCENT) / 100);
+  const service = Math.max(0, opts.serviceChargePaise ?? 0);
+  return { gatewayPaise: commission, gstPaise: gst, servicePaise: service, bonusPaise: 0, netPaise: Math.max(0, opts.paidPaise - commission - gst - service) };
 }
