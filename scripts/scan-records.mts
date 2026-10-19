@@ -30,6 +30,17 @@ type Sealed = { mobile: string | null; whatsapp?: string | null; email?: string 
 type Service = { service: string; renewalOn: string | null; note: string | null };
 type Person = { name: string; services: Map<string, string | null>; email: string | null; birth: { month: number; day: number } | null };
 
+// Try every key in .env: records imported before RECORDS_ENCRYPTION_KEY existed were sealed with PAN_ENCRYPTION_KEY.
+const keys = [...new Set([process.env.RECORDS_ENCRYPTION_KEY, process.env.PAN_ENCRYPTION_KEY].map((key) => key?.trim()).filter((key): key is string => Boolean(key)))];
+const worked = new Map<number, number>();
+function openAny(sealed: string): Sealed {
+  for (let index = 0; index < keys.length; index++) {
+    process.env.RECORDS_ENCRYPTION_KEY = keys[index];
+    try { const value = open<Sealed>(sealed); worked.set(index, (worked.get(index) ?? 0) + 1); return value; } catch { /* try the next key */ }
+  }
+  throw new Error("Unreadable record.");
+}
+
 const stats = { scanned: 0, unreadable: 0, birthdays: 0, vehicles: 0, contactsAdded: 0, contactsUpdated: 0 };
 const people = new Map<string, Person>();
 let cursor = "00000000-0000-0000-0000-000000000000";
@@ -41,7 +52,7 @@ try {
     for (const row of rows) {
       stats.scanned++;
       let sealed: Sealed;
-      try { sealed = open<Sealed>(row.payload_enc); } catch { stats.unreadable++; continue; }
+      try { sealed = openAny(row.payload_enc); } catch { stats.unreadable++; continue; }
       const fields = sealed.fields ?? {};
       const birth = birthFromFields(fields);
       const vehicle = row.service === "insurance" ? vehicleFrom(fields, row.source) : null;
@@ -93,6 +104,7 @@ try {
       if (changed) stats.contactsUpdated++;
     }
   }
+  for (const [index, total] of worked) console.log(`${total} records opened with ${index === 0 && process.env.PAN_ENCRYPTION_KEY?.trim() !== keys[0] ? "RECORDS_ENCRYPTION_KEY" : keys[index] === process.env.PAN_ENCRYPTION_KEY?.trim() ? "PAN_ENCRYPTION_KEY" : "RECORDS_ENCRYPTION_KEY"}.`);
   const { rows: [count] } = await pool.query("select count(*)::int as n from contacts where birth_month is not null");
   console.log(`Done. ${stats.scanned} records read${stats.unreadable ? ` (${stats.unreadable} could not be decrypted: wrong RECORDS_ENCRYPTION_KEY?)` : ""}.`);
   console.log(`Birthdays found in records: ${stats.birthdays}. Bike/car marked: ${stats.vehicles}.`);
