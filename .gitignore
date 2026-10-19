@@ -39,4 +39,6 @@ coverage/
 /photo-inbox/*/*
 !/photo-inbox/*/.gitkeep
 /photo-inbox/_done/
-.env*
+.next
+myexcel
+photo-index
