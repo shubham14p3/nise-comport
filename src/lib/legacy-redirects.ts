@@ -87,8 +87,16 @@ export function legacyRedirects(): LegacyRedirect[] {
   if (!FEATURES.billsAndRecharge) hidden.push("fee-payments", "bill-payment-recharge", "fee-bill-recharge-jamshedpur");
   if (!FEATURES.travel) hidden.push("travel", "ticket-booking", "train-flight-bus-booking-jamshedpur");
   for (const slug of hidden) {
-    if (list.some((item) => item.source === `/services/${slug}`)) continue;
-    list.push({ source: `/services/${slug}`, destination: "/services", permanent: true });
+    if (!list.some((item) => item.source === `/services/${slug}`)) list.push({ source: `/services/${slug}`, destination: "/services", permanent: true });
+    for (const lang of ["hi", "bn"]) {
+      if (!list.some((item) => item.source === `/${lang}/services/${slug}`)) list.push({ source: `/${lang}/services/${slug}`, destination: `/${lang}`, permanent: true });
+    }
+  }
+  // Pages merged into another service that has no Hindi/Bengali page: send those visitors to their language home.
+  for (const [old, slug] of Object.entries(SERVICE_SLUG_RENAMES)) {
+    for (const lang of ["hi", "bn"] as const) {
+      if (!translatedSlugs[lang].includes(slug) && !list.some((item) => item.source === `/${lang}/services/${old}`)) list.push({ source: `/${lang}/services/${old}`, destination: `/${lang}`, permanent: true });
+    }
   }
   return list;
 }

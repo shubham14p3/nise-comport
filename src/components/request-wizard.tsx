@@ -99,7 +99,13 @@ function initialDraft(services: WizardService[], initial: Initial): Draft {
   const saved = readDraft();
   const coupon = (initial.coupon ?? "").toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 40);
   const hasUrlChoice = Boolean(initial.service || initial.category || initial.offer || initial.note);
-  if (saved && (initial.resume || !hasUrlChoice)) return { ...blank, ...saved, coupon: coupon || saved.coupon || "", address: { ...EMPTY_ADDRESS, ...(saved.address ?? {}) } };
+  if (saved && (initial.resume || !hasUrlChoice)) {
+    // A saved draft may point at a service or category that has since been switched off or renamed.
+    const known = !saved.serviceSlug || saved.serviceSlug === "other" || services.some((item) => item.slug === saved.serviceSlug);
+    const knownCategory = !saved.category || saved.category === "all" || categoryMeta.some((item) => item.slug === saved.category);
+    const repaired = { ...saved, ...(known ? {} : { serviceSlug: "", step: 0 }), ...(knownCategory ? {} : { category: "all" }) };
+    return { ...blank, ...repaired, coupon: coupon || saved.coupon || "", address: { ...EMPTY_ADDRESS, ...(saved.address ?? {}) } };
+  }
   const service = services.find((item) => item.slug === initial.service);
   const category = service?.category ?? (categoryMeta.some((item) => item.slug === initial.category) ? initial.category! : "all");
   const offer = findOffer(initial.offer);
@@ -373,7 +379,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         </div></fieldset>
         <label className="field"><span className="field__label">{t.describe}</span><textarea value={draft.description} onChange={(event) => update({ description: event.target.value.slice(0, 1500) })} rows={4} maxLength={1500} required aria-invalid={describeBad}/>{describeBad && <span className="field__error">{t.errDescribe}</span>}<span className="field__hint">{t.describeHint} · {draft.description.length}/1500</span></label>
         <div className="quick-picks"><span>{t.quickPicks}</span>{picks.map((pick) => <button key={pick} type="button" className="chip-btn chip-btn--sm" onClick={() => update({ description: draft.description.includes(pick) ? draft.description : `${draft.description ? `${draft.description.trim()} ` : ""}${pick}.`.slice(0, 1500) })}>+ {pick}</button>)}</div>
-        {!uploadsAllowed(activeCategory) && <p className="field__hint">No file needed. Tell us what you want and we reply with the price.</p>}
+        {!uploadsAllowed(activeCategory) && <p className="field__hint">{WX.noFile[locale]}</p>}
         {uploadsAllowed(activeCategory) && <div className="field"><span className="field__label">{t.attach}</span>
           {user ? file ? <div className="file-pill"><FileText size={18}/><span>{file.name}<small>{(file.size / 1024 / 1024).toFixed(1)} MB</small></span><button type="button" className="icon-btn" onClick={() => { setFile(null); idempotencyKey.current = null; }} aria-label={t.remove}><X size={16}/></button></div>
             : <label className="dropzone"><Upload size={22}/><b>{t.attach}</b><small>{t.attachHint}</small><input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,application/pdf" onChange={(event) => { setFile(event.target.files?.[0] ?? null); idempotencyKey.current = null; }}/></label>

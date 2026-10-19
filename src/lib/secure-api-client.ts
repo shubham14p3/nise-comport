@@ -1,5 +1,7 @@
 "use client";
 
+import { messageForStatus, networkMessage } from "@/lib/net-messages";
+
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 const ROUTE = "/api/x7q9m2";
@@ -21,6 +23,22 @@ export class SecureApiError extends Error {
     this.status = status;
     this.body = body;
   }
+}
+
+const JSON_TIMEOUT_MS = 30_000;
+const FILE_TIMEOUT_MS = 120_000;
+
+/** fetch with a time limit; offline or stalled connections become a readable SecureApiError instead of "Failed to fetch". */
+async function send(init: RequestInit, timeoutMs: number): Promise<Response> {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) throw new SecureApiError(0, { error: networkMessage("offline"), code: "offline" });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(ROUTE, { ...init, signal: controller.signal });
+  } catch (error) {
+    const timedOut = error instanceof DOMException && error.name === "AbortError";
+    throw new SecureApiError(timedOut ? 408 : 0, { error: networkMessage(timedOut ? "timeout" : "offline"), code: timedOut ? "timeout" : "offline" });
+  } finally { clearTimeout(timer); }
 }
 
 function bytesToB64url(value: ArrayBuffer | Uint8Array) {
@@ -93,9 +111,13 @@ async function prepare() {
 }
 
 async function decryptJsonResponse<T>(response: Response, responseKey: CryptoKey, nonce: string): Promise<{ status: number; data: T }> {
-  if (response.headers.get("x-nx-sealed") !== "1" || response.status !== 200) throw new Error("Secure response validation failed.");
-  const envelope = await response.json() as ResponseEnvelope;
-  if (envelope.v !== 1 || envelope.a !== ALG || envelope.n !== nonce) throw new Error("Secure response validation failed.");
+  if (response.headers.get("x-nx-sealed") !== "1" || response.status !== 200) {
+    // Not one of our sealed replies: the host, a proxy or the stale-clock check answered instead.
+    const info = messageForStatus(response.status);
+    throw new SecureApiError(response.status, { error: info.message, code: info.code });
+  }
+  const envelope = await response.json().catch(() => null) as ResponseEnvelope | null;
+  if (!envelope || envelope.v !== 1 || envelope.a !== ALG || envelope.n !== nonce) throw new SecureApiError(502, { error: networkMessage("unavailable"), code: "unavailable" });
   const clear = await crypto.subtle.decrypt(
     { name: "AES-GCM", iv: toArrayBuffer(b64urlToBytes(envelope.i)), additionalData: toArrayBuffer(responseAad(envelope.t, nonce)), tagLength: 128 },
     responseKey,
@@ -114,7 +136,7 @@ export async function secureApi<T>(operation: string, input: unknown = {}): Prom
     ctx.requestKey,
     toArrayBuffer(clear),
   );
-  const response = await fetch(ROUTE, {
+  const response = await send({
     method: "POST",
     credentials: "same-origin",
     cache: "no-store",
@@ -123,7 +145,7 @@ export async function secureApi<T>(operation: string, input: unknown = {}): Prom
       v: 1, a: ALG, p: ctx.clientPub, s: bytesToB64url(ctx.salt), i: bytesToB64url(ctx.iv),
       t: ctx.ts, n: ctx.nonce, c: bytesToB64url(ciphertext),
     }),
-  });
+  }, JSON_TIMEOUT_MS);
   const opened = await decryptJsonResponse<T>(response, ctx.responseKey, ctx.nonce);
   if (opened.status >= 400) throw new SecureApiError(opened.status, opened.data);
   return opened.data;
@@ -134,7 +156,7 @@ export async function secureResult<T>(operation: string, input: unknown = {}) {
     return { ok: true as const, status: 200, result: await secureApi<T>(operation, input) };
   } catch (error) {
     if (error instanceof SecureApiError) return { ok: false as const, status: error.status, result: error.body as T };
-    return { ok: false as const, status: 0, result: { error: "You appear to be offline. Check your connection and try again." } as T };
+    return { ok: false as const, status: 0, result: { error: networkMessage("offline") } as T };
   }
 }
 
@@ -151,7 +173,7 @@ export async function secureUpload<T>(operation: string, file: File, input: Reco
     ctx.requestKey,
     clear,
   );
-  const response = await fetch(ROUTE, {
+  const response = await send({
     method: "POST",
     credentials: "same-origin",
     cache: "no-store",
@@ -163,7 +185,7 @@ export async function secureUpload<T>(operation: string, file: File, input: Reco
       "x-nx-t": String(ctx.ts), "x-nx-n": ctx.nonce,
     },
     body: ciphertext,
-  });
+  }, FILE_TIMEOUT_MS);
   const opened = await decryptJsonResponse<T>(response, ctx.responseKey, ctx.nonce);
   if (opened.status >= 400) throw new SecureApiError(opened.status, opened.data);
   return opened.data;
@@ -177,7 +199,7 @@ export async function secureFile(operation: string, input: unknown = {}) {
     ctx.requestKey,
     toArrayBuffer(clear),
   );
-  const response = await fetch(ROUTE, {
+  const response = await send({
     method: "POST",
     credentials: "same-origin",
     cache: "no-store",
@@ -186,7 +208,7 @@ export async function secureFile(operation: string, input: unknown = {}) {
       v: 1, a: ALG, p: ctx.clientPub, s: bytesToB64url(ctx.salt), i: bytesToB64url(ctx.iv),
       t: ctx.ts, n: ctx.nonce, c: bytesToB64url(ciphertext),
     }),
-  });
+  }, FILE_TIMEOUT_MS);
   if (response.headers.get("x-nx-sealed") !== "1" || response.headers.get("x-nx-b") !== "1") {
     const opened = await decryptJsonResponse<unknown>(response, ctx.responseKey, ctx.nonce);
     if (opened.status >= 400) throw new SecureApiError(opened.status, opened.data);
@@ -209,7 +231,7 @@ export async function secureFile(operation: string, input: unknown = {}) {
   const metadata = JSON.parse(decoder.decode(decrypted.subarray(4, 4 + metadataLength))) as { z?: number; t?: string; d?: string };
   const status = Number(metadata.z);
   if (!Number.isInteger(status) || status < 100 || status > 599) throw new Error("Secure file response is invalid.");
-  if (status >= 400) throw new SecureApiError(status, { error: "Could not open this file." });
+  if (status >= 400) throw new SecureApiError(status, { error: status === 404 ? "This file is no longer available." : networkMessage("generic") });
   const bytes = decrypted.slice(4 + metadataLength);
   return { blob: new Blob([toArrayBuffer(bytes)], { type: metadata.t || "application/octet-stream" }), disposition: metadata.d };
 }

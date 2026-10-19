@@ -295,7 +295,7 @@ async function handleBinary(request: NextRequest) {
     return secureJson(context, await jsonFromInternal(response), { status: response.status, headers: passThroughHeaders(response) });
   } catch (error) {
     console.error("[opaque-api] encrypted upload failed", error instanceof Error ? error.message : "Unknown error");
-    return secureJson(context, { error: "Request failed." }, { status: 503 });
+    return secureJson(context, { error: "We couldn’t complete that just now. Please try again in a moment.", code: "unavailable" }, { status: 503 });
   }
 }
 
@@ -309,7 +309,7 @@ export async function POST(request: NextRequest) {
     return await handleJson(request, context);
   } catch (error) {
     console.error("[opaque-api] encrypted request failed", error instanceof Error ? error.message : "Unknown error");
-    return secureJson(context, { error: "Request failed." }, { status: 503 });
+    return secureJson(context, { error: "We couldn’t complete that just now. Please try again in a moment.", code: "unavailable" }, { status: 503 });
   }
 }
 
