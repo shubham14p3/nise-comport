@@ -4,6 +4,9 @@
  * Please have a native speaker review wording before launch.
  */
 import { hindiServices1 } from "./translations/hindi-services-1.ts";
+import { hindiServices2 } from "./translations/hindi-services-2.ts";
+import { hindiServices3 } from "./translations/hindi-services-3.ts";
+import { hindiServices4 } from "./translations/hindi-services-4.ts";
 
 export type HindiService = {
   slug: string;
@@ -164,7 +167,7 @@ const baseHindiServices: HindiService[] = [
   },
 ];
 
-export const hindiServices: HindiService[] = [...baseHindiServices, ...hindiServices1];
+export const hindiServices: HindiService[] = [...baseHindiServices, ...hindiServices1, ...hindiServices2, ...hindiServices3, ...hindiServices4];
 
 export function findHindiService(slug: string) {
   return hindiServices.find((service) => service.slug === slug);

@@ -6,6 +6,9 @@
  * Please have a native Bengali speaker review wording before launch.
  */
 import { bengaliServices1 } from "./translations/bengali-services-1.ts";
+import { bengaliServices2 } from "./translations/bengali-services-2.ts";
+import { bengaliServices3 } from "./translations/bengali-services-3.ts";
+import { bengaliServices4 } from "./translations/bengali-services-4.ts";
 
 export type BengaliService = {
   slug: string;
@@ -169,7 +172,7 @@ const baseBengaliServices: BengaliService[] = [
   },
 ];
 
-export const bengaliServices: BengaliService[] = [...baseBengaliServices, ...bengaliServices1];
+export const bengaliServices: BengaliService[] = [...baseBengaliServices, ...bengaliServices1, ...bengaliServices2, ...bengaliServices3, ...bengaliServices4];
 
 export function findBengaliService(slug: string) {
   return bengaliServices.find((service) => service.slug === slug);
