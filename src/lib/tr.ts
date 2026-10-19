@@ -25,7 +25,7 @@ function isUnprefixed(path: string) {
  * language menu send visitors to the translated page only when it is listed (otherwise they stay on English).
  */
 export const LOCALIZED_PAGES: string[] = ["/", "/services", "/about", "/faq", "/pricing", "/contact", "/team", "/areas-we-serve", "/insurance", "/terms", "/privacy", "/refund-policy"];
-export const LOCALIZED_SECTIONS: string[] = [];
+export const LOCALIZED_SECTIONS: string[] = ["/blog"];
 
 export function hasTranslation(locale: Locale, path: string) {
   if (locale === "en") return true;

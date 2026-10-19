@@ -1,14 +1,14 @@
-import type { ArticleTr } from "./blog-types";
-import { blogHi1 } from "./blog-hi-1";
-import { blogHi10 } from "./blog-hi-10";
-import { blogHi14 } from "./blog-hi-14";
-import { blogHi18 } from "./blog-hi-18";
-import { blogHi22 } from "./blog-hi-22";
-import { blogBn1 } from "./blog-bn-1";
-import { blogBn10 } from "./blog-bn-10";
-import { blogBn14 } from "./blog-bn-14";
-import { blogBn18 } from "./blog-bn-18";
-import { blogBn22 } from "./blog-bn-22";
+import type { ArticleTr } from "./blog-types.ts";
+import { blogHi1 } from "./blog-hi-1.ts";
+import { blogHi10 } from "./blog-hi-10.ts";
+import { blogHi14 } from "./blog-hi-14.ts";
+import { blogHi18 } from "./blog-hi-18.ts";
+import { blogHi22 } from "./blog-hi-22.ts";
+import { blogBn1 } from "./blog-bn-1.ts";
+import { blogBn10 } from "./blog-bn-10.ts";
+import { blogBn14 } from "./blog-bn-14.ts";
+import { blogBn18 } from "./blog-bn-18.ts";
+import { blogBn22 } from "./blog-bn-22.ts";
 
 export const blogHi: Record<string, ArticleTr> = { ...blogHi1, ...blogHi10, ...blogHi14, ...blogHi18, ...blogHi22 };
 export const blogBn: Record<string, ArticleTr> = { ...blogBn1, ...blogBn10, ...blogBn14, ...blogBn18, ...blogBn22 };

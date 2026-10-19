@@ -46,7 +46,9 @@ export function publicRoutes(): PublicRoute[] {
     { path: "/insurance", lastModified: SITE_CONTENT_DATE, priority: 0.9, changeFrequency: "monthly" },
     { path: "/print", lastModified: SITE_CONTENT_DATE, priority: 0.7, changeFrequency: "monthly" },
     { path: "/hardware", lastModified: SITE_CONTENT_DATE, priority: 0.8, changeFrequency: "weekly" },
-    { path: "/blog", lastModified: SITE_CONTENT_DATE, priority: 0.8, changeFrequency: "weekly" },
+    { path: "/blog", lastModified: SITE_CONTENT_DATE, priority: 0.8, changeFrequency: "weekly", alternates: { "hi-IN": "/hi/blog", "bn-IN": "/bn/blog" } },
+    { path: "/hi/blog", lastModified: SITE_CONTENT_DATE, priority: 0.7, changeFrequency: "weekly", alternates: { "en-IN": "/blog", "bn-IN": "/bn/blog" } },
+    { path: "/bn/blog", lastModified: SITE_CONTENT_DATE, priority: 0.7, changeFrequency: "weekly", alternates: { "en-IN": "/blog", "hi-IN": "/hi/blog" } },
     { path: "/faq", lastModified: SITE_CONTENT_DATE, priority: 0.6, changeFrequency: "monthly" },
     { path: "/track", lastModified: SITE_CONTENT_DATE, priority: 0.6, changeFrequency: "monthly" },
     { path: "/about", lastModified: SITE_CONTENT_DATE, priority: 0.6, changeFrequency: "yearly" },
@@ -71,7 +73,9 @@ export function publicRoutes(): PublicRoute[] {
   for (const guide of panGuides) routes.push({ path: `/pan/${guide.slug}`, lastModified: SITE_CONTENT_DATE, priority: 0.7, changeFrequency: "monthly" });
   for (const article of articles) {
     const { updatedAt } = articleDates(article);
-    routes.push({ path: `/blog/${article.slug}`, lastModified: updatedAt, priority: 0.7, changeFrequency: "monthly", images: [article.image] });
+    routes.push({ path: `/blog/${article.slug}`, lastModified: updatedAt, priority: 0.7, changeFrequency: "monthly", images: [article.image], alternates: { "hi-IN": `/hi/blog/${article.slug}`, "bn-IN": `/bn/blog/${article.slug}` } });
+    routes.push({ path: `/hi/blog/${article.slug}`, lastModified: updatedAt, priority: 0.6, changeFrequency: "monthly", images: [article.image], alternates: { "en-IN": `/blog/${article.slug}`, "bn-IN": `/bn/blog/${article.slug}` } });
+    routes.push({ path: `/bn/blog/${article.slug}`, lastModified: updatedAt, priority: 0.6, changeFrequency: "monthly", images: [article.image], alternates: { "en-IN": `/blog/${article.slug}`, "hi-IN": `/hi/blog/${article.slug}` } });
   }
   return routes;
 }
