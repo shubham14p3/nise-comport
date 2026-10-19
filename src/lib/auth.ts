@@ -211,8 +211,20 @@ export async function verifyEmailOtp(emailInput: string, code: string, purpose: 
  * Password sign-in, reset and change
  * -------------------------------------------------------------------------------------------- */
 
+/**
+ * Password sign-in accepts an email or a registered mobile number. A mobile number only works when exactly one
+ * account uses it; otherwise it behaves like a wrong password, so numbers cannot be probed.
+ */
+async function resolveLoginEmail(input: string) {
+  if (input.includes("@")) return normalizeEmail(input);
+  const phone = normalizePhone(input);
+  if (!phone) return normalizeEmail(input);
+  const rows = await db.select({ email: users.email }).from(users).where(and(eq(users.phone, phone), isNull(users.deletedAt))).limit(2);
+  return rows.length === 1 ? rows[0].email : `phone-${phone.replace(/\D/g, "")}@unmatched.invalid`;
+}
+
 export async function signInWithPassword(emailInput: string, password: string, ip = "unknown") {
-  const email = normalizeEmail(emailInput);
+  const email = await resolveLoginEmail(emailInput);
   const emailId = identity("email", email);
   await enforceRate(RATE_RULES.passwordPerIp15m, identity("ip", ip), "Too many sign-in attempts from this network.");
   for (const rule of [RATE_RULES.passwordFailuresPerEmail15m, RATE_RULES.passwordFailuresPerEmailDay]) {
@@ -234,7 +246,7 @@ export async function signInWithPassword(emailInput: string, password: string, i
       throw new RateLimitError(`Email or password is incorrect. Password sign-in is now paused for ${humanDuration(wait)}. You can sign in with an email code or reset your password.`, wait);
     }
     const warning = left > 0 && left <= 2 ? ` ${left} attempt${left === 1 ? "" : "s"} left before password sign-in is paused for 15 minutes.` : "";
-    throw new PublicError(`Email or password is incorrect.${warning}`, 401, { code: "invalid_credentials" });
+    throw new PublicError(`Email, mobile number or password is incorrect.${warning}`, 401, { code: "invalid_credentials" });
   }
   await clearRate(RATE_RULES.passwordFailuresPerEmail15m, emailId);
   if (!user.emailVerifiedAt) {

@@ -88,7 +88,46 @@ export function expandWord(word: string): string[] {
   return [...out];
 }
 
-/** Does `haystack` (already normalised) satisfy every typed word, in English or another language? */
+function editDistance(a: string, b: string, max: number) {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  let before: number[] | null = null;
+  for (let i = 1; i <= a.length; i++) {
+    const row = [i];
+    let best = i;
+    for (let j = 1; j <= b.length; j++) {
+      let value = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      if (before && i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) value = Math.min(value, before[j - 2] + 1);
+      row.push(value); if (value < best) best = value;
+    }
+    if (best > max) return max + 1;
+    before = prev; prev = row;
+  }
+  return prev[b.length];
+}
+
+/** "insurnce", "inshurance", "insurence" and "nsurance" all reduce to the same consonant skeleton. */
+function skeleton(word: string) {
+  return word.replace(/[aeiouy]/g, "").replace(/(.)\1+/g, "$1").replace(/ph/g, "f").replace(/(?<=.)h/g, "");
+}
+
+/** Does a possibly misspelt word look like one of the words in the text? Handles wrong letters, missing letters, swapped letters and short forms. */
+export function fuzzyWordMatch(word: string, tokens: string[]): boolean {
+  if (word.length < 3 || !/^[a-z]+$/.test(word)) return false;
+  const limit = word.length <= 4 ? 1 : word.length <= 8 ? 2 : 3;
+  const skel = skeleton(word);
+  for (const token of tokens) {
+    if (!/^[a-z]+$/.test(token)) continue;
+    if (token.startsWith(word)) return true;
+    if (editDistance(word, token, limit) <= limit) return true;
+    // Typing a word that is cut short and misspelt, e.g. "insuran", "insurnc".
+    if (word.length >= 5 && editDistance(word, token.slice(0, word.length + 1), 1) <= 1) return true;
+    if (skel.length >= 3 && word.length >= 4 && (skeleton(token) === skel || (skel.length >= 4 && skeleton(token).startsWith(skel)))) return true;
+  }
+  return false;
+}
+
+/** Does `haystack` (already normalised) satisfy every typed word, in English or another language, allowing for spelling mistakes? */
 export function matchesSearch(haystack: string, query: string): boolean {
   const words = normaliseSearch(query).split(" ").filter(Boolean);
   if (!words.length) return true;
@@ -96,5 +135,10 @@ export function matchesSearch(haystack: string, query: string): boolean {
   const whole = normaliseSearch(query);
   const phrase = expandWord(whole);
   if (phrase.length && phrase.some((term) => haystack.includes(term))) return true;
-  return words.every((word) => haystack.includes(word) || expandWord(word).some((term) => haystack.includes(term)));
+  let tokens: string[] | null = null;
+  return words.every((word) => {
+    if (haystack.includes(word) || expandWord(word).some((term) => haystack.includes(term))) return true;
+    tokens ??= haystack.split(" ");
+    return fuzzyWordMatch(word, tokens);
+  });
 }

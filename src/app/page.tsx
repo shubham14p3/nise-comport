@@ -171,10 +171,14 @@ export default async function HomePage() {
             <div><span className="eyebrow">GALLERY</span><h2>A peek at <span className="grad-text">our desk &amp; services.</span></h2></div>
             <Link className="btn btn--ghost" href="/gallery">Open gallery <ArrowUpRight size={18}/></Link>
           </div>
-          <div className="gallery-strip">{galleryPreview.map((item) => <Link key={item.key} href="/gallery" className="gallery-strip__item">
+          <div className="gallery-strip only-desktop">{galleryPreview.map((item) => <Link key={item.key} href="/gallery" className="gallery-strip__item">
             <SafeImage src={item.src} alt={item.alt} width={600} height={450} sizes="(max-width: 700px) 80vw, 33vw" unoptimized={item.google} fallbackSrc={localGallery[0]?.src}/>
             <span>{item.title}</span>
           </Link>)}</div>
+          <div className="only-mobile"><LoopScroller label="Gallery" gap={12}>{galleryPreview.map((item) => <Link key={item.key} href="/gallery" className="gallery-strip__item gallery-strip__item--loop">
+            <SafeImage src={item.src} alt={item.alt} width={600} height={450} sizes="(max-width: 700px) 80vw, 33vw" unoptimized={item.google} fallbackSrc={localGallery[0]?.src}/>
+            <span>{item.title}</span>
+          </Link>)}</LoopScroller></div>
         </div>
       </section>
 

@@ -2455,3 +2455,30 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 @media (max-width: 640px) { .hero-search__row { justify-content: flex-start; } .loop-wrap.is-still .loop-scroller { justify-content: flex-start; } }
 .loop-rep { display: contents; }
 .loop-wrap.is-still .loop-scroller { justify-content: flex-start; }
+
+/* Sign in / sign up: calmer and more spacious */
+.auth__card { gap: 18px; }
+.auth__switch { display: grid; gap: 10px; padding-top: 6px; }
+.auth__form { gap: 20px; }
+.auth__links { padding-top: 2px; }
+@media (max-width: 640px) {
+  .auth__visual { display: none; }
+  .auth__wrap { padding-block: 24px 48px; }
+  .auth__card { padding: 28px 22px; gap: 20px; }
+  .auth__lang > span { display: none; }
+  .auth__lang { padding: 6px; background: transparent; border: 0; }
+  .auth .gift-strip { font-size: .875rem; }
+}
+
+/* Mobile rails use LoopScroller (no scrollbar, endless); desktop keeps the grid */
+.only-mobile { display: none; }
+@media (max-width: 640px) {
+  .only-desktop { display: none !important; }
+  .only-mobile { display: block; }
+}
+.gallery-strip__item--loop { flex: none; width: min(78vw, 300px); }
+.loop-scroller--promos .loop-rep > * { flex: none; width: min(320px, 82vw); min-width: 0; }
+.offer-strip { overflow: hidden; scroll-snap-type: none; }
+.offer-strip .offer-strip__item { max-width: 82vw; }
+.admin-tabs, .profile__nav, .day-row { scrollbar-width: none; -ms-overflow-style: none; }
+.admin-tabs::-webkit-scrollbar, .profile__nav::-webkit-scrollbar, .day-row::-webkit-scrollbar { display: none; }

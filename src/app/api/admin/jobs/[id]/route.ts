@@ -1,3 +1,4 @@
+import { awardLoyalty } from "@/lib/loyalty";
 import { NextRequest, NextResponse, after } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
@@ -73,6 +74,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
     // A cancelled order gives its coupon back so the customer can use it again.
     if (input.status === "cancelled") await releaseRedemptions(input.kind, id);
+    // Thank-you wallet credit for finished insurance, certificate and print work (once per order).
+    if (input.status === "completed") await awardLoyalty(input.kind, id).catch((error) => console.error("[loyalty] could not award credit", error));
 
     const statusChanged = current.status !== input.status;
     if (input.notifyCustomer && (statusChanged || (officialChanged && input.officialReference))) {
