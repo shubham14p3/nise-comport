@@ -48,12 +48,14 @@ export async function createPaymentRequest(input: { reference: string; amountPai
   const [row] = await db.insert(payments).values({
     requestId: request.id, reference: request.reference, userId: request.userId, amountPaise: input.amountPaise, note: input.note?.slice(0, 200) || null, createdBy: actor.id,
   }).returning();
+  await db.update(serviceRequests).set({ status: "awaiting_payment", updatedAt: new Date() }).where(and(eq(serviceRequests.id, request.id), sql`${serviceRequests.status} in ('submitted','reviewing','waiting_for_customer')`));
   await logActivity({ kind: "request", permission: "requests", title: `Payment of ₹${input.amountPaise / 100} requested`, detail: request.reference, refType: "payment", refId: row.id, actorId: actor.id });
   return row;
 }
 
 export async function cancelPayment(id: string) {
-  await db.update(payments).set({ status: "cancelled", updatedAt: new Date() }).where(and(eq(payments.id, id), sql`${payments.status} <> 'paid'`));
+  const [row] = await db.update(payments).set({ status: "cancelled", updatedAt: new Date() }).where(and(eq(payments.id, id), sql`${payments.status} <> 'paid'`)).returning({ requestId: payments.requestId });
+  if (row) await db.update(serviceRequests).set({ status: "reviewing", updatedAt: new Date() }).where(and(eq(serviceRequests.id, row.requestId), eq(serviceRequests.status, "awaiting_payment")));
 }
 
 /** Marks a payment as paid exactly once. Safe to call again for the same payment (webhooks retry). */
@@ -64,6 +66,7 @@ export async function markPaid(id: string, details: { method: PayMethod; provide
   }).where(and(eq(payments.id, id), sql`${payments.status} <> 'paid'`)).returning();
   if (row) {
     await logActivity({ kind: "request", permission: "requests", title: `Payment received: ${rupees(row.amountPaise + row.feePaise)} (${details.method})`, detail: row.reference, refType: "payment", refId: row.id, actorId: details.verifiedBy ?? null });
+    await db.update(serviceRequests).set({ status: "payment_received", updatedAt: new Date() }).where(and(eq(serviceRequests.id, row.requestId), eq(serviceRequests.status, "awaiting_payment")));
     await notifyPaid(row);
   }
   return row ?? null;

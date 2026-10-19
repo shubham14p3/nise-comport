@@ -16,6 +16,7 @@ import ContactsPanel from "@/components/contacts-panel";
 import TeamPanel from "@/components/team-panel";
 import SiteTeamPanel from "@/components/site-team-panel";
 import PaymentsPanel from "@/components/payments-panel";
+import PricesPanel from "@/components/prices-panel";
 import InboxPanel from "@/components/inbox-panel";
 import SiteContentPanel from "@/components/site-content-panel";
 import GalleryPanel from "@/components/gallery-panel";
@@ -35,7 +36,7 @@ type RequestDetail = {
   events: { fromStatus: string | null; toStatus: string; fromLabel: string | null; toLabel: string; note: string | null; createdAt: string; actor: string | null }[];
 };
 
-const options = ["submitted", "reviewing", "waiting_for_customer", "ready_for_pickup", "out_for_delivery", "completed", "cancelled"];
+const options = ["submitted", "reviewing", "waiting_for_customer", "awaiting_payment", "payment_received", "ready_for_pickup", "out_for_delivery", "completed", "cancelled"];
 const label = (value: string) => { const text = value.replaceAll("_", " "); return text.charAt(0).toUpperCase() + text.slice(1); };
 const when = (value: string) => new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 
@@ -210,7 +211,7 @@ function RequestQueue() {
   </>;
 }
 
-type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments";
+type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices";
 const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | "admin" | "staff" }[] = [
   { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
   { id: "requests", label: "Requests", icon: ClipboardList, needs: "requests" },
@@ -224,6 +225,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "team", label: "Team", icon: UsersRound, needs: "admin" },
   { id: "pan", label: "PAN data", icon: Database, needs: "pan" },
   { id: "wallet", label: "Wallet", icon: WalletCards, needs: "wallet" },
+  { id: "prices", label: "Service prices", icon: TicketPercent, needs: "content" },
   { id: "payments", label: "Payments", icon: WalletCards, needs: "requests" },
 ];
 
@@ -300,6 +302,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { name
         {active === "testimonials" && <TestimonialsPanel/>}
         {active === "campaigns" && <CampaignsPanel/>}
         {active === "contacts" && <ContactsPanel/>}
+        {active === "prices" && <PricesPanel/>}
         {active === "payments" && <PaymentsPanel/>}
         {active === "team" && <><TeamPanel meRole={me.role}/><SiteTeamPanel/></>}
         {active === "pan" && <PanImportPanel/>}

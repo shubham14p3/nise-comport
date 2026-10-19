@@ -4,6 +4,8 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import Breadcrumbs from "@/components/breadcrumbs";
 import { COLOR_PAGE_RATE } from "@/lib/print-pricing";
+import { publicPrices, priceLabel } from "@/lib/service-prices";
+import { publishedServiceDetails } from "@/lib/services";
 import { priceList } from "@/lib/price-list";
 import { pageMetadata } from "@/lib/seo";
 import { site, whatsappLink } from "@/lib/site";
@@ -27,7 +29,11 @@ const confirmed = [
   { service: "Laptop, printer and PC repair, hardware", note: "Quoted after checking the device. Parts are priced on the day, so we send the latest price on WhatsApp." },
 ];
 
-export default function PricingPage() {
+export const revalidate = 300;
+
+export default async function PricingPage() {
+  const set = await publicPrices().catch(() => []);
+  const named = set.map((price) => ({ price, title: publishedServiceDetails.find((service) => service.slug === price.slug)?.title })).filter((row): row is { price: (typeof set)[number]; title: string } => Boolean(row.title));
   return <main className="content-page"><SiteHeader/>
     <section className="content-hero"><div className="container">
       <Breadcrumbs items={[{ name: "Home", path: "/" }, { name: "Pricing", path: "/pricing" }]}/>
@@ -44,6 +50,11 @@ export default function PricingPage() {
         <tr><th scope="row">Colour, any quantity</th><td>₹{COLOR_PAGE_RATE}</td></tr>
       </tbody></table>
       <p>The online print order shows the estimate before you confirm. We may adjust it after checking the file, and delivery, if offered, is confirmed separately. <Link href="/print">Start a print order <ArrowRight size={13}/></Link></p>
+
+      {named.length > 0 && <><h2>Our service charges</h2>
+      <p>Our own charge for each service. Government, portal or courier fees are separate.</p>
+      <table className="price-table"><tbody>{named.map((row) => <tr key={row.price.slug}><th scope="row"><Link href={`/services/${row.price.slug}`}>{row.title}</Link>{row.price.note && <small><br/>{row.price.note}</small>}</th><td>{priceLabel(row.price)}</td></tr>)}</tbody></table>
+      <p>No price listed for a service? Message or call us and we will quote it before any work starts.</p></>}
 
       <h2>Common charges</h2>
       <p>Typical amounts for the jobs we do most. We confirm the exact figure before we start.</p>

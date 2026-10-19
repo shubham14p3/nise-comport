@@ -447,3 +447,13 @@ export const payments = pgTable("payments", {
   uniqueIndex("payments_utr_unique").on(table.utr),
   uniqueIndex("payments_provider_payment_unique").on(table.method, table.providerPaymentId),
 ]);
+
+/** Our service charge per service, set in Admin → Prices. No row (or no amount) = nothing is shown publicly. */
+export const servicePrices = pgTable("service_prices", {
+  serviceSlug: text("service_slug").primaryKey(),
+  amount: integer("amount"),
+  kind: text("kind").notNull().default("fixed"),
+  note: text("note"),
+  updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

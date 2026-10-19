@@ -6,6 +6,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ArrowRight, ArrowUpRight, CircleCheck, MapPin, Phone, ShieldCheck } from "lucide-react";
 import Breadcrumbs from "@/components/breadcrumbs";
+import { priceFor, priceLabel } from "@/lib/service-prices";
 import FaqSection from "@/components/faq-section";
 import FloatingStart from "@/components/floating-start";
 import JsonLd from "@/components/json-ld";
@@ -73,6 +74,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
     notFound();
   }
   const detail = isServiceDetail(service) ? service : null;
+  const price = detail ? await priceFor(detail.slug).catch(() => null) : null;
   // Services added in the admin area without details yet: show the page, but as "coming soon".
   const comingSoon = Boolean(detail && !detail.highlights?.length && !detail.documents?.length && !detail.steps?.length);
   const category = detail ? categoryFor(detail) : undefined;
@@ -128,6 +130,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
         <section className="detail__block">
           <span className="eyebrow">HOW WE HELP</span>
           <h2>What we can do for you</h2>
+          {price && <p className="service-price"><b>Our service charge: {priceLabel(price)}</b>{price.note ? ` · ${price.note}` : ""}<br/><small>Government, portal or courier fees, if any, are separate and shown before you pay. <Link href="/pricing">See pricing</Link></small></p>}
           <ul className="tick-grid">{detail.highlights.map((item) => <li key={item}><CircleCheck size={20}/>{item}</li>)}</ul>
         </section>
         <section className="detail__block">

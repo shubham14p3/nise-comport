@@ -2311,3 +2311,4 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .pay-summary { display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); margin: .8rem 0; }
 .pay-summary div { padding: .7rem; border-radius: 12px; border: 1px solid var(--line, #e5e5ee); display: grid; }
 .pay-summary small { opacity: .7; }
+.service-price { padding: .7rem .9rem; border-radius: 12px; background: rgb(124 77 255 / .08); margin: 0 0 1rem; }

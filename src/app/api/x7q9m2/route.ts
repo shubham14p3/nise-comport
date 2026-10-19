@@ -73,6 +73,8 @@ const OPS = {
   "D5x8Q1mT4rV6": { method: "POST", path: "/api/admin/testimonials/sync" },
   "T9q4M2xV7bL3": { method: "GET", path: "/api/admin/team" },
   "W5n8H1cK6zR4": { method: "POST", path: "/api/admin/team" },
+  "N2v6Z9kQ4tH1": { method: "GET", path: "/api/admin/prices" },
+  "E8c4R1pW7mL3": { method: "POST", path: "/api/admin/prices" },
   "Y3d7N5qV1mP8": { method: "POST", path: "/api/pay" },
   "H6k2B9tW4xC7": { method: "POST", path: "/api/admin/payments" },
 } as const;
