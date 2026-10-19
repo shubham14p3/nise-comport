@@ -12,6 +12,8 @@ export const users = pgTable("users", {
   role: text("role").notNull().default("customer"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   passwordChangedAt: timestamp("password_changed_at", { withTimezone: true }),
+  /** True while the person still uses the temporary password the owner set; cleared when they choose their own. */
+  mustChangePassword: boolean("must_change_password").notNull().default(false),
   disabledAt: timestamp("disabled_at", { withTimezone: true }),
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   /** What a staff member may do in the admin area (see src/lib/permissions.ts). Admins can do everything. */
@@ -408,6 +410,8 @@ export const galleryItems = pgTable("gallery_items", {
 export const teamMembers = pgTable("team_members", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(), role: text("role").notNull(), bio: text("bio"), image: text("image"),
+  /** Private contact details, shown to the owner only; never sent to the public site. */
+  phone: text("phone"), email: text("email"),
   sortOrder: integer("sort_order").notNull().default(0), active: boolean("active").notNull().default(true),
   createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

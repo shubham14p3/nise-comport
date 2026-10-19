@@ -8,13 +8,14 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const member = z.object({
-  id: z.string().uuid().optional(), name: z.string().max(80), role: z.string().max(80),
+  id: z.string().max(40).optional(), name: z.string().max(80), role: z.string().max(80),
   bio: z.string().max(300).nullable().optional(), image: z.string().max(200).nullable().optional(), active: z.boolean().optional(),
+  phone: z.string().max(20).nullable().optional(), email: z.string().max(254).nullable().optional(),
 });
 const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("save"), member }),
-  z.object({ action: z.literal("delete"), id: z.string().uuid() }),
-  z.object({ action: z.literal("move"), id: z.string().uuid(), direction: z.enum(["up", "down"]) }),
+  z.object({ action: z.literal("delete"), id: z.string().max(40) }),
+  z.object({ action: z.literal("move"), id: z.string().max(40), direction: z.enum(["up", "down"]) }),
   z.object({ action: z.literal("importDefaults") }),
 ]);
 
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
     const input = schema.parse(await readJson(request));
     if (input.action === "save") await saveTeamMember(input.member, user);
     else if (input.action === "delete") await deleteTeamMember(input.id, user);
-    else if (input.action === "move") await moveTeamMember(input.id, input.direction);
+    else if (input.action === "move") await moveTeamMember(input.id, input.direction, user);
     else await importDefaultTeam(user);
     return NextResponse.json({ ok: true });
   } catch (error) { return apiError(error); }

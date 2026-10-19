@@ -26,7 +26,7 @@ export const DEMO_LOGIN = { email: "demo@nisecomport.test", password: "LocalDemo
 const demoUser: User = {
   id: "00000000-0000-4000-8000-000000000001", name: "Demo Customer", email: DEMO_LOGIN.email, phone: null, passwordHash: "", emailVerifiedAt: new Date(0),
   city: null, state: null, postalCode: null, profileSummary: null, preferredContact: "email", role: "demo", createdAt: new Date(0), updatedAt: new Date(0),
-  passwordChangedAt: null, disabledAt: null, deletedAt: null, permissions: [], whatsapp: null, inboxSeenAt: null, phoneVerifiedAt: null,
+  passwordChangedAt: null, mustChangePassword: false, disabledAt: null, deletedAt: null, permissions: [], whatsapp: null, inboxSeenAt: null, phoneVerifiedAt: null,
 };
 
 const hashToken = (value: string) => createHash("sha256").update(value).digest("hex");
@@ -272,7 +272,7 @@ export async function resetPasswordWithCode(emailInput: string, code: string, ne
   const user = await findUserByEmail(email);
   if (!isActive(user)) throw new PublicError("This code has expired or a newer code was sent. Request a new code.", 400, { code: "otp_expired" });
   const passwordHash = await hash(newPassword);
-  await db.update(users).set({ passwordHash, passwordChangedAt: new Date(), updatedAt: new Date(), emailVerifiedAt: user.emailVerifiedAt ?? new Date() }).where(eq(users.id, user.id));
+  await db.update(users).set({ passwordHash, passwordChangedAt: new Date(), mustChangePassword: false, updatedAt: new Date(), emailVerifiedAt: user.emailVerifiedAt ?? new Date() }).where(eq(users.id, user.id));
   await db.delete(sessions).where(eq(sessions.userId, user.id));
   const emailId = identity("email", email);
   await clearRate(RATE_RULES.passwordFailuresPerEmail15m, emailId);
@@ -289,7 +289,7 @@ export async function changePassword(user: User, currentPassword: string, newPas
   if (currentPassword === newPassword) throw new PublicError("Choose a password you haven’t used for this account.", 400, { fields: { newPassword: "Choose a different password." } });
   const problem = passwordProblem(newPassword, { email: fresh.email, name: fresh.name });
   if (problem) throw new PublicError(problem, 400, { fields: { newPassword: problem } });
-  await db.update(users).set({ passwordHash: await hash(newPassword), passwordChangedAt: new Date(), updatedAt: new Date() }).where(eq(users.id, fresh.id));
+  await db.update(users).set({ passwordHash: await hash(newPassword), passwordChangedAt: new Date(), mustChangePassword: false, updatedAt: new Date() }).where(eq(users.id, fresh.id));
   const signedOut = await revokeOtherSessions(fresh.id);
   sendPasswordChangedEmail(fresh.email, fresh.name).catch((error) => console.error("[auth] password-changed email failed", error));
   return { signedOut };

@@ -326,7 +326,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { name
         {active === "legal" && <LegalPanel/>}
         {active === "loyalty" && <LoyaltyPanel/>}
         {active === "payments" && <PaymentsPanel/>}
-        {active === "team" && <><TeamPanel meRole={me.role}/><SiteTeamPanel/></>}
+        {active === "team" && <><TeamPanel meRole={me.role} meId={me.id}/><SiteTeamPanel/></>}
         {active === "pan" && <PanImportPanel/>}
         {active === "wallet" && <WalletCreditForm/>}
       </section>
