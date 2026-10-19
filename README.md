@@ -367,3 +367,5 @@ npm run verify
 ```
 
 Application-layer encryption supplements HTTPS; it does not replace TLS. A browser owner can always inspect data after their own browser decrypts it for display, but private values are not readable in the Network request/response payloads or private record URLs.
+
+ssh -i $HOME\.ssh\nisecomport_ed25519 -p 22 -N -L 5433:/var/run/postgresql/.s.PGSQL.5432 nisecomp1@45.199.139.25
