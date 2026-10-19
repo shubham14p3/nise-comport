@@ -2453,3 +2453,5 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .loop-arrow--prev { left: 6px; } .loop-arrow--next { right: 6px; }
 @media (hover: none) { .loop-arrow { display: none; } }
 @media (max-width: 640px) { .hero-search__row { justify-content: flex-start; } .loop-wrap.is-still .loop-scroller { justify-content: flex-start; } }
+.loop-rep { display: contents; }
+.loop-wrap.is-still .loop-scroller { justify-content: flex-start; }

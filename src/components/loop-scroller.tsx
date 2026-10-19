@@ -5,23 +5,25 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 /**
  * One-line carousel that loops endlessly and moves only when the visitor scrolls, swipes or drags.
- * The scrollbar is hidden. If everything fits on screen it simply sits still, with no copies.
+ * The scrollbar is hidden. Items are repeated as needed so the loop works with any number of items.
  * The content is drawn three times; the scroll position is kept in the middle copy.
  */
-export default function LoopScroller({ children, className = "", label, arrows = false, gap = 12 }: { children: ReactNode; className?: string; label: string; arrows?: boolean; gap?: number }) {
+export default function LoopScroller({ children, className = "", label, arrows = false, gap = 12, loop = true }: { children: ReactNode; className?: string; label: string; arrows?: boolean; gap?: number; loop?: boolean }) {
   const box = useRef<HTMLDivElement>(null);
   const first = useRef<HTMLDivElement>(null);
-  const [fits, setFits] = useState(false);
+  const [reps, setReps] = useState(1);
   const drag = useRef({ active: false, moved: false, x: 0, left: 0 });
 
   const measure = useCallback(() => {
     const el = box.current; const group = first.current;
     if (!el || !group) return;
     const width = group.offsetWidth;
-    const nextFits = width <= el.clientWidth + 1;
-    setFits(nextFits);
-    if (!nextFits && (el.scrollLeft < width || el.scrollLeft >= width * 2)) el.scrollLeft = width + (el.scrollLeft % width);
-  }, []);
+    if (width <= 0) return;
+    // Repeat the items inside each copy until one copy is wider than the box, so even a few cards can loop.
+    const need = Math.min(8, Math.max(1, Math.ceil((el.clientWidth + 1) / (width / reps))));
+    if (need !== reps) { setReps(need); return; }
+    if (el.scrollLeft < width || el.scrollLeft >= width * 2) el.scrollLeft = width + (el.scrollLeft % width);
+  }, [reps]);
 
   useLayoutEffect(() => {
     measure();
@@ -36,7 +38,7 @@ export default function LoopScroller({ children, className = "", label, arrows =
 
   function onScroll() {
     const el = box.current; const group = first.current;
-    if (!el || !group || fits) return;
+    if (!el || !group) return;
     const width = group.offsetWidth;
     if (width <= 0) return;
     if (el.scrollLeft < width) el.scrollLeft += width;
@@ -44,7 +46,7 @@ export default function LoopScroller({ children, className = "", label, arrows =
   }
 
   function down(event: PointerEvent<HTMLDivElement>) {
-    if (event.pointerType !== "mouse" || event.button !== 0 || fits) return;
+    if (event.pointerType !== "mouse" || event.button !== 0) return;
     drag.current = { active: true, moved: false, x: event.clientX, left: box.current?.scrollLeft ?? 0 };
   }
   function move(event: PointerEvent<HTMLDivElement>) {
@@ -60,16 +62,16 @@ export default function LoopScroller({ children, className = "", label, arrows =
   }
   function by(direction: 1 | -1) { const el = box.current; if (el) el.scrollBy({ left: direction * el.clientWidth * 0.8, behavior: "smooth" }); }
 
-  return <div className={`loop-wrap${fits ? " is-still" : ""}`} style={{ ["--loop-gap" as string]: `${gap}px` }}>
+  if (!loop) return <div className="loop-wrap is-still" style={{ ["--loop-gap" as string]: `${gap}px` }}><div className={`loop-scroller ${className}`}><div className="loop-scroller__group" role="list" aria-label={label}>{children}</div></div></div>;
+
+  return <div className="loop-wrap" style={{ ["--loop-gap" as string]: `${gap}px` }}>
     <div ref={box} className={`loop-scroller ${className}`} onScroll={onScroll} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up} onPointerCancel={up}
       onClickCapture={(event) => { if (drag.current.moved) { event.preventDefault(); event.stopPropagation(); } }}>
-      <div ref={first} className="loop-scroller__group" role="list" aria-label={label}>{children}</div>
-      {!fits && <>
-        <div className="loop-scroller__group" aria-hidden="true" inert>{children}</div>
-        <div className="loop-scroller__group" aria-hidden="true" inert>{children}</div>
-      </>}
+      {[0, 1, 2].map((copy) => <div key={copy} ref={copy === 0 ? first : undefined} className="loop-scroller__group" {...(copy === 0 ? { role: "list", "aria-label": label } : { "aria-hidden": true, inert: true })}>
+        {Array.from({ length: reps }, (_, rep) => <div key={rep} className="loop-rep" {...(copy === 0 && rep === 0 ? {} : { "aria-hidden": true, inert: true })}>{children}</div>)}
+      </div>)}
     </div>
-    {arrows && !fits && <>
+    {arrows && <>
       <button type="button" className="loop-arrow loop-arrow--prev" aria-label="Previous" onClick={() => by(-1)}><ChevronLeft size={20}/></button>
       <button type="button" className="loop-arrow loop-arrow--next" aria-label="Next" onClick={() => by(1)}><ChevronRight size={20}/></button>
     </>}
