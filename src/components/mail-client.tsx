@@ -2,6 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, CheckCircle2, Clock, Download, Eye, HardDrive, Hourglass, Inbox, Link2, Lock, Mail, Maximize2, Minimize2, PanelLeftClose, PanelLeftOpen, Paperclip, PenSquare, Printer, RefreshCw, RotateCcw, Search, Send, X } from "lucide-react";
+import Portal from "@/components/portal";
 import { secureApi, secureFile, SecureApiError } from "@/lib/secure-api-client";
 import {
   findReferences, formatBytes, QUICK_REPLIES, STAFF_STATUS_LABEL, STATUS_LABEL, TICKET_STATUSES, type MailAttachmentInfo, type MailMeta, type MailTicketDetail, type MailTicketSummary, type TicketStatus,
@@ -368,7 +369,7 @@ function ComposeDialog({ staff, onClose, onSent }: { staff: boolean; onClose: ()
     } catch (e) { setError(errorText(e)); if (e instanceof SecureApiError && e.body && typeof e.body === "object" && "fields" in e.body) setFields((e.body as { fields: Record<string, string> }).fields); setSending(false); }
   }
 
-  return <div className="mbx-modal" role="dialog" aria-modal="true" aria-labelledby="mbx-compose-title" onMouseDown={(event) => { if (event.target === event.currentTarget && !sending) onClose(); }}>
+  return <Portal><div className="mbx-modal" role="dialog" aria-modal="true" aria-labelledby="mbx-compose-title" onMouseDown={(event) => { if (event.target === event.currentTarget && !sending) onClose(); }}>
     <form className={`mbx-dialog${drag ? " is-drag" : ""}`} onSubmit={(event) => void send(event)}
       onDragOver={(event) => { if (event.dataTransfer.types.includes("Files")) { event.preventDefault(); setDrag(true); } }} onDragLeave={() => setDrag(false)}
       onDrop={(event) => { event.preventDefault(); setDrag(false); if (event.dataTransfer.files.length) files.add(event.dataTransfer.files); }}>
@@ -391,5 +392,5 @@ function ComposeDialog({ staff, onClose, onSent }: { staff: boolean; onClose: ()
         <button type="submit" className="mbx-btn mbx-btn--primary" disabled={sending || files.busy || subject.trim().length < 3 || (!body.trim() && !files.ids.length)}><Send size={16}/> {sending ? "Sending…" : files.busy ? "Uploading files…" : "Send"}</button>
       </footer>
     </form>
-  </div>;
+  </div></Portal>;
 }

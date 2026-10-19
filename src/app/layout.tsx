@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import ScrollToTop from "@/components/scroll-to-top";
 import "./globals.css";
 import { Hind_Siliguri, Poppins } from "next/font/google";
 import ChatWidget from "@/components/chat-widget";
@@ -65,6 +66,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <OffersProvider promos={promos}>
         <a className="skip-link" href="#main-content">Skip to content</a>
         <SiteBanners placement="strip"/>
+        <ScrollToTop/>
         <div id="main-content">{children}</div>
         <SiteFooter/>
         <MobileDock/>

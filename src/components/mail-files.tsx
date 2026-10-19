@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Download, FileImage, FileSpreadsheet, FileText, Printer, X } from "lucide-react";
+import Portal from "@/components/portal";
 import { secureFile, secureUpload } from "@/lib/secure-api-client";
 import { allowedAttachmentType, formatBytes, isImageType, MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS_PER_MESSAGE, PREVIEWABLE, type MailAttachmentInfo } from "@/lib/mail-core";
 
@@ -92,7 +93,7 @@ export function FileViewer({ items, index, onIndex, onClose }: { items: FileSour
     return () => window.removeEventListener("keydown", onKey);
   }, [go, items.length, onClose]);
   const ready = state.key === source.key ? state : { key: "" };
-  return <div className="mbx-viewer" role="dialog" aria-modal="true" aria-label={`Preview of ${source.name}`} ref={dialog} tabIndex={-1} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+  return <Portal><div className="mbx-viewer" role="dialog" aria-modal="true" aria-label={`Preview of ${source.name}`} ref={dialog} tabIndex={-1} onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
     <div className="mbx-viewer__bar">
       <div className="mbx-viewer__title"><b>{source.name}</b><small>{formatBytes(source.sizeBytes)}{items.length > 1 ? ` · ${index + 1} of ${items.length}` : ""}</small></div>
       <div className="mbx-viewer__actions">
@@ -112,7 +113,7 @@ export function FileViewer({ items, index, onIndex, onClose }: { items: FileSour
           : <iframe className="mbx-viewer__pdf" src={ready.url} title={source.name}/>}
       {items.length > 1 && <button type="button" className="mbx-viewer__nav mbx-viewer__nav--next" aria-label="Next file" onClick={() => go(1)}><ChevronRight size={22}/></button>}
     </div>
-  </div>;
+  </div></Portal>;
 }
 
 /* ---------------------------------------------------------------- picking and uploading files for a message */

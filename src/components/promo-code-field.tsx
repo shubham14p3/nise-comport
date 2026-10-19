@@ -1,5 +1,6 @@
 "use client";
 
+import Portal from "@/components/portal";
 import { useEffect, useState } from "react";
 import { Check, ChevronRight, LoaderCircle, TicketPercent, X } from "lucide-react";
 import { fill, type Locale } from "@/lib/i18n";
@@ -70,7 +71,7 @@ export default function PromoCodeField({ locale, value, applied, onChange, onApp
       : fill(t.promoSaved, { code: applied.code, amount: rupees(applied.discount), min: applied.minimum })}</p>}
     {!applied && value && !signedIn && !error && <p className="field__hint">{t.promoLater}</p>}
     {error && <p className="field__error" role="alert">{error}</p>}
-    {picking && <div className="promo-modal" role="dialog" aria-modal="true" aria-labelledby="promo-modal-title" onMouseDown={(event) => { if (event.target === event.currentTarget) setPicking(false); }}>
+    {picking && <Portal><div className="promo-modal" role="dialog" aria-modal="true" aria-labelledby="promo-modal-title" onMouseDown={(event) => { if (event.target === event.currentTarget) setPicking(false); }}>
       <div className="promo-modal__card">
         <header><div><h3 id="promo-modal-title">{t.pickTitle}</h3><p>{t.pickHint}</p></div><button type="button" className="promo-modal__close" aria-label={t.closeLabel} onClick={() => setPicking(false)}><X size={18}/></button></header>
         <ul>{shown.map((item) => <li key={item.code}>
@@ -81,6 +82,6 @@ export default function PromoCodeField({ locale, value, applied, onChange, onApp
           </button>
         </li>)}</ul>
       </div>
-    </div>}
+    </div></Portal>}
   </div>;
 }
