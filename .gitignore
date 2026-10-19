@@ -47,3 +47,6 @@ photo-index
 .env
 .env.local
 .env.*.local
+
+# Database backups hold customer data: never commit
+backups/
