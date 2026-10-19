@@ -1,5 +1,6 @@
 import { isAppPath, type Locale } from "./i18n.ts";
 import { translatedSlugs } from "./translated-slugs.ts";
+import { CATEGORY_TEXT } from "./translations/categories.ts";
 
 /**
  * Inline translations. `const t = tr(lc); t("Hello", "नमस्ते", "নমস্কার")` returns the text for the
@@ -23,14 +24,14 @@ function isUnprefixed(path: string) {
  * Content pages that exist in /hi and /bn. Add a page here when its translation is live; links and the
  * language menu send visitors to the translated page only when it is listed (otherwise they stay on English).
  */
-export const LOCALIZED_PAGES: string[] = ["/"];
+export const LOCALIZED_PAGES: string[] = ["/", "/services"];
 export const LOCALIZED_SECTIONS: string[] = [];
 
 export function hasTranslation(locale: Locale, path: string) {
   if (locale === "en") return true;
   if (LOCALIZED_PAGES.includes(path)) return true;
   const service = /^\/services\/([^/]+)$/.exec(path)?.[1];
-  if (service) return translatedSlugs[locale].includes(service);
+  if (service) return translatedSlugs[locale].includes(service) || service in CATEGORY_TEXT;
   return LOCALIZED_SECTIONS.some((section) => path === section || path.startsWith(`${section}/`));
 }
 
@@ -44,7 +45,7 @@ export function lp(locale: Locale, href: string) {
 }
 
 export const LANG_PARAMS = [{ lang: "hi" }, { lang: "bn" }];
-export function langFromParam(value: string): Locale | null {
+export function langFromParam(value: string): "hi" | "bn" | null {
   return value === "hi" || value === "bn" ? value : null;
 }
 
