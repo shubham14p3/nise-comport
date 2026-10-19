@@ -94,9 +94,9 @@ export default function SiteFooter() {
         <li>English · हिन्दी · বাংলা</li>
         <li>Kharangajhar, Telco · Since 2010</li>
       </ul>
-      <nav className="footer-policies" aria-label="Policies">
+      {/* <nav className="footer-policies" aria-label="Policies">
         <Link href="/terms">Terms and Conditions</Link><Link href="/refund-policy">Refund &amp; Cancellation Policy</Link><Link href="/privacy">Privacy Policy</Link><Link href="/pricing">Pricing</Link>
-      </nav>
+      </nav> */}
     </div>
     <div className="container footer-bottom">
       <p>NISE COMPORT is an independent CSC / Pragya Kendra service centre, not a government office, bank or insurer. Official and third-party fees are separate from our service charge; final approvals rest with the relevant authority.</p>
