@@ -2358,3 +2358,19 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
   .content-hero .container > *, .team-card, .team-block__title, .team-hero__orb, .team-hero h1 em { animation: none; }
   .team-card:hover, .team-card:hover .team-card__photo img { transform: none; }
 }
+
+/* ---------- Footer: policies and trust strip ---------- */
+.footer-col__sub { margin-top: 12px; }
+.footer-trust { display: grid; gap: 14px; padding: 22px 0; border-top: 1px solid rgb(255 255 255 / .1); }
+.footer-trust__head { display: grid; gap: 4px; }
+.footer-trust__head b { color: #fff; font-size: .8125rem; letter-spacing: .12em; text-transform: uppercase; }
+.footer-trust__head span { font-size: .8125rem; color: rgb(255 255 255 / .6); }
+.partner-strip { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.partner-strip li { display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px 5px 6px; border-radius: 999px; background: rgb(255 255 255 / .07); border: 1px solid rgb(255 255 255 / .12); color: rgb(255 255 255 / .85); font-size: .8125rem; font-weight: 600; }
+.partner-mark--sm { width: 28px; height: 28px; border-radius: 50%; }
+.partner-mark--sm b { font-size: .5625rem; }
+.partner-mark--sm img { padding: 3px; }
+.footer-pride { display: flex; flex-wrap: wrap; gap: 8px 18px; list-style: none; margin: 0; padding: 0; font-size: .8125rem; color: rgb(255 255 255 / .75); }
+.footer-policies { display: flex; flex-wrap: wrap; gap: 10px; }
+.footer-policies a { padding: 8px 16px; border-radius: 999px; border: 1px solid rgb(255 255 255 / .25); color: #fff; font-weight: 600; font-size: .875rem; transition: background .15s ease; }
+.footer-policies a:hover { background: rgb(255 255 255 / .14); }

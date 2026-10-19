@@ -29,3 +29,19 @@ export default function PartnerMarks() {
       : <div key={partner.slug} className="partner-card">{body}</div>;
   })}</div>;
 }
+
+/** Compact row of badges for the footer: who we help customers reach. Official logos in public/images/partners/ replace the lettered badges. */
+export function PartnerStrip({ limit = 12 }: { limit?: number }) {
+  return <ul className="partner-strip" aria-label="Services and portals we help with">{partners.slice(0, limit).map((partner) => {
+    const logo = logoFor(partner.slug);
+    return <li key={partner.slug} title={`${partner.name}: ${partner.what}`}>
+      <span className={`partner-mark partner-mark--sm tone-${partner.tone}`} aria-hidden="true">
+        {logo
+          // eslint-disable-next-line @next/next/no-img-element -- owner-supplied logo of unknown size
+          ? <img src={logo} alt="" loading="lazy"/>
+          : <b>{partner.initials}</b>}
+      </span>
+      <span>{partner.name}</span>
+    </li>;
+  })}</ul>;
+}
