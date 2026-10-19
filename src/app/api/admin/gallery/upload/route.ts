@@ -9,10 +9,10 @@ export const runtime = "nodejs";
 
 /** One photo per call (multipart: file, tag). Converted to WebP on the server. */
 export async function POST(request: NextRequest) {
-  const user = await getCurrentUser();
-  if (!user || !hasPermission(user, "content")) return NextResponse.json({ error: "Site content access is required." }, { status: 403 });
-  if (Number(request.headers.get("content-length") ?? "0") > MAX_GALLERY_UPLOAD_BYTES + 256 * 1024) return NextResponse.json({ error: "Keep each photo under 20 MB." }, { status: 413 });
   try {
+    const user = await getCurrentUser();
+    if (!user || !hasPermission(user, "content")) return NextResponse.json({ error: "Site content access is required." }, { status: 403 });
+    if (Number(request.headers.get("content-length") ?? "0") > MAX_GALLERY_UPLOAD_BYTES + 256 * 1024) return NextResponse.json({ error: "Keep each photo under 20 MB." }, { status: 413 });
     await enforceRate(RATE_RULES.galleryUploadsPerUserHour, identity("user", user.id), "That’s a lot of photos for one hour. Please continue a little later.");
     const form = await request.formData();
     const file = form.get("file");

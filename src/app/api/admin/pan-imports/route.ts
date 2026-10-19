@@ -37,9 +37,9 @@ function normalizeHeader(value: string) { return value.toLowerCase().replace(/[^
 async function isAdmin() { const user = await getCurrentUser(); return hasPermission(user, "pan") ? user : null; }
 
 export async function POST(request: NextRequest) {
-  const user = await isAdmin();
-  if (!user) return NextResponse.json({ error: "PAN data access is required." }, { status: 403 });
   try {
+    const user = await isAdmin();
+    if (!user) return NextResponse.json({ error: "PAN data access is required." }, { status: 403 });
     const { fileId } = z.object({ fileId: z.uuid() }).parse(await request.json());
     const [file] = await db.select().from(storedFiles).where(and(eq(storedFiles.id, fileId), eq(storedFiles.userId, user.id))).limit(1);
     const allowed = file && ["text/csv", "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"].includes(file.mimeType);
@@ -79,18 +79,20 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const user = await isAdmin();
-  if (!user) return NextResponse.json({ error: "PAN data access is required." }, { status: 403 });
-  const query = (request.nextUrl.searchParams.get("q") ?? "").trim();
-  const imports = await db.select({ id: panImports.id, rowCount: panImports.rowCount, acceptedRows: panImports.acceptedRows, rejectedRows: panImports.rejectedRows, createdAt: panImports.createdAt }).from(panImports).orderBy(desc(panImports.createdAt)).limit(25);
-  if (!query) return NextResponse.json({ imports, records: [] });
-  let records: { id: string; holderName: string; recordStatus: string; createdAt: Date }[] = [];
-  if (/^[A-Za-z]{5}\d{4}[A-Za-z]$/.test(query)) {
-    const key = encryptionKey(); const hash = createHmac("sha256", panIndexKey(key)).update(query.toUpperCase()).digest("hex");
-    records = await db.select({ id: panRecords.id, holderName: panRecords.holderName, recordStatus: panRecords.recordStatus, createdAt: panRecords.createdAt }).from(panRecords).where(eq(panRecords.panHash, hash)).limit(20);
-  } else {
-    const safeQuery = query.replace(/[\\%_]/g, "\\$&").slice(0, 100);
-    records = await db.select({ id: panRecords.id, holderName: panRecords.holderName, recordStatus: panRecords.recordStatus, createdAt: panRecords.createdAt }).from(panRecords).where(ilike(panRecords.holderName, `%${safeQuery}%`)).orderBy(desc(panRecords.createdAt)).limit(50);
-  }
-  return NextResponse.json({ imports, records });
+  try {
+    const user = await isAdmin();
+    if (!user) return NextResponse.json({ error: "PAN data access is required." }, { status: 403 });
+    const query = (request.nextUrl.searchParams.get("q") ?? "").trim();
+    const imports = await db.select({ id: panImports.id, rowCount: panImports.rowCount, acceptedRows: panImports.acceptedRows, rejectedRows: panImports.rejectedRows, createdAt: panImports.createdAt }).from(panImports).orderBy(desc(panImports.createdAt)).limit(25);
+    if (!query) return NextResponse.json({ imports, records: [] });
+    let records: { id: string; holderName: string; recordStatus: string; createdAt: Date }[] = [];
+    if (/^[A-Za-z]{5}\d{4}[A-Za-z]$/.test(query)) {
+      const key = encryptionKey(); const hash = createHmac("sha256", panIndexKey(key)).update(query.toUpperCase()).digest("hex");
+      records = await db.select({ id: panRecords.id, holderName: panRecords.holderName, recordStatus: panRecords.recordStatus, createdAt: panRecords.createdAt }).from(panRecords).where(eq(panRecords.panHash, hash)).limit(20);
+    } else {
+      const safeQuery = query.replace(/[\\%_]/g, "\\$&").slice(0, 100);
+      records = await db.select({ id: panRecords.id, holderName: panRecords.holderName, recordStatus: panRecords.recordStatus, createdAt: panRecords.createdAt }).from(panRecords).where(ilike(panRecords.holderName, `%${safeQuery}%`)).orderBy(desc(panRecords.createdAt)).limit(50);
+    }
+    return NextResponse.json({ imports, records });
+  } catch (error) { return apiError(error); }
 }

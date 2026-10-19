@@ -67,6 +67,10 @@ const OPS = {
   "O9c4V7mB2pL5": { method: "POST", path: "/api/admin/inbox" },
   "E3h8K1tW6qZ9": { method: "PATCH", path: "/api/admin/leads" },
   "B4j9D6sX2mH7": { method: "POST", path: "/api/admin/records" },
+  "F2q6N9vK3xT5": { method: "GET", path: "/api/admin/testimonials" },
+  "R8m4P1wD7zL2": { method: "POST", path: "/api/admin/testimonials" },
+  "K6w3H9pL2vN7": { method: "GET", path: "/api/admin/testimonials/sync" },
+  "D5x8Q1mT4rV6": { method: "POST", path: "/api/admin/testimonials/sync" },
 } as const;
 
 /** Encrypted file uploads: customer documents, and posters in the admin area. */
@@ -133,6 +137,15 @@ function targetFor(operation: string, input: Record<string, unknown>) {
     case "B6r1K8mQ3cT9": {
       const id = stringValue(input, "id", 80);
       return { method: "GET", path: `/api/internal/admin-request-detail?id=${encodeURIComponent(id)}` };
+    }
+    case "X3n6Q1vT8mK4": {
+      const reference = stringValue(input, "reference", 80);
+      return { method: "GET", path: `/api/requests/${encodeURIComponent(reference)}/review` };
+    }
+    case "Y7k2V5pN9rD1": {
+      const reference = stringValue(input, "reference", 80);
+      const body = Object.fromEntries(Object.entries(input).filter(([key]) => key !== "reference"));
+      return { method: "POST", path: `/api/requests/${encodeURIComponent(reference)}/review`, body };
     }
     default:
       return null;

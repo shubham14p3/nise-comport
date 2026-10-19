@@ -32,7 +32,7 @@ for (const path of paths) {
     try { JSON.parse(match[1]); } catch { fail(path, "invalid JSON-LD"); }
   }
 }
-for (const path of ["/login", "/signup", "/forgot-password", "/profile", "/admin", "/pan/request"]) {
+for (const path of ["/login", "/signup", "/forgot-password", "/profile", "/desk", "/pan/request"]) {
   const response = await fetch(site + path, { redirect: "manual" });
   const header = response.headers.get("x-robots-tag") ?? "";
   const html = response.status === 200 ? await response.text() : "";

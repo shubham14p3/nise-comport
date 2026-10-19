@@ -10,7 +10,7 @@ const forbiddenPrivateApis = [
   "/api/pan/requests", "/api/print-jobs", "/api/uploads", "/api/coupons/validate",
   "/api/admin/", "/api/internal/",
 ];
-const forbiddenPrivateUrls = ["/profile/requests/", "/admin/requests/", "?next=", "?email=", "?section=", "?account=", "/pan/request?type="];
+const forbiddenPrivateUrls = ["/profile/requests/", "/desk/requests/", "?next=", "?email=", "?section=", "?account=", "/pan/request?type="];
 
 function filesUnder(dir) {
   const out = [];
@@ -37,7 +37,7 @@ for (const path of filesUnder("src")) {
 
 for (const path of [
   "src/app/(account)/profile/page.tsx",
-  "src/app/admin/page.tsx",
+  "src/app/desk/page.tsx",
   "src/app/pan/request/page.tsx",
 ]) {
   const source = readFileSync(path, "utf8");

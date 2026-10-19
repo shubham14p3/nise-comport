@@ -101,7 +101,8 @@ export function absoluteUrl(path = "/") {
 }
 
 export function whatsappLink(message?: string, number: string = site.whatsapp.primary) {
-  return `https://wa.me/${number}${message ? `?text=${encodeURIComponent(message)}` : ""}`;
+  const branded = message ? (message.startsWith("*NISE COMPORT*") ? message : `*NISE COMPORT* · Kharangajhar, Telco, Jamshedpur\n${message}`) : undefined;
+  return `https://wa.me/${number}${branded ? `?text=${encodeURIComponent(branded)}` : ""}`;
 }
 
 export function directionsFrom(origin: string) {

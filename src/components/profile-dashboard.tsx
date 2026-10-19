@@ -4,6 +4,7 @@ import { serviceName, statusText } from "@/lib/i18n-forms";
 import { useLocale } from "@/lib/use-locale";
 import SiteHeader from "@/components/site-header";
 import AddressManager from "@/components/address-manager";
+import { CitySelect, StateSelect } from "@/components/state-city-fields";
 import AccountSecurityPanel from "@/components/account-security-panel";
 import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
@@ -20,7 +21,7 @@ import { secureApi } from "@/lib/secure-api-client";
 import { whatsappHref } from "@/lib/public-contact";
 import type { CustomerVoucher } from "@/lib/promo-view";
 
-type RequestItem = { reference: string; serviceSlug: string; serviceName: string; status: string; description: string; createdAt: string };
+type RequestItem = { reference: string; serviceSlug: string; serviceName: string; status: string; description: string; createdAt: string; officialReference: string | null; officialReferenceLabel: string | null };
 type WalletItem = { amount: string; kind: string; description: string; reference: string | null; createdAt: string };
 type PrintItem = { reference: string; status: string; total: string; fulfillment: string; createdAt: string };
 type ProfileUser = {
@@ -45,6 +46,7 @@ type RequestDetail = {
   request: {
     reference: string; serviceSlug: string; serviceName: string; status: string; statusLabel: string;
     details: Record<string, unknown>; createdAt: string; cancellable: boolean;
+    officialReference: string | null; officialReferenceLabel: string | null;
   };
   files: { name: string; createdAt: string }[];
   events: { toStatus: string; label: string; createdAt: string }[];
@@ -179,7 +181,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
     if (!rows.length) return <EmptyState icon={<FileText size={22}/>} title="No requests here yet" text="Send your first request in four quick steps. Its reference number and live status will appear here." action={<Link className="btn btn--primary" href="/request">Start a request <ArrowRight size={16}/></Link>} />;
     return <div className="record-list">{rows.map((item) => <article className="record" key={item.reference}>
       <span className="record__icon"><FileText size={20}/></span>
-      <div className="record__body"><b>{serviceName(item.serviceSlug, item.serviceName, locale)}</b><small>{item.reference} · {dateLabel(item.createdAt)}</small>{item.description && <p>{item.description}</p>}</div>
+      <div className="record__body"><b>{serviceName(item.serviceSlug, item.serviceName, locale)}</b><small>{item.reference} · {dateLabel(item.createdAt)}</small>{item.officialReference && <small>{item.officialReferenceLabel || "Official reference"}: {item.officialReference}</small>}{item.description && <p>{item.description}</p>}</div>
       <span className={statusClass(item.status)}>{statusText(item.status, locale)}</span>
       <button className="btn btn--ghost btn--sm" type="button" onClick={() => void viewRequest(item.reference)}>Details <ArrowRight size={15}/></button>
     </article>)}</div>;
@@ -217,6 +219,11 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
           {requestDetailBusy && <p className="muted">Opening private request details…</p>}
           {requestDetailError && <div className="alert alert--error">{requestDetailError}</div>}
           {requestDetail && <>
+            {requestDetail.request.officialReference ? (
+              <p className="muted">{requestDetail.request.officialReferenceLabel || "Official reference"}: <b>{requestDetail.request.officialReference}</b></p>
+            ) : (
+              <p className="muted">Official reference: not yet submitted to the portal/insurer — we’ll add it here once it’s filed.</p>
+            )}
             <PanSavedDetails details={requestDetail.request.details}/>
             <RequestExtras details={requestDetail.request.details} fallback={focusRequest.description}/>
             {requestDetail.events.length > 0 && <ol className="timeline">{requestDetail.events.map((event, index) => <li key={`${event.createdAt}-${index}`}><b>{event.label}</b><small>{dateTime(event.createdAt)}</small></li>)}</ol>}
@@ -238,8 +245,8 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
           <label className="field"><span className="field__label">Mobile number</span><input type="tel" inputMode="tel" maxLength={20} autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} aria-invalid={Boolean(profileFieldErrors.phone)}/><span className={profileFieldErrors.phone ? "field__error" : "field__hint"}>{profileFieldErrors.phone ?? "Needed for phone or WhatsApp updates."}</span></label>
           <label className="field"><span className="field__label">WhatsApp number <em>if different</em></span><input type="tel" inputMode="tel" maxLength={20} autoComplete="tel" value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} placeholder="Same as mobile" aria-invalid={Boolean(profileFieldErrors.whatsapp)}/><span className={profileFieldErrors.whatsapp ? "field__error" : "field__hint"}>{profileFieldErrors.whatsapp ?? "We send updates and offers here only if you choose WhatsApp."}</span></label>
           <label className="field"><span className="field__label">Preferred update channel</span><select value={preferredContact} onChange={(event) => setPreferredContact(event.target.value as ProfileUser["preferredContact"])}><option value="email">Email</option><option value="phone">Phone call</option><option value="whatsapp">WhatsApp</option></select>{profileFieldErrors.preferredContact && <span className="field__error">{profileFieldErrors.preferredContact}</span>}</label>
-          <label className="field"><span className="field__label">City</span><input maxLength={100} autoComplete="address-level2" value={city} onChange={(event) => setCity(event.target.value)}/></label>
-          <label className="field"><span className="field__label">State</span><input maxLength={100} autoComplete="address-level1" value={state} onChange={(event) => setState(event.target.value)}/></label>
+          <label className="field"><span className="field__label">State</span><StateSelect value={state} onChange={(next) => { setState(next); setCity(""); }}/></label>
+          <label className="field"><span className="field__label">City</span><CitySelect state={state} value={city} onChange={setCity}/></label>
           <label className="field"><span className="field__label">PIN code</span><input inputMode="numeric" pattern="[1-9][0-9]{5}" maxLength={6} autoComplete="postal-code" value={postalCode} onChange={(event) => setPostalCode(event.target.value.replace(/\D/g, "").slice(0, 6))} aria-invalid={Boolean(profileFieldErrors.postalCode)}/>{profileFieldErrors.postalCode && <span className="field__error">{profileFieldErrors.postalCode}</span>}</label>
           <span className="field field--spacer" aria-hidden="true"/>
           <label className="field field--full"><span className="field__label">A note for our team <em>optional</em></span><textarea maxLength={500} rows={4} value={profileSummary} onChange={(event) => setProfileSummary(event.target.value)}/><span className="field__hint">{profileSummary.length}/500 · Don’t enter passwords, OTPs or identity numbers.</span></label>

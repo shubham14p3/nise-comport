@@ -17,16 +17,18 @@ const addressSchema = z.object({
 });
 
 export async function GET() {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Please sign in." }, { status: 401 });
-  const rows = await db.select().from(addresses).where(eq(addresses.userId, user.id)).orderBy(desc(addresses.isDefault), desc(addresses.createdAt));
-  return NextResponse.json({ addresses: rows });
+  try {
+    const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ error: "Please sign in." }, { status: 401 });
+    const rows = await db.select().from(addresses).where(eq(addresses.userId, user.id)).orderBy(desc(addresses.isDefault), desc(addresses.createdAt));
+    return NextResponse.json({ addresses: rows });
+  } catch (error) { return apiError(error); }
 }
 
 export async function POST(request: NextRequest) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Please sign in to save an address." }, { status: 401 });
   try {
+    const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ error: "Please sign in to save an address." }, { status: 401 });
     const input = addressSchema.parse(await request.json());
     const current = await db.select({ id: addresses.id }).from(addresses).where(eq(addresses.userId, user.id)).limit(20);
     if (current.length >= 20) return NextResponse.json({ error: "You can save up to 20 addresses. Remove one to add another." }, { status: 409 });
@@ -44,18 +46,20 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Please sign in." }, { status: 401 });
-  const id = request.nextUrl.searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "Address id is required." }, { status: 400 });
-  const [address] = await db.select().from(addresses).where(and(eq(addresses.id, id), eq(addresses.userId, user.id))).limit(1);
-  if (!address) return NextResponse.json({ error: "Address not found." }, { status: 404 });
-  const linked = await db.select({ id: printJobs.id }).from(printJobs).where(eq(printJobs.addressId, id)).limit(1);
-  if (linked.length) return NextResponse.json({ error: "This address is linked to a print order and can’t be removed." }, { status: 409 });
-  await db.delete(addresses).where(eq(addresses.id, id));
-  if (address.isDefault) {
-    const [next] = await db.select({ id: addresses.id }).from(addresses).where(eq(addresses.userId, user.id)).limit(1);
-    if (next) await db.update(addresses).set({ isDefault: true }).where(eq(addresses.id, next.id));
-  }
-  return NextResponse.json({ ok: true });
+  try {
+    const user = await getCurrentUser();
+    if (!user) return NextResponse.json({ error: "Please sign in." }, { status: 401 });
+    const id = request.nextUrl.searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "Address id is required." }, { status: 400 });
+    const [address] = await db.select().from(addresses).where(and(eq(addresses.id, id), eq(addresses.userId, user.id))).limit(1);
+    if (!address) return NextResponse.json({ error: "Address not found." }, { status: 404 });
+    const linked = await db.select({ id: printJobs.id }).from(printJobs).where(eq(printJobs.addressId, id)).limit(1);
+    if (linked.length) return NextResponse.json({ error: "This address is linked to a print order and can’t be removed." }, { status: 409 });
+    await db.delete(addresses).where(eq(addresses.id, id));
+    if (address.isDefault) {
+      const [next] = await db.select({ id: addresses.id }).from(addresses).where(eq(addresses.userId, user.id)).limit(1);
+      if (next) await db.update(addresses).set({ isDefault: true }).where(eq(addresses.id, next.id));
+    }
+    return NextResponse.json({ ok: true });
+  } catch (error) { return apiError(error); }
 }

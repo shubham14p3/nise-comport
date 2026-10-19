@@ -28,8 +28,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/:path*", headers: securityHeaders },
       { source: "/api/:path*", headers: noindex },
-      { source: "/admin/:path*", headers: noindex },
-      { source: "/admin", headers: noindex },
+      { source: "/desk/:path*", headers: noindex },
+      { source: "/desk", headers: noindex },
       { source: "/profile/:path*", headers: noindex },
       { source: "/profile", headers: noindex },
       { source: "/login", headers: noindex },

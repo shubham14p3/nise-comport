@@ -47,6 +47,14 @@ export const serviceRequests = pgTable("service_requests", {
   details: jsonb("details").notNull().default({}), serviceFee: numeric("service_fee", { precision: 10, scale: 2 }).notNull().default("0"),
   externalFee: numeric("external_fee", { precision: 10, scale: 2 }).notNull().default("0"), notes: text("notes"),
   idempotencyKey: text("idempotency_key"),
+  // The internal `reference` above is NISE COMPORT's own tracking number, assigned the moment the
+  // request is submitted on the site. Once staff actually file it with the real government portal
+  // (ServicePlus, ECI) or insurer, that system issues its own number — application number,
+  // certificate number, EPIC number, policy number. These three columns hold that *official* one,
+  // added later by staff; both numbers are kept and shown side by side.
+  officialReference: text("official_reference"),
+  officialReferenceLabel: text("official_reference_label"),
+  officialReferenceSetAt: timestamp("official_reference_set_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index("service_requests_user_created_idx").on(table.userId, table.createdAt),
@@ -186,6 +194,46 @@ export const requestEvents = pgTable("request_events", {
   actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }), fromStatus: text("from_status"), toStatus: text("to_status").notNull(),
   note: text("note"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("request_events_request_idx").on(table.requestKind, table.requestId, table.createdAt)]);
+
+/**
+ * One rating + feedback per completed service request, collected from the /review/<reference>
+ * page the customer gets emailed/WhatsApped once their request is marked "completed". A high
+ * rating (4-5) is the moment we ask them to also post it on Google (site.reviewUrl); every rating
+ * gives us their own "what could we do better" note, visible to staff in the request detail panel.
+ */
+export const serviceReviews = pgTable("service_reviews", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  requestId: uuid("request_id").notNull().unique().references(() => serviceRequests.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  rating: integer("rating").notNull(), feedback: text("feedback"),
+  postedGoogleReview: boolean("posted_google_review").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("service_reviews_user_idx").on(table.userId, table.createdAt)]);
+
+/**
+ * Google reviews curated by staff for display on the site (homepage + service pages), since the
+ * public Places API only ever returns up to 5 "most relevant" reviews — nowhere near enough for a
+ * business with hundreds. Staff copy the text from the real Google Business Profile by hand;
+ * `category` is "general" for a broad shout-out, or a service slug for a review that mentions a
+ * specific service, so it can show on that service's page too.
+ */
+export const testimonials = pgTable("testimonials", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  authorName: text("author_name").notNull(), rating: integer("rating").notNull().default(5),
+  body: text("body").notNull(), category: text("category").notNull().default("general"),
+  serviceSlug: text("service_slug"), source: text("source").notNull().default("google"),
+  /** The Google review ID (or other source's id), so a re-import or the automated sync never
+   * creates a duplicate — null for a testimonial typed straight into the admin panel. */
+  sourceId: text("source_id"),
+  reviewedOn: date("reviewed_on"), featured: boolean("featured").notNull().default(false), visible: boolean("visible").notNull().default(true),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("testimonials_visible_idx").on(table.visible, table.featured),
+  index("testimonials_service_idx").on(table.serviceSlug),
+  uniqueIndex("testimonials_source_unique_idx").on(table.source, table.sourceId),
+]);
 
 /** Poster images uploaded in the admin area. Public by design: served at /media/<id>. */
 export const media = pgTable("media", {

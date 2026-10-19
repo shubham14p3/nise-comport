@@ -101,3 +101,34 @@ export async function sendTemplate(message: TemplateMessage, fetchImpl: typeof f
     return { ok: false, error: error instanceof Error ? error.message.slice(0, 300) : "Network error", retry: true };
   }
 }
+
+/** The JSON body for a plain-text reply (no template needed inside Meta's 24h customer-service window). */
+export function textPayload(to: string, body: string) {
+  return { messaging_product: "whatsapp", to: to.replace(/\D/g, ""), type: "text", text: { preview_url: false, body: body.slice(0, 4096) } };
+}
+
+/**
+ * Sends a free-form text reply. Only valid as a reply to a message the customer sent in the last
+ * 24 hours (Meta's customer-service window) — never use this to start a conversation; a
+ * business-initiated message outside that window needs sendTemplate() with an approved template.
+ * Never throws; returns the outcome.
+ */
+export async function sendText(to: string, body: string, fetchImpl: typeof fetch = fetch): Promise<{ ok: true; id: string } | { ok: false; error: string; retry: boolean }> {
+  const token = process.env.WHATSAPP_TOKEN?.trim();
+  const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID?.trim();
+  if (!token || !phoneId) return { ok: false, error: "WhatsApp Cloud API is not configured.", retry: false };
+  try {
+    const response = await fetchImpl(`https://graph.facebook.com/${API_VERSION}/${encodeURIComponent(phoneId)}/messages`, {
+      method: "POST",
+      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify(textPayload(to, body)),
+      signal: AbortSignal.timeout(15_000),
+    });
+    const data = await response.json().catch(() => ({})) as { messages?: { id?: string }[]; error?: { message?: string; code?: number } };
+    if (response.ok && data.messages?.[0]?.id) return { ok: true, id: data.messages[0].id };
+    const error = data.error?.message ?? `WhatsApp API error ${response.status}`;
+    return { ok: false, error: error.slice(0, 300), retry: response.status >= 500 || response.status === 429 };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message.slice(0, 300) : "Network error", retry: true };
+  }
+}

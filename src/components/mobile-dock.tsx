@@ -7,7 +7,7 @@ import { dict } from "@/lib/i18n";
 import { useLocale } from "@/lib/use-locale";
 
 /** Screens with their own bottom action bar (step flows) or no need for the dock. */
-const HIDDEN = ["/login", "/signup", "/forgot-password", "/admin", "/request", "/print", "/pan/request"];
+const HIDDEN = ["/login", "/signup", "/forgot-password", "/desk", "/request", "/print", "/pan/request"];
 
 /** Thumb-friendly bottom navigation on phones. */
 export default function MobileDock() {

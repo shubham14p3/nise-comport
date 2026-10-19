@@ -11,6 +11,7 @@ import { WhatsAppIcon } from "@/components/icons";
 import JsonLd from "@/components/json-ld";
 import OfferCard from "@/components/offer-card";
 import OpenStatus from "@/components/open-status";
+import TestimonialsSection from "@/components/testimonials-section";
 import { articles } from "@/lib/content";
 import { localGallery } from "@/lib/gallery";
 import { livePhotos } from "@/lib/gallery-store";
@@ -186,6 +187,8 @@ export default async function HomePage() {
           </article>)}</div>
         </div>
       </section>
+
+      <TestimonialsSection/>
 
       <FaqSection faqs={homeFaqs} eyebrow="GOOD TO KNOW" title="Questions people ask before visiting"/>
 

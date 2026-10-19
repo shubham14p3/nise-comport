@@ -10,6 +10,7 @@ import { useLiveCodes } from "@/components/offers-provider";
 import { scopeAllows } from "@/lib/promo-scope";
 import PromoCodeField, { type AppliedCode, type CodeSuggestion } from "@/components/promo-code-field";
 import { OfferRail, OfferStrip, WizardActions, WizardFrame } from "@/components/wizard";
+import ConsentModal from "@/components/consent-modal";
 import { categoryMeta, categoryMetaFor } from "@/lib/categories";
 import { newIdempotencyKey } from "@/lib/client-id";
 import type { OpeningHoursRule } from "@/lib/hours";
@@ -120,6 +121,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<{ reference: string; offerNote?: string; couponNote?: string; couponOk?: boolean; whatsappSent?: boolean; summary: string } | null>(null);
   const [showErrors, setShowErrors] = useState(false);
+  const [showConsent, setShowConsent] = useState(false);
   const leadSent = useRef<string | null>(null);
   const draftRef = useRef<Draft | null>(null);
   const [restored, setRestored] = useState(false);
@@ -220,7 +222,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     goTo(Math.min(3, draft.step + 1));
   }
 
-  async function submit() {
+  async function submit(consentConfirmed = false) {
     for (let step = 0; step < 4; step++) { const problem = validate(step); if (problem) { setError(problem); if (step < 3) goTo(step); return; } }
     if (!user) {
       saveDraft({ ...draft, step: 3 });
@@ -229,6 +231,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       return;
     }
     if (user.role === "demo") { setError(t.demo); return; }
+    if (!consentConfirmed) { setShowConsent(true); return; }
     setBusy(true); setError("");
     idempotencyKey.current ??= newIdempotencyKey();
     try {
@@ -411,5 +414,6 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       {error && <div className="alert alert--error" role="alert">{error}</div>}
       <WizardActions locale={locale} onBack={draft.step > 0 ? () => goTo(draft.step - 1) : undefined} nextLabel={draft.step === 3 ? user === null ? t.signInToSend : t.submit : t.next} busy={busy}/>
     </form>
+    <ConsentModal open={showConsent} onClose={() => setShowConsent(false)} busy={busy} serviceLabel={service?.name} onConfirm={() => { setShowConsent(false); void submit(true); }}/>
   </WizardFrame>;
 }

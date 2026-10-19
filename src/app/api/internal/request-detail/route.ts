@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
         reference: item.reference, serviceSlug: item.serviceSlug, serviceName: item.serviceName,
         status: item.status, statusLabel: statusLabel(item.status), details: item.details,
         createdAt: item.createdAt.toISOString(), cancellable: CUSTOMER_CANCELLABLE.includes(item.status as RequestStatus),
+        officialReference: item.officialReference, officialReferenceLabel: item.officialReferenceLabel,
       },
       files: files.map((file) => ({ name: file.name, createdAt: file.createdAt.toISOString() })),
       events: events.map((event) => ({ toStatus: event.toStatus, label: statusLabel(event.toStatus), createdAt: event.createdAt.toISOString() })),

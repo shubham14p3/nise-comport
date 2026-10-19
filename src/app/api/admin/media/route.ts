@@ -14,17 +14,18 @@ async function posterEditor() {
 
 /** Uploaded posters (the built-in ones are listed in src/lib/poster-library.ts). */
 export async function GET() {
-  if (!(await posterEditor())) return NextResponse.json({ error: "Promotions or campaigns access is required." }, { status: 403 });
-  try { return NextResponse.json({ media: await listMedia() }, { headers: { "cache-control": "private, no-store" } }); }
-  catch (error) { return apiError(error); }
+  try {
+    if (!(await posterEditor())) return NextResponse.json({ error: "Promotions or campaigns access is required." }, { status: 403 });
+    return NextResponse.json({ media: await listMedia() }, { headers: { "cache-control": "private, no-store" } });
+  } catch (error) { return apiError(error); }
 }
 
 /** Upload a poster (multipart: file, title, locale, category). Posters are public at /media/<id>. */
 export async function POST(request: NextRequest) {
-  const user = await posterEditor();
-  if (!user) return NextResponse.json({ error: "Promotions or campaigns access is required." }, { status: 403 });
-  if (Number(request.headers.get("content-length") ?? "0") > MAX_POSTER_BYTES + 256 * 1024) return NextResponse.json({ error: "Keep posters under 5 MB." }, { status: 413 });
   try {
+    const user = await posterEditor();
+    if (!user) return NextResponse.json({ error: "Promotions or campaigns access is required." }, { status: 403 });
+    if (Number(request.headers.get("content-length") ?? "0") > MAX_POSTER_BYTES + 256 * 1024) return NextResponse.json({ error: "Keep posters under 5 MB." }, { status: 413 });
     const form = await request.formData();
     const file = form.get("file");
     if (!(file instanceof File)) return NextResponse.json({ error: "Choose a poster to upload." }, { status: 400 });

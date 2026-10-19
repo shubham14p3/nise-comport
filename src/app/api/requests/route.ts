@@ -4,7 +4,7 @@ import { z } from "zod";
 import { addresses, serviceRequests, storedFiles } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { PublicError } from "@/lib/errors";
+import { isUnavailable, PublicError } from "@/lib/errors";
 import { apiError, readJson } from "@/lib/http";
 import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
 import { isIdempotencyConflict, notifyNewRequest, recordEvent, withUniqueReference } from "@/lib/requests";
@@ -15,7 +15,7 @@ import type { ScopeContext } from "@/lib/promo-scope";
 import { isServiceDetail, serviceCatalog, servicesInCategory } from "@/lib/services";
 import { normalizePhone } from "@/lib/validation";
 import { closeWizardLeads } from "@/lib/leads";
-import { sendRequestWhatsApp, whatsappAlertsEnabled } from "@/lib/whatsapp-alerts";
+import { sendDbDownFallbackWhatsApp, sendRequestWhatsApp, whatsappAlertsEnabled } from "@/lib/whatsapp-alerts";
 
 const schema = z.object({
   serviceSlug: z.string().min(2).max(80),
@@ -45,13 +45,23 @@ const schema = z.object({
 const selectFields = { id: serviceRequests.id, reference: serviceRequests.reference, status: serviceRequests.status };
 
 export async function POST(request: NextRequest) {
+  // Hoisted (not declared inside the try) so the catch below can still reach them for the
+  // DB-down WhatsApp fallback — a const declared inside try {} isn't visible in its catch.
+  let user: Awaited<ReturnType<typeof requireUser>> | undefined;
+  let service: { slug: string; title: string } | undefined;
+  let input: z.infer<typeof schema> | undefined;
   try {
-    const user = await requireUser();
-    const input = schema.parse(await readJson(request));
+    user = await requireUser();
+    input = schema.parse(await readJson(request));
     // "other" = the customer isn't sure which service they need.
     const found = input.serviceSlug === "other" ? undefined : (await resolveService(input.serviceSlug)) ?? undefined;
     if (input.serviceSlug !== "other" && !found) throw new PublicError("Choose one of the listed services.", 400, { fields: { serviceSlug: "Choose one of the listed services." } });
-    const service = found ?? { slug: "other", title: "General enquiry" };
+    service = found ?? { slug: "other", title: "General enquiry" };
+    // const copies so TS carries the "definitely assigned" narrowing into the closure below —
+    // the hoisted `let`s above stay typed `T | undefined` inside a nested function either way.
+    const currentUser = user;
+    const currentService = service;
+    const currentInput = input;
     const categoryCandidate = input.category ?? found?.slug;
     const category: string | null = found && isServiceDetail(found) ? found.categorySlug
       : categoryCandidate && serviceCatalog.some((group) => group.slug === categoryCandidate) ? categoryCandidate : null;
@@ -102,18 +112,18 @@ export async function POST(request: NextRequest) {
     try {
       created = await withUniqueReference("NC", async (reference) => {
         const [row] = await db.insert(serviceRequests).values({
-          reference, userId: user.id, serviceSlug: service.slug, serviceName: service.title,
+          reference, userId: currentUser.id, serviceSlug: currentService.slug, serviceName: currentService.title,
           details: {
-            description: input.description,
-            ...(input.preferredContact ? { preferredContact: input.preferredContact } : {}),
-            ...(input.contactName ? { contactName: input.contactName } : {}),
+            description: currentInput.description,
+            ...(currentInput.preferredContact ? { preferredContact: currentInput.preferredContact } : {}),
+            ...(currentInput.contactName ? { contactName: currentInput.contactName } : {}),
             ...(contactPhone ? { contactPhone } : {}),
             ...(category ? { category } : {}),
             ...(visit ? { visit } : {}),
             ...(offer.applied ? { offer: { id: offer.id, title: offer.title } } : {}),
             ...(coupon.applied ? { coupon: { code: coupon.code, value: coupon.value, minimum: coupon.minimum, title: coupon.title } } : {}),
           },
-          serviceFee: "0.00", externalFee: "0.00", idempotencyKey: input.idempotencyKey ?? null,
+          serviceFee: "0.00", externalFee: "0.00", idempotencyKey: currentInput.idempotencyKey ?? null,
         }).returning(selectFields);
         return row;
       });
@@ -146,7 +156,15 @@ export async function POST(request: NextRequest) {
       ...(input.offerId ? { offer: { applied: offer.applied, ...(offer.reason ? { reason: offer.reason } : {}) } } : {}),
       ...(input.couponCode ? { coupon: { applied: coupon.applied, ...(coupon.applied ? { code: coupon.code } : { reason: coupon.reason }) } } : {}),
     }, { status: 201 });
-  } catch (error) { return apiError(error); }
+  } catch (error) {
+    if (isUnavailable(error) && user) {
+      sendDbDownFallbackWhatsApp({
+        name: user.name, phone: user.whatsapp ?? user.phone ?? null, email: user.email, service: service?.title ?? "General enquiry",
+        details: input ? `Note: ${input.description.slice(0, 300)}` : "(form details unavailable)",
+      });
+    }
+    return apiError(error);
+  }
 }
 
 type CouponCheck = { applied: true; id: string; code: string; value: number; minimum: number; title: string } | { applied: false; reason?: string };

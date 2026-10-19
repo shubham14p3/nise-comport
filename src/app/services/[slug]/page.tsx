@@ -12,6 +12,7 @@ import JsonLd from "@/components/json-ld";
 import { CategoryIcon, WhatsAppIcon } from "@/components/icons";
 import OfferCard from "@/components/offer-card";
 import SiteBanners from "@/components/site-banners";
+import TestimonialsSection from "@/components/testimonials-section";
 import { resolveService, servicesInCategoryAll } from "@/lib/site-content";
 import { articlesForService } from "@/lib/content";
 import { categoryMetaFor } from "@/lib/categories";
@@ -201,6 +202,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
       <div className="related-links">{areas.map((area) => <Link key={area.slug} href={`/areas-we-serve#${area.slug}`}>{area.name}</Link>)}</div>
     </div></section>
     <FaqSection faqs={faqs}/>
+    <TestimonialsSection serviceSlug={service.slug}/>
     {siblings.length ? <section className="section section--flush">
       <div className="container">
         <div className="section-head section-head--left"><span className="eyebrow">ALSO IN {category?.title.toUpperCase()}</span></div>

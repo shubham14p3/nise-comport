@@ -8,7 +8,7 @@ import PanImportPanel from "@/components/pan-import-panel";
 import WalletCreditForm from "@/components/wallet-credit-form";
 import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
-import { ArrowRight, Bell, ClipboardList, Contact, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, TicketPercent, UsersRound, WalletCards, Images } from "lucide-react";
+import { ArrowRight, Bell, ClipboardList, Contact, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images } from "lucide-react";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
 import PromotionsPanel from "@/components/promotions-panel";
 import CampaignsPanel from "@/components/campaigns-panel";
@@ -17,16 +17,19 @@ import TeamPanel from "@/components/team-panel";
 import InboxPanel from "@/components/inbox-panel";
 import SiteContentPanel from "@/components/site-content-panel";
 import GalleryPanel from "@/components/gallery-panel";
+import TestimonialsPanel from "@/components/testimonials-panel";
 import RecordsPanel from "@/components/records-panel";
-import type { Permission } from "@/lib/permissions";
+import { STAFF_PERMISSIONS, type Permission } from "@/lib/permissions";
+import Link from "next/link";
 
 type Row = { id: string; reference: string; name: string; email: string; phone: string | null; whatsapp?: string | null; status: string; createdAt: string };
 type Job = Row & { fileName: string; pageCount: number; total: string; fulfillment: string; scheduledAt: string | null };
-type RequestRow = Row & { serviceName: string; fileName: string | null };
+type RequestRow = Row & { serviceName: string; fileName: string | null; officialReference: string | null; officialReferenceLabel: string | null };
 type Snapshot = { jobs: Job[]; requests: RequestRow[]; filters: { status: string; q: string } };
 type RequestDetail = {
-  request: { id: string; reference: string; serviceName: string; status: string; statusLabel: string; details: Record<string, unknown>; createdAt: string };
+  request: { id: string; reference: string; serviceName: string; status: string; statusLabel: string; details: Record<string, unknown>; createdAt: string; officialReference: string | null; officialReferenceLabel: string | null; officialReferenceSetAt: string | null };
   customer: { name: string; email: string; phone: string | null; whatsapp?: string | null; preferredContact: string };
+  review: { rating: number; feedback: string | null; postedGoogleReview: boolean; createdAt: string } | null;
   events: { fromStatus: string | null; toStatus: string; fromLabel: string | null; toLabel: string; note: string | null; createdAt: string; actor: string | null }[];
 };
 
@@ -45,6 +48,9 @@ function RequestQueue() {
   const [saving, setSaving] = useState("");
   const [detail, setDetail] = useState<RequestDetail | null>(null);
   const [detailBusy, setDetailBusy] = useState(false);
+  const [officialRef, setOfficialRef] = useState("");
+  const [officialRefLabel, setOfficialRefLabel] = useState("");
+  const [officialRefSaving, setOfficialRefSaving] = useState(false);
   const jobPages = useShowMore(20, `${q}|${status}|${jobs.length}`);
   const requestPages = useShowMore(20, `${q}|${status}|${requests.length}`);
 
@@ -95,9 +101,30 @@ function RequestQueue() {
 
   async function openDetail(id: string) {
     setDetailBusy(true); setError("");
-    try { setDetail(await secureApi<RequestDetail>("B6r1K8mQ3cT9", { id })); }
+    try {
+      const result = await secureApi<RequestDetail>("B6r1K8mQ3cT9", { id });
+      setDetail(result);
+      setOfficialRef(result.request.officialReference ?? "");
+      setOfficialRefLabel(result.request.officialReferenceLabel ?? "");
+    }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not open request details."); }
     finally { setDetailBusy(false); }
+  }
+
+  async function saveOfficialReference() {
+    if (!detail) return;
+    const id = detail.request.id;
+    setOfficialRefSaving(true); setError(""); setNotice("");
+    try {
+      await secureApi("R1k5V8nD3sJ9", {
+        id, kind: "service", status: detail.request.status, expectedStatus: detail.request.status,
+        officialReference: officialRef.trim(), officialReferenceLabel: officialRefLabel.trim(),
+      });
+      setRequests(rows => rows.map(row => row.id === id ? { ...row, officialReference: officialRef.trim() || null, officialReferenceLabel: officialRefLabel.trim() || null } : row));
+      setNotice(officialRef.trim() ? "Official reference saved. The customer will be notified." : "Official reference cleared.");
+      await openDetail(id);
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save the official reference."); }
+    finally { setOfficialRefSaving(false); }
   }
 
   async function openPrivateFile(operation: string, id: string) {
@@ -137,7 +164,7 @@ function RequestQueue() {
     <section className="admin-queue"><h2><ClipboardList size={17}/> Service requests <span>{requests.length}</span></h2>
       {requests.length ? requests.slice(0, requestPages.count).map(item => <article className="admin-row" key={item.id}><div>
         <b>{item.reference} · {item.serviceName}</b>
-        <small>{item.name} · {when(item.createdAt)}</small>
+        <small>{item.name} · {when(item.createdAt)}{item.officialReference ? ` · ${item.officialReferenceLabel || "Official ref"}: ${item.officialReference}` : " · Official ref: not yet submitted"}</small>
         <ContactLinks name={item.name} phone={item.phone} whatsapp={item.whatsapp} email={item.email} reference={item.reference}/>
         <button type="button" className="profile-text-button" onClick={() => void openDetail(item.id)}>Read submitted request details</button>
         {item.fileName && <button type="button" className="profile-text-button" onClick={() => void openPrivateFile("V8d4K1rF7nT5", item.id)}>Open supporting file · {item.fileName}</button>}
@@ -153,6 +180,23 @@ function RequestQueue() {
         <p><b>{detail.customer.name}</b></p>
         <ContactLinks name={detail.customer.name} phone={detail.customer.phone} whatsapp={detail.customer.whatsapp} email={detail.customer.email} reference={detail.request.reference}/>
         <p>Preferred contact: {typeof detail.request.details.preferredContact === "string" ? detail.request.details.preferredContact : detail.customer.preferredContact}</p>
+        <article className="pan-card">
+          <h3>Official reference</h3>
+          <p className="admin-note" style={{ margin: "0 0 10px" }}>
+            {detail.request.reference} is our own internal tracking number. Once this is actually filed with the government portal or insurer, enter their official application/certificate/policy number here — the customer gets an email and WhatsApp with both numbers.
+          </p>
+          <div className="admin-filters" style={{ marginBottom: 0 }}>
+            <label>What is it<input value={officialRefLabel} onChange={event => setOfficialRefLabel(event.target.value)} placeholder="e.g. ServicePlus application no., EPIC no., Policy no." maxLength={60}/></label>
+            <label>Official reference<input value={officialRef} onChange={event => setOfficialRef(event.target.value)} placeholder="Leave blank to clear" maxLength={80}/></label>
+            <button type="button" className="btn btn--primary btn--sm" disabled={officialRefSaving} onClick={() => void saveOfficialReference()}>{officialRefSaving ? "Saving…" : "Save official reference"}</button>
+          </div>
+          {detail.request.officialReferenceSetAt && <small>Last set {when(detail.request.officialReferenceSetAt)}</small>}
+        </article>
+        {detail.review && <article className="pan-card">
+          <h3>Customer rating</h3>
+          <p>{"★".repeat(detail.review.rating)}{"☆".repeat(5 - detail.review.rating)} ({detail.review.rating}/5) · {when(detail.review.createdAt)}</p>
+          {detail.review.feedback && <p>“{detail.review.feedback}”</p>}
+        </article>}
         <PanSavedDetails details={detail.request.details}/>
         <article className="pan-card"><h3>Customer request</h3><RequestExtras details={detail.request.details} fallback="No note provided."/></article>
         <article className="pan-card"><h3>History</h3>{detail.events.length ? <ol className="request-timeline">{detail.events.map((event, index) => <li key={`${event.createdAt}-${index}`}><b>{event.fromLabel ? `${event.fromLabel} → ` : ""}{event.toLabel}</b> <small>{when(event.createdAt)}{event.actor ? ` · ${event.actor}` : ""}</small>{event.note ? <p>{event.note}</p> : null}</li>)}</ol> : <p>No history recorded yet.</p>}</article>
@@ -164,7 +208,7 @@ function RequestQueue() {
   </>;
 }
 
-type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "campaigns" | "contacts" | "team" | "pan" | "wallet";
+type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet";
 const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | "admin" | "staff" }[] = [
   { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
   { id: "requests", label: "Requests", icon: ClipboardList, needs: "requests" },
@@ -172,6 +216,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "promotions", label: "Promotions", icon: TicketPercent, needs: "promotions" },
   { id: "content", label: "Site content", icon: LayoutTemplate, needs: "content" },
   { id: "gallery", label: "Gallery photos", icon: Images, needs: "content" },
+  { id: "testimonials", label: "Testimonials", icon: Star, needs: "content" },
   { id: "campaigns", label: "WhatsApp", icon: Megaphone, needs: "campaigns" },
   { id: "contacts", label: "Contacts", icon: Contact, needs: "campaigns" },
   { id: "team", label: "Team", icon: UsersRound, needs: "admin" },
@@ -186,8 +231,14 @@ const subscribeHash = (callback: () => void) => { window.addEventListener("hashc
  * Staff workspace. Each tab needs a permission (see src/lib/permissions.ts); the owner sees all
  * of them plus Team, where staff are added and their access is set.
  */
-export default function AdminDashboard({ me }: { me: { name: string; role: string; permissions: Permission[] } }) {
-  const tabs = TABS.filter((tab) => tab.needs === "staff" ? true : tab.needs === "admin" ? me.role === "admin" : me.permissions.includes(tab.needs));
+export default function AdminDashboard({ me, viewAsStaff = false }: { me: { name: string; role: string; permissions: Permission[] }; viewAsStaff?: boolean }) {
+  // The owner can preview the desk as a staff member would see it (hides the owner-only Team
+  // tab) via "Staff view" in the account menu, without actually losing any access — they can
+  // always switch back to "Admin view". Only meaningful when me.role is "admin"; for a real
+  // staff account viewAsStaff is always false and changes nothing.
+  const isOwner = me.role === "admin" && !viewAsStaff;
+  const effectivePermissions = viewAsStaff ? [...STAFF_PERMISSIONS] : me.permissions;
+  const tabs = TABS.filter((tab) => tab.needs === "staff" ? true : tab.needs === "admin" ? isOwner : isOwner || effectivePermissions.includes(tab.needs));
   const [summary, setSummary] = useState<{ unread: number; waiting: number; callbacks: number } | null>(null);
   const unread = summary?.unread ?? 0;
   useEffect(() => {
@@ -205,17 +256,22 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
   function choose(tab: Tab) { setPicked(tab); window.history.replaceState(null, "", `#${tab}`); }
   const first = me.name.split(/\s+/)[0] || "there";
   const current = tabs.find((tab) => tab.id === active);
-  const can = (permission: Permission) => me.role === "admin" || me.permissions.includes(permission);
+  const can = (permission: Permission) => isOwner || effectivePermissions.includes(permission);
   return <main className="page page--app profile admin-desk"><SiteHeader/>
     <section className="profile__hero">
       <div className="page-hero__bg" aria-hidden="true"><span className="blob blob--1"/><span className="blob blob--2"/></div>
       <div className="container profile__hero-inner">
         <span className="profile__avatar profile__avatar--staff" aria-hidden="true">{first.slice(0, 1).toUpperCase()}</span>
         <div className="profile__hello">
-          <span className="eyebrow eyebrow--light"><ShieldCheck size={13}/> TEAM WORKSPACE · {me.role === "admin" ? "OWNER" : "STAFF"}</span>
+          <span className="eyebrow eyebrow--light"><ShieldCheck size={13}/> TEAM WORKSPACE · {isOwner ? "OWNER" : "STAFF"}</span>
           <h1>Hi {first}, <span className="grad-text grad-text--warm">here’s the desk.</span></h1>
           <p>Private data travels over the encrypted staff channel. You see only the areas the owner has given you.</p>
         </div>
+        {me.role === "admin" && <div className="profile__hero-switch">
+          {viewAsStaff
+            ? <><span className="chip chip--soft">Viewing as staff</span><Link className="btn btn--ghost btn--sm" href="/desk">Switch to admin view</Link></>
+            : <Link className="btn btn--ghost btn--sm" href="/desk?view=staff">Preview staff view</Link>}
+        </div>}
       </div>
     </section>
     <div className="container profile__layout">
@@ -238,6 +294,7 @@ export default function AdminDashboard({ me }: { me: { name: string; role: strin
         {active === "promotions" && <PromotionsPanel canEdit/>}
         {active === "content" && <SiteContentPanel/>}
         {active === "gallery" && <GalleryPanel/>}
+        {active === "testimonials" && <TestimonialsPanel/>}
         {active === "campaigns" && <CampaignsPanel/>}
         {active === "contacts" && <ContactsPanel/>}
         {active === "team" && <TeamPanel meRole={me.role}/>}

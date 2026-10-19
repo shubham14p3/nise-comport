@@ -54,7 +54,8 @@ const TOPIC_WORDS: Record<TopicId, string[]> = {
 const TOPICS = Object.keys(TOPIC_WORDS) as TopicId[];
 
 function waLink(number: string, text: string) {
-  return `https://wa.me/${number}?text=${encodeURIComponent(text)}`;
+  const branded = text.startsWith("*NISE COMPORT*") ? text : `*NISE COMPORT* · Kharangajhar, Telco, Jamshedpur\n${text}`;
+  return `https://wa.me/${number}?text=${encodeURIComponent(branded)}`;
 }
 
 function normalise(text: string) {
@@ -118,7 +119,7 @@ export default function ChatWidget({ whatsapp, phone, mapsUrl, hours, services }
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  if (pathname.startsWith("/admin")) return null;
+  if (pathname.startsWith("/desk")) return null;
 
   function dismissTeaser() {
     setTeaser(false);

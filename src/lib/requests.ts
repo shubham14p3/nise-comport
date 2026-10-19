@@ -53,8 +53,15 @@ export async function notifyNewRequest(user: User, reference: string, label: str
   const ids: string[] = [];
   const category = label === "print order" ? "print" : label.startsWith("PAN") ? "pan" : categorySlug ?? null;
   await logActivity({ kind: label === "print order" ? "print" : "request", permission: "requests", category, title: `New ${label === "print order" ? "print order" : "request"} ${reference}: ${label}`, detail: `${user.name}${user.phone ? ` · ${user.phone}` : ""} — waiting for review`, refType: "request", refId: reference, actorId: null });
+  // Lines are already written as "Label: value" for the staff alert — reuse them as the
+  // submitted-details card in the customer's own "request received" email too, so it shows
+  // exactly what they typed in instead of just the service name and reference.
+  const fields = extraLines.map((line) => {
+    const splitAt = line.indexOf(": ");
+    return splitAt === -1 ? { label: "Note", value: line } : { label: line.slice(0, splitAt), value: line.slice(splitAt + 2) };
+  }).filter((row) => row.value.trim().length > 0);
   try {
-    ids.push(await queueNotification(user.id, "request_received", { name: user.name, email: user.email, reference, label }));
+    ids.push(await queueNotification(user.id, "request_received", { name: user.name, email: user.email, reference, label, fields }));
     ids.push(await queueNotification(user.id, "staff_alert", {
       email: staffAlertEmail(),
       subject: `New request ${reference}: ${label}`,

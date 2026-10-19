@@ -45,7 +45,7 @@ try {
 
   console.log("\nWhatsApp");
   const cloud = Boolean(process.env.WHATSAPP_TOKEN?.trim() && process.env.WHATSAPP_PHONE_NUMBER_ID?.trim());
-  line("Automatic sending (Cloud API)", cloud ? "configured" : "off → campaigns use one-tap sending in /admin");
+  line("Automatic sending (Cloud API)", cloud ? "configured" : "off → campaigns use one-tap sending in the staff desk (/desk)");
   line("Request copy templates", process.env.WHATSAPP_CONFIRM_TEMPLATE || process.env.WHATSAPP_STAFF_TEMPLATE ? "set" : "not set → customers get a one-tap ‘Send on WhatsApp’ button");
   if (await has("campaign_messages")) {
     const sent = await one("select status, count(*)::int as n from campaign_messages group by status order by status");

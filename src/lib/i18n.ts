@@ -19,7 +19,7 @@ export const LOCALE_META: Record<Locale, { label: string; short: string; htmlLan
 export const LANG_COOKIE = "nc_lang";
 
 /** App screens (and /offers) follow the visitor's chosen language; content pages follow their URL (/, /hi, /bn). */
-export const APP_PATHS = ["/login", "/signup", "/forgot-password", "/profile", "/request", "/print", "/pan/request", "/admin", "/offers"];
+export const APP_PATHS = ["/login", "/signup", "/forgot-password", "/profile", "/request", "/print", "/pan/request", "/desk", "/offers"];
 
 export function isLocale(value: unknown): value is Locale {
   return value === "en" || value === "hi" || value === "bn";

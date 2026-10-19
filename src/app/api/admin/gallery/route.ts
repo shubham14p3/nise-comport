@@ -21,15 +21,16 @@ async function editor() {
 
 /** Every gallery photo (including hidden) for Admin → Gallery. */
 export async function GET() {
-  if (!(await editor())) return NextResponse.json({ error: "Site content access is required." }, { status: 403 });
-  try { return NextResponse.json({ photos: await adminPhotos() }, { headers: { "cache-control": "private, no-store" } }); }
-  catch (error) { return apiError(error); }
+  try {
+    if (!(await editor())) return NextResponse.json({ error: "Site content access is required." }, { status: 403 });
+    return NextResponse.json({ photos: await adminPhotos() }, { headers: { "cache-control": "private, no-store" } });
+  } catch (error) { return apiError(error); }
 }
 
 export async function POST(request: NextRequest) {
-  const user = await editor();
-  if (!user) return NextResponse.json({ error: "Site content access is required." }, { status: 403 });
   try {
+    const user = await editor();
+    if (!user) return NextResponse.json({ error: "Site content access is required." }, { status: 403 });
     const input = schema.parse(await readJson(request));
     if (input.action === "delete") await deletePhoto(input.src, user);
     else await updatePhoto(input.src, { tag: input.tag, title: input.title, alt: input.alt, hidden: input.hidden }, user);
