@@ -24,6 +24,7 @@
     "photos": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --experimental-strip-types scripts/photos.mjs",
     "db:setup": "npm run db:check && npm run db:migrate && npm run db:check && npm run offers:sync",
     "smtp:check": "node scripts/smtp-check.mjs",
+    "records:scan": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/scan-records.mts",
     "offers:sync": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/sync-offers.mts",
     "loyalty:backfill": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/loyalty-backfill.mts",
     "campaign:preview": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/campaign-preview.mts",
