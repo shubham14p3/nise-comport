@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import Breadcrumbs from "@/components/breadcrumbs";
 import { COLOR_PAGE_RATE } from "@/lib/print-pricing";
+import { priceList } from "@/lib/price-list";
 import { pageMetadata } from "@/lib/seo";
 import { site, whatsappLink } from "@/lib/site";
 
@@ -37,12 +38,19 @@ export default function PricingPage() {
 
     <section className="container legal-content">
       <h2>Printing and photocopy</h2>
-      <p>Prices are per page. Black &amp; white pricing depends on the total pages in the order.</p>
+      <p>Rates for the online print order, per page. Black &amp; white pricing depends on the total pages in the order. Walk-in single pages start higher (see Common charges).</p>
       <table className="price-table"><thead><tr><th>Type</th><th>Rate per page</th></tr></thead><tbody>
         {blackWhite.map((row) => <tr key={row.pages}><th scope="row">Black &amp; white, {row.pages}</th><td>₹{row.rate}</td></tr>)}
         <tr><th scope="row">Colour, any quantity</th><td>₹{COLOR_PAGE_RATE}</td></tr>
       </tbody></table>
       <p>The online print order shows the estimate before you confirm. We may adjust it after checking the file, and delivery, if offered, is confirmed separately. <Link href="/print">Start a print order <ArrowRight size={13}/></Link></p>
+
+      <h2>Common charges</h2>
+      <p>Typical amounts for the jobs we do most. We confirm the exact figure before we start.</p>
+      {priceList.map((group) => <div key={group.title}>
+        <h3>{group.title}</h3>{group.intro && <p>{group.intro}</p>}
+        <table className="price-table"><tbody>{group.rows.map((row) => <tr key={row.item}><th scope="row">{row.item}{row.note && <small><br/>{row.note}</small>}</th><td>{row.price}</td></tr>)}</tbody></table>
+      </div>)}
 
       <h2>Services quoted before work starts</h2>
       <table className="price-table"><thead><tr><th>Service</th><th>How it is priced</th></tr></thead><tbody>
