@@ -244,7 +244,7 @@ const subscribeHash = (callback: () => void) => { window.addEventListener("hashc
  * Staff workspace. Each tab needs a permission (see src/lib/permissions.ts); the owner sees all
  * of them plus Team, where staff are added and their access is set.
  */
-export default function AdminDashboard({ me, viewAsStaff = false }: { me: { name: string; role: string; permissions: Permission[] }; viewAsStaff?: boolean }) {
+export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?: string; name: string; role: string; permissions: Permission[] }; viewAsStaff?: boolean }) {
   // The owner can preview the desk as a staff member would see it (hides the owner-only Team
   // tab) via "Staff view" in the account menu, without actually losing any access — they can
   // always switch back to "Admin view". Only meaningful when me.role is "admin"; for a real
