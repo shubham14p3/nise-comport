@@ -67,7 +67,7 @@ export default function SiteFooter() {
         <Link href="/team">Our team</Link>
         <Link href="/areas-we-serve">Areas we serve</Link>
         <strong className="footer-col__sub">Policies</strong>
-        <Link href="/terms">Terms &amp; Conditions</Link>
+        <Link href="/terms">Terms and Conditions</Link>
         <Link href="/refund-policy">Refund &amp; Cancellation Policy</Link>
         <Link href="/privacy">Privacy Policy</Link>
         <Link href="/contact">Contact us</Link>
@@ -94,12 +94,12 @@ export default function SiteFooter() {
         <li>Kharangajhar, Telco · Since 2010</li>
       </ul>
       <nav className="footer-policies" aria-label="Policies">
-        <Link href="/terms">Terms &amp; Conditions</Link><Link href="/refund-policy">Refund &amp; Cancellation Policy</Link><Link href="/privacy">Privacy Policy</Link><Link href="/pricing">Pricing</Link>
+        <Link href="/terms">Terms and Conditions</Link><Link href="/refund-policy">Refund &amp; Cancellation Policy</Link><Link href="/privacy">Privacy Policy</Link><Link href="/pricing">Pricing</Link>
       </nav>
     </div>
     <div className="container footer-bottom">
       <p>NISE COMPORT is an independent CSC / Pragya Kendra service centre, not a government office, bank or insurer. Official and third-party fees are separate from our service charge; final approvals rest with the relevant authority.</p>
-      <div className="footer-bottom__row"><span>© {YEAR} {site.name}. All rights reserved.</span><span><Link href="/privacy">Privacy Policy</Link><Link href="/terms">Terms &amp; Conditions</Link><Link href="/refund-policy">Refund &amp; Cancellation</Link><Link href="/pricing">Pricing</Link><Link href="/contact">Contact</Link><Link href="/login">Admin login</Link></span></div>
+      <div className="footer-bottom__row"><span>© {YEAR} {site.name}. All rights reserved.</span><span><Link href="/privacy">Privacy Policy</Link><Link href="/terms">Terms and Conditions</Link><Link href="/refund-policy">Refund &amp; Cancellation</Link><Link href="/pricing">Pricing</Link><Link href="/contact">Contact</Link><Link href="/login">Admin login</Link></span></div>
     </div>
   </footer>;
 }

@@ -2408,3 +2408,13 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
   .footer-visit .footer-directions { justify-content: center; padding: 10px 14px; border-radius: 999px; background: rgb(255 255 255 / .1); }
   .footer-bottom p { text-align: justify; hyphens: auto; }
 }
+
+/* ---------- Legal pages ---------- */
+.legal-intro { padding: 14px 16px; border-radius: 14px; background: var(--tint); border: 1px solid var(--line); }
+.legal-intro p { margin: 0; }
+.legal-toc { padding: 16px 18px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); display: grid; gap: 8px; }
+.legal-toc ol { margin: 0; padding-left: 1.2rem; display: grid; gap: 4px; columns: 2; column-gap: 28px; }
+.legal-toc a { color: var(--blue-700); }
+.legal-section { scroll-margin-top: calc(var(--header-h, 72px) + 16px); display: grid; gap: 12px; }
+.legal-section h3 { font-size: 1.05rem; margin-top: 6px; }
+@media (max-width: 640px) { .legal-toc ol { columns: 1; } }
