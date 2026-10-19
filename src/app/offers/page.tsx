@@ -16,7 +16,7 @@ export const metadata: Metadata = pageMetadata(
 );
 
 export default async function OffersPage() {
-  const { views } = await safely(() => getPromoCalendar(), { views: [] } as Awaited<ReturnType<typeof getPromoCalendar>>, "promo calendar");
+  const { views } = await safely(() => getPromoCalendar(), { views: [], source: "fallback" as const }, "promo calendar");
   return <main className="page"><SiteHeader/>
     <OffersExperience views={views} siteUrl={site.url} crumbs={<Breadcrumbs items={[{ name: "Home", path: "/" }, { name: "Offers", path: "/offers" }]}/>}/>
   </main>;
