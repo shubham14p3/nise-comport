@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
  */
 export default async function MessagesPage() {
   const user = await getCurrentUser();
-  if (!user) redirect("/signup");
+  if (!user) redirect("/login");
   if (user.role === "demo") redirect("/profile");
   if (hasPermission(user, "mail")) redirect("/desk#mail");
   // No ticket, name or file is placed in the page itself; everything loads over the encrypted channel.
