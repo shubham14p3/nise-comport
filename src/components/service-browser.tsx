@@ -2,19 +2,17 @@
 
 import Link from "next/link";
 import { useMemo, useState, useSyncExternalStore } from "react";
-import { ArrowRight, Search, X } from "lucide-react";
+import { ArrowRight, Search, SlidersHorizontal, X } from "lucide-react";
 import { CategoryIcon } from "@/components/icons";
 import ShowMore, { useShowMore } from "@/components/show-more";
 import { categoryMeta } from "@/lib/categories";
+import { matchesSearch, normaliseSearch } from "@/lib/search-terms";
 
 export type BrowserService = { slug: string; title: string; name: string; description: string; category: string; keywords: string[]; requestHref: string };
 
 const subscribe = (callback: () => void) => { window.addEventListener("popstate", callback); return () => window.removeEventListener("popstate", callback); };
 const readSearch = () => window.location.search;
 
-function normalise(value: string) {
-  return value.toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ").trim();
-}
 
 /**
  * Search + category filter for the services page. The full list is rendered on the server
@@ -25,6 +23,7 @@ export default function ServiceBrowser({ services }: { services: BrowserService[
   const params = useMemo(() => new URLSearchParams(search), [search]);
   const [typed, setTyped] = useState<string | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const query = typed ?? params.get("q") ?? "";
   const category = picked ?? params.get("category") ?? "all";
 
@@ -36,31 +35,31 @@ export default function ServiceBrowser({ services }: { services: BrowserService[
     window.history.replaceState(window.history.state, "", url);
   }
 
-  const words = normalise(query).split(" ").filter(Boolean);
   const results = services.filter((service) => {
     if (category !== "all" && service.category !== category) return false;
-    if (!words.length) return true;
-    const haystack = normalise(`${service.title} ${service.description} ${service.keywords.join(" ")}`);
-    return words.every((word) => haystack.includes(word));
+    return matchesSearch(normaliseSearch(`${service.title} ${service.description} ${service.keywords.join(" ")}`), query);
   });
 
   const paging = useShowMore(12, `${query}|${category}`);
 
   return <div className="browser">
     <div className="browser__controls">
+      <div className="browser__row">
       <label className="browser__search">
         <Search size={20} aria-hidden="true"/>
         <span className="sr-only">Search services</span>
-        <input type="search" value={query} placeholder="Search e.g. PAN correction, AEPS, bike insurance" onChange={(event) => { setTyped(event.target.value); syncUrl(event.target.value, category); }} enterKeyHint="search"/>
+        <input type="search" value={query} placeholder="Search in English, हिन्दी or বাংলা, e.g. PAN, बीमा, বিদ্যুৎ বিল" onChange={(event) => { setTyped(event.target.value); syncUrl(event.target.value, category); }} enterKeyHint="search"/>
         {query && <button type="button" className="icon-btn" aria-label="Clear search" onClick={() => { setTyped(""); syncUrl("", category); }}><X size={18}/></button>}
       </label>
-      <div className="browser__cats" role="group" aria-label="Filter by category">
+      <button type="button" className={`browser__filter${category !== "all" ? " has-filter" : ""}`} aria-expanded={filtersOpen} aria-controls="browser-cats" onClick={() => setFiltersOpen((open) => !open)}><SlidersHorizontal size={18}/><span>Filter</span>{category !== "all" && <i aria-hidden="true"/>}</button>
+      </div>
+      {(filtersOpen || category !== "all") && <div id="browser-cats" className="browser__cats" role="group" aria-label="Filter by category">
         <button type="button" className={category === "all" ? "is-active" : undefined} aria-pressed={category === "all"} onClick={() => { setPicked("all"); syncUrl(query, "all"); }}>All <span>{services.length}</span></button>
         {categoryMeta.map((meta) => {
           const count = services.filter((service) => service.category === meta.slug).length;
           return <button key={meta.slug} type="button" className={`tone-${meta.tone}${category === meta.slug ? " is-active" : ""}`} aria-pressed={category === meta.slug} onClick={() => { setPicked(meta.slug); syncUrl(query, meta.slug); }}><CategoryIcon icon={meta.icon} size={16}/>{meta.short.en}<span>{count}</span></button>;
         })}
-      </div>
+      </div>}
     </div>
     <p className="browser__count" role="status">{results.length} {results.length === 1 ? "service" : "services"}{query ? ` for “${query}”` : ""}</p>
     {results.length ? <><div className="svc-grid">{results.map((service, index) => {

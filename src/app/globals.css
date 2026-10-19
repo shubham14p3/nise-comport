@@ -2418,3 +2418,12 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .legal-section { scroll-margin-top: calc(var(--header-h, 72px) + 16px); display: grid; gap: 12px; }
 .legal-section h3 { font-size: 1.05rem; margin-top: 6px; }
 @media (max-width: 640px) { .legal-toc ol { columns: 1; } }
+
+/* Services search: filter button instead of always-visible category tabs */
+.browser__row { display: flex; gap: 10px; align-items: stretch; }
+.browser__row .browser__search { flex: 1; min-width: 0; }
+.browser__filter { position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 0 16px; min-height: 58px; border-radius: 18px; border: 1.5px solid var(--line-2); background: #fff; font-weight: 600; }
+.browser__filter[aria-expanded="true"], .browser__filter.has-filter { border-color: var(--blue); color: var(--blue-700); }
+.browser__filter i { position: absolute; top: 10px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: var(--blue); }
+.browser__cats { flex-wrap: wrap; overflow-x: visible; }
+@media (max-width: 560px) { .browser__filter span { display: none; } .browser__filter { padding: 0 14px; } }

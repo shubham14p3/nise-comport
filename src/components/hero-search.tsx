@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
+import { matchesSearch, normaliseSearch } from "@/lib/search-terms";
 
 const SUGGESTIONS = ["PAN card correction", "Income certificate", "Bike insurance renewal", "AEPS cash withdrawal", "Print from phone", "Exam form filling", "Voter ID", "Electricity bill"];
 
@@ -17,8 +18,7 @@ export default function HeroSearch({ popular, services = [] }: { popular: { labe
   const [shown, setShown] = useState(CHUNK);
   const listRef = useRef<HTMLDivElement>(null);
   const matches = useMemo(() => {
-    const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    return words.length ? services.filter((item) => words.every((word) => item.title.toLowerCase().includes(word))) : services;
+    return query.trim() ? services.filter((item) => matchesSearch(normaliseSearch(item.title), query)) : services;
   }, [query, services]);
 
   useEffect(() => {
