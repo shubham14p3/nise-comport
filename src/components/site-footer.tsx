@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight, Clock3, Mail, MapPin, Phone } from "lucide-react";
 import BrandWordmark from "@/components/brand-wordmark";
 import { CategoryIcon, WhatsAppIcon } from "@/components/icons";
+import { PartnerStrip } from "@/components/partner-marks";
 import { categoryMeta } from "@/lib/categories";
 import { summarizeHours } from "@/lib/hours";
 import { serviceCatalog } from "@/lib/services";
@@ -56,16 +57,20 @@ export default function SiteFooter() {
       <nav className="footer-col" aria-label="Help and account">
         <strong>Help</strong>
         <Link href="/request">Start a request</Link>
-        <Link href="/profile#requests">Track a request</Link>
-        <Link href="/track">Track certificate / voter ID</Link>
+        <Link href="/track">Track a request</Link>
         <Link href="/offers">Offers</Link>
+        <Link href="/pricing">Pricing</Link>
         <Link href="/gallery">Gallery</Link>
         <Link href="/blog">Local guides</Link>
-        <Link href="/pan">PAN help centre</Link>
         <Link href="/faq">FAQs</Link>
         <Link href="/about">About us</Link>
         <Link href="/team">Our team</Link>
         <Link href="/areas-we-serve">Areas we serve</Link>
+        <strong className="footer-col__sub">Policies</strong>
+        <Link href="/terms">Terms and Conditions</Link>
+        <Link href="/refund-policy">Refund &amp; Cancellation Policy</Link>
+        <Link href="/privacy">Privacy Policy</Link>
+        <Link href="/contact">Contact us</Link>
       </nav>
       <div className="footer-col footer-visit">
         <strong>Visit us</strong>
@@ -79,9 +84,22 @@ export default function SiteFooter() {
         {site.reviewUrl && <a className="footer-directions" href={site.reviewUrl} target="_blank" rel="noopener noreferrer">Review us on Google <ArrowUpRight size={15} aria-hidden="true"/></a>}
       </div>
     </div>
+    <div className="container footer-trust">
+      <div className="footer-trust__head"><b>Services &amp; portals we help you use</b><span>We are an independent CSC / Pragya Kendra service point. These names belong to their owners.</span></div>
+      <PartnerStrip/>
+      <ul className="footer-pride">
+        <li>🇮🇳 Seva from Jamshedpur, Jharkhand</li>
+        <li>Udyam-registered local business</li>
+        <li>English · हिन्दी · বাংলা</li>
+        <li>Kharangajhar, Telco · Since 2010</li>
+      </ul>
+      <nav className="footer-policies" aria-label="Policies">
+        <Link href="/terms">Terms and Conditions</Link><Link href="/refund-policy">Refund &amp; Cancellation Policy</Link><Link href="/privacy">Privacy Policy</Link><Link href="/pricing">Pricing</Link>
+      </nav>
+    </div>
     <div className="container footer-bottom">
       <p>NISE COMPORT is an independent CSC / Pragya Kendra service centre, not a government office, bank or insurer. Official and third-party fees are separate from our service charge; final approvals rest with the relevant authority.</p>
-      <div className="footer-bottom__row"><span>© {YEAR} {site.name}. All rights reserved.</span><span><Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/contact">Contact</Link><Link href="/login">Admin login</Link></span></div>
+      <div className="footer-bottom__row"><span>© {YEAR} {site.name}. All rights reserved.</span><span><Link href="/privacy">Privacy Policy</Link><Link href="/terms">Terms and Conditions</Link><Link href="/refund-policy">Refund &amp; Cancellation</Link><Link href="/pricing">Pricing</Link><Link href="/contact">Contact</Link><Link href="/login">Admin login</Link></span></div>
     </div>
   </footer>;
 }

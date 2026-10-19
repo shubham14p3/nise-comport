@@ -9,14 +9,14 @@ import { deliverNotifications, queueNotification, staffAlertEmail } from "@/lib/
 import { logActivity } from "@/lib/activity";
 import { releaseRedemptions } from "@/lib/promotions";
 
-export const REQUEST_STATUSES = ["submitted", "reviewing", "waiting_for_customer", "ready_for_pickup", "out_for_delivery", "completed", "cancelled"] as const;
+export const REQUEST_STATUSES = ["submitted", "reviewing", "waiting_for_customer", "awaiting_payment", "payment_received", "ready_for_pickup", "out_for_delivery", "completed", "cancelled"] as const;
 export type RequestStatus = (typeof REQUEST_STATUSES)[number];
 /** Customers may cancel only before work is ready. */
 export const CUSTOMER_CANCELLABLE: RequestStatus[] = ["submitted", "reviewing", "waiting_for_customer"];
 
 export function statusLabel(status: string) {
   const labels: Record<string, string> = {
-    submitted: "Submitted", reviewing: "Being reviewed", waiting_for_customer: "Waiting for you", ready_for_pickup: "Ready for pickup",
+    submitted: "Submitted", reviewing: "Being reviewed", waiting_for_customer: "Waiting for you", awaiting_payment: "Awaiting payment", payment_received: "Payment received, in progress", ready_for_pickup: "Ready for pickup",
     out_for_delivery: "Out for delivery", completed: "Completed", cancelled: "Cancelled", rejected: "Rejected", closed: "Closed",
   };
   return labels[status] ?? status.replaceAll("_", " ");

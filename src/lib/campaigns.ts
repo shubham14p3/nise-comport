@@ -329,7 +329,7 @@ const REFERENCE_PATTERN = /\b([A-Z]{2,3}-\d{6}-[A-Z0-9]{6})\b/i;
  * customer's WhatsApp number can never be used to read another customer's status.
  * Returns true if the message was handled as a status query (caller should skip STOP/YES parsing).
  */
-async function handleStatusQuery(phone: string, text: string): Promise<boolean> {
+export async function handleStatusQuery(phone: string, text: string): Promise<boolean> {
   if (!cloudApiConfigured() || !/^\s*(status|stat|track|track\s*my\s*(order|request))\b/i.test(text)) return false;
   const [account] = await db.select({ id: users.id }).from(users).where(or(eq(users.phone, phone), eq(users.whatsapp, phone))).limit(1);
   if (!account) {
@@ -365,7 +365,13 @@ export async function handleInbound(events: InboundEvent[]) {
     const statusPhone = normalizePhone(event.from);
     if (statusPhone && await handleStatusQuery(statusPhone, event.text)) continue;
     const intent = classifyReply(event.text);
-    if (!intent) continue;
+    if (!intent) {
+      // Not a STOP / YES reply: the assistant answers it (needs the Cloud API; without it nothing is sent).
+      if (cloudApiConfigured()) {
+        try { await (await import("@/lib/whatsapp-bot")).handleBotMessage(event); } catch (error) { console.error("[whatsapp-bot] failed", error); }
+      }
+      continue;
+    }
     const phone = normalizePhone(event.from);
     if (!phone) continue;
     const consent = intent === "stop" ? "opted_out" : "opted_in";

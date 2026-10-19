@@ -42,3 +42,8 @@ coverage/
 .next
 myexcel
 photo-index
+
+# local secrets, never commit
+.env
+.env.local
+.env.*.local

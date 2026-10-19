@@ -3,6 +3,7 @@ import SiteHeader from "@/components/site-header";
 import Breadcrumbs from "@/components/breadcrumbs";
 import OffersExperience from "@/components/offers-experience";
 import { getPromoCalendar } from "@/lib/promotions";
+import { safely } from "@/lib/safe";
 import { pageMetadata } from "@/lib/seo";
 import { site } from "@/lib/site";
 
@@ -15,7 +16,7 @@ export const metadata: Metadata = pageMetadata(
 );
 
 export default async function OffersPage() {
-  const { views } = await getPromoCalendar();
+  const { views } = await safely(() => getPromoCalendar(), { views: [], source: "fallback" as const }, "promo calendar");
   return <main className="page"><SiteHeader/>
     <OffersExperience views={views} siteUrl={site.url} crumbs={<Breadcrumbs items={[{ name: "Home", path: "/" }, { name: "Offers", path: "/offers" }]}/>}/>
   </main>;

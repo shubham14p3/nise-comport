@@ -14,6 +14,12 @@ import PromotionsPanel from "@/components/promotions-panel";
 import CampaignsPanel from "@/components/campaigns-panel";
 import ContactsPanel from "@/components/contacts-panel";
 import TeamPanel from "@/components/team-panel";
+import SiteTeamPanel from "@/components/site-team-panel";
+import PaymentsPanel from "@/components/payments-panel";
+import PricesPanel from "@/components/prices-panel";
+import LegalPanel from "@/components/legal-panel";
+import LoyaltyPanel from "@/components/loyalty-panel";
+import ChatsPanel from "@/components/chats-panel";
 import InboxPanel from "@/components/inbox-panel";
 import SiteContentPanel from "@/components/site-content-panel";
 import GalleryPanel from "@/components/gallery-panel";
@@ -33,7 +39,7 @@ type RequestDetail = {
   events: { fromStatus: string | null; toStatus: string; fromLabel: string | null; toLabel: string; note: string | null; createdAt: string; actor: string | null }[];
 };
 
-const options = ["submitted", "reviewing", "waiting_for_customer", "ready_for_pickup", "out_for_delivery", "completed", "cancelled"];
+const options = ["submitted", "reviewing", "waiting_for_customer", "awaiting_payment", "payment_received", "ready_for_pickup", "out_for_delivery", "completed", "cancelled"];
 const label = (value: string) => { const text = value.replaceAll("_", " "); return text.charAt(0).toUpperCase() + text.slice(1); };
 const when = (value: string) => new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 
@@ -208,7 +214,7 @@ function RequestQueue() {
   </>;
 }
 
-type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet";
+type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "legal" | "loyalty" | "chats";
 const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | "admin" | "staff" }[] = [
   { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
   { id: "requests", label: "Requests", icon: ClipboardList, needs: "requests" },
@@ -218,10 +224,15 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "gallery", label: "Gallery photos", icon: Images, needs: "content" },
   { id: "testimonials", label: "Testimonials", icon: Star, needs: "content" },
   { id: "campaigns", label: "WhatsApp", icon: Megaphone, needs: "campaigns" },
+  { id: "chats", label: "WhatsApp chats", icon: Megaphone, needs: "campaigns" },
   { id: "contacts", label: "Contacts", icon: Contact, needs: "campaigns" },
   { id: "team", label: "Team", icon: UsersRound, needs: "admin" },
   { id: "pan", label: "PAN data", icon: Database, needs: "pan" },
   { id: "wallet", label: "Wallet", icon: WalletCards, needs: "wallet" },
+  { id: "prices", label: "Service prices", icon: TicketPercent, needs: "content" },
+  { id: "loyalty", label: "Loyalty credit", icon: WalletCards, needs: "wallet" },
+  { id: "legal", label: "Legal pages", icon: LayoutTemplate, needs: "content" },
+  { id: "payments", label: "Payments", icon: WalletCards, needs: "requests" },
 ];
 
 const readHash = () => window.location.hash.slice(1);
@@ -297,7 +308,12 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { name
         {active === "testimonials" && <TestimonialsPanel/>}
         {active === "campaigns" && <CampaignsPanel/>}
         {active === "contacts" && <ContactsPanel/>}
-        {active === "team" && <TeamPanel meRole={me.role}/>}
+        {active === "chats" && <ChatsPanel/>}
+        {active === "prices" && <PricesPanel/>}
+        {active === "legal" && <LegalPanel/>}
+        {active === "loyalty" && <LoyaltyPanel/>}
+        {active === "payments" && <PaymentsPanel/>}
+        {active === "team" && <><TeamPanel meRole={me.role}/><SiteTeamPanel/></>}
         {active === "pan" && <PanImportPanel/>}
         {active === "wallet" && <WalletCreditForm/>}
       </section>

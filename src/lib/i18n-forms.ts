@@ -156,6 +156,8 @@ export const STATUS_TEXT: Record<string, T3> = {
   submitted: t3("Submitted", "भेजा गया", "পাঠানো হয়েছে"),
   reviewing: t3("Reviewing", "जाँच जारी", "যাচাই চলছে"),
   waiting_for_customer: t3("Waiting for you", "आपका इंतज़ार", "আপনার অপেক্ষা"),
+  awaiting_payment: t3("Awaiting payment", "भुगतान की प्रतीक्षा", "পেমেন্টের অপেক্ষা"),
+  payment_received: t3("Payment received", "भुगतान मिल गया", "পেমেন্ট পাওয়া গেছে"),
   in_progress: t3("In progress", "काम जारी", "কাজ চলছে"),
   ready_for_pickup: t3("Ready for pickup", "लेने के लिए तैयार", "নেওয়ার জন্য তৈরি"),
   out_for_delivery: t3("Out for delivery", "डिलीवरी पर", "ডেলিভারিতে"),

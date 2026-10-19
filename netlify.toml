@@ -1,0 +1,12 @@
+# Netlify is used only for preview deploys of the public pages. The live site runs on cPanel (see docs/deploy.md).
+# The Next.js runtime plugin serves the pages. "publish" must be .next: it overrides the old "build" folder set in the Netlify dashboard.
+[build]
+  publish = ".next"
+  command = "npm install --legacy-peer-deps && npm run build"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

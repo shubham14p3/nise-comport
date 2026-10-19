@@ -71,6 +71,19 @@ const OPS = {
   "R8m4P1wD7zL2": { method: "POST", path: "/api/admin/testimonials" },
   "K6w3H9pL2vN7": { method: "GET", path: "/api/admin/testimonials/sync" },
   "D5x8Q1mT4rV6": { method: "POST", path: "/api/admin/testimonials/sync" },
+  "T9q4M2xV7bL3": { method: "GET", path: "/api/admin/team" },
+  "W5n8H1cK6zR4": { method: "POST", path: "/api/admin/team" },
+  "N2v6Z9kQ4tH1": { method: "GET", path: "/api/admin/prices" },
+  "E8c4R1pW7mL3": { method: "POST", path: "/api/admin/prices" },
+  "C5t9W2yM6kD8": { method: "POST", path: "/api/admin/chats" },
+  "P3s7K1mW8xQ4": { method: "POST", path: "/api/auth/phone" },
+  "M8b5C1qJ7yL2": { method: "POST", path: "/api/account/phone" },
+  "J5w2D8kM3zT7": { method: "GET", path: "/api/admin/loyalty" },
+  "V9n4X1rQ6bH3": { method: "POST", path: "/api/admin/loyalty" },
+  "L4g8P2nT6vK1": { method: "GET", path: "/api/admin/legal" },
+  "S7r3Q9mB5xD2": { method: "POST", path: "/api/admin/legal" },
+  "Y3d7N5qV1mP8": { method: "POST", path: "/api/pay" },
+  "H6k2B9tW4xC7": { method: "POST", path: "/api/admin/payments" },
 } as const;
 
 /** Encrypted file uploads: customer documents, and posters in the admin area. */
@@ -88,6 +101,14 @@ function stringValue(input: Record<string, unknown>, key: string, max = 200) {
 function targetFor(operation: string, input: Record<string, unknown>) {
   if (operation in OPS) return OPS[operation as keyof typeof OPS];
   switch (operation) {
+    case "U3j7P1xH5nQ9": {
+      const phone = stringValue(input, "phone", 30);
+      return { method: "GET", path: `/api/admin/chats${phone ? `?phone=${encodeURIComponent(phone)}` : ""}` };
+    }
+    case "A8s5L2nR7vE4": {
+      const status = stringValue(input, "status", 20);
+      return { method: "GET", path: `/api/admin/payments?status=${encodeURIComponent(status)}` };
+    }
     case "X1m7C4pV8qB3": {
       const id = stringValue(input, "id", 80);
       return { method: "DELETE", path: `/api/addresses?id=${encodeURIComponent(id)}` };

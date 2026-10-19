@@ -18,6 +18,8 @@ export const users = pgTable("users", {
   permissions: jsonb("permissions").$type<string[]>().notNull().default([]),
   /** When this staff member last opened the admin inbox (unread count = newer activity). */
   inboxSeenAt: timestamp("inbox_seen_at", { withTimezone: true }),
+  /** Set when the mobile number in `phone` was confirmed with an SMS code. */
+  phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
 }, (table) => [uniqueIndex("users_email_unique").on(table.email)]);
 
 export const emailOtps = pgTable("email_otps", {
@@ -398,3 +400,104 @@ export const galleryItems = pgTable("gallery_items", {
   createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [uniqueIndex("gallery_items_src_unique").on(table.src), index("gallery_items_tag_idx").on(table.tag)]);
+
+/**
+ * People shown on the public Team page and the About page, managed in Admin → Team (website).
+ * Separate from `users`: a person can be listed here without having a staff login, and the other way round.
+ */
+export const teamMembers = pgTable("team_members", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(), role: text("role").notNull(), bio: text("bio"), image: text("image"),
+  sortOrder: integer("sort_order").notNull().default(0), active: boolean("active").notNull().default(true),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("team_members_active_sort_idx").on(table.active, table.sortOrder)]);
+
+/**
+ * Money owed for a service request and how it was paid. Staff create a "due" row (Admin → Payments);
+ * the customer pays on /pay/<reference> by UPI QR (staff confirm it) or online through Razorpay or
+ * Cashfree (confirmed automatically). Amounts are in paise to avoid rounding errors.
+ */
+export const payments = pgTable("payments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  requestId: uuid("request_id").notNull().references(() => serviceRequests.id, { onDelete: "cascade" }),
+  reference: text("reference").notNull(),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  amountPaise: integer("amount_paise").notNull(),
+  feePaise: integer("fee_paise").notNull().default(0),
+  status: text("status").notNull().default("due"),
+  method: text("method"),
+  providerOrderId: text("provider_order_id"),
+  providerPaymentId: text("provider_payment_id"),
+  utr: text("utr"),
+  note: text("note"),
+  failureReason: text("failure_reason"),
+  issueNote: text("issue_note"),
+  issueRaisedAt: timestamp("issue_raised_at", { withTimezone: true }),
+  refundChoice: text("refund_choice"),
+  refundStatus: text("refund_status"),
+  refundDetails: text("refund_details"),
+  refundPaise: integer("refund_paise"),
+  refundedAt: timestamp("refunded_at", { withTimezone: true }),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  verifiedBy: uuid("verified_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("payments_reference_idx").on(table.reference),
+  index("payments_status_idx").on(table.status, table.createdAt),
+  uniqueIndex("payments_utr_unique").on(table.utr),
+  uniqueIndex("payments_provider_payment_unique").on(table.method, table.providerPaymentId),
+]);
+
+/** Our service charge per service, set in Admin → Prices. No row (or no amount) = nothing is shown publicly. */
+export const servicePrices = pgTable("service_prices", {
+  serviceSlug: text("service_slug").primaryKey(),
+  amount: integer("amount"),
+  kind: text("kind").notNull().default("fixed"),
+  note: text("note"),
+  updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Every WhatsApp chat message (customer, bot and staff), so staff can see and continue conversations in Admin → Chats. */
+export const whatsappMessages = pgTable("whatsapp_messages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  phone: text("phone").notNull(),
+  direction: text("direction").notNull(),
+  body: text("body").notNull(),
+  sender: text("sender").notNull().default("customer"),
+  name: text("name"),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  needsHuman: boolean("needs_human").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("whatsapp_messages_phone_created_idx").on(table.phone, table.createdAt), index("whatsapp_messages_human_idx").on(table.needsHuman, table.createdAt)]);
+
+/** Admin-edited text of the policy pages (terms, privacy, refund-policy). No row = the built-in text is used. */
+export const legalPages = pgTable("legal_pages", {
+  slug: text("slug").primaryKey(),
+  body: text("body").notNull(),
+  updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Thank-you credit rules edited in Admin → Loyalty credit (one row, id "main"). No row = the built-in rules. */
+export const loyaltySettings = pgTable("loyalty_settings", {
+  id: text("id").primaryKey(),
+  settings: jsonb("settings").notNull(),
+  updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** One-time codes sent by SMS to prove a mobile number belongs to an account. */
+export const phoneOtps = pgTable("phone_otps", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  phone: text("phone").notNull(),
+  codeHash: text("code_hash").notNull(),
+  purpose: text("purpose").notNull().default("verify"),
+  attempts: integer("attempts").notNull().default(0),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("phone_otps_user_idx").on(table.userId, table.createdAt)]);

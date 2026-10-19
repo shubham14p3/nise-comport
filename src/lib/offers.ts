@@ -56,16 +56,16 @@ export const offers: Offer[] = [
   {
     id: "first-insurance-100",
     active: true,
-    highlight: { en: "₹100 OFF", hi: "₹100 की छूट", bn: "₹100 ছাড়" },
-    title: { en: "Your first insurance with us", hi: "हमारे साथ आपका पहला बीमा", bn: "আমাদের সঙ্গে আপনার প্রথম বিমা" },
-    ticker: { en: "₹100 off our service charge on your first insurance", hi: "पहले बीमा पर हमारे सेवा शुल्क में ₹100 की छूट", bn: "প্রথম বিমায় আমাদের সার্ভিস চার্জে ₹100 ছাড়" },
+    highlight: { en: "UP TO ₹100 OFF", hi: "₹100 तक की छूट", bn: "₹100 পর্যন্ত ছাড়" },
+    title: { en: "Your first bike or car insurance with us", hi: "हमारे साथ आपका पहला बीमा", bn: "আমাদের সঙ্গে আপনার প্রথম বিমা" },
+    ticker: { en: "First insurance: service charge waived up to ₹50 (bike) or ₹100 (car)", hi: "पहले बीमा पर हमारे सेवा शुल्क में ₹100 की छूट", bn: "প্রথম বিমায় আমাদের সার্ভিস চার্জে ₹100 ছাড়" },
     detail: {
-      en: "Bike, car, health or life: get ₹100 off NISE COMPORT’s service charge on your first insurance request.",
+      en: "Bike insurance: our service charge is waived, up to ₹50. Car insurance: waived, up to ₹100. For your first insurance request with us.",
       hi: "बाइक, कार, हेल्थ या लाइफ: पहले बीमा अनुरोध पर NISE COMPORT के सेवा शुल्क में ₹100 की छूट।",
       bn: "বাইক, গাড়ি, হেলথ বা লাইফ: প্রথম বিমা অনুরোধে NISE COMPORT-এর সার্ভিস চার্জে ₹100 ছাড়।",
     },
     terms: {
-      en: "One per customer, on the first insurance request from your account. Applies to our service charge only; it does not change the insurer’s premium.",
+      en: "One per customer, on the first insurance request from your account. The waiver covers our service charge only, up to ₹50 for bike and ₹100 for car, and never the insurer’s premium or any payment-gateway fee.",
       hi: "प्रति ग्राहक एक बार, आपके खाते से पहले बीमा अनुरोध पर। केवल हमारे सेवा शुल्क पर लागू; बीमा कंपनी का प्रीमियम नहीं बदलता।",
       bn: "প্রতি গ্রাহক একবার, আপনার অ্যাকাউন্টের প্রথম বিমা অনুরোধে। শুধু আমাদের সার্ভিস চার্জে প্রযোজ্য; বিমা কোম্পানির প্রিমিয়াম বদলায় না।",
     },

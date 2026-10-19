@@ -43,7 +43,6 @@ export function publicRoutes(): PublicRoute[] {
     { path: "/services", lastModified: SITE_CONTENT_DATE, priority: 0.9, changeFrequency: "weekly" },
     { path: "/contact", lastModified: SITE_CONTENT_DATE, priority: 0.8, changeFrequency: "monthly" },
     { path: "/areas-we-serve", lastModified: SITE_CONTENT_DATE, priority: 0.7, changeFrequency: "monthly" },
-    { path: "/pan", lastModified: SITE_CONTENT_DATE, priority: 0.8, changeFrequency: "monthly" },
     { path: "/insurance", lastModified: SITE_CONTENT_DATE, priority: 0.9, changeFrequency: "monthly" },
     { path: "/print", lastModified: SITE_CONTENT_DATE, priority: 0.7, changeFrequency: "monthly" },
     { path: "/hardware", lastModified: SITE_CONTENT_DATE, priority: 0.8, changeFrequency: "weekly" },
@@ -57,6 +56,8 @@ export function publicRoutes(): PublicRoute[] {
     { path: "/social", lastModified: SITE_CONTENT_DATE, priority: 0.4, changeFrequency: "monthly" },
     { path: "/privacy", lastModified: SITE_CONTENT_DATE, priority: 0.2, changeFrequency: "yearly" },
     { path: "/terms", lastModified: SITE_CONTENT_DATE, priority: 0.2, changeFrequency: "yearly" },
+    { path: "/refund-policy", lastModified: SITE_CONTENT_DATE, priority: 0.2, changeFrequency: "yearly" },
+    { path: "/pricing", lastModified: SITE_CONTENT_DATE, priority: 0.5, changeFrequency: "monthly" },
     { path: "/hi", lastModified: SITE_CONTENT_DATE, priority: 0.8, changeFrequency: "monthly", alternates: { "en-IN": "/", "bn-IN": "/bn" } },
     { path: "/bn", lastModified: SITE_CONTENT_DATE, priority: 0.8, changeFrequency: "monthly", alternates: { "en-IN": "/", "hi-IN": "/hi" } },
   ];

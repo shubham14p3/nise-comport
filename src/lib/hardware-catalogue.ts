@@ -43,4 +43,19 @@ export const hardwareCatalogue: HardwareGroup[] = [
     { name: "Wi-Fi router or extender", note: "Home and shop" },
     { name: "CCTV camera and DVR", note: "Installation enquiry available" },
   ] },
+  { slug: "peripherals", title: "Mouse, keyboard, webcam and gamepad", items: [
+    { name: "Wired and wireless mouse", note: "Office, gaming and travel mice" },
+    { name: "Keyboard (wired, wireless, combo)", note: "Full size and compact" },
+    { name: "Webcam (HD and Full HD)", note: "For classes, meetings and interviews" },
+    { name: "Gamepad and controller", note: "PC and phone compatible" },
+    { name: "Headset, earphones and microphone", note: "Calls and online classes" },
+    { name: "USB hub, card reader and pen drive", note: "Everyday add-ons" },
+  ] },
+  { slug: "cables", title: "Cables and adapters", items: [
+    { name: "USB-C, micro-USB and Lightning cables", note: "Charging and data" },
+    { name: "HDMI, VGA and DisplayPort cables", note: "Monitor and projector" },
+    { name: "LAN (Ethernet) cable", note: "Router, PC and CCTV" },
+    { name: "Printer (USB-B) and power cables", note: "Printer and PC power" },
+    { name: "Converters and adapters", note: "HDMI to VGA, USB-C to HDMI and similar" },
+  ] },
 ];

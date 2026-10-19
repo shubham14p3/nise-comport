@@ -1,17 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import LoopScroller from "@/components/loop-scroller";
 import { Search } from "lucide-react";
+import { matchesSearch, normaliseSearch } from "@/lib/search-terms";
 
 const SUGGESTIONS = ["PAN card correction", "Income certificate", "Bike insurance renewal", "AEPS cash withdrawal", "Print from phone", "Exam form filling", "Voter ID", "Electricity bill"];
 
 /** "What do you need today?" search with a rotating hint. Searches the services page. */
-export default function HeroSearch({ popular }: { popular: { label: string; href: string }[] }) {
+export default function HeroSearch({ popular, services = [] }: { popular: { label: string; href: string }[]; services?: { slug: string; title: string }[] }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [hint, setHint] = useState(0);
+  const matches = useMemo(() => {
+    return query.trim() ? services.filter((item) => matchesSearch(normaliseSearch(item.title), query)) : services;
+  }, [query, services]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setHint((value) => (value + 1) % SUGGESTIONS.length), 2600);
@@ -28,11 +33,15 @@ export default function HeroSearch({ popular }: { popular: { label: string; href
     <form role="search" onSubmit={submit} className="hero-search__box">
       <Search size={22} aria-hidden="true"/>
       <label className="sr-only" htmlFor="hero-search">What do you need today?</label>
-      <input id="hero-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Try “${SUGGESTIONS[hint]}”`} autoComplete="off" enterKeyHint="search"/>
+      <input id="hero-search" type="search" value={query} onChange={(event) => { setQuery(event.target.value); }} placeholder={`Try “${SUGGESTIONS[hint]}”`} autoComplete="off" enterKeyHint="search"/>
       <button type="submit" className="btn btn--primary">Search</button>
     </form>
-    <div className="hero-search__chips" aria-label="Popular">
-      {popular.map((item) => <Link key={item.href} href={item.href}>{item.label}</Link>)}
-    </div>
+    {services.length > 0
+      ? matches.length
+        ? <LoopScroller className="hero-search__row" label="Services" gap={8} loop={matches.length > 3} auto>{matches.map((item) => <Link key={item.slug} role="listitem" href={`/services/${item.slug}`}>{item.title}</Link>)}</LoopScroller>
+        : <span className="hero-search__empty">No service matches “{query}”. Press Search or message us.</span>
+      : <div className="hero-search__chips" aria-label="Popular">
+          {popular.map((item) => <Link key={item.href} href={item.href}>{item.label}</Link>)}
+        </div>}
   </div>;
 }

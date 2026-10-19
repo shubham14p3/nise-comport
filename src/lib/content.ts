@@ -208,6 +208,123 @@ export const articles: Article[] = [
     faqs: [{ question: "Is mutation the same as registration?", answer: "No. Registration records the transfer deed; mutation updates the land revenue record. Both are usually needed." }],
     officialLinks: [{ label: "Jharbhoomi – Jharkhand land records", href: "https://jharbhoomi.jharkhand.gov.in/" }],
   },
+  {
+    slug: "ration-card-jharkhand-apply-correct-guide", title: "Ration card in Jharkhand: apply, add a member or correct details", seoTitle: "Ration Card in Jharkhand: Apply & Correct",
+    excerpt: "What to prepare for a new ration card, adding or removing a family member, and fixing a name or Aadhaar mismatch.",
+    image: "/images/blog/certificate.png", imageAlt: "Ration card guide", category: "Jharkhand certificates", serviceSlug: "ration-card", publishedAt: "2026-10-10", updatedAt: "2026-10-10",
+    paragraphs: [
+      "A ration card shows the members of a household for food-security schemes and is often used as an address and family proof. Rules, forms and eligibility are set by the Jharkhand food, public distribution and consumer affairs department, and can change, so use this guide to prepare and confirm the current process on the official portal.",
+      "Most problems come from small mismatches: a spelling that differs between Aadhaar and other papers, a missing family member, or an old address. Fixing these before applying saves weeks.",
+    ],
+    sections: [
+      { heading: "What to prepare", paragraphs: ["Aadhaar of every family member, a recent photograph where asked, address proof, a mobile number that works, and for a new member the birth certificate or school record. Bring originals so we can check them against each other."] },
+      { heading: "Adding, removing or correcting a member", paragraphs: ["Each change has its own form or option on the official portal. Tell us exactly what is wrong on the current card (name spelling, age, missing member, wrong address) and we will help you choose the correct option and prepare matching documents."] },
+      { heading: "After you apply", paragraphs: ["Keep the application or acknowledgement number. Verification can involve a local officer, so keep your phone reachable. Track the status on the official portal, or ask us to help you check."] },
+    ],
+    checklist: ["Collect Aadhaar for every family member", "Check that names match across documents", "Keep address proof and a working mobile number ready", "Save the application number", "Follow up on the official portal"],
+    faqs: [
+      { question: "Can NISE COMPORT issue a ration card?", answer: "No. The state department issues it. We help you prepare documents, apply and follow up." },
+      { question: "My Aadhaar and ration card names differ. What now?", answer: "Decide which record is correct, correct the other one first, then apply for the ration card change so both match." },
+    ],
+    officialLinks: [{ label: "Jharkhand Public Distribution (Aahar) portal", href: "https://aahar.jharkhand.gov.in/" }],
+  },
+  {
+    slug: "ayushman-bharat-card-jharkhand-guide", title: "Ayushman Bharat card: check eligibility and get your card", seoTitle: "Ayushman Bharat Card: Eligibility & How to Apply",
+    excerpt: "How to check whether your family is covered, which documents are asked for, and what to do if your name is missing.",
+    image: "/images/blog/insurance.png", imageAlt: "Ayushman card guide", category: "Health & insurance", serviceSlug: "ayushman-card", publishedAt: "2026-10-10", updatedAt: "2026-10-10",
+    paragraphs: [
+      "Ayushman Bharat (PM-JAY) gives eligible families health cover for hospital treatment at empanelled hospitals. Eligibility is decided from official lists and criteria, not by any private centre, so the first step is always to check whether you are covered.",
+      "If your family is eligible, you can usually complete e-KYC with Aadhaar and download or collect your Ayushman card. If you are not on the list, ask the official helpline or your local health office what applies to you.",
+    ],
+    sections: [
+      { heading: "Check eligibility", paragraphs: ["Use the official beneficiary portal or the helpline to search by mobile number or ration card details. Do not pay anyone to ‘add’ your name; the list is maintained by the authorities."] },
+      { heading: "Documents and e-KYC", paragraphs: ["Keep Aadhaar of the person, a ration card or family details, and a mobile number linked to Aadhaar for the OTP. Only enter the OTP yourself."] },
+      { heading: "Using the card", paragraphs: ["Carry the card or Aadhaar when you go to an empanelled hospital and ask for the Ayushman help desk. Treatments and limits follow the scheme rules."] },
+    ],
+    checklist: ["Check eligibility on the official portal", "Keep Aadhaar and the linked mobile with you", "Complete e-KYC yourself and never share the OTP", "Download or collect the card", "Ask for the Ayushman help desk at the hospital"],
+    faqs: [
+      { question: "Is there a fee for the Ayushman card?", answer: "The scheme does not charge beneficiaries for the card. We may charge a small service fee for our time and printing, which we tell you first." },
+      { question: "My name is not in the list. Can you add it?", answer: "No. Only the authorities can change eligibility. We can help you find the right office or helpline." },
+    ],
+    officialLinks: [{ label: "Ayushman Bharat PM-JAY", href: "https://pmjay.gov.in/" }, { label: "Beneficiary portal", href: "https://beneficiary.nha.gov.in/" }],
+  },
+  {
+    slug: "udyam-registration-small-business-jamshedpur", title: "Udyam registration for a small business: what you need", seoTitle: "Udyam Registration: Documents & Steps",
+    excerpt: "A plain-language guide to getting an Udyam certificate for a shop, workshop or home business, and what it is (and is not) useful for.",
+    image: "/images/blog/10.png", imageAlt: "Udyam registration guide", category: "Business & forms", serviceSlug: "udyam-registration", publishedAt: "2026-10-10", updatedAt: "2026-10-10",
+    paragraphs: [
+      "Udyam registration recognises your business as a micro, small or medium enterprise. It is free on the official portal and uses your Aadhaar and PAN. Many banks and schemes ask for it when you apply for business loans or subsidies.",
+      "It is not the same as GST registration or a trade licence. Whether you also need those depends on your turnover, goods or services and local rules.",
+    ],
+    sections: [
+      { heading: "What you need", paragraphs: ["Aadhaar of the owner (with a mobile linked for OTP), PAN, business name and address, bank account details, the type of business and an estimate of investment and turnover."] },
+      { heading: "How it works", paragraphs: ["The registration is done on the official Udyam portal, which issues a certificate with a permanent number. There is no government fee. We help you fill it correctly and download the certificate; our service charge is shown first."] },
+      { heading: "Afterwards", paragraphs: ["Keep the certificate and update the portal when your details or business activity change. Use the number when applying for bank schemes."] },
+    ],
+    checklist: ["Keep Aadhaar and PAN ready", "Have the bank account details", "Describe your business activity correctly", "Download and save the certificate", "Update the portal if details change"],
+    faqs: [
+      { question: "Is Udyam registration free?", answer: "Yes, the government portal does not charge. Beware of websites asking for a fee. NISE COMPORT charges only for assistance, which we confirm first." },
+      { question: "Do I need GST to get Udyam?", answer: "Not for all businesses. Requirements depend on your activity; ask us and we will check the current rules." },
+    ],
+    officialLinks: [{ label: "Udyam Registration portal", href: "https://udyamregistration.gov.in/" }],
+  },
+  {
+    slug: "income-tax-return-filing-basics-jamshedpur", title: "Income tax return (ITR): what to gather before you file", seoTitle: "ITR Filing: Documents to Gather",
+    excerpt: "Salaried, small business or pensioner: which documents make filing smooth, and which mistakes cause notices.",
+    image: "/images/blog/pan.png", imageAlt: "ITR filing guide", category: "Business & forms", serviceSlug: "itr-gst", publishedAt: "2026-10-10", updatedAt: "2026-10-10",
+    paragraphs: [
+      "Filing an income tax return is easier when you gather your papers first. The forms and due dates are set by the Income Tax Department each year, so always check the current rules on the official portal before filing.",
+      "Most notices arise from mismatches between your return and the information the department already has, such as interest income or TDS. Reviewing your annual statement before filing helps.",
+    ],
+    sections: [
+      { heading: "Documents to bring", paragraphs: ["PAN and Aadhaar (linked), Form 16 if you are salaried, bank statements and interest certificates, details of investments and deductions, rent receipts if relevant, and for business income your books or a summary of income and expenses."] },
+      { heading: "Before you file", paragraphs: ["Check your annual information statement and Form 26AS for income and tax deducted. Make sure your bank account is pre-validated for refunds."] },
+      { heading: "After you file", paragraphs: ["E-verify the return (Aadhaar OTP, net banking or other options) within the allowed time, and save the acknowledgement."] },
+    ],
+    checklist: ["Link PAN and Aadhaar", "Gather Form 16 and bank interest certificates", "Check the annual information statement", "File on the official portal", "E-verify and save the acknowledgement"],
+    faqs: [
+      { question: "Can NISE COMPORT file my ITR?", answer: "We help you prepare and file on the official portal. For complex business or capital-gains cases we may suggest a chartered accountant." },
+      { question: "Do I have to file if my employer deducted tax?", answer: "It depends on your income and the rules for the year. Ask us with your Form 16 and we will tell you what applies." },
+    ],
+    officialLinks: [{ label: "Income Tax e-filing portal", href: "https://www.incometax.gov.in/" }],
+  },
+  {
+    slug: "marriage-registration-certificate-jharkhand-guide", title: "Marriage registration in Jharkhand: documents and steps", seoTitle: "Marriage Registration in Jharkhand: Documents",
+    excerpt: "Who can register, which documents both partners need, and how to track the application.",
+    image: "/images/blog/certificate.png", imageAlt: "Marriage registration guide", category: "Jharkhand certificates", serviceSlug: "marriage-registration-certificate", publishedAt: "2026-10-10", updatedAt: "2026-10-10",
+    paragraphs: [
+      "A marriage certificate is accepted proof for passports, visas, bank and insurance nominations and name changes. Jharkhand offers online registration through its citizen service portal. The exact documents and appointment steps depend on the marriage law that applies, so confirm on the portal.",
+      "Prepare early if you plan to apply for a passport or visa soon after, as verification can take time.",
+    ],
+    sections: [
+      { heading: "Documents usually needed", paragraphs: ["Identity and address proof of both partners, age proof such as a birth certificate or school certificate, passport-size photographs, the wedding invitation or other proof of the ceremony where asked, and witness details."] },
+      { heading: "How the process works", paragraphs: ["You submit the application online, upload documents and may need to attend with witnesses on a date given. After verification the certificate can be downloaded. We help with the form, document scans and tracking."] },
+    ],
+    checklist: ["Collect ID, address and age proof of both partners", "Arrange passport-size photographs and witnesses", "Submit the application on the official portal", "Attend the verification if called", "Download and print the certificate"],
+    faqs: [
+      { question: "Can I register a marriage that happened years ago?", answer: "Often yes, with additional proof. Rules vary, so ask us and we will check the current requirements." },
+      { question: "Does NISE COMPORT issue the certificate?", answer: "No. The registering authority issues it. We help you apply and follow up." },
+    ],
+    officialLinks: [{ label: "JharSewa – Jharkhand citizen services", href: "https://serviceonline.gov.in/jharkhand/" }],
+  },
+  {
+    slug: "rent-agreement-and-e-stamp-jamshedpur-guide", title: "Rent agreement and e-stamp: what to know before you sign", seoTitle: "Rent Agreement & E-Stamp: What to Know",
+    excerpt: "What a rent agreement should include, why stamp duty matters, and what to bring when you want it drafted and printed.",
+    image: "/images/blog/7.png", imageAlt: "Rent agreement guide", category: "Business & forms", serviceSlug: "rent-agreement", publishedAt: "2026-10-10", updatedAt: "2026-10-10",
+    paragraphs: [
+      "A written rent agreement protects both the landlord and the tenant. It is also asked for as address proof by banks, gas connections and many offices. Stamp duty and registration rules depend on the rent amount and period, so confirm what applies to your agreement before signing.",
+      "We help you prepare a clear draft and print it, but we are not a law firm. For a high-value or long-term lease, take advice from a lawyer.",
+    ],
+    sections: [
+      { heading: "What it should include", paragraphs: ["Names and addresses of landlord and tenant, the property address, rent and deposit amounts, the period, notice period, who pays maintenance and utilities, and conditions for ending the agreement."] },
+      { heading: "What to bring", paragraphs: ["Identity and address proof of both parties, passport-size photographs, property details and the agreed terms. Both parties and sometimes witnesses must sign."] },
+    ],
+    checklist: ["Agree on rent, deposit and period in writing", "Bring ID and photographs of both parties", "Confirm stamp duty for your case", "Read every clause before signing", "Keep a signed copy each"],
+    faqs: [
+      { question: "Is a rent agreement on plain paper valid?", answer: "Validity and use as proof depend on stamp duty and local rules. Ask us what applies to your case before signing." },
+      { question: "Can you do legal advice?", answer: "No. We help with drafting and printing. For legal advice or disputes, please consult a lawyer." },
+    ],
+  },
 ];
 
 export function articleDates(article: Article) {

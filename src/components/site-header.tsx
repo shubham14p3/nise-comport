@@ -135,7 +135,7 @@ export default function SiteHeader() {
           <input id="mobile-search" type="search" value={mobileQuery} onChange={(event) => setMobileQuery(event.target.value)} placeholder="Search services…" autoComplete="off" enterKeyHint="search"/>
         </form>
         <div className="mobile-sheet__links">
-          {[{ href: home, label: t.home }, ...links, { href: "/about", label: t.about }, { href: "/areas-we-serve", label: t.areas }, { href: "/faq", label: t.faq }, { href: "/pan", label: t.pan }].map((link, index) => link.href === "/services" ? <ServicesMegaMobile key={link.href} label={link.label}/> : <Link key={link.href} href={link.href} style={{ animationDelay: `${index * 30}ms` }}>{link.label}<ArrowRight size={18}/></Link>)}
+          {[{ href: home, label: t.home }, ...links, { href: "/about", label: t.about }, { href: "/areas-we-serve", label: t.areas }, { href: "/faq", label: t.faq }, { href: "/track", label: "Track a request" }].map((link, index) => link.href === "/services" ? <ServicesMegaMobile key={link.href} label={link.label}/> : <Link key={link.href} href={link.href} style={{ animationDelay: `${index * 30}ms` }}>{link.label}<ArrowRight size={18}/></Link>)}
         </div>
         <div className="mobile-sheet__lang"><span>{t.changeLanguage}</span><LanguageMenu locale={locale} label={t.changeLanguage} inline/></div>
         <div className="mobile-sheet__actions">

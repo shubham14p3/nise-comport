@@ -21,7 +21,7 @@ type Message = { id: number; from: "bot" | "user"; text: string; actions?: Actio
 
 /** What each quick topic links to. */
 const TOPIC_LINKS: Record<TopicId, { details?: string; request?: string }> = {
-  pan: { details: "/pan", request: "/pan/request" },
+  pan: { details: "/services/pan-card", request: "/pan/request" },
   aadhaar: { details: "/services/aadhaar", request: "/request?service=aadhaar" },
   certificates: { details: "/services/income-caste-residence-certificate", request: "/request?service=income-caste-residence-certificate" },
   banking: { details: "/services/banking", request: "/request?category=banking" },

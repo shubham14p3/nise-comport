@@ -134,6 +134,55 @@
       "when": 1792600000000,
       "tag": "0018_testimonials_source_id",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792700000000,
+      "tag": "0019_team_members",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792800000000,
+      "tag": "0020_payments",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792900000000,
+      "tag": "0021_payment_issues",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1793000000000,
+      "tag": "0022_service_prices",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793100000000,
+      "tag": "0023_whatsapp_messages",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793200000000,
+      "tag": "0024_legal_pages",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793300000000,
+      "tag": "0025_loyalty_and_phone",
+      "breakpoints": true
     }
   ]
 }

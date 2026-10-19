@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import SafeImage from "@/components/safe-image";
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Expand, X } from "lucide-react";
@@ -87,7 +87,7 @@ export default function GalleryGrid({ items }: { items: GalleryEntry[] }) {
     </div>}
     <div className="masonry">{visible.slice(0, paging.count).map((item, index) => <figure key={item.key} className="masonry__item">
       <button type="button" className="masonry__open" onClick={() => setOpen(index)} aria-label={`View larger: ${item.title}`}>
-        <Image src={item.src} alt={item.alt} width={item.width} height={item.height} sizes="(max-width: 600px) 100vw, (max-width: 1000px) 50vw, 33vw" unoptimized={item.tag === "google"}/>
+        <SafeImage src={item.src} alt={item.alt} width={item.width} height={item.height} sizes="(max-width: 600px) 100vw, (max-width: 1000px) 50vw, 33vw" unoptimized={item.tag === "google"}/>
         <span className="masonry__zoom" aria-hidden="true"><Expand size={18}/></span>
       </button>
       <figcaption>
@@ -105,7 +105,7 @@ export default function GalleryGrid({ items }: { items: GalleryEntry[] }) {
       <button type="button" className="lightbox__close icon-btn" aria-label="Close" onClick={() => setOpen(null)}><X size={24}/></button>
       {visible.length > 1 && <button type="button" className="lightbox__nav lightbox__nav--prev icon-btn" aria-label="Previous" onClick={(event) => { event.stopPropagation(); setOpen((index) => index === null ? null : (index - 1 + visible.length) % visible.length); }}><ChevronLeft size={28}/></button>}
       <figure onClick={(event) => event.stopPropagation()}>
-        <Image src={current.src} alt={current.alt} width={current.width} height={current.height} sizes="92vw" unoptimized={current.tag === "google"}/>
+        <SafeImage src={current.src} alt={current.alt} width={current.width} height={current.height} sizes="92vw" unoptimized={current.tag === "google"}/>
         <figcaption><b>{current.title}</b>{current.tag === "google" && <small>Photo: {current.author} · Google Maps</small>}</figcaption>
       </figure>
       {visible.length > 1 && <button type="button" className="lightbox__nav lightbox__nav--next icon-btn" aria-label="Next" onClick={(event) => { event.stopPropagation(); setOpen((index) => index === null ? null : (index + 1) % visible.length); }}><ChevronRight size={28}/></button>}

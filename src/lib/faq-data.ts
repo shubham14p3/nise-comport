@@ -1,0 +1,57 @@
+import { site } from "@/lib/site";
+
+/** General questions (not tied to one service). Service-specific answers are added from each service page. */
+export type FaqEntry = { topic: string; question: string; answer: string };
+
+export const GENERAL_TOPICS = ["About us", "Visiting us", "Fees & payments", "Requests & tracking", "Account & privacy", "Printing & documents"] as const;
+
+export const generalFaqs: FaqEntry[] = [
+  // ------------------------------------------------------------------ About us
+  { topic: "About us", question: "Is NISE COMPORT a government office?", answer: "No. NISE COMPORT is an independent CSC / Pragya Kendra service centre that helps customers use government and digital services. The relevant department, bank or provider makes the final decision." },
+  { topic: "About us", question: "What is a CSC / Pragya Kendra?", answer: "A Common Service Centre (CSC) or Pragya Kendra is a local service point that helps citizens apply for government and digital services close to home, so they do not have to travel to several offices." },
+  { topic: "About us", question: "Since when have you been serving Jamshedpur?", answer: "We began as NISE in 2010 and grew into NISE COMPORT. Many of our customers have been coming to us for years." },
+  { topic: "About us", question: "What services do you offer?", answer: "PAN and Aadhaar help, Jharkhand certificates, voter ID, banking and AEPS, insurance, scholarship and exam forms, bill payments and recharge, ITR and business forms, travel tickets, printing and photocopy, and computer repair and hardware. See the full list on the Services page." },
+  { topic: "About us", question: "Can I talk to someone in Hindi?", answer: "Yes. Our team speaks Hindi and English, and key pages are available in Hindi at /hi and Bengali at /bn." },
+  { topic: "About us", question: "Are the logos and services on your site yours?", answer: "No. Names such as CSC, Digital India, PAN, Aadhaar and Voter ID belong to their owners. We are an independent local helper that guides you through applying, submitting and tracking." },
+  { topic: "About us", question: "Who is on your team?", answer: "Meet the people at the service desk on the Team page. Staff help with your application but never decide approvals." },
+  // ------------------------------------------------------------------ Visiting us
+  { topic: "Visiting us", question: "Where are you located?", answer: `${site.address.oneLine}. Open Google Maps from the Contact page for directions.` },
+  { topic: "Visiting us", question: "Which areas do you serve?", answer: "Walk-in customers come from Kharangajhar, Telco, Govindpur, Birsanagar, Golmuri, Sakchi, Mango and across Jamshedpur. Online requests can be sent from anywhere. See the Areas we serve page." },
+  { topic: "Visiting us", question: "What are your opening hours?", answer: `Our hours are shown on the Contact page and change on public holidays. For urgent or portal-dependent work, call ${site.phones.primary.display} before you visit.` },
+  { topic: "Visiting us", question: "Do I need an appointment?", answer: "No. You can walk in during opening hours. For a long or document-heavy job, send a request first or message us on WhatsApp so we can tell you exactly what to bring." },
+  { topic: "Visiting us", question: "What should I bring when I visit?", answer: "Bring the original documents for your service, a photocopy where we ask for one, and your mobile phone for OTPs (never share OTPs with anyone). Each service page lists the documents." },
+  { topic: "Visiting us", question: "Can someone else come on my behalf?", answer: "For many services yes, if they bring your documents. For services that need your OTP, biometrics or photo (such as Aadhaar updates and some PAN steps), you may need to be present. Ask us first." },
+  { topic: "Visiting us", question: "Can I contact you on WhatsApp?", answer: `Yes. WhatsApp us on ${site.phones.primary.display} or ${site.phones.secondary.display}. You can send a question or a document photo and we will tell you the next step.` },
+  // ------------------------------------------------------------------ Fees & payments
+  { topic: "Fees & payments", question: "Are government fees included in your service charge?", answer: "No. We show our service charge separately from any government, portal, bank or insurer fee. The receipt identifies the charges collected." },
+  { topic: "Fees & payments", question: "How much will it cost?", answer: "We tell you our service charge before we start. Printing rates are listed on the Pricing page; other services are confirmed on WhatsApp or at the desk." },
+  { topic: "Fees & payments", question: "Can you guarantee application approval?", answer: "No. Approval, processing time and decisions are controlled by the relevant government department, company or service provider." },
+  { topic: "Fees & payments", question: "How can I pay?", answer: "You can pay at the desk in cash or UPI. Online payment is being added; when it is live your payment is confirmed on your request and a receipt is issued." },
+  { topic: "Fees & payments", question: "Will I get a receipt?", answer: "Yes. We give a receipt or confirmation for every payment, along with the portal acknowledgement where there is one. Keep both." },
+  { topic: "Fees & payments", question: "Can I get a refund?", answer: "If you cancel before work starts, or we cannot carry out the service, the service charge is refunded. Completed service charges are generally non-refundable. See the Refund & cancellation policy for details." },
+  { topic: "Fees & payments", question: "How do offers and promo codes work?", answer: "Promo codes and the welcome coupon reduce our service charge only, never government fees. Enter the code on your request, or see the Offers page for what is live today." },
+  { topic: "Fees & payments", question: "Do you charge extra for corrections?", answer: "If a correction is needed because the details or documents given were wrong or incomplete, re-filing may involve a new service charge. If the mistake was ours, we fix it at no charge." },
+  // ------------------------------------------------------------------ Requests & tracking
+  { topic: "Requests & tracking", question: "How can I track a request?", answer: "Use the Track a request page. It shows how to follow your NISE COMPORT request in your profile, and where to track PAN, certificates and voter ID on the official portals. We also email you when the status changes." },
+  { topic: "Requests & tracking", question: "Can I cancel a request?", answer: "Yes, while it is submitted, being reviewed or waiting for you. Open the request in your profile and choose “Cancel this request”. After that stage, call or WhatsApp the desk." },
+  { topic: "Requests & tracking", question: "How do I start a request online?", answer: "Choose your service, upload your documents and send the request. You can sign in with an email code, and your details are saved so you do not retype them next time." },
+  { topic: "Requests & tracking", question: "How long will my request take?", answer: "It depends on the service and on the government or provider. We tell you the usual time when we confirm the request. Delays on official portals are outside our control." },
+  { topic: "Requests & tracking", question: "I lost my reference number. What now?", answer: "Sign in to your profile to see all your request references, or message us your name and approximate date and we will find it." },
+  { topic: "Requests & tracking", question: "My application shows ‘under process’. Is that normal?", answer: "Usually yes. It means the department has received it. Check again after a few days. If it stays unchanged for much longer, contact us and we will help you follow up." },
+  { topic: "Requests & tracking", question: "Will you tell me when my work is ready?", answer: "Yes. We update your request status, email you, and message you on WhatsApp where possible. You can also check your profile at any time." },
+  // ------------------------------------------------------------------ Account & privacy
+  { topic: "Account & privacy", question: "Do I need an account?", answer: "You can call, WhatsApp or visit without one. An account lets you send requests online, save your details, track progress and see your history." },
+  { topic: "Account & privacy", question: "I didn’t get the email code. What should I do?", answer: "Check spam or promotions, wait a minute and use “Resend code”. Only the newest code works, and each code expires after 10 minutes." },
+  { topic: "Account & privacy", question: "I forgot my password.", answer: "Use “Forgot password?” on the sign-in page. We email a 6-digit code; after you set a new password, every device is signed out for safety." },
+  { topic: "Account & privacy", question: "How does NISE COMPORT use my documents?", answer: "Only to carry out your request. Files are stored privately, visible to you and authorised staff, and deleted after the retention period. See the Privacy policy." },
+  { topic: "Account & privacy", question: "How long are uploaded documents kept?", answer: "Files are scheduled for deletion after the retention period (30 days by default, longer only while a request is still open). Avoid uploading documents that are not needed for your request." },
+  { topic: "Account & privacy", question: "Should I share OTPs or PINs with staff?", answer: "Never. Enter OTPs, PINs and passwords yourself, only in the official process you started. Our staff will never ask for them." },
+  { topic: "Account & privacy", question: "Can I delete my account?", answer: "Yes. Go to Profile → Sign-in & privacy → Delete account. Open requests must be completed or cancelled first." },
+  { topic: "Account & privacy", question: "Is my payment information safe?", answer: "We never see or store your card number, UPI PIN or net-banking password. Online payments, when enabled, are handled by a payment partner and your bank." },
+  // ------------------------------------------------------------------ Printing & documents
+  { topic: "Printing & documents", question: "How does online printing work?", answer: "Upload your document, select pages and print preferences, review the estimate, and choose pickup or delivery. We confirm the file and availability before printing." },
+  { topic: "Printing & documents", question: "What are your printing rates?", answer: "Black & white is ₹5 per page up to 10 pages, ₹3 for 11–50 and ₹2 above 50; colour is ₹10 per page. See the Pricing page for details." },
+  { topic: "Printing & documents", question: "Which file types can I print?", answer: "PDF, Word and common image files work best. If your file will not open, send it on WhatsApp and we will sort it out." },
+  { topic: "Printing & documents", question: "Do you scan, photocopy and laminate?", answer: "Yes. We scan, photocopy, print, laminate and spiral-bind at the desk. Ask for today’s rate." },
+  { topic: "Printing & documents", question: "Can I get passport-size photos?", answer: "Yes, at the desk. Tell us the size and number you need (for example for PAN, Aadhaar, exams or forms)." },
+];

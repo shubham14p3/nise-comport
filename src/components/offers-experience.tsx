@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import LoopScroller from "@/components/loop-scroller";
 import { useMemo, useState, type ReactNode } from "react";
 import { ArrowRight, CalendarCheck2, CalendarPlus, Download, FileSpreadsheet, Gift, ShieldCheck, Sparkles, TicketCheck, TriangleAlert } from "lucide-react";
 import CopyCode from "@/components/copy-code";
@@ -76,7 +77,7 @@ export default function OffersExperience({ views, siteUrl, crumbs }: { views: Pr
     <section className="section section--flush offers-live" id="live">
       <div className="container">
         <div className="section-head section-head--left"><span className="badge badge--live"><i/>{t.live}</span><h2>{t.liveTitle}</h2><p>{t.liveSub}</p></div>
-        {live.length ? <div className="promo-grid">{live.map((view) => <PromoCard key={view.code} view={view} locale={locale} today={today} siteUrl={siteUrl}/>)}</div>
+        {live.length ? <LoopScroller className="loop-scroller--promos" label={t.live} arrows gap={18} loop={live.length > 1}>{live.map((view) => <div role="listitem" key={view.code}><PromoCard view={view} locale={locale} today={today} siteUrl={siteUrl}/></div>)}</LoopScroller>
           : <div className="empty-state"><span className="empty-state__icon"><Sparkles size={24}/></span><h3>{t.noVouchers}</h3><p>{t.noVouchersText}</p></div>}
         <p className="offers-rules"><ShieldCheck size={16}/>{t.rules}</p>
       </div>

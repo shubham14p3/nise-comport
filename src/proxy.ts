@@ -5,7 +5,7 @@ const OPAQUE_API = "/api/x7q9m2";
 const PRIVATE_API_PREFIXES = [
   "/api/auth/", "/api/account/", "/api/profile", "/api/addresses", "/api/requests",
   "/api/pan/requests", "/api/print-jobs", "/api/uploads", "/api/coupons/validate",
-  "/api/admin/", "/api/internal/", "/api/places/", "/api/leads", "/api/insurance",
+  "/api/admin/", "/api/internal/", "/api/pay", "/api/places/", "/api/leads", "/api/insurance",
 ];
 
 function canonicalHost() {
@@ -51,8 +51,8 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  // Cron jobs (bearer secret) and Meta's WhatsApp webhook (signed) come from other servers, not browsers.
-  if (pathname.startsWith("/api/") && !SAFE_METHODS.has(request.method) && !pathname.startsWith("/api/cron/") && pathname !== "/api/whatsapp/webhook") {
+  // Cron jobs (bearer secret), payment webhooks (signed) and Meta's WhatsApp webhook (signed) come from other servers, not browsers.
+  if (pathname.startsWith("/api/") && !SAFE_METHODS.has(request.method) && !pathname.startsWith("/api/cron/") && !pathname.startsWith("/api/webhooks/") && pathname !== "/api/whatsapp/webhook") {
     const origin = request.headers.get("origin");
     const fetchSite = request.headers.get("sec-fetch-site");
     let crossSite = fetchSite === "cross-site";
