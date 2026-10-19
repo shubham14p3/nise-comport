@@ -2436,3 +2436,20 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .legal-admin__help { margin: 10px 0; }
 .legal-admin__help ul { display: grid; gap: 6px; margin: 8px 0 0 1.1rem; }
 .legal-admin__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+
+/* One-line looping carousels (search suggestions, live offers): no scrollbar, moves only when the visitor does */
+.loop-wrap { position: relative; min-width: 0; }
+.loop-scroller { display: flex; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; -ms-overflow-style: none; cursor: grab; touch-action: pan-x pan-y; -webkit-overflow-scrolling: touch; }
+.loop-scroller::-webkit-scrollbar { display: none; }
+.loop-scroller.is-dragging { cursor: grabbing; user-select: none; }
+.loop-scroller__group { display: flex; flex: none; gap: var(--loop-gap, 12px); padding-right: var(--loop-gap, 12px); align-items: stretch; }
+.loop-wrap.is-still .loop-scroller { cursor: auto; justify-content: center; }
+.loop-wrap.is-still .loop-scroller__group { padding-right: 0; }
+.loop-scroller--offers { padding: 4px 2px 14px; }
+.loop-scroller--offers .loop-scroller__group > * { flex: none; width: min(320px, 82vw); min-width: 0; }
+.hero-search__row .loop-scroller__group > a { flex: none; display: inline-flex; align-items: center; padding: 8px 16px; border-radius: 999px; font-size: .875rem; background: rgb(255 255 255 / .1); border: 1px solid rgb(255 255 255 / .18); color: #fff; white-space: nowrap; user-select: none; -webkit-user-drag: none; }
+.hero-search__row .loop-scroller__group > a:hover { background: rgb(255 255 255 / .2); }
+.loop-arrow { position: absolute; top: calc(50% - 7px); transform: translateY(-50%); z-index: 3; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: rgb(255 255 255 / .92); color: var(--ink); box-shadow: 0 8px 24px -8px rgb(0 0 0 / .5); }
+.loop-arrow--prev { left: 6px; } .loop-arrow--next { right: 6px; }
+@media (hover: none) { .loop-arrow { display: none; } }
+@media (max-width: 640px) { .hero-search__row { justify-content: flex-start; } .loop-wrap.is-still .loop-scroller { justify-content: flex-start; } }

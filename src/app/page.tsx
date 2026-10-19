@@ -10,6 +10,7 @@ import HeroVisual from "@/components/hero-visual";
 import { WhatsAppIcon } from "@/components/icons";
 import JsonLd from "@/components/json-ld";
 import OfferCard from "@/components/offer-card";
+import LoopScroller from "@/components/loop-scroller";
 import OpenStatus from "@/components/open-status";
 import TestimonialsSection from "@/components/testimonials-section";
 import { articles } from "@/lib/content";
@@ -127,7 +128,7 @@ export default async function HomePage() {
             <h2>Deals that make it <span className="grad-text grad-text--warm">even easier.</span></h2>
             <p>Claim them right inside your request. Offers apply to our service charge, never to government fees.</p>
           </div>
-          <div className={offers.length <= 4 ? "offer-grid offer-grid--rail is-short" : "offer-grid offer-grid--rail"} role="list" aria-label="Live offers. Scroll sideways to see more.">{offers.map((offer) => <div role="listitem" key={offer.id}><OfferCard offer={offer}/></div>)}</div>
+          <LoopScroller className="loop-scroller--offers" label="Live offers" arrows gap={18}>{offers.map((offer) => <div role="listitem" key={offer.id}><OfferCard offer={offer}/></div>)}</LoopScroller>
           <div className="section-foot"><Link className="btn btn--glass" href="/offers">See all offers <ArrowRight size={18}/></Link></div>
         </div>
       </section>}
