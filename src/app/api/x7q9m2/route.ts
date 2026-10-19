@@ -76,6 +76,8 @@ const OPS = {
   "N2v6Z9kQ4tH1": { method: "GET", path: "/api/admin/prices" },
   "E8c4R1pW7mL3": { method: "POST", path: "/api/admin/prices" },
   "C5t9W2yM6kD8": { method: "POST", path: "/api/admin/chats" },
+  "L4g8P2nT6vK1": { method: "GET", path: "/api/admin/legal" },
+  "S7r3Q9mB5xD2": { method: "POST", path: "/api/admin/legal" },
   "Y3d7N5qV1mP8": { method: "POST", path: "/api/pay" },
   "H6k2B9tW4xC7": { method: "POST", path: "/api/admin/payments" },
 } as const;

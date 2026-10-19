@@ -2427,3 +2427,12 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .browser__filter i { position: absolute; top: 10px; right: 10px; width: 8px; height: 8px; border-radius: 50%; background: var(--blue); }
 .browser__cats { flex-wrap: wrap; overflow-x: visible; }
 @media (max-width: 560px) { .browser__filter span { display: none; } .browser__filter { padding: 0 14px; } }
+
+.legal-toc li { display: list-item; }
+.legal-toc li::before { display: none; }
+.legal-content li > span { display: block; min-width: 0; }
+.legal-admin__tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.legal-admin__text { width: 100%; min-height: 420px; font: inherit; font-size: .9375rem; line-height: 1.6; padding: 14px; border-radius: 14px; border: 1.5px solid var(--line-2); resize: vertical; }
+.legal-admin__help { margin: 10px 0; }
+.legal-admin__help ul { display: grid; gap: 6px; margin: 8px 0 0 1.1rem; }
+.legal-admin__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }

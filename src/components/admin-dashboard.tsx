@@ -17,6 +17,7 @@ import TeamPanel from "@/components/team-panel";
 import SiteTeamPanel from "@/components/site-team-panel";
 import PaymentsPanel from "@/components/payments-panel";
 import PricesPanel from "@/components/prices-panel";
+import LegalPanel from "@/components/legal-panel";
 import ChatsPanel from "@/components/chats-panel";
 import InboxPanel from "@/components/inbox-panel";
 import SiteContentPanel from "@/components/site-content-panel";
@@ -212,7 +213,7 @@ function RequestQueue() {
   </>;
 }
 
-type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "chats";
+type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "legal" | "chats";
 const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | "admin" | "staff" }[] = [
   { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
   { id: "requests", label: "Requests", icon: ClipboardList, needs: "requests" },
@@ -228,6 +229,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "pan", label: "PAN data", icon: Database, needs: "pan" },
   { id: "wallet", label: "Wallet", icon: WalletCards, needs: "wallet" },
   { id: "prices", label: "Service prices", icon: TicketPercent, needs: "content" },
+  { id: "legal", label: "Legal pages", icon: LayoutTemplate, needs: "content" },
   { id: "payments", label: "Payments", icon: WalletCards, needs: "requests" },
 ];
 
@@ -306,6 +308,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { name
         {active === "contacts" && <ContactsPanel/>}
         {active === "chats" && <ChatsPanel/>}
         {active === "prices" && <PricesPanel/>}
+        {active === "legal" && <LegalPanel/>}
         {active === "payments" && <PaymentsPanel/>}
         {active === "team" && <><TeamPanel meRole={me.role}/><SiteTeamPanel/></>}
         {active === "pan" && <PanImportPanel/>}

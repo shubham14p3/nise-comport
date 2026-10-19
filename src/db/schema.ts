@@ -470,3 +470,11 @@ export const whatsappMessages = pgTable("whatsapp_messages", {
   needsHuman: boolean("needs_human").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("whatsapp_messages_phone_created_idx").on(table.phone, table.createdAt), index("whatsapp_messages_human_idx").on(table.needsHuman, table.createdAt)]);
+
+/** Admin-edited text of the policy pages (terms, privacy, refund-policy). No row = the built-in text is used. */
+export const legalPages = pgTable("legal_pages", {
+  slug: text("slug").primaryKey(),
+  body: text("body").notNull(),
+  updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
