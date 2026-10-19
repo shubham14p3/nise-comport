@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Check, Copy, X } from "lucide-react";
 import { dateLabel } from "@/lib/outreach-core";
+import { secureApi } from "@/lib/secure-api-client";
 import { lp, tr } from "@/lib/tr";
 import { useLocale } from "@/lib/use-locale";
 
@@ -25,12 +26,16 @@ export default function BirthdayGreeting() {
 
   useEffect(() => {
     if (skip(path)) return;
-    try { if (sessionStorage.getItem("nc-bday-checked") === "1") return; } catch { /* storage unavailable: just ask */ }
+    try {
+      if (sessionStorage.getItem("nc-bday-checked") === "1") return;
+      // Not signed in: don't ask again on every page, only every half minute.
+      if (Date.now() - Number(sessionStorage.getItem("nc-bday-anon") ?? 0) < 30_000) return;
+    } catch { /* storage unavailable: just ask */ }
     let live = true;
-    fetch("/api/auth/birthday", { cache: "no-store", credentials: "same-origin" })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data: { signedIn?: boolean; greeting?: Greeting | null } | null) => {
-        if (!live || !data?.signedIn) return;
+    secureApi<{ signedIn?: boolean; greeting?: Greeting | null }>("M5q9B2nT7wR3")
+      .then((data) => {
+        if (!live) return;
+        if (!data?.signedIn) { try { sessionStorage.setItem("nc-bday-anon", String(Date.now())); } catch { /* ignore */ } return; }
         try { sessionStorage.setItem("nc-bday-checked", "1"); } catch { /* ignore */ }
         const found = data.greeting;
         if (!found) return;

@@ -20,6 +20,7 @@ const OPS = {
   "V3p6J0nS8yC1": { method: "POST", path: "/api/auth/password-reset/request" },
   "L8t1B5rX9mQ4": { method: "POST", path: "/api/auth/password-reset/confirm" },
   "C4w7G2hN6kP9": { method: "GET", path: "/api/auth/session" },
+  "M5q9B2nT7wR3": { method: "GET", path: "/api/auth/birthday" },
   "R6y0D3sJ8vM2": { method: "DELETE", path: "/api/auth/session" },
   "T2f9K4pW7cL1": { method: "PATCH", path: "/api/profile" },
   "B7n3Q8xH5rV0": { method: "POST", path: "/api/account/password" },
