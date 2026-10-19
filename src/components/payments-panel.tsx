@@ -2,7 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { secureApi } from "@/lib/secure-api-client";
-import { rupees } from "@/lib/payments-core";
+import { customerWhatsAppLink, rupees } from "@/lib/payments-core";
 
 type Row = { id: string; reference: string; amountPaise: number; feePaise: number; status: string; method: string | null; utr: string | null; note: string | null; requestName: string; customer: string; phone: string | null; createdAt: string; failureReason: string | null; issueNote: string | null; issueRaisedAt: string | null; refundChoice: string | null; refundStatus: string | null; refundDetails: string | null; refundPaise: number | null };
 type Summary = { byMethod: { method: string; count: number; paise: number }[]; totalPaise: number; verifying: number; failed: number; due: number; attention: number };
@@ -57,6 +57,7 @@ export default function PaymentsPanel() {
         <td>{rupees(row.amountPaise)}{row.feePaise > 0 && <small><br/>+ fee {rupees(row.feePaise)}</small>}</td>
         <td>{row.status}{row.method && <small><br/>{row.method}</small>}{row.utr && <small><br/>UTR {row.utr}</small>}{row.failureReason && <small><br/>Failed: {row.failureReason}</small>}{row.issueRaisedAt && <small><br/>Ticket: {row.issueNote || "no note"}</small>}{row.refundStatus && <small><br/>Refund {row.refundStatus}: {row.refundChoice}{row.refundDetails ? ` · ${row.refundDetails}` : ""}{row.refundPaise ? ` · ${rupees(row.refundPaise)}` : ""}</small>}</td>
         <td>{row.refundStatus === "requested" && <><button className="btn btn--primary btn--sm" disabled={Boolean(busy)} onClick={() => { const sc = row.refundChoice === "wallet" ? "" : window.prompt("Service charge to deduct for work already done (₹, blank for none)", "") ?? ""; void act(row.id, { action: "refund", id: row.id, serviceCharge: sc }); }}>Pay refund</button>{" "}</>}{(row.status === "due" || row.status === "verifying" || row.status === "failed") && <>
+          {(() => { const href = customerWhatsAppLink(row.phone, `Hello ${row.customer}, please pay ${rupees(row.amountPaise)} for ${row.requestName} (${row.reference}) here: ${window.location.origin}/pay/${row.reference}`); return href ? <><a className="btn btn--ghost btn--sm" href={href} target="_blank" rel="noopener noreferrer">Send on WhatsApp</a>{" "}</> : null; })()}
           <button className="btn btn--primary btn--sm" disabled={Boolean(busy)} onClick={() => void act(row.id, { action: "markPaid", id: row.id, method: "upi_qr" })}>Confirm UPI</button>{" "}
           <button className="btn btn--ghost btn--sm" disabled={Boolean(busy)} onClick={() => void act(row.id, { action: "markPaid", id: row.id, method: "cash" })}>Cash</button>{" "}
           <button className="btn btn--ghost btn--sm" disabled={Boolean(busy)} onClick={() => void act(row.id, { action: "cancel", id: row.id })}>Cancel</button></>}</td>

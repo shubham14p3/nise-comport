@@ -67,3 +67,10 @@ export function refundBreakdown(opts: { paidPaise: number; method: string | null
   const service = Math.max(0, opts.serviceChargePaise ?? 0);
   return { gatewayPaise: commission, gstPaise: gst, servicePaise: service, bonusPaise: 0, netPaise: Math.max(0, opts.paidPaise - commission - gst - service) };
 }
+
+/** A tap-to-send WhatsApp link to a customer's number (opens WhatsApp with the message ready; staff press send). */
+export function customerWhatsAppLink(phone: string | null | undefined, text: string) {
+  const digits = (phone ?? "").replace(/\D/g, "");
+  const number = digits.length === 10 ? `91${digits}` : digits.length >= 11 ? digits : "";
+  return number ? `https://wa.me/${number}?text=${encodeURIComponent(text)}` : null;
+}

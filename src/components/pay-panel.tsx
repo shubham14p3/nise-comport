@@ -9,7 +9,7 @@ import { rupees } from "@/lib/payments-core";
 type Props = {
   reference: string; status: string; amountPaise: number; feePaise: number; note: string | null; paidVia: string | null;
   upi: string | null; qr: string | null; vpa: string | null; razorpay: boolean; cashfree: boolean; feePercent: number;
-  failureReason: string | null; ticketRaised: boolean; ticketOpen: boolean; refundStatus: string | null; refundChoice: string | null; refundPaise: number | null;
+  helpHref: string; failureReason: string | null; ticketRaised: boolean; ticketOpen: boolean; refundStatus: string | null; refundChoice: string | null; refundPaise: number | null;
   estimates: { choice: "wallet" | "original" | "cash"; net: number }[];
 };
 type Order =
@@ -120,7 +120,17 @@ export default function PayPanel(p: Props) {
       {!p.razorpay && p.cashfree && <button className="btn btn--primary btn--block" type="button" disabled={Boolean(busy)} onClick={() => void payOnline("cashfree")}>{busy === "cashfree" ? "Opening…" : `Pay ${rupees(total)} online`}</button>}
       {p.razorpay && p.cashfree && <button className="btn btn--ghost btn--block" type="button" disabled={Boolean(busy)} onClick={() => void payOnline("cashfree")}>{busy === "cashfree" ? "Opening…" : "Try another online method"}</button>}
     </section>}
-    {!p.upi && !online && <p>Online payment is not switched on yet. Please pay at the desk.</p>}
+    {!online && p.status !== "verifying" && <section>
+      <h2>Pay instantly online</h2>
+      <button className="btn btn--ghost btn--block" type="button" disabled>Coming soon</button>
+      <small>Card and net-banking payment is being set up.</small>
+    </section>}
+    {!p.upi && <section>
+      <h2>Pay with us directly</h2>
+      <p>Online payment is coming soon. For now, message us on WhatsApp and we will send the payment details, or pay at our centre. Your request moves ahead as soon as we confirm the payment.</p>
+      <a className="btn btn--primary btn--block" href={p.helpHref} target="_blank" rel="noopener noreferrer">Message us on WhatsApp</a>
+    </section>}
+    {p.upi && p.status !== "verifying" && <small>Trouble paying? <a href={p.helpHref} target="_blank" rel="noopener noreferrer">Message us on WhatsApp</a>.</small>}
     {error && <p role="alert" className="form-error">{error}</p>}
   </div>;
 }

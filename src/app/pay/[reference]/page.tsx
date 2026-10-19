@@ -8,6 +8,7 @@ import { paymentForReference, paymentOptions, syncCashfreePayment } from "@/lib/
 import { convenienceFee, refundBreakdown, TICKET_AFTER_HOURS, upiLink } from "@/lib/payments-core";
 import { privateMetadata } from "@/lib/seo";
 import { qrSvg } from "@/lib/qr";
+import { whatsappLink } from "@/lib/site";
 
 export const metadata: Metadata = privateMetadata("Pay for your request");
 export const dynamic = "force-dynamic";
@@ -34,7 +35,7 @@ export default async function PayPage({ params }: { params: Promise<{ reference:
       <PayPanel
         reference={payment.reference} status={payment.status} amountPaise={payment.amountPaise} feePaise={fee} note={payment.note}
         paidVia={payment.method} upi={upi} qr={upi ? qrSvg(upi, { size: 220 }) : null} vpa={options.upi?.vpa ?? null}
-        failureReason={payment.failureReason} ticketRaised={Boolean(payment.issueRaisedAt)} ticketOpen={ticketOpen} refundStatus={payment.refundStatus} refundChoice={payment.refundChoice} refundPaise={payment.refundPaise} estimates={estimates}
+        helpHref={whatsappLink(`Hello NISE COMPORT, I want to pay ${payment.reference}. Please share the payment details.`)} failureReason={payment.failureReason} ticketRaised={Boolean(payment.issueRaisedAt)} ticketOpen={ticketOpen} refundStatus={payment.refundStatus} refundChoice={payment.refundChoice} refundPaise={payment.refundPaise} estimates={estimates}
         razorpay={options.razorpay} cashfree={options.cashfree} feePercent={options.feePercent}/>
       <p className="legal-updated">Questions? See <Link href="/refund-policy">refunds</Link> or call us from the <Link href="/contact">contact page</Link>.</p>
     </section>
