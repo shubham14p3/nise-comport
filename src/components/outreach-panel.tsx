@@ -76,6 +76,14 @@ const countdown = (ms: number) => { const total = Math.max(0, Math.ceil(ms / 600
 type RefreshResult = { scanned: number; birthdays: number; vehicles: number; contactsAdded: number; refresh: RefreshStatus };
 
 /** "Refresh the data": reads the saved records again (new imports, new dates of birth). Allowed once in the morning and once in the evening; shows when the next one opens. */
+/** Shown while a list is being fetched: skeleton cards the first time, a small bar when a filter changes. */
+function ListLoader({ label, first }: { label: string; first: boolean }) {
+  return <div className="outreach-loader" role="status" aria-live="polite">
+    <span className="outreach-loader__label"><RefreshCw size={14} className="outreach-loader__icon"/> {label}</span>
+    {first && <div className="outreach-skeletons" aria-hidden="true">{[0, 1, 2].map((index) => <div key={index} className="outreach-skeleton"><i/><b/><span/><span/></div>)}</div>}
+  </div>;
+}
+
 function RefreshData({ status, onDone, onError, onNotice }: { status?: RefreshStatus; onDone: (next: RefreshStatus) => void; onError: (message: string) => void; onNotice: (message: string) => void }) {
   const [busy, setBusy] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -108,6 +116,7 @@ function Birthdays({ config }: { config: Config | null }) {
   const [q, setQ] = useState("");
   const [template, setTemplate] = useState("");
   const [data, setData] = useState<BirthdayList | null>(null);
+  const [doneKey, setDoneKey] = useState("");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [channels, setChannels] = useState<Channel[]>(["email", "whatsapp"]);
   const [busy, setBusy] = useState("");
@@ -116,6 +125,7 @@ function Birthdays({ config }: { config: Config | null }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [copied, setCopied] = useState("");
   const chosen = template || config?.settings.birthday.template || "";
+  const requestKey = JSON.stringify([range, month, q, chosen]);
 
   const load = useCallback(async () => {
     try {
@@ -126,9 +136,10 @@ function Birthdays({ config }: { config: Config | null }) {
   useEffect(() => {
     let active = true;
     secureApi<BirthdayList>("B5dY8rN2cV6w", { view: "birthdays", range, month: month ? String(month) : "", q, template: chosen })
-      .then((result) => { if (active) { setData(result); setError(""); } }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load birthdays."); });
+      .then((result) => { if (active) { setData(result); setDoneKey(JSON.stringify([range, month, q, chosen])); setError(""); } }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load birthdays."); });
     return () => { active = false; };
   }, [range, month, q, chosen]);
+  const loading = doneKey !== requestKey && !error;
 
   const people = useMemo(() => data?.people ?? [], [data]);
   const selected = people.filter((person) => picked.has(person.id));
@@ -192,16 +203,17 @@ function Birthdays({ config }: { config: Config | null }) {
     {error && <div className="alert alert--error" role="alert">{error}</div>}
     {notice && <div className="alert alert--success" role="status">{notice}</div>}
     {people.length > 0 && <label className="check outreach-all"><input type="checkbox" checked={selected.length === people.length} onChange={(event) => setPicked(event.target.checked ? new Set(people.map((person) => person.id)) : new Set())}/> Select all {people.length} shown{data && data.matched > people.length ? ` (of ${data.matched})` : ""}</label>}
-    <div className="contact-list">{people.map((person) => <article key={person.id} className="contact-row outreach-row">
+    {loading && <ListLoader label="Loading birthdays…" first={!data}/>}
+    <div className={`contact-list${loading ? " is-loading" : ""}`} aria-busy={loading}>{people.map((person) => <article key={person.id} className="contact-row outreach-row">
       <input type="checkbox" aria-label={`Select ${person.name}`} checked={picked.has(person.id)} onChange={(event) => setPicked((current) => { const next = new Set(current); if (event.target.checked) next.add(person.id); else next.delete(person.id); return next; })}/>
-      <div>
-        <b>{person.name}</b> <span className={person.daysUntil === 0 ? "status-pill status-pill--done" : "status-pill"}>{person.dateLabel} · {when(person.daysUntil)}</span>
+      <div className="outreach-row__main">
+        <div className="outreach-row__head"><b>{person.name}</b> <span className={person.daysUntil === 0 ? "status-pill status-pill--done" : "status-pill"}>{person.dateLabel} · {when(person.daysUntil)}</span></div>
         <small>{person.phone}{person.email ? ` · ${person.email}` : " · no email"} · {person.locale.toUpperCase()}{person.area ? ` · ${person.area}` : ""}</small>
         <span className="outreach-row__state">WhatsApp {pill(person.consent, "YES", "STOP", "not asked")} Email {pill(person.emailConsent, "OK", "stopped", "not asked")}{person.wishedEmail && <em><Check size={12}/> emailed this year</em>}{person.wishedWhatsApp && <em><Check size={12}/> WhatsApp this year</em>}</span>
       </div>
       <div className="contact-row__actions">
-        {person.consent !== "opted_in" ? <button type="button" className="profile-text-button" disabled={busy === person.id} onClick={() => void consent(person, "whatsapp", "opted_in")}>WhatsApp YES</button> : <button type="button" className="profile-text-button" disabled={busy === person.id} onClick={() => void consent(person, "whatsapp", "unknown")}>Undo YES</button>}
-        {person.email && (person.emailConsent !== "opted_in" ? <button type="button" className="profile-text-button" disabled={busy === person.id} onClick={() => void consent(person, "email", "opted_in")}>Email OK</button> : <button type="button" className="profile-text-button" disabled={busy === person.id} onClick={() => void consent(person, "email", "unknown")}>Undo OK</button>)}
+        {person.consent !== "opted_in" ? <button type="button" className="profile-text-button" disabled={busy === person.id} onClick={() => void consent(person, "whatsapp", "opted_in")}><Check size={13}/> WhatsApp YES</button> : <button type="button" className="profile-text-button" disabled={busy === person.id} onClick={() => void consent(person, "whatsapp", "unknown")}>Undo YES</button>}
+        {person.email && (person.emailConsent !== "opted_in" ? <button type="button" className="profile-text-button" disabled={busy === person.id} onClick={() => void consent(person, "email", "opted_in")}><Check size={13}/> Email OK</button> : <button type="button" className="profile-text-button" disabled={busy === person.id} onClick={() => void consent(person, "email", "unknown")}>Undo OK</button>)}
         <a className="profile-text-button" href={`tel:${person.phone}`}><Phone size={13}/> Call</a>
         {person.email && person.emailConsent !== "opted_out" && <a className="profile-text-button" href={`mailto:${person.email}`}><Mail size={13}/> Email</a>}
         {person.consent !== "opted_out" && <a className="profile-text-button" href={waLink(person.phone)} target="_blank" rel="noreferrer"><MessageCircle size={13}/> Chat</a>}
@@ -212,7 +224,7 @@ function Birthdays({ config }: { config: Config | null }) {
       </div>
       {editing === person.id && <ContactEdit person={person} onDone={() => { setEditing(null); void load(); }} onError={setError}/>}
     </article>)}</div>
-    {data && !people.length && <p className="admin-empty">{data.totals.all ? "No birthdays in this view." : "No birthdays saved yet. Press “Refresh the data” to read them from the Excel files you imported, or add a date of birth with Edit on a contact."}</p>}
+    {data && !loading && !people.length && <p className="admin-empty">{data.totals.all ? "No birthdays in this view." : "No birthdays saved yet. Press “Refresh the data” to read them from the Excel files you imported, or add a date of birth with Edit on a contact."}</p>}
     <p className="outreach-note"><ShieldCheck size={14}/> Instagram does not allow a business to message people first, so use <b>Card</b> + <b>Instagram caption</b> to post the wish on your page or story and tag them.</p>
   </div>;
 }
@@ -244,12 +256,14 @@ function Renewals({ config }: { config: Config | null }) {
   const [q, setQ] = useState("");
   const [template, setTemplate] = useState("");
   const [data, setData] = useState<RenewalList | null>(null);
+  const [doneKey, setDoneKey] = useState("");
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [channels, setChannels] = useState<Channel[]>(["email", "whatsapp"]);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const chosen = template || config?.settings.renewal.template || "";
+  const requestKey = JSON.stringify([days, overdue, vehicle, q, chosen]);
 
   const load = useCallback(async () => {
     try { setData(await secureApi<RenewalList>("B5dY8rN2cV6w", { view: "renewals", days: String(days), overdue, vehicle, q, template: chosen })); setError(""); }
@@ -258,9 +272,10 @@ function Renewals({ config }: { config: Config | null }) {
   useEffect(() => {
     let active = true;
     secureApi<RenewalList>("B5dY8rN2cV6w", { view: "renewals", days: String(days), overdue, vehicle, q, template: chosen })
-      .then((result) => { if (active) { setData(result); setError(""); } }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load renewals."); });
+      .then((result) => { if (active) { setData(result); setDoneKey(JSON.stringify([days, overdue, vehicle, q, chosen])); setError(""); } }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load renewals."); });
     return () => { active = false; };
   }, [days, overdue, vehicle, q, chosen]);
+  const loading = doneKey !== requestKey && !error;
 
   const people = useMemo(() => data?.people ?? [], [data]);
   const selected = people.filter((person) => picked.has(person.key));
@@ -300,10 +315,11 @@ function Renewals({ config }: { config: Config | null }) {
     {error && <div className="alert alert--error" role="alert">{error}</div>}
     {notice && <div className="alert alert--success" role="status">{notice}</div>}
     {people.length > 0 && <label className="check outreach-all"><input type="checkbox" checked={selected.length === people.length} onChange={(event) => setPicked(event.target.checked ? new Set(people.map((person) => person.key)) : new Set())}/> Select all {people.length} shown{data && data.matched > people.length ? ` (of ${data.matched})` : ""}</label>}
-    <div className="contact-list">{people.map((person) => <article key={person.key} className="contact-row outreach-row">
+    {loading && <ListLoader label="Loading insurance renewals…" first={!data}/>}
+    <div className={`contact-list${loading ? " is-loading" : ""}`} aria-busy={loading}>{people.map((person) => <article key={person.key} className="contact-row outreach-row">
       <input type="checkbox" aria-label={`Select ${person.name}`} checked={picked.has(person.key)} onChange={(event) => setPicked((current) => { const next = new Set(current); if (event.target.checked) next.add(person.key); else next.delete(person.key); return next; })}/>
-      <div>
-        <b>{person.name}</b> <span className={person.daysLeft < 0 ? "status-pill status-pill--warn" : person.daysLeft <= 3 ? "status-pill status-pill--warn" : "status-pill"}>{person.vehicle === "bike" ? "Bike" : person.vehicle === "car" ? "Car" : "Vehicle"} · {person.estimated ? "due about" : "ends"} {day(person.renewalOn)} ({when(person.daysLeft)})</span>
+      <div className="outreach-row__main">
+        <div className="outreach-row__head"><b>{person.name}</b> <span className={person.daysLeft < 0 ? "status-pill status-pill--warn" : person.daysLeft <= 3 ? "status-pill status-pill--warn" : "status-pill"}>{person.vehicle === "bike" ? "Bike" : person.vehicle === "car" ? "Car" : "Vehicle"} · {person.estimated ? "due about" : "ends"} {day(person.renewalOn)} ({when(person.daysLeft)})</span></div>
         <small>{person.phone}{person.email ? ` · ${person.email}` : " · no email"} · {person.locale.toUpperCase()}{person.contactId ? "" : " · not in contacts yet"}</small>
         <span className="outreach-row__state">WhatsApp {pill(person.consent, "YES", "STOP", "ok")} Email {pill(person.emailConsent, "OK", "stopped", "ok")}{person.sentEmail && <em><Check size={12}/> emailed</em>}{person.sentWhatsApp && <em><Check size={12}/> WhatsApp queued</em>}</span>
       </div>
