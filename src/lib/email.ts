@@ -132,6 +132,8 @@ function devConsoleMail() {
 }
 
 export async function sendMail(mail: Mail) {
+  // Accounts made with a mobile number have a placeholder address (.invalid) until a real email is added: never mail it.
+  if (mail.to.trim().toLowerCase().endsWith(".invalid")) return;
   const { text, html } = render(mail);
   if (devConsoleMail()) {
     console.info(`\n──── [dev mail] to ${mail.to} ────\nSubject: ${mail.subject}\n${text}\n──────────────────────────────\n`);

@@ -2,6 +2,8 @@ import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 import { and, desc, eq, gt, isNull, ne, sql } from "drizzle-orm";
 import { phoneOtps, users } from "@/db/schema";
 import { createSession } from "@/lib/auth";
+import { approveClaimsForVerifiedPhone } from "@/lib/claims";
+import { grantVerifyReward } from "@/lib/verify-rewards";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { clearRate, enforceRate, hitRate, identity, RATE_RULES } from "@/lib/rate-limit";
@@ -68,6 +70,9 @@ export async function confirmPhoneVerification(userId: string, phoneInput: strin
   const [taken] = await db.select({ id: users.id }).from(users).where(and(eq(users.phone, phone), sql`${users.phoneVerifiedAt} is not null`, ne(users.id, userId), isNull(users.deletedAt))).limit(1);
   if (taken) throw new PublicError("This number is already verified on another account.", 409, { code: "phone_taken" });
   await db.update(users).set({ phone, phoneVerifiedAt: new Date(), updatedAt: new Date() }).where(eq(users.id, userId));
+  // A proven number earns the one-time ₹20 credit and opens (or approves) the claim on any records under it.
+  await grantVerifyReward(userId, "phone").catch((error) => console.error("[rewards] phone reward failed", error));
+  await approveClaimsForVerifiedPhone(userId, phone).catch((error) => console.error("[claims] approve failed", error));
   return { phone };
 }
 

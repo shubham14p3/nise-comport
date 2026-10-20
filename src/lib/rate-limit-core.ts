@@ -39,6 +39,12 @@ export const RATE_RULES = {
   smsSendPerPhoneDay: { name: "sms-send-phone", limit: 6, windowSeconds: 86400 },
   smsSendPerIpHour: { name: "sms-send-ip", limit: 30, windowSeconds: 3600 },
   smsVerifyPerIpHour: { name: "sms-verify-ip", limit: 100, windowSeconds: 3600 },
+  /** Mobile PIN sign-in: five wrong PINs for one number pause it for 15 minutes (the same for numbers with no account). */
+  pinFailuresPerPhone15m: { name: "pin-fail-phone", limit: 5, windowSeconds: 900 },
+  mobileSignupPerIpHour: { name: "mobile-signup-ip", limit: 12, windowSeconds: 3600 },
+  claimCodeAttemptsPerUserHour: { name: "claim-code", limit: 12, windowSeconds: 3600 },
+  recordFlagsPerUserDay: { name: "record-flag", limit: 12, windowSeconds: 86400 },
+  ownRecordViewsPerUserHour: { name: "own-records", limit: 60, windowSeconds: 3600 },
   accountChangePerUserHour: { name: "account-change", limit: 10, windowSeconds: 3600 },
   requestsPerUserHour: { name: "service-request", limit: 10, windowSeconds: 3600 },
   requestsPerUserDay: { name: "service-request", limit: 30, windowSeconds: 86400 },

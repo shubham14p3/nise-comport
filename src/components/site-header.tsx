@@ -1,5 +1,6 @@
 "use client";
 
+import VerifyPrompt from "@/components/verify-prompt";
 import Link from "next/link";
 import BrandWordmark from "@/components/brand-wordmark";
 import LanguageMenu from "@/components/language-menu";
@@ -124,6 +125,7 @@ export default function SiteHeader() {
   const firstName = account?.name.trim().split(/\s+/)[0] ?? "";
 
   return <>
+    <VerifyPrompt signedIn={user?.role === "customer"}/>
     <OfferTicker locale={locale}/>
     <header className="site-header">
       <div className="container nav-wrap">

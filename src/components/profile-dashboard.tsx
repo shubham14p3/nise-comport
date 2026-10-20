@@ -11,11 +11,12 @@ import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
 import CancelRequestButton from "@/components/cancel-request-button";
 import VoucherBoard from "@/components/voucher-board";
+import MyRecordsPanel from "@/components/my-records-panel";
 import Link from "next/link";
 import { MAIL_PATH } from "@/lib/mail-route";
 import { FormEvent, useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import {
-  ArrowRight, Check, CircleHelp, FileText, Gift, History, LayoutDashboard,
+  ArrowRight, Check, CircleHelp, FileText, FolderOpen, Gift, History, LayoutDashboard,
   MapPin, Plus, Printer, ShieldCheck, UserRound, WalletCards, Mail } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi } from "@/lib/secure-api-client";
@@ -52,11 +53,12 @@ type RequestDetail = {
   files: { name: string; createdAt: string }[];
   events: { toStatus: string; label: string; createdAt: string }[];
 };
-type Section = "overview" | "requests" | "history" | "prints" | "wallet" | "vouchers" | "addresses" | "profile" | "security" | "help";
+type Section = "overview" | "records" | "requests" | "history" | "prints" | "wallet" | "vouchers" | "addresses" | "profile" | "security" | "help";
 
 const navigation: { id: Section; label: string; icon: typeof UserRound }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "requests", label: "My requests", icon: FileText },
+  { id: "records", label: "My records", icon: FolderOpen },
   { id: "history", label: "Request history", icon: History },
   { id: "prints", label: "Print orders", icon: Printer },
   { id: "wallet", label: "Wallet", icon: WalletCards },
@@ -200,6 +202,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
 
   const content = (() => {
     switch (section) {
+      case "records": return <MyRecordsPanel/>;
       case "overview": return <>
         <div className="metric-grid">
           <Metric icon={<FileText size={20}/>} number={activeRequests.length} label="Open requests" tone="blue" onClick={() => openSection("requests")}/>
