@@ -102,3 +102,8 @@ test("rows with empty cells (holes, as Excel readers return them) don't crash th
   assert.equal(result.records.length, 1);
   assert.equal(result.records[0].name, "Ravi Kumar");
 });
+
+test("TP premium picks the vehicle with the closest standard premium", async () => {
+  const { nearestTpVehicle } = await import("../src/lib/record-import.ts");
+  for (const [amount, vehicle] of [[538, "bike"], [714, "bike"], [1000, "bike"], [1366, "bike"], [1400, "bike"], [1700, "bike"], [2094, "car"], [2500, "bike"], [2804, "bike"], [3100, "bike"], [3200, "car"], [3416, "car"], [7897, "car"]] as const) assert.equal(nearestTpVehicle(amount), vehicle, String(amount));
+});

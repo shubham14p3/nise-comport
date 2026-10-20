@@ -167,12 +167,20 @@ const VEHICLE_LABEL = /vehicle|veh\b|type|class|make|model|reg|policy\s*for|cove
  */
 const TP_LABEL = /^\s*tp\b|third\s*party/i;
 const TP_NOT = /gst|total|tot\b|\+|incl|with/i;
+/** One-year third-party premiums fixed by the regulator; a row is the vehicle whose premium is closest to its TP amount. */
+export const TP_PREMIUMS: { amount: number; vehicle: Vehicle }[] = [
+  { amount: 538, vehicle: "bike" }, { amount: 714, vehicle: "bike" }, { amount: 1366, vehicle: "bike" }, { amount: 2804, vehicle: "bike" },
+  { amount: 2094, vehicle: "car" }, { amount: 3416, vehicle: "car" },
+];
+export function nearestTpVehicle(amount: number): Vehicle {
+  return TP_PREMIUMS.reduce((best, item) => Math.abs(item.amount - amount) < Math.abs(best.amount - amount) ? item : best).vehicle;
+}
 export function vehicleFromTp(fields: Record<string, string>): Vehicle | null {
   for (const [label, value] of Object.entries(fields)) {
     if (!TP_LABEL.test(label) || TP_NOT.test(label)) continue;
     const amount = Number(value.replace(/[^\d.]/g, ""));
     if (!Number.isFinite(amount) || amount < 300 || amount > 12000) continue; // 0 / blank / a running total
-    return amount < 1000 ? "bike" : "car";
+    return nearestTpVehicle(amount);
   }
   return null;
 }
