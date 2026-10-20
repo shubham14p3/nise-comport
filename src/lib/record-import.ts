@@ -182,6 +182,9 @@ export function vehicleFromTp(fields: Record<string, string>): Vehicle | null {
     if (!TP_LABEL.test(label) || TP_NOT.test(label)) continue;
     const amount = Number(value.replace(/[^\d.]/g, ""));
     if (!Number.isFinite(amount) || amount < 300 || amount > 12000) continue; // 0 / blank / a running total
+    // Below ₹1,000 is a bike. ₹1,000–1,400 is left unlabelled for the owner to set; above that the closest standard premium decides.
+    if (amount < 1000) return "bike";
+    if (amount <= 1400) continue;
     return nearestTpVehicle(amount);
   }
   return null;

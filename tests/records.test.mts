@@ -121,3 +121,10 @@ test("vehicle from model name and cc, never from the insurer", async () => {
   assert.equal(vehicleFromCc({ CC: "550" }), null);
   assert.equal(vehicleFrom({ CC: "796", "TP": "538" }), "car");
 });
+
+test("TP below 1,000 is a bike and 1,000 to 1,400 is left open", async () => {
+  const { vehicleFromTp } = await import("../src/lib/record-import.ts");
+  for (const amount of ["538", "714", "999"]) assert.equal(vehicleFromTp({ TP: amount }), "bike", amount);
+  for (const amount of ["1000", "1200", "1366", "1400"]) assert.equal(vehicleFromTp({ TP: amount }), null, amount);
+  assert.equal(vehicleFromTp({ TP: "2094" }), "car"); assert.equal(vehicleFromTp({ TP: "2804" }), "bike");
+});
