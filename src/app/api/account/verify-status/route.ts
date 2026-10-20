@@ -8,7 +8,7 @@ import { PublicError } from "@/lib/errors";
 import { apiError, readJson } from "@/lib/http";
 import { isPlaceholderEmail, missingDetails, VERIFY_REWARD_RUPEES } from "@/lib/mobile-login-core";
 import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
-import { smsConfigured } from "@/lib/sms";
+import { otpChannels } from "@/lib/sms";
 import { cleanName, normalizePhone } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +19,7 @@ export async function GET() {
     const user = await requireUser();
     const earned = await db.select({ reference: walletEntries.reference }).from(walletEntries).where(sql`${walletEntries.userId} = ${user.id} and ${walletEntries.reference} like 'verify:%'`);
     return NextResponse.json({
-      missing: missingDetails(user), smsEnabled: smsConfigured() !== null, rewards: VERIFY_REWARD_RUPEES,
+      missing: missingDetails(user), smsEnabled: otpChannels().length > 0, whatsappEnabled: otpChannels().includes("whatsapp"), rewards: VERIFY_REWARD_RUPEES,
       earned: earned.map((row) => String(row.reference).split(":")[1]),
       user: { name: user.name, email: isPlaceholderEmail(user.email) ? "" : user.email, phone: user.phone ?? "", whatsapp: user.whatsapp ?? "" },
     }, { headers: { "cache-control": "private, no-store" } });

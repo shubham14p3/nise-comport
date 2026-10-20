@@ -2991,3 +2991,4 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .verify-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; padding: 12px; border: 1px solid var(--line); border-radius: 14px; }
 .verify-row .field { margin: 0; min-width: 0; }
 @media (max-width: 480px) { .verify-row { grid-template-columns: 1fr; } .verify-row .btn { justify-self: stretch; } }
+.verify-row__send { display: flex; flex-wrap: wrap; gap: 8px; }

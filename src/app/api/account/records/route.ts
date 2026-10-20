@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { flagRecord, myRecords, submitClaimCode } from "@/lib/claims";
 import { apiError, readJson } from "@/lib/http";
-import { smsConfigured } from "@/lib/sms";
+import { otpChannels } from "@/lib/sms";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const user = await requireUser();
-    return NextResponse.json({ ...(await myRecords(user)), smsEnabled: smsConfigured() !== null }, { headers: { "cache-control": "private, no-store" } });
+    return NextResponse.json({ ...(await myRecords(user)), smsEnabled: otpChannels().length > 0, whatsappEnabled: otpChannels().includes("whatsapp") }, { headers: { "cache-control": "private, no-store" } });
   } catch (error) { return apiError(error); }
 }
 

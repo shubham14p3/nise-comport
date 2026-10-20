@@ -36,7 +36,7 @@ async function post(operation: string, body: unknown): Promise<{ ok: boolean; st
 }
 
 /** Sign in / sign up with email verification. Interface text follows the chosen language. */
-export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = false }: { mode: Mode; demoEnabled?: boolean; smsEnabled?: boolean }) {
+export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = false, whatsappEnabled = false }: { mode: Mode; demoEnabled?: boolean; smsEnabled?: boolean; whatsappEnabled?: boolean }) {
   const router = useRouter();
   const locale = useLocale();
   const t = dict(locale).auth;
@@ -107,10 +107,10 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
     } finally { setBusy(false); }
   }
 
-  async function requestSmsCode() {
+  async function requestSmsCode(channel?: "sms" | "whatsapp") {
     setBusy(true); setError(""); setSuccess(""); setFieldErrors({});
     try {
-      const { ok, result } = await post("P3s7K1mW8xQ4", { action: "send", phone: email, website });
+      const { ok, result } = await post("P3s7K1mW8xQ4", { action: "send", phone: email, website, ...(channel ? { channel } : {}) });
       if (!ok) { showFailure(result, t.failSend); return; }
       setViaSms(true); setStage("otp"); setResendIn(result.resendAfter ?? 60); setSuccess(result.message ?? "");
     } finally { setBusy(false); }
@@ -190,7 +190,7 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
       <section className="auth__card" aria-labelledby="auth-heading">
         <div className="auth__lang"><span><Languages size={17}/>{t.language}</span><LanguageMenu locale={locale} label={t.language} inline/></div>
         <h1 id="auth-heading">{heading}</h1>
-        {stage !== "welcome" && <p className="auth__sub">{stage === "otp" ? <>{viaSms ? "We sent a 6-digit code by SMS to" : t.otpSub} <b>{email}</b>.{viaSms ? "" : ` ${t.otpSpam}`}</> : stage === "profile" ? x.finishSub : method === "mobile" ? (mode === "signup" ? "Start with your mobile number. We make you a 6-digit PIN." : "Enter your mobile number and 6-digit PIN.") : mode === "signup" ? x.signupSub : x.signinSub}</p>}
+        {stage !== "welcome" && <p className="auth__sub">{stage === "otp" ? <>{viaSms ? "We sent a 6-digit code to" : t.otpSub} <b>{email}</b>.{viaSms ? "" : ` ${t.otpSpam}`}</> : stage === "profile" ? x.finishSub : method === "mobile" ? (mode === "signup" ? "Start with your mobile number. We make you a 6-digit PIN." : "Enter your mobile number and 6-digit PIN.") : mode === "signup" ? x.signupSub : x.signinSub}</p>}
         {mode === "signup" && (stage === "details" || stage === "profile") && <p className="gift-strip"><Gift size={18}/><span>{p.signupGift}</span><b>₹50</b></p>}
 
         {mode === "signin" && demoEnabled && stage === "details" && <div className="demo-card"><strong>Local preview login</strong><span>Email: <code>demo@nisecomport.test</code></span><span>Password: <code>LocalDemo#2026</code></span><button type="button" className="btn btn--ghost btn--sm" onClick={() => { setEmail("demo@nisecomport.test"); setPassword("LocalDemo#2026"); }}>Fill demo details</button><small>Preview only: this account is temporary and does not use the database or email.</small></div>}
@@ -221,7 +221,7 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
           <div className="hp-field" aria-hidden="true"><label>Website<input tabIndex={-1} autoComplete="off" value={website} onChange={e => setWebsite(e.target.value)}/></label></div>
           {error && <div className="alert alert--error" role="alert">{error}</div>}{success && <div className="alert alert--success" role="status">{success}</div>}
           <button className="btn btn--primary btn--lg btn--block" disabled={busy}>{busy ? t.wait : mode === "signup" ? x.sendCode : t.signin}<ArrowRight size={18}/></button>
-          {mode === "signin" && <div className="auth__links">{isMobileInput && smsEnabled ? <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSmsCode()}>{x.smsCode}</button> : <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSignInCode()}>{t.codeSignin}</button>}<Link className="link-btn" href="/forgot-password" onClick={rememberEmailForReset}>{t.forgot}</Link></div>}
+          {mode === "signin" && <div className="auth__links">{isMobileInput && smsEnabled ? <><button type="button" className="link-btn" disabled={busy} onClick={() => void requestSmsCode("sms")}>{x.smsCode}</button>{whatsappEnabled && <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSmsCode("whatsapp")}>Code on WhatsApp</button>}</> : <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSignInCode()}>{t.codeSignin}</button>}<Link className="link-btn" href="/forgot-password" onClick={rememberEmailForReset}>{t.forgot}</Link></div>}
         </form> : <form onSubmit={verify} className="auth__form" noValidate>
           <label className="field"><span className="field__label">{t.codeLabel}</span><input inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6}" maxLength={6} value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="••••••" className="otp-input" aria-invalid={Boolean(fieldErrors.code)} autoFocus/></label>
           {DEV && <p className="alert alert--dev"><Terminal size={18}/>{t.devHint}</p>}

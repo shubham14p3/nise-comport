@@ -9,7 +9,7 @@ import { isUniqueViolation, PublicError, RateLimitError, humanDuration } from "@
 import { clearRate, enforceRate, hitRate, identity, peekRate, RATE_RULES } from "@/lib/rate-limit";
 import { secondsUntilWindowEnds } from "@/lib/rate-limit-core";
 import { cleanName, isSixDigitCode, looksLikeEmail, normalizeEmail, normalizePhone, passwordProblem } from "@/lib/validation";
-import { smsConfigured } from "@/lib/sms";
+import { otpChannels } from "@/lib/sms";
 import { isPlaceholderEmail } from "@/lib/mobile-login-core";
 import { grantVerifyReward } from "@/lib/verify-rewards";
 import { hasPermission, type Permission } from "@/lib/permissions";
@@ -223,7 +223,7 @@ async function resolveLoginEmail(input: string) {
   const phone = normalizePhone(input);
   if (!phone) return normalizeEmail(input);
   // Once SMS codes are switched on, only numbers proven with a code can be used to sign in.
-  const proven = smsConfigured() !== null ? sql`${users.phoneVerifiedAt} is not null` : undefined;
+  const proven = otpChannels().length > 0 ? sql`${users.phoneVerifiedAt} is not null` : undefined;
   const rows = await db.select({ email: users.email }).from(users).where(and(eq(users.phone, phone), isNull(users.deletedAt), proven)).limit(2);
   return rows.length === 1 ? rows[0].email : `phone-${phone.replace(/\D/g, "")}@unmatched.invalid`;
 }

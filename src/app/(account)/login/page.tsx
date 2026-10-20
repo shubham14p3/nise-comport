@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import AuthPanel from "@/components/auth-panel";
 import { getCurrentUser, isDemoAuthEnabled } from "@/lib/auth";
-import { smsConfigured } from "@/lib/sms";
+import { otpChannels } from "@/lib/sms";
 import { privateMetadata } from "@/lib/seo";
 import { isStaffRole, STAFF_HOME } from "@/lib/staff-routes";
 
@@ -11,5 +11,5 @@ export const metadata = privateMetadata("Sign in", "Sign in to your NISE COMPORT
 export default async function LoginPage() {
   const user = await getCurrentUser().catch(() => null);
   if (user) redirect(isStaffRole(user.role) ? STAFF_HOME : "/profile");
-  return <AuthPanel mode="signin" demoEnabled={isDemoAuthEnabled()} smsEnabled={smsConfigured() !== null}/>;
+  return <AuthPanel mode="signin" demoEnabled={isDemoAuthEnabled()} smsEnabled={otpChannels().length > 0} whatsappEnabled={otpChannels().includes("whatsapp")}/>;
 }

@@ -10,10 +10,10 @@
  *   Fast2SMS: FAST2SMS_API_KEY, FAST2SMS_WHATSAPP_MESSAGE_ID
  */
 import { PublicError } from "@/lib/errors";
-import { env, otpChannels, smsConfigured, whatsappConfigured } from "@/lib/sms-core";
+import { env, orderChannels, otpChannels, smsConfigured, whatsappConfigured, type OtpChannel } from "@/lib/sms-core";
 
-export { otpChannels, smsConfigured, whatsappConfigured };
-export type { OtpChannel, SmsProvider } from "@/lib/sms-core";
+export { orderChannels, otpChannels, smsConfigured, whatsappConfigured };
+export type { OtpChannel, SmsProvider, WhatsappProvider } from "@/lib/sms-core";
 
 
 /** "+919876543210" → "9876543210". Indian mobile numbers only. */
@@ -67,6 +67,17 @@ async function whatsappViaMsg91(mobile: string, code: string) {
   if (!response.ok || body.hasError || (body.status && body.status !== "success")) throw new Error(`MSG91 WhatsApp: ${JSON.stringify(body.errors ?? body.status ?? response.status)}`);
 }
 
+/** Meta WhatsApp Cloud API: an approved AUTHENTICATION template; the code goes in the body and the copy-code button. */
+async function whatsappViaMeta(mobile: string, code: string) {
+  const components: unknown[] = [{ type: "body", parameters: [{ type: "text", text: code }] }];
+  if (env("META_WA_BUTTON") !== "off") components.push({ type: "button", sub_type: "url", index: "0", parameters: [{ type: "text", text: code }] });
+  const payload = { messaging_product: "whatsapp", to: `91${mobile}`, type: "template", template: { name: env("META_WA_TEMPLATE"), language: { code: env("META_WA_LANG") ?? "en" }, components } };
+  const version = env("META_WA_API_VERSION") ?? "v21.0";
+  const response = await post(`https://graph.facebook.com/${version}/${env("META_WA_PHONE_ID")}/messages`, { method: "POST", headers: { authorization: `Bearer ${env("META_WA_TOKEN")}`, "content-type": "application/json" }, body: JSON.stringify(payload) });
+  const body = await response.json().catch(() => ({})) as { messages?: unknown[]; error?: { message?: string } };
+  if (!response.ok || !body.messages?.length) throw new Error(`Meta WhatsApp: ${body.error?.message ?? response.status}`);
+}
+
 async function whatsappViaFast2sms(mobile: string, code: string) {
   const url = new URL("https://www.fast2sms.com/dev/whatsapp");
   url.searchParams.set("message_id", env("FAST2SMS_WHATSAPP_MESSAGE_ID")!);
@@ -78,19 +89,19 @@ async function whatsappViaFast2sms(mobile: string, code: string) {
 }
 
 /** Sends the code. In local development with no provider set, the code is printed to the console instead. */
-export async function sendOtpSms(e164: string, code: string) {
+export async function sendOtpSms(e164: string, code: string, preferred?: string | null): Promise<OtpChannel | null> {
   const mobile = indianMobile(e164);
   if (!mobile) throw new PublicError("SMS codes can be sent to Indian mobile numbers only.", 400, { fields: { phone: "Enter an Indian mobile number, e.g. 98765 43210." } });
-  const channels = otpChannels();
+  const channels = orderChannels(preferred);
   if (!channels.length) {
-    if (process.env.NODE_ENV !== "production") { console.warn(`[sms] DEV ONLY: no SMS/WhatsApp provider set. Code for ${e164} is ${code}`); return; }
+    if (process.env.NODE_ENV !== "production") { console.warn(`[sms] DEV ONLY: no SMS/WhatsApp provider set. Code for ${e164} is ${code}`); return null; }
     throw new PublicError("SMS codes are not switched on yet. Please use your email.", 503, { code: "sms_not_configured" });
   }
   for (const channel of channels) {
     try {
-      if (channel === "whatsapp") await (whatsappConfigured() === "msg91" ? whatsappViaMsg91(mobile, code) : whatsappViaFast2sms(mobile, code));
+      if (channel === "whatsapp") { const via = whatsappConfigured(); await (via === "meta" ? whatsappViaMeta(mobile, code) : via === "msg91" ? whatsappViaMsg91(mobile, code) : whatsappViaFast2sms(mobile, code)); }
       else await (smsConfigured() === "msg91" ? viaMsg91(mobile, code) : viaFast2sms(mobile, code));
-      return;
+      return channel;
     } catch (error) { console.error(`[otp] ${channel} send failed`, error instanceof Error ? error.message : error); }
   }
   throw new PublicError("We couldn’t send the code right now. Please try again in a few minutes, or use your email.", 503, { code: "sms_failed" });

@@ -1,4 +1,4 @@
-import { smsConfigured } from "@/lib/sms";
+import { otpChannels } from "@/lib/sms";
 import { NextResponse } from "next/server";
 import { desc, eq } from "drizzle-orm";
 import { requireUser, activeSessionCount, openWorkCount } from "@/lib/auth";
@@ -26,7 +26,7 @@ export async function GET() {
     ]);
     return NextResponse.json({
       user: {
-        name: user.name, email: isPlaceholderEmail(user.email) ? "" : user.email, phone: user.phone, whatsapp: user.whatsapp ?? null, emailVerified: Boolean(user.emailVerifiedAt), phoneVerified: Boolean(user.phone && user.phoneVerifiedAt), smsEnabled: smsConfigured() !== null,
+        name: user.name, email: isPlaceholderEmail(user.email) ? "" : user.email, phone: user.phone, whatsapp: user.whatsapp ?? null, emailVerified: Boolean(user.emailVerifiedAt), phoneVerified: Boolean(user.phone && user.phoneVerifiedAt), smsEnabled: otpChannels().length > 0, whatsappEnabled: otpChannels().includes("whatsapp"),
         city: user.city ?? "", state: user.state ?? "", postalCode: user.postalCode ?? "", profileSummary: user.profileSummary ?? "",
         preferredContact: user.preferredContact === "phone" || user.preferredContact === "whatsapp" ? user.preferredContact : "email",
         updatedAt: user.updatedAt.toISOString(),
