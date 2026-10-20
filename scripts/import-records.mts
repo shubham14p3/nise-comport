@@ -49,7 +49,9 @@ try {
   const { rows: sample } = await pool.query("select payload_enc from customer_records limit 1");
   if (sample[0]) { try { open(sample[0].payload_enc); } catch { console.error("The encryption key in .env cannot open the records already in the database. Fix RECORDS_ENCRYPTION_KEY first (see npm run records:scan), then run this again."); process.exit(1); } }
 
-  const totals = { records: 0, imported: 0, duplicates: 0, contactsAdded: 0 };
+  // 1) Read every file and sheet (fast, nothing is written yet).
+  type Parsed = { fileName: string; parsed: ReturnType<typeof parseWorkbook> };
+  const all: Parsed[] = [];
   for (const path of files) {
     if (!existsSync(path)) { console.error(`\nNot found: ${path}`); continue; }
     const fileName = basename(path).replace(/\.(xlsx|xlsm)$/i, "");
@@ -67,64 +69,102 @@ try {
     });
     const parsed = parseWorkbook(fileName, sheets);
     for (const s of parsed.sheets) console.log(`  [${s.sheet}] ${s.service ?? "skipped"}: ${s.records} saved, ${s.skipped} skipped${s.reason ? ` (${s.reason})` : ""}${s.droppedColumns?.length ? ` · dropped columns: ${s.droppedColumns.join(", ")}` : ""}`);
-    totals.records += parsed.records.length;
-    if (!apply) continue;
+    all.push({ fileName, parsed });
+  }
+  const grand = all.reduce((total, item) => total + item.parsed.records.length, 0);
+  if (!apply) { console.log(`\nDry run: ${grand} records would be read. Nothing was saved. Add --apply to save them.`); process.exit(0); }
 
+  // 2) Save, in batches, with a live percentage.
+  console.log(`\nSaving ${grand.toLocaleString("en-IN")} records…`);
+  const started = Date.now();
+  let done = 0;
+  const progress = (label: string) => {
+    const percent = grand ? Math.floor((done / grand) * 100) : 100;
+    const seconds = (Date.now() - started) / 1000;
+    const left = done > 0 ? Math.round((seconds / done) * (grand - done)) : 0;
+    process.stdout.write(`\r  ${String(percent).padStart(3)}%  ${done.toLocaleString("en-IN")} / ${grand.toLocaleString("en-IN")}  ${label.slice(0, 28).padEnd(28)} ~${Math.floor(left / 60)}m ${left % 60}s left   `);
+  };
+  const totals = { imported: 0, duplicates: 0, contactsAdded: 0 };
+  const COLUMNS = ["import_id", "service", "source", "name", "mobile_hash", "mobile_enc", "mobile_last4", "pan_hash", "aadhaar_hash", "phone_hashes", "email_hash", "contact_enc", "record_date", "renewal_on", "birth_month", "birth_day", "vehicle", "payload_enc", "row_hash"];
+  for (const { fileName, parsed } of all) {
+    if (!parsed.records.length) continue;
     const { rows: [batch] } = await pool.query("insert into record_imports (file_name, sheets) values ($1, $2::jsonb) returning id", [fileName.slice(0, 200), JSON.stringify(parsed.sheets)]);
     let imported = 0;
     const people = new Map<string, Person>();
-    for (const record of parsed.records) {
-      const phoneHashes = [...new Set([record.mobile, record.whatsapp, ...record.altMobiles].filter((value): value is string => Boolean(value)))].map((value) => blindIndex("mobile", value));
-      const contactEnc = record.whatsapp || record.altMobiles.length || record.email || record.address ? seal({ whatsapp: record.whatsapp, altMobiles: record.altMobiles, email: record.email, address: record.address }) : null;
-      const result = await pool.query(
-        `insert into customer_records (import_id, service, source, name, mobile_hash, mobile_enc, mobile_last4, pan_hash, aadhaar_hash, phone_hashes, email_hash, contact_enc, record_date, renewal_on, birth_month, birth_day, vehicle, payload_enc, row_hash)
-         values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::text[],$11,$12,$13,$14,$15,$16,$17,$18,$19) on conflict (row_hash) do nothing`,
-        [batch.id, record.service, record.source.slice(0, 200), record.name,
+    for (let offset = 0; offset < parsed.records.length; offset += 150) {
+      const chunk = parsed.records.slice(offset, offset + 150);
+      const params: unknown[] = [];
+      const tuples = chunk.map((record) => {
+        const phoneHashes = [...new Set([record.mobile, record.whatsapp, ...record.altMobiles].filter((value): value is string => Boolean(value)))].map((value) => blindIndex("mobile", value));
+        const contactEnc = record.whatsapp || record.altMobiles.length || record.email || record.address ? seal({ whatsapp: record.whatsapp, altMobiles: record.altMobiles, email: record.email, address: record.address }) : null;
+        const values = [batch.id, record.service, record.source.slice(0, 200), record.name,
           record.mobile ? blindIndex("mobile", record.mobile) : null, record.mobile ? seal(record.mobile) : null, record.mobile ? record.mobile.slice(-4) : null,
           record.pan ? blindIndex("pan", record.pan) : null, record.aadhaar ? blindIndex("aadhaar", record.aadhaar) : null,
           phoneHashes, record.email ? blindIndex("email", record.email) : null, contactEnc, record.recordDate, record.renewalOn, record.birthMonth, record.birthDay, record.vehicle,
           seal({ mobile: record.mobile, pan: record.pan, aadhaar: record.aadhaar, whatsapp: record.whatsapp, altMobiles: record.altMobiles, email: record.email, address: record.address, fields: record.fields }),
-          blindIndex("row", record.dedupeKey)],
-      );
+          blindIndex("row", record.dedupeKey)];
+        const base = params.length;
+        params.push(...values);
+        return `(${values.map((_, index) => `$${base + index + 1}${index === 9 ? "::text[]" : ""}`).join(",")})`;
+      });
+      const result = await pool.query(`insert into customer_records (${COLUMNS.join(",")}) values ${tuples.join(",")} on conflict (row_hash) do nothing`, params);
       imported += result.rowCount ?? 0;
-      const phone = record.whatsapp ?? record.mobile;
-      if (!phone) continue;
-      const person = people.get(phone) ?? { name: record.name, services: new Map<string, string | null>(), area: record.address, email: null, birth: null };
-      person.email ??= record.email;
-      if (record.birthMonth && record.birthDay) person.birth ??= { month: record.birthMonth, day: record.birthDay };
-      const service = CONTACT_SERVICE[record.service];
-      if (service) { const previous = person.services.get(service); if (!previous || (record.renewalOn && record.renewalOn > previous)) person.services.set(service, record.renewalOn ?? previous ?? null); }
-      people.set(phone, person);
+      for (const record of chunk) {
+        const phone = record.whatsapp ?? record.mobile;
+        if (!phone) continue;
+        const person = people.get(phone) ?? { name: record.name, services: new Map<string, string | null>(), area: record.address, email: null, birth: null };
+        person.email ??= record.email;
+        if (record.birthMonth && record.birthDay) person.birth ??= { month: record.birthMonth, day: record.birthDay };
+        const service = CONTACT_SERVICE[record.service];
+        if (service) { const previous = person.services.get(service); if (!previous || (record.renewalOn && record.renewalOn > previous)) person.services.set(service, record.renewalOn ?? previous ?? null); }
+        people.set(phone, person);
+      }
+      done += chunk.length; progress(fileName);
     }
 
+    // Contacts: add new people, merge services / email / birthday for people already there.
     let contactsAdded = 0;
-    for (const [phone, person] of people) {
-      const fresh: Service[] = [...person.services.entries()].map(([service, renewalOn]) => ({ service, renewalOn, note: null }));
-      const { rows: [existing] } = await pool.query("select services from contacts where phone = $1", [phone]);
-      if (!existing) {
-        const added = await pool.query("insert into contacts (name, phone, services, area, email, birth_month, birth_day, source) values ($1,$2,$3::jsonb,$4,$5,$6,$7,$8) on conflict (phone) do nothing",
-          [person.name.slice(0, 100), phone, JSON.stringify(fresh), person.area?.slice(0, 80) || null, person.email, person.birth?.month ?? null, person.birth?.day ?? null, `import: ${fileName}`.slice(0, 40)]);
+    const entries = [...people];
+    for (let offset = 0; offset < entries.length; offset += 200) {
+      const chunk = entries.slice(offset, offset + 200);
+      const { rows: existing } = await pool.query("select phone, services, email, birth_month from contacts where phone = any($1::text[])", [chunk.map(([phone]) => phone)]);
+      const known = new Map<string, { services: Service[]; email: string | null; birth_month: number | null }>(existing.map((row) => [row.phone as string, { services: (row.services ?? []) as Service[], email: row.email as string | null, birth_month: row.birth_month as number | null }]));
+      const fresh: [string, Person][] = [];
+      for (const [phone, person] of chunk) {
+        const list: Service[] = [...person.services.entries()].map(([service, renewalOn]) => ({ service, renewalOn, note: null }));
+        const current = known.get(phone);
+        if (!current) { fresh.push([phone, person]); continue; }
+        const merged = [...current.services];
+        for (const item of list) {
+          const index = merged.findIndex((old) => old.service === item.service);
+          if (index < 0) merged.push(item);
+          else if (item.renewalOn && (!merged[index].renewalOn || item.renewalOn > (merged[index].renewalOn ?? ""))) merged[index] = { ...merged[index], renewalOn: item.renewalOn };
+        }
+        const servicesChanged = JSON.stringify(merged) !== JSON.stringify(current.services);
+        const needsEmail = Boolean(person.email) && !current.email;
+        const needsBirth = Boolean(person.birth) && current.birth_month === null;
+        if (servicesChanged || needsEmail || needsBirth) {
+          await pool.query("update contacts set services = $2::jsonb, email = coalesce(email, $3), birth_day = case when birth_month is null then $5::smallint else birth_day end, birth_month = coalesce(birth_month, $4::smallint), updated_at = now() where phone = $1",
+            [phone, JSON.stringify(merged.slice(0, 12)), person.email, person.birth?.month ?? null, person.birth?.day ?? null]);
+        }
+      }
+      if (fresh.length) {
+        const params: unknown[] = [];
+        const tuples = fresh.map(([phone, person]) => {
+          const list: Service[] = [...person.services.entries()].map(([service, renewalOn]) => ({ service, renewalOn, note: null }));
+          const base = params.length;
+          params.push(person.name.slice(0, 100), phone, JSON.stringify(list), person.area?.slice(0, 80) || null, person.email, person.birth?.month ?? null, person.birth?.day ?? null, `import: ${fileName}`.slice(0, 40));
+          return `($${base + 1},$${base + 2},$${base + 3}::jsonb,$${base + 4},$${base + 5},$${base + 6}::smallint,$${base + 7}::smallint,$${base + 8})`;
+        });
+        const added = await pool.query(`insert into contacts (name, phone, services, area, email, birth_month, birth_day, source) values ${tuples.join(",")} on conflict (phone) do nothing`, params);
         contactsAdded += added.rowCount ?? 0;
-        continue;
       }
-      const current = (existing.services ?? []) as Service[];
-      const merged = [...current];
-      for (const item of fresh) {
-        const index = merged.findIndex((old) => old.service === item.service);
-        if (index < 0) merged.push(item);
-        else if (item.renewalOn && (!merged[index].renewalOn || item.renewalOn > (merged[index].renewalOn ?? ""))) merged[index] = { ...merged[index], renewalOn: item.renewalOn };
-      }
-      if (JSON.stringify(merged) !== JSON.stringify(current)) await pool.query("update contacts set services = $2::jsonb, updated_at = now() where phone = $1", [phone, JSON.stringify(merged.slice(0, 12))]);
-      if (person.email) await pool.query("update contacts set email = $2 where phone = $1 and email is null", [phone, person.email]);
-      if (person.birth) await pool.query("update contacts set birth_month = $2, birth_day = $3 where phone = $1 and birth_month is null", [phone, person.birth.month, person.birth.day]);
     }
     const skipped = parsed.sheets.reduce((total, sheet) => total + sheet.skipped + (sheet.service && !sheet.reason ? 0 : sheet.rows), 0);
     const duplicates = parsed.records.length - imported;
     await pool.query("update record_imports set imported=$2, duplicates=$3, skipped=$4, contacts_added=$5, total_rows=$6 where id=$1", [batch.id, imported, duplicates, skipped, contactsAdded, parsed.sheets.reduce((t, s) => t + s.rows, 0)]);
-    console.log(`  → ${imported} new records saved, ${duplicates} already there, ${contactsAdded} contacts added.`);
     totals.imported += imported; totals.duplicates += duplicates; totals.contactsAdded += contactsAdded;
+    process.stdout.write(`\r${" ".repeat(110)}\r  ✓ ${fileName}: ${imported} new, ${parsed.records.length - imported} already there, ${contactsAdded} contacts added\n`);
   }
-  console.log(apply
-    ? `\nDone. ${totals.imported} new records, ${totals.duplicates} already there, ${totals.contactsAdded} contacts added.`
-    : `\nDry run: ${totals.records} records would be read. Nothing was saved. Add --apply to save them.`);
+  console.log(`\n100%  Done in ${Math.round((Date.now() - started) / 1000)}s. ${totals.imported} new records, ${totals.duplicates} already there, ${totals.contactsAdded} contacts added.`);
 } finally { await pool.end(); }
