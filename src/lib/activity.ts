@@ -2,13 +2,14 @@ import { and, count, desc, eq, gt, inArray, notInArray, sql } from "drizzle-orm"
 import { activityLog, leads, printJobs, serviceRequests, users } from "@/db/schema";
 import { CLOSED_STATUSES } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { pendingClaimCount } from "@/lib/claims";
 import { permissionsOf, type Permission, type StaffLike } from "@/lib/permissions";
 import { findService } from "@/lib/services";
 
 /** "team" entries (staff changes) are for the owner only. */
 type Audience = Permission | "team";
 export type ActivityEntry = {
-  kind: "lead" | "request" | "print" | "status" | "import" | "record_view" | "staff" | "campaign" | "promotion";
+  kind: "lead" | "signup" | "claim" | "flag" | "request" | "print" | "status" | "import" | "record_view" | "staff" | "campaign" | "promotion";
   permission: Audience; title: string; detail?: string | null; category?: string | null;
   refType?: string | null; refId?: string | null; actorId?: string | null;
 };
@@ -72,13 +73,15 @@ export async function inboxSummary(user: Inboxer) {
   const [me] = await db.select({ seen: users.inboxSeenAt }).from(users).where(eq(users.id, user.id)).limit(1);
   const [row] = await db.select({ total: count() }).from(activityLog).where(and(inArray(activityLog.permission, visible), gt(activityLog.createdAt, me?.seen ?? new Date(0))));
   let waiting = 0; let callbacks = 0;
+  // Record requests and "this isn't me" reports waiting for the owner count toward the badge.
+  const claims = visible.includes("records") ? await pendingClaimCount().catch(() => 0) : 0;
   if (visible.includes("requests")) {
     const [open] = await db.select({ total: count() }).from(serviceRequests).where(notInArray(serviceRequests.status, [...CLOSED_STATUSES]));
     const [prints] = await db.select({ total: count() }).from(printJobs).where(notInArray(printJobs.status, [...CLOSED_STATUSES]));
     const [calls] = await db.select({ total: count() }).from(leads).where(eq(leads.status, "new"));
     waiting = open.total + prints.total; callbacks = calls.total;
   }
-  return { unread: row.total, waiting, callbacks };
+  return { unread: row.total + claims, waiting, callbacks, claims };
 }
 
 export async function markInboxSeen(userId: string) {

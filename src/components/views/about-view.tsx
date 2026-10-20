@@ -13,6 +13,8 @@ import { LOCALE_META, type Locale } from "@/lib/i18n";
 import { site, whatsappLink } from "@/lib/site";
 import { webPageLd } from "@/lib/structured-data";
 import { publicTeam } from "@/lib/team";
+import SiteQrCards from "@/components/site-qr-cards";
+import { WHATSAPP_NUMBER } from "@/lib/public-contact";
 import { areaText } from "@/lib/translations/places";
 import { lp, tr } from "@/lib/tr";
 
@@ -107,6 +109,14 @@ export async function AboutView({ lang }: { lang: Locale }) {
       <MapPin size={24} aria-hidden="true"/>
       <div><h2>{t("Visit us in Kharangajhar, Telco", "खरंगाझार, टेल्को में हमसे मिलिए", "খরংগাঝাড়, টেলকোয় আমাদের কাছে আসুন")}</h2><p>{address}. {t("We serve ", "हम सेवा देते हैं: ", "আমরা পরিষেবা দিই: ")}{areas.slice(0, 6).map((area) => areaText(area, lang).name).join(", ")}{t(" and the wider Jamshedpur area. ", " और पूरे जमशेदपुर क्षेत्र में। ", " এবং পুরো জামশেদপুর অঞ্চলে। ")}<Link href={lp(lang, "/areas-we-serve")}>{t("See all areas", "सभी इलाके देखें", "সব এলাকা দেখুন")}</Link>.</p></div>
       <Link className="btn btn--primary" href={lp(lang, "/contact")}>{t("Get directions", "रास्ता देखें", "দিকনির্দেশ পান")} <ArrowRight size={16}/></Link>
+    </section>
+    <section className="container about-qr" aria-labelledby="about-qr-title">
+      <h2 id="about-qr-title">{t("Scan to sign in or chat with us", "साइन इन या चैट के लिए स्कैन करें", "সাইন ইন বা চ্যাটের জন্য স্ক্যান করুন")}</h2>
+      <p>{t("Print these on a poster or share them with family. Each one opens straight away.", "इन्हें पोस्टर पर छापें या परिवार को भेजें। हर कोड सीधे खुलता है।", "পোস্টারে ছাপুন বা পরিবারকে পাঠান। প্রতিটি কোড সরাসরি খোলে।")}</p>
+      <SiteQrCards download={t("Download", "डाउनलोड", "ডাউনলোড")} cards={[
+        { title: t("Sign in", "साइन इन", "সাইন ইন"), hint: t("Opens the sign-in page with your mobile number.", "मोबाइल नंबर से साइन इन पेज खुलता है।", "মোবাইল নম্বর দিয়ে সাইন ইন পেজ খোলে।"), url: `${site.url}/login`, file: "nise-comport-login-qr.svg" },
+        { title: "WhatsApp", hint: t("Starts a chat with our desk.", "हमारे डेस्क से चैट शुरू होती है।", "আমাদের ডেস্কের সাথে চ্যাট শুরু হয়।"), url: `https://wa.me/${WHATSAPP_NUMBER}`, file: "nise-comport-whatsapp-qr.svg" },
+      ]}/>
     </section>
     <section className="container provider-note"><p>{t("We are not a government department and do not decide on applications. Our service charge is separate from any government or third-party fee. See ", "हम सरकारी विभाग नहीं हैं और आवेदनों पर फ़ैसला नहीं करते। हमारा सेवा शुल्क किसी भी सरकारी या तीसरे पक्ष के शुल्क से अलग है। देखें ", "আমরা সরকারি দপ্তর নই এবং আবেদনের সিদ্ধান্ত নিই না। আমাদের সার্ভিস চার্জ যেকোনো সরকারি বা তৃতীয় পক্ষের ফি থেকে আলাদা। দেখুন ")}<Link href={lp(lang, "/pricing")}>{t("pricing", "मूल्य", "মূল্য")}</Link>{t(" and our ", " और हमारी ", " এবং আমাদের ")}<Link href={lp(lang, "/refund-policy")}>{t("refund policy", "रिफ़ंड नीति", "রিফান্ড নীতি")}</Link>.</p></section>
   </main>;

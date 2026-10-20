@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, BellRing, Check, Eye, EyeOff, Gift, Languages, LockKeyhole, Mail, MapPin, PartyPopper, ShieldCheck, Smartphone, Terminal, UserRound } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
+import MobileAuthForm from "@/components/mobile-auth-form";
 import { secureResult } from "@/lib/secure-api-client";
 import { dict, fill } from "@/lib/i18n";
 import { findOffer } from "@/lib/offers";
@@ -50,6 +51,8 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
   const [error, setError] = useState(""); const [success, setSuccess] = useState(""); const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [resendIn, setResendIn] = useState(0);
   const [viaSms, setViaSms] = useState(false);
+  // Mobile number + PIN is the default way in; the toggle switches to email.
+  const [method, setMethod] = useState<"mobile" | "email">("mobile");
   const isMobileInput = mode === "signin" && !email.includes("@") && /^[+\d\s()-]{8,}$/.test(email.trim());
   const passwordHint = mode === "signup" && password ? passwordProblem(password, { email, name }) : "";
   // Sign-up advertises the ₹50 welcome coupon; sign-in shows the festival / match code ending soonest.
@@ -187,7 +190,7 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
       <section className="auth__card" aria-labelledby="auth-heading">
         <div className="auth__lang"><span><Languages size={17}/>{t.language}</span><LanguageMenu locale={locale} label={t.language} inline/></div>
         <h1 id="auth-heading">{heading}</h1>
-        {stage !== "welcome" && <p className="auth__sub">{stage === "otp" ? <>{viaSms ? "We sent a 6-digit code by SMS to" : t.otpSub} <b>{email}</b>.{viaSms ? "" : ` ${t.otpSpam}`}</> : stage === "profile" ? x.finishSub : mode === "signup" ? x.signupSub : x.signinSub}</p>}
+        {stage !== "welcome" && <p className="auth__sub">{stage === "otp" ? <>{viaSms ? "We sent a 6-digit code by SMS to" : t.otpSub} <b>{email}</b>.{viaSms ? "" : ` ${t.otpSpam}`}</> : stage === "profile" ? x.finishSub : method === "mobile" ? (mode === "signup" ? "Start with your mobile number. We make you a 6-digit PIN." : "Enter your mobile number and 6-digit PIN.") : mode === "signup" ? x.signupSub : x.signinSub}</p>}
         {mode === "signup" && (stage === "details" || stage === "profile") && <p className="gift-strip"><Gift size={18}/><span>{p.signupGift}</span><b>₹50</b></p>}
 
         {mode === "signin" && demoEnabled && stage === "details" && <div className="demo-card"><strong>Local preview login</strong><span>Email: <code>demo@nisecomport.test</code></span><span>Password: <code>LocalDemo#2026</code></span><button type="button" className="btn btn--ghost btn--sm" onClick={() => { setEmail("demo@nisecomport.test"); setPassword("LocalDemo#2026"); }}>Fill demo details</button><small>Preview only: this account is temporary and does not use the database or email.</small></div>}
@@ -209,7 +212,7 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
           <label className="field"><span className="field__label">{t.phone} <em>{t.optional}</em></span><span className="input-wrap"><span className="input-prefix">+91</span><input type="tel" autoComplete="tel-national" inputMode="tel" maxLength={20} value={phone} onChange={e => setPhone(e.target.value)} placeholder="98765 43210" aria-invalid={Boolean(fieldErrors.phone)}/></span><span className="field__hint">{x.mobileHint}</span>{fieldError("phone")}</label>
           {error && <div className="alert alert--error" role="alert">{error}</div>}
           <button className="btn btn--primary btn--lg btn--block" disabled={busy}>{busy ? t.wait : x.create}<ArrowRight size={18}/></button>
-        </form> : stage === "details" ? <form onSubmit={submitDetails} className="auth__form" noValidate>
+        </form> : stage === "details" && method === "mobile" ? <MobileAuthForm mode={mode} onDone={done}/> : stage === "details" ? <form onSubmit={submitDetails} className="auth__form" noValidate>
           {mode === "signin"
             ? <label className="field"><span className="field__label">{x.idLabel}</span><span className="input-wrap"><Mail size={18}/><input type="text" autoComplete="username" inputMode="email" autoCapitalize="none" spellCheck={false} required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} placeholder={x.idPh} aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? "email-error" : undefined}/></span>{fieldError("email")}</label>
             : <label className="field"><span className="field__label">{t.email}</span><span className="input-wrap"><Mail size={18}/><input type="email" autoComplete="email" inputMode="email" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? "email-error" : undefined} autoFocus/></span>{fieldError("email")}</label>}
@@ -230,6 +233,7 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
           </div>
           <p className="auth__legal">{t.codeRules}</p>
         </form>}
+        {stage === "details" && <button type="button" className="link-btn auth__method" onClick={() => { setMethod(method === "mobile" ? "email" : "mobile"); setError(""); setFieldErrors({}); }}>{method === "mobile" ? (mode === "signup" ? "Use email instead" : "Sign in with email instead") : "Use my mobile number instead"}</button>}
         {stage === "details" && <div className="auth__switch"><span>{mode === "signup" ? x.haveAccount : x.noAccount}</span><Link className="btn btn--ghost btn--block" href={mode === "signup" ? "/login" : "/signup"}>{mode === "signup" ? x.signInCta : x.signUpCta}</Link></div>}
         <p className="auth__legal">{t.agree} <Link href="/terms">{t.terms}</Link> {t.and} <Link href="/privacy">{t.privacy}</Link>.</p>
       </section>

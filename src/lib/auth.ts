@@ -10,6 +10,8 @@ import { clearRate, enforceRate, hitRate, identity, peekRate, RATE_RULES } from 
 import { secondsUntilWindowEnds } from "@/lib/rate-limit-core";
 import { cleanName, isSixDigitCode, looksLikeEmail, normalizeEmail, normalizePhone, passwordProblem } from "@/lib/validation";
 import { smsConfigured } from "@/lib/sms";
+import { isPlaceholderEmail } from "@/lib/mobile-login-core";
+import { grantVerifyReward } from "@/lib/verify-rewards";
 import { hasPermission, type Permission } from "@/lib/permissions";
 
 export type User = typeof users.$inferSelect;
@@ -305,7 +307,9 @@ export async function requestEmailChange(user: User, newEmailInput: string, pass
   if (!looksLikeEmail(newEmail)) throw new PublicError("Enter a valid email address.", 400, { fields: { newEmail: "Enter a valid email address." } });
   if (newEmail === user.email) throw new PublicError("That is already your sign-in email.", 400, { fields: { newEmail: "That is already your sign-in email." } });
   const [fresh] = await db.select().from(users).where(eq(users.id, user.id)).limit(1);
-  if (!isActive(fresh) || !(await verify(fresh.passwordHash, password).catch(() => false))) throw new PublicError("Your password is incorrect.", 400, { fields: { password: "Your password is incorrect." } });
+  // A mobile-PIN account has no password yet: it adds its first real email with just the code.
+  const passwordless = isPlaceholderEmail(user.email);
+  if (!isActive(fresh) || (!passwordless && !(await verify(fresh.passwordHash, password).catch(() => false)))) throw new PublicError("Your password is incorrect.", 400, { fields: { password: "Your password is incorrect." } });
   if (await findUserByEmail(newEmail)) throw new PublicError("That email is already used by another account.", 409, { fields: { newEmail: "That email is already used by another account." } });
   await limitCodeRequests(newEmail, ip);
   await issueCode(newEmail, `email-change:${user.id}`, "email-change");
@@ -321,6 +325,7 @@ export async function confirmEmailChange(user: User, newEmailInput: string, code
     if (isUniqueViolation(error)) throw new PublicError("That email is already used by another account.", 409);
     throw error;
   }
+  await grantVerifyReward(user.id, "email").catch((error) => console.error("[rewards] email reward failed", error));
   sendEmailChangedNotice(oldEmail, user.name, newEmail).catch((error) => console.error("[auth] email-changed notice failed", error));
   return { email: newEmail };
 }

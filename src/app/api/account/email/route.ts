@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requestEmailChange, requireUser } from "@/lib/auth";
 import { apiError, clientIp, readJson } from "@/lib/http";
 
-const schema = z.object({ newEmail: z.string().trim().min(3, "Enter the new email address.").max(254), password: z.string().min(1, "Enter your password.").max(128) });
+const schema = z.object({ newEmail: z.string().trim().min(3, "Enter the new email address.").max(254), password: z.string().max(128).optional().default("") });
 
 /** Step 1 of changing the sign-in email: password check, then a code to the NEW address. */
 export async function POST(request: NextRequest) {

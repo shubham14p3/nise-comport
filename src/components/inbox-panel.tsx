@@ -1,5 +1,6 @@
 "use client";
 
+import ClaimsPanel from "@/components/claims-panel";
 import { useEffect, useState } from "react";
 import { Bell, Check, Eye, Phone, RefreshCw, UserRound, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
@@ -9,7 +10,7 @@ type Item = { id: string; kind: string; category: string | null; title: string; 
 type Lead = { id: string; name: string; phone: string; topic: string; message: string | null; status: string; page: string | null; createdAt: string };
 type Inbox = { items: Item[]; unread: number; seenAt: string; pending: { category: string; label: string; total: number }[]; leads: Lead[] };
 
-const ICON: Record<string, string> = { lead: "📞", request: "📝", print: "🖨️", status: "🔄", import: "📥", record_view: "👁️", staff: "👥", campaign: "📣", promotion: "🎟️" };
+const ICON: Record<string, string> = { lead: "📞", request: "📝", print: "🖨️", status: "🔄", import: "📥", record_view: "👁️", claim: "🔑", flag: "🚩", signup: "🆕", staff: "👥", campaign: "📣", promotion: "🎟️" };
 const ago = (iso: string) => {
   const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
   if (minutes < 1) return "just now";
@@ -77,6 +78,7 @@ export default function InboxPanel({ onSeen }: { onSeen?: () => void }) {
     <h2><Bell size={17}/> Inbox {data?.unread ? <span className="inbox__unread">{data.unread} new</span> : null}
       <button type="button" className="btn btn--ghost btn--sm inbox__refresh" onClick={() => void load()}><RefreshCw size={14}/>Refresh</button></h2>
     {error && <div className="alert alert--error" role="alert">{error}</div>}
+    <ClaimsPanel onChange={onSeen}/>
 
     {data && data.pending.length > 0 && <div className="inbox__pending">
       {data.pending.map((item) => <button key={item.category} type="button" className={category === item.category ? "is-active" : undefined} onClick={() => { const next = category === item.category ? "" : item.category; setCategory(next); setFeedPage(0); void load(next); }}>

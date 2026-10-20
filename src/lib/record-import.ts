@@ -22,6 +22,8 @@ export type ParsedRecord = {
   fields: Record<string, string>;
   /** Stable text for duplicate detection (hashed before storage). */
   dedupeKey: string;
+  /** The same key without a vehicle-type column: lets a re-import recognise rows that only gained that column. */
+  altKeys: string[];
 };
 export type SheetReport = { sheet: string; service: string | null; rows: number; records: number; skipped: number; reason?: string; droppedColumns?: string[] };
 
@@ -157,8 +159,12 @@ export function birthFromFields(fields: Record<string, string>): Birth | null {
 }
 
 export type Vehicle = "bike" | "car";
-const BIKE = /\b(bike|bikes|motor\s*cycle|motorcycle|two[\s-]*wheel(?:er)?|2[\s-]*w(?:heeler)?|scooter|scooty|moped|activa|splendor|pulsar|bullet|royal\s*enfield)\b/i;
-const CAR = /\b(car|cars|four[\s-]*wheel(?:er)?|4[\s-]*w(?:heeler)?|suv|sedan|hatchback|swift|alto|i10|i20|creta|innova|bolero|scorpio|tata|maruti)\b/i;
+// Words and model names that say "two-wheeler" or "four-wheeler". Insurer names (Tata AIG, Bajaj Allianz, Royal Sundaram) are NOT
+// listed on purpose, so an insurer column never decides the vehicle.
+const BIKE = /\b(bike|bikes|motor\s*cycle|motorcycle|two[\s-]*wheel(?:er)?|2[\s-]*w(?:heeler)?|scooter|scooty|moped|activa|dio|splendor|passion|hf\s*deluxe|hf\s*100|glamour|xtreme|destini|maestro|pleasure|hero\s*honda|hero\s*motocorp|shine|unicorn|livo|hornet|cb\s*shine|cb\s*unicorn|jupiter|tvs|apache|star\s*city|ntorq|raider|ronin|platina|discover|ct\s*100|avenger|dominar|chetak|pulsar|ns\s*200|fz|fascino|ray\s*zr|mt[\s-]?15|r15|aerox|access\s*125|burgman|gixxer|hayabusa|classic\s*350|meteor|himalayan|hunter|thunderbird|ktm|duke|bullet|royal\s*enfield|vespa|jawa|yezdi|ather|ola\s*s1)\b/i;
+const CAR = /\b(car|cars|four[\s-]*wheel(?:er)?|4[\s-]*w(?:heeler)?|suv|sedan|hatchback|swift|alto|wagon\s*r|baleno|dzire|ertiga|brezza|celerio|ritz|eeco|ciaz|s[\s-]?presso|fronx|grand\s*vitara|maruti|santro|i10|i20|verna|venue|creta|aura|eon|exter|xcent|honda\s*city|amaze|jazz|brio|nexon|tiago|tigor|altroz|harrier|safari|indica|indigo|nano|sumo|xuv|thar|scorpio|bolero|kuv|marazzo|kwid|duster|triber|kiger|magnite|sunny|micra|seltos|sonet|carens|innova|fortuner|etios|glanza|hyryder|ecosport|figo|aspire|endeavour|vento|rapid|slavia|kushaq|hector|astor|gloster|compass|chevrolet|tavera|cruze|omni|gypsy|ambassador)\b/i;
+/** A column that only says bike or car. Adding one to an old register must not duplicate its rows. */
+export const TYPE_COLUMN = /^\s*(vehicle(\s*type)?|veh(icle)?\s*type|v\.?\s*type|type)\s*$/i;
 const VEHICLE_LABEL = /vehicle|veh\b|type|class|make|model|reg|policy\s*for|cover\s*for/i;
 
 /**
@@ -167,12 +173,38 @@ const VEHICLE_LABEL = /vehicle|veh\b|type|class|make|model|reg|policy\s*for|cove
  */
 const TP_LABEL = /^\s*tp\b|third\s*party/i;
 const TP_NOT = /gst|total|tot\b|\+|incl|with/i;
+/** One-year third-party premiums fixed by the regulator; a row is the vehicle whose premium is closest to its TP amount. */
+export const TP_PREMIUMS: { amount: number; vehicle: Vehicle }[] = [
+  { amount: 538, vehicle: "bike" }, { amount: 714, vehicle: "bike" }, { amount: 1366, vehicle: "bike" }, { amount: 2804, vehicle: "bike" },
+  { amount: 2094, vehicle: "car" }, { amount: 3416, vehicle: "car" },
+];
+export function nearestTpVehicle(amount: number): Vehicle {
+  return TP_PREMIUMS.reduce((best, item) => Math.abs(item.amount - amount) < Math.abs(best.amount - amount) ? item : best).vehicle;
+}
 export function vehicleFromTp(fields: Record<string, string>): Vehicle | null {
   for (const [label, value] of Object.entries(fields)) {
     if (!TP_LABEL.test(label) || TP_NOT.test(label)) continue;
     const amount = Number(value.replace(/[^\d.]/g, ""));
     if (!Number.isFinite(amount) || amount < 300 || amount > 12000) continue; // 0 / blank / a running total
-    return amount < 1000 ? "bike" : "car";
+    // Below ₹1,000 is a bike. ₹1,000–1,400 is left unlabelled for the owner to set; above that the closest standard premium decides.
+    if (amount < 1000) return "bike";
+    if (amount <= 1400) continue;
+    return nearestTpVehicle(amount);
+  }
+  return null;
+}
+
+/**
+ * Engine size in cc, from a cc / engine / capacity column or from text like "Splendor 100cc". Up to 500 cc is a two-wheeler and
+ * 600 cc and more is a car; in between is unclear, so it is left to the other clues.
+ */
+const CC_LABEL = /\bcc\b|engine|capacity|displacement/i;
+export function vehicleFromCc(fields: Record<string, string>): Vehicle | null {
+  const classify = (cc: number): Vehicle | null => (cc >= 35 && cc <= 500 ? "bike" : cc >= 600 && cc <= 6000 ? "car" : null);
+  for (const [label, value] of Object.entries(fields)) {
+    if (CC_LABEL.test(label)) { const found = classify(Number(String(value).replace(/[^\d.]/g, ""))); if (found) return found; }
+    const inText = /\b(\d{2,4})\s*cc\b/i.exec(String(value));
+    if (inText) { const found = classify(Number(inText[1])); if (found) return found; }
   }
   return null;
 }
@@ -181,6 +213,8 @@ export function vehicleFromTp(fields: Record<string, string>): Vehicle | null {
 export function vehicleFrom(fields: Record<string, string>, source = ""): Vehicle | null {
   const test = (text: string): Vehicle | null => (BIKE.test(text) ? "bike" : CAR.test(text) ? "car" : null);
   for (const [label, value] of Object.entries(fields)) if (VEHICLE_LABEL.test(label)) { const found = test(value); if (found) return found; }
+  const fromCc = vehicleFromCc(fields);
+  if (fromCc) return fromCc;
   const fromTp = vehicleFromTp(fields);
   if (fromTp) return fromTp;
   const fromSource = test(source.replace(/^.*›/, ""));
@@ -297,13 +331,15 @@ export function parseWorkbook(fileName: string, sheets: SheetInput[]): { records
       });
       const recordDate = dateFrom(at("date"));
       const renewalOn = dateFrom(at("renewal")) ?? (service === "insurance" && recordDate ? addYear(recordDate) : null);
-      const dedupeKey = [service, name.toLowerCase(), mobile, pan, aadhaar, recordDate, JSON.stringify(Object.entries(fields).sort())].join("|");
+      const keyFor = (values: Record<string, string>) => [service, name.toLowerCase(), mobile, pan, aadhaar, recordDate, JSON.stringify(Object.entries(values).sort())].join("|");
+      const dedupeKey = keyFor(fields);
+      const altKeys = Object.keys(fields).filter((label) => TYPE_COLUMN.test(label)).map((label) => keyFor(Object.fromEntries(Object.entries(fields).filter(([key]) => key !== label))));
       if (seen.has(dedupeKey)) { report.skipped++; continue; }
       seen.add(dedupeKey);
       const source = `${fileName} › ${sheet.name.trim()}`;
       const birth = birthFromText(at("dob")) ?? birthFromFields(fields);
       const vehicle = service === "insurance" ? vehicleFrom(fields, source) : null;
-      records.push({ service, source, name, mobile, pan, aadhaar, whatsapp: whatsapp && whatsapp !== mobile ? whatsapp : null, altMobiles, email, address, recordDate, renewalOn, birthMonth: birth?.month ?? null, birthDay: birth?.day ?? null, vehicle, fields, dedupeKey });
+      records.push({ service, source, name, mobile, pan, aadhaar, whatsapp: whatsapp && whatsapp !== mobile ? whatsapp : null, altMobiles, email, address, recordDate, renewalOn, birthMonth: birth?.month ?? null, birthDay: birth?.day ?? null, vehicle, fields, dedupeKey, altKeys });
       report.records++;
     }
   }

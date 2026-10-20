@@ -5,6 +5,7 @@ import { requireUser, activeSessionCount, openWorkCount } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { printJobs, serviceRequests, walletEntries } from "@/db/schema";
 import { apiError } from "@/lib/http";
+import { isPlaceholderEmail } from "@/lib/mobile-login-core";
 import { customerVouchers } from "@/lib/promotions";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +26,7 @@ export async function GET() {
     ]);
     return NextResponse.json({
       user: {
-        name: user.name, email: user.email, phone: user.phone, whatsapp: user.whatsapp ?? null, emailVerified: Boolean(user.emailVerifiedAt), phoneVerified: Boolean(user.phone && user.phoneVerifiedAt), smsEnabled: smsConfigured() !== null,
+        name: user.name, email: isPlaceholderEmail(user.email) ? "" : user.email, phone: user.phone, whatsapp: user.whatsapp ?? null, emailVerified: Boolean(user.emailVerifiedAt), phoneVerified: Boolean(user.phone && user.phoneVerifiedAt), smsEnabled: smsConfigured() !== null,
         city: user.city ?? "", state: user.state ?? "", postalCode: user.postalCode ?? "", profileSummary: user.profileSummary ?? "",
         preferredContact: user.preferredContact === "phone" || user.preferredContact === "whatsapp" ? user.preferredContact : "email",
         updatedAt: user.updatedAt.toISOString(),

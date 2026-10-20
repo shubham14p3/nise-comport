@@ -22,6 +22,10 @@ export const users = pgTable("users", {
   inboxSeenAt: timestamp("inbox_seen_at", { withTimezone: true }),
   /** Set when the mobile number in `phone` was confirmed with an SMS code. */
   phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
+  /** Mobile sign-in: argon2 hash of the 6-digit PIN (wrong tries are counted in rate_limits). */
+  loginPinHash: text("login_pin_hash"),
+  /** "mobile" when the account was created with a mobile number (its email is a placeholder until one is added). */
+  signupMethod: text("signup_method").notNull().default("email"),
 }, (table) => [uniqueIndex("users_email_unique").on(table.email)]);
 
 export const emailOtps = pgTable("email_otps", {
@@ -341,6 +345,25 @@ export const activityLog = pgTable("activity_log", {
   actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("activity_log_created_idx").on(table.createdAt), index("activity_log_permission_created_idx").on(table.permission, table.createdAt)]);
+
+/** A signed-in person whose mobile number matches imported records. Records stay hidden until staff or a code approves it. */
+export const recordClaims = pgTable("record_claims", {
+  id: uuid("id").defaultRandom().primaryKey(), userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  phone: text("phone").notNull(), status: text("status").notNull().default("pending"), matchedCount: integer("matched_count").notNull().default(0),
+  /** The PIN sealed for the staff reference; removed once the claim is decided. */
+  pinEnc: text("pin_enc"), method: text("method"),
+  codeHash: text("code_hash"), codeExpiresAt: timestamp("code_expires_at", { withTimezone: true }), codeAttempts: integer("code_attempts").notNull().default(0),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(), remindedAt: timestamp("reminded_at", { withTimezone: true }),
+  decidedBy: uuid("decided_by").references(() => users.id, { onDelete: "set null" }), decidedAt: timestamp("decided_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("record_claims_status_idx").on(table.status, table.createdAt), index("record_claims_user_idx").on(table.userId)]);
+
+/** "This isn't me": a customer says a record shown to them is not theirs. */
+export const recordFlags = pgTable("record_flags", {
+  id: uuid("id").defaultRandom().primaryKey(), userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  claimId: uuid("claim_id").references(() => recordClaims.id, { onDelete: "set null" }), recordId: uuid("record_id"), note: text("note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+}, (table) => [index("record_flags_open_idx").on(table.resolvedAt, table.createdAt)]);
 
 /** One uploaded Excel register and what came out of each sheet. */
 export const recordImports = pgTable("record_imports", {

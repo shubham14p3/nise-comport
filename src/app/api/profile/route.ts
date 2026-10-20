@@ -3,6 +3,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { users } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
+import { ensureClaim } from "@/lib/claims";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { apiError, readJson } from "@/lib/http";
@@ -47,6 +48,7 @@ export async function PATCH(request: NextRequest) {
       profileSummary: input.profileSummary || null, preferredContact: input.preferredContact, updatedAt: new Date(),
     }).where(guard).returning(returning);
     if (!updated) throw new PublicError("Your profile was changed in another tab or device. Reload the page to see the latest details, then try again.", 409, { code: "stale_profile" });
+    if (phone && phone !== user.phone) ensureClaim({ ...updated, phoneVerifiedAt: null }).catch(() => undefined);
     return NextResponse.json({ ok: true, user: { ...updated, updatedAt: updated.updatedAt.toISOString() } });
   } catch (error) { return apiError(error); }
 }

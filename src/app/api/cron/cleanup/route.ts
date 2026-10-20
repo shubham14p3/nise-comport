@@ -1,3 +1,4 @@
+import { remindPendingClaims } from "@/lib/claims";
 import { timingSafeEqual } from "node:crypto";
 import { rm } from "node:fs/promises";
 import { NextRequest, NextResponse } from "next/server";
@@ -48,6 +49,7 @@ async function run(request: NextRequest) {
     }
     report.deletedFiles = deleted;
 
+    report.claimReminders = await remindPendingClaims().catch(() => 0);
     await releaseStuckNotifications();
     const mail = await deliverNotifications(undefined, 100);
     report.emailsSent = mail.sent;

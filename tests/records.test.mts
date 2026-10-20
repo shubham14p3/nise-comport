@@ -102,3 +102,39 @@ test("rows with empty cells (holes, as Excel readers return them) don't crash th
   assert.equal(result.records.length, 1);
   assert.equal(result.records[0].name, "Ravi Kumar");
 });
+
+test("TP premium picks the vehicle with the closest standard premium", async () => {
+  const { nearestTpVehicle } = await import("../src/lib/record-import.ts");
+  for (const [amount, vehicle] of [[538, "bike"], [714, "bike"], [1000, "bike"], [1366, "bike"], [1400, "bike"], [1700, "bike"], [2094, "car"], [2500, "bike"], [2804, "bike"], [3100, "bike"], [3200, "car"], [3416, "car"], [7897, "car"]] as const) assert.equal(nearestTpVehicle(amount), vehicle, String(amount));
+});
+
+test("vehicle from model name and cc, never from the insurer", async () => {
+  const { vehicleFrom, vehicleFromCc } = await import("../src/lib/record-import.ts");
+  assert.equal(vehicleFrom({ Model: "Hero Splendor Plus" }), "bike");
+  assert.equal(vehicleFrom({ Model: "Maruti Swift Dzire" }), "car");
+  assert.equal(vehicleFrom({ Vehicle: "Royal Enfield Classic 350" }), "bike");
+  assert.equal(vehicleFrom({ Make: "Tata Nexon" }), "car");
+  assert.equal(vehicleFrom({ Company: "Tata AIG", Insurer: "Bajaj Allianz" }), null);
+  assert.equal(vehicleFromCc({ CC: "1197" }), "car");
+  assert.equal(vehicleFromCc({ Engine: "110" }), "bike");
+  assert.equal(vehicleFromCc({ Model: "Pulsar 150cc" }), "bike");
+  assert.equal(vehicleFromCc({ CC: "550" }), null);
+  assert.equal(vehicleFrom({ CC: "796", "TP": "538" }), "car");
+});
+
+test("TP below 1,000 is a bike and 1,000 to 1,400 is left open", async () => {
+  const { vehicleFromTp } = await import("../src/lib/record-import.ts");
+  for (const amount of ["538", "714", "999"]) assert.equal(vehicleFromTp({ TP: amount }), "bike", amount);
+  for (const amount of ["1000", "1200", "1366", "1400"]) assert.equal(vehicleFromTp({ TP: amount }), null, amount);
+  assert.equal(vehicleFromTp({ TP: "2094" }), "car"); assert.equal(vehicleFromTp({ TP: "2804" }), "bike");
+});
+
+test("adding a type column keeps a link to the old row key", async () => {
+  const { parseWorkbook } = await import("../src/lib/record-import.ts");
+  const head = ["comp", "date", "mob", "name", "regn no"]; const row = ["Digit", "2025-10-20", 9876500001, "Sunil Das", "JH05AB1234"];
+  const before = parseWorkbook("Digit", [{ name: "Digit", rows: [head, row] }]).records[0];
+  const after = parseWorkbook("Digit", [{ name: "Digit", rows: [[...head, "type"], [...row, "bike"]] }]).records[0];
+  assert.notEqual(after.dedupeKey, before.dedupeKey);
+  assert.ok(after.altKeys.includes(before.dedupeKey));
+  assert.equal(after.vehicle, "bike"); assert.deepEqual(before.altKeys, []);
+});

@@ -2936,3 +2936,58 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 
 /* On phones the Admin menu is already a row of tabs, so its hide/show toggle is not needed. */
 @media (max-width: 1060px) { .admin-desk .profile__nav-toggle { display: none; } }
+
+/* QR codes on the About page */
+.about-qr { display: grid; gap: 10px; margin-block: 28px; }
+.qr-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 240px)); gap: 16px; }
+.qr-card { display: grid; justify-items: center; gap: 8px; padding: 18px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface, #fff); text-align: center; }
+.qr-card__code { width: 168px; height: 168px; border-radius: 12px; overflow: hidden; background: #fff; line-height: 0; }
+.qr-card h3 { margin: 4px 0 0; }
+.qr-card p { margin: 0; font-size: .875rem; color: var(--muted, #5b6478); }
+
+/* Loyalty rules: one scrolling row of cards, like the offers */
+.loyalty-rules { display: grid; grid-auto-flow: column; grid-auto-columns: min(340px, 86%); gap: 14px; overflow-x: auto; scroll-snap-type: x proximity; overscroll-behavior-x: contain; padding: 4px 2px 14px; scrollbar-width: thin; align-items: stretch; }
+.loyalty-rule { scroll-snap-align: start; align-content: start; gap: 12px; padding: 16px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface, #fff); box-shadow: 0 1px 2px rgba(15, 23, 42, .04); min-width: 0; }
+.loyalty-rule__row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end; }
+.loyalty-rule__row > label:first-child { grid-column: 1 / -1; }
+.loyalty-rule__row > .btn { grid-column: 1 / -1; justify-self: start; }
+
+/* Mobile sign-in */
+.auth__method { display: block; margin: 14px auto 0; font-weight: 600; }
+.check-row { display: flex; gap: 10px; align-items: flex-start; font-size: .875rem; line-height: 1.4; }
+.check-row input { width: 20px; height: 20px; flex: none; margin-top: 1px; accent-color: var(--blue); }
+.pin-reveal { text-align: center; justify-items: center; }
+.pin-reveal__title { margin: 6px 0 0; }
+.pin-reveal__box { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 14px 18px; border-radius: 16px; background: var(--tint); border: 1px dashed #9db4f5; }
+.pin-reveal__box b { font-size: 2rem; letter-spacing: .3em; padding-left: .3em; font-variant-numeric: tabular-nums; }
+.pin-reveal .check-row { text-align: left; }
+
+/* Staff: record requests in the inbox */
+.claims { display: grid; gap: 10px; margin-bottom: 18px; }
+.claims__list { display: grid; grid-auto-flow: column; grid-auto-columns: min(340px, 88%); gap: 12px; overflow-x: auto; scroll-snap-type: x proximity; padding-bottom: 8px; }
+.claim-card { scroll-snap-align: start; display: grid; gap: 10px; align-content: start; padding: 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface, #fff); min-width: 0; }
+.claim-card.is-overdue { border-color: #f2c26b; background: #fffaf0; }
+.claim-card header { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
+.claim-card dl { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin: 0; font-size: .875rem; }
+.claim-card dt { color: var(--muted, #5b6478); font-size: .75rem; }
+.claim-card dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.claim-card p { margin: 0; font-size: .875rem; }
+.claim-card__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.claim-card__code { display: grid; gap: 8px; padding: 10px; border-radius: 12px; background: var(--tint); }
+.claim-card__code pre { margin: 0; white-space: pre-wrap; font: inherit; font-size: .8125rem; }
+.claims__reset summary { cursor: pointer; font-weight: 600; display: inline-flex; gap: 6px; align-items: center; }
+.claims__reset-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; align-items: center; }
+.chip--warn { background: #fff1d6; color: #8a5a00; }
+.records-list { list-style: none; margin: 14px 0; padding: 0; display: grid; gap: 10px; }
+.records-list__item { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; }
+.records-list__item > div:first-child { display: grid; gap: 2px; min-width: 0; }
+.records-list__item span { color: var(--muted, #5b6478); font-size: .875rem; }
+.records-list__dates { grid-column: 1; display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--muted, #5b6478); }
+.records-list__item > .btn, .records-list__item > .chip { grid-column: 2; grid-row: 1 / span 2; }
+@media (max-width: 520px) { .records-list__item { grid-template-columns: 1fr; } .records-list__item > .btn, .records-list__item > .chip { grid-column: 1; grid-row: auto; justify-self: start; } }
+.records-code { display: grid; gap: 10px; max-width: 360px; margin-top: 14px; }
+.verify-card { display: grid; gap: 14px; max-height: 92dvh; overflow-y: auto; }
+.verify-card h2, .verify-card p { margin: 0; }
+.verify-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; padding: 12px; border: 1px solid var(--line); border-radius: 14px; }
+.verify-row .field { margin: 0; min-width: 0; }
+@media (max-width: 480px) { .verify-row { grid-template-columns: 1fr; } .verify-row .btn { justify-self: stretch; } }
