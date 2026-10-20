@@ -7,7 +7,7 @@ import { grantVerifyReward } from "@/lib/verify-rewards";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { clearRate, enforceRate, hitRate, identity, RATE_RULES } from "@/lib/rate-limit";
-import { indianMobile, sendOtpSms, smsConfigured } from "@/lib/sms";
+import { indianMobile, otpChannels, sendOtpSms } from "@/lib/sms";
 import { isSixDigitCode, normalizePhone } from "@/lib/validation";
 
 const OTP_MINUTES = 10;
@@ -28,7 +28,7 @@ export function indianPhoneOrThrow(input: string) {
   return phone;
 }
 
-async function issue(userId: string, phone: string, purpose: "verify" | "signin", ip: string) {
+async function issue(userId: string, phone: string, purpose: "verify" | "signin", ip: string, channel?: string | null) {
   const phoneId = identity("phone", phone);
   await enforceRate(RATE_RULES.smsSendPerIpHour, identity("ip", ip), "Too many codes were requested from this network.");
   await enforceRate(RATE_RULES.smsSendPerPhoneMinute, phoneId, "A code was sent moments ago. Please wait a minute.");
@@ -36,7 +36,7 @@ async function issue(userId: string, phone: string, purpose: "verify" | "signin"
   const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
   await db.delete(phoneOtps).where(and(eq(phoneOtps.userId, userId), eq(phoneOtps.purpose, purpose)));
   const [row] = await db.insert(phoneOtps).values({ userId, phone, purpose, codeHash: hashCode(phone, purpose, code), expiresAt: new Date(Date.now() + OTP_MINUTES * 60_000) }).returning({ id: phoneOtps.id });
-  try { await sendOtpSms(phone, code); }
+  try { await sendOtpSms(phone, code, channel); }
   catch (error) { await db.delete(phoneOtps).where(eq(phoneOtps.id, row.id)); throw error; }
 }
 
@@ -56,12 +56,12 @@ async function consume(userId: string, phone: string, purpose: "verify" | "signi
 }
 
 /** Signed-in customer asks for a code to prove a mobile number is theirs. */
-export async function requestPhoneVerification(userId: string, phoneInput: string, ip: string) {
-  if (!smsConfigured() && process.env.NODE_ENV === "production") throw new PublicError("SMS codes are not switched on yet.", 503, { code: "sms_not_configured" });
+export async function requestPhoneVerification(userId: string, phoneInput: string, ip: string, channel?: string | null) {
+  if (!otpChannels().length && process.env.NODE_ENV === "production") throw new PublicError("SMS codes are not switched on yet.", 503, { code: "sms_not_configured" });
   const phone = indianPhoneOrThrow(phoneInput);
   const [taken] = await db.select({ id: users.id }).from(users).where(and(eq(users.phone, phone), sql`${users.phoneVerifiedAt} is not null`, ne(users.id, userId), isNull(users.deletedAt))).limit(1);
   if (taken) throw new PublicError("This number is already verified on another account.", 409, { code: "phone_taken", fields: { phone: "This number is already used on another account." } });
-  await issue(userId, phone, "verify", ip);
+  await issue(userId, phone, "verify", ip, channel);
 }
 
 export async function confirmPhoneVerification(userId: string, phoneInput: string, code: string, ip: string) {
@@ -82,7 +82,7 @@ async function verifiedOwner(phone: string) {
 }
 
 /** Sign-in by SMS. The reply is the same whether or not the number is registered. */
-export async function requestSignInSms(phoneInput: string, ip: string) {
+export async function requestSignInSms(phoneInput: string, ip: string, channel?: string | null) {
   const phone = indianPhoneOrThrow(phoneInput);
   const owner = await verifiedOwner(phone);
   if (!owner) {
@@ -92,7 +92,7 @@ export async function requestSignInSms(phoneInput: string, ip: string) {
     await enforceRate(RATE_RULES.smsSendPerPhoneMinute, phoneId, "A code was sent moments ago. Please wait a minute.");
     return;
   }
-  await issue(owner, phone, "signin", ip);
+  await issue(owner, phone, "signin", ip, channel);
 }
 
 export async function signInWithSms(phoneInput: string, code: string, ip: string) {

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { promptDue } from "@/lib/mobile-login-core";
 import { secureApi, secureResult } from "@/lib/secure-api-client";
 
-type Status = { missing: ("name" | "email" | "mobile" | "whatsapp")[]; smsEnabled: boolean; rewards: { phone: number; email: number }; earned: string[]; user: { name: string; email: string; phone: string; whatsapp: string } };
+type Status = { missing: ("name" | "email" | "mobile" | "whatsapp")[]; smsEnabled: boolean; whatsappEnabled?: boolean; rewards: { phone: number; email: number }; earned: string[]; user: { name: string; email: string; phone: string; whatsapp: string } };
 const SEEN_KEY = "nise-signed-in-at"; const SHOWN_KEY = "nise-verify-shown";
 const read = (key: string) => { try { const value = window.localStorage.getItem(key); return value ? Number(value) : null; } catch { return null; } };
 const write = (key: string, value: number) => { try { window.localStorage.setItem(key, String(value)); } catch { /* storage can be blocked */ } };
@@ -45,7 +45,7 @@ export default function VerifyPrompt({ signedIn }: { signedIn: boolean }) {
       {status.missing.includes("name") && <NameRow onSaved={refresh}/>}
       {status.missing.includes("whatsapp") && <WhatsAppRow defaultValue={status.user.phone.replace(/^\+91/, "")} onSaved={refresh}/>}
       {status.missing.includes("email") && <EmailRow reward={status.rewards.email} onVerified={refresh}/>}
-      {status.missing.includes("mobile") && <MobileRow phone={status.user.phone.replace(/^\+91/, "")} smsEnabled={status.smsEnabled} reward={status.rewards.phone} onVerified={refresh}/>}
+      {status.missing.includes("mobile") && <MobileRow phone={status.user.phone.replace(/^\+91/, "")} smsEnabled={status.smsEnabled} whatsappEnabled={Boolean(status.whatsappEnabled)} reward={status.rewards.phone} onVerified={refresh}/>}
       <button type="button" className="btn btn--ghost btn--block" onClick={() => setOpen(false)}>Not now</button>
     </div>
   </div>;
@@ -77,15 +77,18 @@ function EmailRow({ reward, onVerified }: { reward: number; onVerified: () => vo
       : <button type="button" className="btn btn--primary btn--sm" disabled={busy || !email.includes("@")} onClick={() => void send()}>Send code</button>}</div>;
 }
 
-function MobileRow({ phone, smsEnabled, reward, onVerified }: { phone: string; smsEnabled: boolean; reward: number; onVerified: () => void }) {
+function MobileRow({ phone, smsEnabled, whatsappEnabled, reward, onVerified }: { phone: string; smsEnabled: boolean; whatsappEnabled: boolean; reward: number; onVerified: () => void }) {
   const [value, setValue] = useState(phone); const [code, setCode] = useState(""); const [sent, setSent] = useState(false); const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
   if (!smsEnabled) return <p className="fine"><Smartphone size={14}/> Mobile verification by SMS is coming soon. We will ask again then (₹{reward}).</p>;
-  async function send() { setBusy(true); setError(""); const { ok, result } = await secureResult<{ error?: string }>("M8b5C1qJ7yL2", { action: "send", phone: value }); setBusy(false); if (!ok) setError(result.error ?? "Could not send the SMS."); else setSent(true); }
+  async function send(channel: "sms" | "whatsapp") { setBusy(true); setError(""); const { ok, result } = await secureResult<{ error?: string }>("M8b5C1qJ7yL2", { action: "send", phone: value, channel }); setBusy(false); if (!ok) setError(result.error ?? "Could not send the SMS."); else setSent(true); }
   async function confirm() { setBusy(true); setError(""); const { ok, result } = await secureResult<{ error?: string }>("M8b5C1qJ7yL2", { action: "verify", phone: value, code }); setBusy(false); if (!ok) setError(result.error ?? "That code did not work."); else onVerified(); }
   return <div className="verify-row"><label className="field"><span className="field__label"><Smartphone size={15}/> Verify mobile · ₹{reward}</span>
     <span className="input-wrap"><span className="input-prefix">+91</span><input inputMode="numeric" maxLength={14} value={value} disabled={sent} onChange={(e) => setValue(e.target.value.replace(/\D/g, "").slice(-10))} autoComplete="tel-national"/></span>
-    {sent && <span className="input-wrap"><input inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="6-digit code from SMS" autoComplete="one-time-code"/></span>}
+    {sent && <span className="input-wrap"><input inputMode="numeric" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="6-digit code" autoComplete="one-time-code"/></span>}
     <Msg text={error}/></label>
     {sent ? <button type="button" className="btn btn--primary btn--sm" disabled={busy || code.length !== 6} onClick={() => void confirm()}>Verify</button>
-      : <button type="button" className="btn btn--primary btn--sm" disabled={busy || value.length !== 10} onClick={() => void send()}>Send SMS</button>}</div>;
+      : <span className="verify-row__send">
+        <button type="button" className="btn btn--primary btn--sm" disabled={busy || value.length !== 10} onClick={() => void send("sms")}>Send SMS</button>
+        {whatsappEnabled && <button type="button" className="btn btn--soft btn--sm" disabled={busy || value.length !== 10} onClick={() => void send("whatsapp")}>Send on WhatsApp</button>}
+      </span>}</div>;
 }

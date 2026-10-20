@@ -8,6 +8,8 @@
  * nobody is blocked from entering a real place that isn't listed.
  */
 
+import { geo, INDIA_COUNTRY_ID } from "@/data/geo";
+
 export const INDIA_STATES = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat",
   "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh",
@@ -19,7 +21,7 @@ export const INDIA_STATES = [
 
 export type IndiaState = (typeof INDIA_STATES)[number];
 
-export const CITIES_BY_STATE: Record<string, string[]> = {
+const CURATED_CITIES: Record<string, string[]> = {
   "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool", "Rajahmundry", "Tirupati", "Kakinada", "Kadapa", "Anantapur"],
   "Arunachal Pradesh": ["Itanagar", "Naharlagun", "Pasighat", "Tawang", "Ziro"],
   Assam: ["Guwahati", "Silchar", "Dibrugarh", "Jorhat", "Nagaon", "Tinsukia", "Tezpur"],
@@ -58,12 +60,57 @@ export const CITIES_BY_STATE: Record<string, string[]> = {
   Puducherry: ["Puducherry", "Karaikal", "Yanam", "Mahe"],
 };
 
+/** Dataset state names (src/data/geo, MSG91 ids) -> our official names. Dataset entries not listed here and not in INDIA_STATES are ignored. */
+const DATASET_STATE_ALIASES: Record<string, string> = {
+  Pondicherry: "Puducherry",
+  "Dadra and Nagar Haveli": "Dadra and Nagar Haveli and Daman and Diu",
+  "Daman and Diu": "Dadra and Nagar Haveli and Daman and Diu",
+};
+
+/** Our hand-picked major cities first (so Jamshedpur etc. stay on top), then every other town from the dataset, A-Z, no duplicates. */
+function mergeCities(): Record<string, string[]> {
+  const merged: Record<string, string[]> = {};
+  const seen: Record<string, Set<string>> = {};
+  const add = (state: string, city: string) => {
+    const key = city.trim().toLowerCase();
+    if (!key) return;
+    (seen[state] ??= new Set());
+    if (seen[state].has(key)) return;
+    seen[state].add(key);
+    (merged[state] ??= []).push(city.trim());
+  };
+  for (const state of INDIA_STATES) for (const city of CURATED_CITIES[state] ?? []) add(state, city);
+  const official = new Set<string>(INDIA_STATES);
+  const extra: Record<string, string[]> = {};
+  for (const row of geo.states(INDIA_COUNTRY_ID)) {
+    const state = official.has(row.name) ? row.name : DATASET_STATE_ALIASES[row.name];
+    if (!state) continue;
+    for (const city of geo.cities(INDIA_COUNTRY_ID, row.id)) (extra[state] ??= []).push(city.name);
+  }
+  for (const [state, cities] of Object.entries(extra)) for (const city of cities.sort((a, b) => a.localeCompare(b))) add(state, city);
+  return merged;
+}
+
+export const CITIES_BY_STATE: Record<string, string[]> = mergeCities();
+
 export const CITY_NOT_LISTED = "__other__";
 
-/** ISO-ish common-name country list for the rare "address outside India" case (PAN form). */
-export const COUNTRIES = [
-  "India", "United States", "United Kingdom", "United Arab Emirates", "Saudi Arabia", "Qatar",
-  "Kuwait", "Oman", "Bahrain", "Singapore", "Malaysia", "Australia", "Canada", "Germany",
-  "France", "Netherlands", "Italy", "Spain", "South Africa", "Nigeria", "Nepal", "Bangladesh",
-  "Sri Lanka", "China", "Japan", "South Korea", "Thailand", "Indonesia", "New Zealand", "Other",
+/** Every country from the geo dataset (India first, "Other" last) for the rare "address outside India" case. */
+export const COUNTRIES: string[] = [
+  "India",
+  ...geo.countries().map((row) => row.name).filter((name) => name !== "India").sort((a, b) => a.localeCompare(b)),
+  "Other",
 ];
+
+/** States of any country: India uses our cleaned official list; other countries use the dataset (empty = let the person type it). */
+export function statesFor(country: string): string[] {
+  if (country === "India") return [...INDIA_STATES];
+  const found = geo.findCountry(country);
+  return found ? geo.states(found.id).map((state) => state.name) : [];
+}
+
+export function citiesFor(country: string, state: string): string[] {
+  if (country === "India") return CITIES_BY_STATE[state] ?? [];
+  const found = geo.findCountry(country);
+  return found && state ? geo.cities(found.id, state).map((city) => city.name) : [];
+}
