@@ -1,4 +1,4 @@
-import { and, desc, eq, ilike, inArray, isNull, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or, sql, type SQL } from "drizzle-orm";
 import { contacts, customerRecords, recordImports } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import { db } from "@/lib/db";
@@ -67,34 +67,39 @@ export async function importRecords(fileName: string, sheets: SheetInput[], acto
 
 export type Person = { name: string; services: Map<string, string | null>; area?: string | null; email?: string | null; birth?: { month: number; day: number } | null };
 
-/** Adds imported people to WhatsApp contacts (consent "not asked"). Existing contacts keep their YES/STOP and gain the new services, email and birthday. */
+/** Adds imported people to WhatsApp contacts (consent "not asked"). Existing contacts keep their YES/STOP and gain the new services, email and birthday. Works in batches of 300 people. */
 export async function addContacts(people: Map<string, Person>, fileName: string) {
   let added = 0;
   const entries = [...people.entries()];
+  type Service = { service: string; renewalOn: string | null; note: string | null };
   for (let offset = 0; offset < entries.length; offset += 300) {
     const chunk = entries.slice(offset, offset + 300);
-    const existing = await db.select({ phone: contacts.phone, services: contacts.services }).from(contacts).where(inArray(contacts.phone, chunk.map(([phone]) => phone)));
-    type Service = { service: string; renewalOn: string | null; note: string | null };
-    const known = new Map<string, Service[]>(existing.map((row): [string, Service[]] => [row.phone, (row.services ?? []) as Service[]]));
+    const existing = await db.select({ phone: contacts.phone, services: contacts.services, email: contacts.email, birthMonth: contacts.birthMonth }).from(contacts).where(inArray(contacts.phone, chunk.map(([phone]) => phone)));
+    const known = new Map(existing.map((row) => [row.phone, { services: (row.services ?? []) as Service[], email: row.email, birthMonth: row.birthMonth }]));
+    const fresh: (typeof contacts.$inferInsert)[] = [];
+    const updates: { phone: string; services: Service[]; email: string | null; m: number | null; d: number | null }[] = [];
     for (const [phone, person] of chunk) {
-      const fresh = [...person.services.entries()].map(([service, renewalOn]) => ({ service, renewalOn, note: null }));
+      const list = [...person.services.entries()].map(([service, renewalOn]): Service => ({ service, renewalOn, note: null }));
       const current = known.get(phone);
       if (!current) {
-        const result = await db.insert(contacts).values({ name: person.name.slice(0, 100), phone, services: fresh, area: person.area?.slice(0, 80) || null, email: person.email ?? null, birthMonth: person.birth?.month ?? null, birthDay: person.birth?.day ?? null, source: `import: ${fileName}`.slice(0, 40) }).onConflictDoNothing().returning({ id: contacts.id });
-        added += result.length;
-      } else {
-        const merged = [...current];
-        for (const item of fresh) {
-          const index = merged.findIndex((old) => old.service === item.service);
-          if (index < 0) merged.push(item);
-          else if (item.renewalOn && (!merged[index].renewalOn || item.renewalOn > (merged[index].renewalOn ?? ""))) merged[index] = { ...merged[index], renewalOn: item.renewalOn };
-        }
-        if (merged.length !== current.length || JSON.stringify(merged) !== JSON.stringify(current)) await db.update(contacts).set({ services: merged.slice(0, 12), updatedAt: new Date() }).where(eq(contacts.phone, phone));
-        // Fill in an email address or birthday the contact didn't have yet (never overwrites what is saved).
-        if (person.email) await db.update(contacts).set({ email: person.email }).where(and(eq(contacts.phone, phone), isNull(contacts.email)));
-        if (person.birth) await db.update(contacts).set({ birthMonth: person.birth.month, birthDay: person.birth.day }).where(and(eq(contacts.phone, phone), isNull(contacts.birthMonth)));
+        fresh.push({ name: person.name.slice(0, 100), phone, services: list, area: person.area?.slice(0, 80) || null, email: person.email ?? null, birthMonth: person.birth?.month ?? null, birthDay: person.birth?.day ?? null, source: `import: ${fileName}`.slice(0, 40) });
+        continue;
       }
+      const merged = [...current.services];
+      for (const item of list) {
+        const index = merged.findIndex((old) => old.service === item.service);
+        if (index < 0) merged.push(item);
+        else if (item.renewalOn && (!merged[index].renewalOn || item.renewalOn > (merged[index].renewalOn ?? ""))) merged[index] = { ...merged[index], renewalOn: item.renewalOn };
+      }
+      const servicesChanged = JSON.stringify(merged) !== JSON.stringify(current.services);
+      // Only fill in an email address or birthday the contact doesn't have yet (never overwrites what is saved).
+      const needsEmail = Boolean(person.email) && !current.email;
+      const needsBirth = Boolean(person.birth) && current.birthMonth === null;
+      if (servicesChanged || needsEmail || needsBirth) updates.push({ phone, services: merged.slice(0, 12), email: person.email ?? null, m: person.birth?.month ?? null, d: person.birth?.day ?? null });
     }
+    if (fresh.length) added += (await db.insert(contacts).values(fresh).onConflictDoNothing().returning({ id: contacts.id })).length;
+    if (updates.length) await db.execute(sql`update contacts c set services = v.services, email = coalesce(c.email, v.email), birth_day = case when c.birth_month is null then v.d else c.birth_day end, birth_month = coalesce(c.birth_month, v.m), updated_at = now()
+      from jsonb_to_recordset(${JSON.stringify(updates)}::jsonb) as v(phone text, services jsonb, email text, m int, d int) where c.phone = v.phone`);
   }
   return added;
 }

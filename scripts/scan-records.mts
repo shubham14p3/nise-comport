@@ -49,6 +49,7 @@ try {
     const { rows } = await pool.query("select id, service, source, name, renewal_on::text as renewal_on, birth_month, birth_day, vehicle, payload_enc from customer_records where id > $1 order by id limit 500", [cursor]);
     if (!rows.length) break;
     cursor = rows[rows.length - 1].id;
+    const ids: string[] = []; const months: (number | null)[] = []; const days: (number | null)[] = []; const vehicles: (string | null)[] = [];
     for (const row of rows) {
       stats.scanned++;
       let sealed: Sealed;
@@ -57,11 +58,10 @@ try {
       const birth = birthFromFields(fields);
       const vehicle = row.service === "insurance" ? vehicleFrom(fields, row.source) : null;
       let month: number | null = row.birth_month; let day: number | null = row.birth_day;
-      if (birth && (month !== birth.month || day !== birth.day)) {
-        month = birth.month; day = birth.day; stats.birthdays++;
-        await pool.query("update customer_records set birth_month = $2, birth_day = $3 where id = $1", [row.id, month, day]);
-      }
-      if (vehicle && row.vehicle !== vehicle) { stats.vehicles++; await pool.query("update customer_records set vehicle = $2 where id = $1", [row.id, vehicle]); }
+      let newBirth = false; let newVehicle: string | null = null;
+      if (birth && (month !== birth.month || day !== birth.day)) { month = birth.month; day = birth.day; stats.birthdays++; newBirth = true; }
+      if (vehicle && row.vehicle !== vehicle) { stats.vehicles++; newVehicle = vehicle; }
+      if (newBirth || newVehicle) { ids.push(row.id); months.push(newBirth ? month : null); days.push(newBirth ? day : null); vehicles.push(newVehicle); }
       const phone = sealed.whatsapp ?? sealed.mobile;
       if (!phone) continue;
       const person = people.get(phone) ?? { name: row.name as string, services: new Map<string, string | null>(), email: null, birth: null };
@@ -71,7 +71,11 @@ try {
       if (service) { const previous = person.services.get(service); if (!previous || (row.renewal_on && row.renewal_on > previous)) person.services.set(service, row.renewal_on ?? previous ?? null); }
       people.set(phone, person);
     }
-    process.stdout.write(`\r${stats.scanned} rows read…`);
+    // One statement for the whole batch instead of one per row.
+    if (ids.length) await pool.query(
+      `update customer_records c set birth_month = coalesce(v.m, c.birth_month), birth_day = coalesce(v.d, c.birth_day), vehicle = coalesce(v.veh, c.vehicle)
+       from (select unnest($1::uuid[]) as id, unnest($2::int[]) as m, unnest($3::int[]) as d, unnest($4::text[]) as veh) v where c.id = v.id`, [ids, months, days, vehicles]);
+    process.stdout.write(`\r${stats.scanned.toLocaleString("en-IN")} rows read…`);
   }
   process.stdout.write("\n");
 

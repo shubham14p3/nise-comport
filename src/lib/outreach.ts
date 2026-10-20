@@ -119,6 +119,7 @@ export async function scanRecords(actor: { id: string; name: string }) {
     const rows = await db.select().from(customerRecords).where(sql`${customerRecords.id} > ${cursor}`).orderBy(asc(customerRecords.id)).limit(500);
     if (!rows.length) break;
     cursor = rows[rows.length - 1].id;
+    const patches: { id: string; m: number | null; d: number | null; veh: string | null }[] = [];
     for (const row of rows) {
       result.scanned++;
       let sealed: Sealed;
@@ -126,10 +127,10 @@ export async function scanRecords(actor: { id: string; name: string }) {
       const fields = sealed.fields ?? {};
       const birth = birthFromFields(fields);
       const vehicle = row.service === "insurance" ? vehicleFrom(fields, row.source) : null;
-      const patch: Partial<typeof customerRecords.$inferInsert> = {};
+      const patch: { birthMonth?: number; birthDay?: number; vehicle?: string } = {};
       if (birth && (row.birthMonth !== birth.month || row.birthDay !== birth.day)) { patch.birthMonth = birth.month; patch.birthDay = birth.day; result.birthdays++; }
       if (vehicle && row.vehicle !== vehicle) { patch.vehicle = vehicle; result.vehicles++; }
-      if (Object.keys(patch).length) await db.update(customerRecords).set(patch).where(eq(customerRecords.id, row.id));
+      if (Object.keys(patch).length) patches.push({ id: row.id, m: patch.birthMonth ?? null, d: patch.birthDay ?? null, veh: patch.vehicle ?? null });
       const phone = sealed.whatsapp ?? sealed.mobile;
       if (!phone) continue;
       const person: Person = people.get(phone) ?? { name: row.name, services: new Map<string, string | null>(), area: null };
@@ -140,6 +141,9 @@ export async function scanRecords(actor: { id: string; name: string }) {
       if (service) { const previous = person.services.get(service); if (!previous || (row.renewalOn && row.renewalOn > previous)) person.services.set(service, row.renewalOn ?? previous ?? null); }
       people.set(phone, person);
     }
+    // One statement for the whole batch of 500 rows instead of one per row.
+    if (patches.length) await db.execute(sql`update customer_records c set birth_month = coalesce(v.m, c.birth_month), birth_day = coalesce(v.d, c.birth_day), vehicle = coalesce(v.veh, c.vehicle)
+      from jsonb_to_recordset(${JSON.stringify(patches)}::jsonb) as v(id uuid, m int, d int, veh text) where c.id = v.id`);
   }
   // Only people who have a birthday or an email need to be added or updated.
   const useful = new Map([...people].filter(([, person]) => person.birth || person.email || person.services.size));
