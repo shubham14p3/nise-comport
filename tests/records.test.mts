@@ -107,3 +107,17 @@ test("TP premium picks the vehicle with the closest standard premium", async () 
   const { nearestTpVehicle } = await import("../src/lib/record-import.ts");
   for (const [amount, vehicle] of [[538, "bike"], [714, "bike"], [1000, "bike"], [1366, "bike"], [1400, "bike"], [1700, "bike"], [2094, "car"], [2500, "bike"], [2804, "bike"], [3100, "bike"], [3200, "car"], [3416, "car"], [7897, "car"]] as const) assert.equal(nearestTpVehicle(amount), vehicle, String(amount));
 });
+
+test("vehicle from model name and cc, never from the insurer", async () => {
+  const { vehicleFrom, vehicleFromCc } = await import("../src/lib/record-import.ts");
+  assert.equal(vehicleFrom({ Model: "Hero Splendor Plus" }), "bike");
+  assert.equal(vehicleFrom({ Model: "Maruti Swift Dzire" }), "car");
+  assert.equal(vehicleFrom({ Vehicle: "Royal Enfield Classic 350" }), "bike");
+  assert.equal(vehicleFrom({ Make: "Tata Nexon" }), "car");
+  assert.equal(vehicleFrom({ Company: "Tata AIG", Insurer: "Bajaj Allianz" }), null);
+  assert.equal(vehicleFromCc({ CC: "1197" }), "car");
+  assert.equal(vehicleFromCc({ Engine: "110" }), "bike");
+  assert.equal(vehicleFromCc({ Model: "Pulsar 150cc" }), "bike");
+  assert.equal(vehicleFromCc({ CC: "550" }), null);
+  assert.equal(vehicleFrom({ CC: "796", "TP": "538" }), "car");
+});

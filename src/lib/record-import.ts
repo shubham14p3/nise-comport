@@ -157,8 +157,10 @@ export function birthFromFields(fields: Record<string, string>): Birth | null {
 }
 
 export type Vehicle = "bike" | "car";
-const BIKE = /\b(bike|bikes|motor\s*cycle|motorcycle|two[\s-]*wheel(?:er)?|2[\s-]*w(?:heeler)?|scooter|scooty|moped|activa|splendor|pulsar|bullet|royal\s*enfield)\b/i;
-const CAR = /\b(car|cars|four[\s-]*wheel(?:er)?|4[\s-]*w(?:heeler)?|suv|sedan|hatchback|swift|alto|i10|i20|creta|innova|bolero|scorpio|tata|maruti)\b/i;
+// Words and model names that say "two-wheeler" or "four-wheeler". Insurer names (Tata AIG, Bajaj Allianz, Royal Sundaram) are NOT
+// listed on purpose, so an insurer column never decides the vehicle.
+const BIKE = /\b(bike|bikes|motor\s*cycle|motorcycle|two[\s-]*wheel(?:er)?|2[\s-]*w(?:heeler)?|scooter|scooty|moped|activa|dio|splendor|passion|hf\s*deluxe|hf\s*100|glamour|xtreme|destini|maestro|pleasure|hero\s*honda|hero\s*motocorp|shine|unicorn|livo|hornet|cb\s*shine|cb\s*unicorn|jupiter|tvs|apache|star\s*city|ntorq|raider|ronin|platina|discover|ct\s*100|avenger|dominar|chetak|pulsar|ns\s*200|fz|fascino|ray\s*zr|mt[\s-]?15|r15|aerox|access\s*125|burgman|gixxer|hayabusa|classic\s*350|meteor|himalayan|hunter|thunderbird|ktm|duke|bullet|royal\s*enfield|vespa|jawa|yezdi|ather|ola\s*s1)\b/i;
+const CAR = /\b(car|cars|four[\s-]*wheel(?:er)?|4[\s-]*w(?:heeler)?|suv|sedan|hatchback|swift|alto|wagon\s*r|baleno|dzire|ertiga|brezza|celerio|ritz|eeco|ciaz|s[\s-]?presso|fronx|grand\s*vitara|maruti|santro|i10|i20|verna|venue|creta|aura|eon|exter|xcent|honda\s*city|amaze|jazz|brio|nexon|tiago|tigor|altroz|harrier|safari|indica|indigo|nano|sumo|xuv|thar|scorpio|bolero|kuv|marazzo|kwid|duster|triber|kiger|magnite|sunny|micra|seltos|sonet|carens|innova|fortuner|etios|glanza|hyryder|ecosport|figo|aspire|endeavour|vento|rapid|slavia|kushaq|hector|astor|gloster|compass|chevrolet|tavera|cruze|omni|gypsy|ambassador)\b/i;
 const VEHICLE_LABEL = /vehicle|veh\b|type|class|make|model|reg|policy\s*for|cover\s*for/i;
 
 /**
@@ -185,10 +187,27 @@ export function vehicleFromTp(fields: Record<string, string>): Vehicle | null {
   return null;
 }
 
+/**
+ * Engine size in cc, from a cc / engine / capacity column or from text like "Splendor 100cc". Up to 500 cc is a two-wheeler and
+ * 600 cc and more is a car; in between is unclear, so it is left to the other clues.
+ */
+const CC_LABEL = /\bcc\b|engine|capacity|displacement/i;
+export function vehicleFromCc(fields: Record<string, string>): Vehicle | null {
+  const classify = (cc: number): Vehicle | null => (cc >= 35 && cc <= 500 ? "bike" : cc >= 600 && cc <= 6000 ? "car" : null);
+  for (const [label, value] of Object.entries(fields)) {
+    if (CC_LABEL.test(label)) { const found = classify(Number(String(value).replace(/[^\d.]/g, ""))); if (found) return found; }
+    const inText = /\b(\d{2,4})\s*cc\b/i.exec(String(value));
+    if (inText) { const found = classify(Number(inText[1])); if (found) return found; }
+  }
+  return null;
+}
+
 /** "bike" or "car" for an insurance row: from a vehicle column, the TP premium, the sheet or file name, then any value in the row. */
 export function vehicleFrom(fields: Record<string, string>, source = ""): Vehicle | null {
   const test = (text: string): Vehicle | null => (BIKE.test(text) ? "bike" : CAR.test(text) ? "car" : null);
   for (const [label, value] of Object.entries(fields)) if (VEHICLE_LABEL.test(label)) { const found = test(value); if (found) return found; }
+  const fromCc = vehicleFromCc(fields);
+  if (fromCc) return fromCc;
   const fromTp = vehicleFromTp(fields);
   if (fromTp) return fromTp;
   const fromSource = test(source.replace(/^.*›/, ""));
