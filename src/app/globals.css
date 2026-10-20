@@ -291,8 +291,17 @@ b, strong { font-weight: 600; }
 .nav-signin { font-weight: 600; padding: 10px 14px; border-radius: 12px; color: var(--ink); }
 .nav-signin:hover { background: var(--tint); }
 .nav-placeholder { width: 84px; height: 40px; }
+/* Shown while the header checks whether you are signed in. */
+.nav-skeleton { display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 4px 16px 4px 4px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--surface); }
+.nav-skeleton__dot { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(90deg, var(--line) 25%, var(--tint) 50%, var(--line) 75%); background-size: 200% 100%; animation: nav-shimmer 1.1s linear infinite; }
+.nav-skeleton__bar { width: 52px; height: 10px; border-radius: 6px; background: linear-gradient(90deg, var(--line) 25%, var(--tint) 50%, var(--line) 75%); background-size: 200% 100%; animation: nav-shimmer 1.1s linear infinite; }
+@keyframes nav-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .nav-skeleton__dot, .nav-skeleton__bar { animation: none; } }
 .account-chip { display: inline-flex; align-items: center; gap: 8px; padding: 4px 14px 4px 4px; border-radius: 999px; border: 1.5px solid var(--line); font-weight: 600; font-size: .9375rem; }
 .account-chip:hover { border-color: var(--blue); }
+.account-chip.is-verifying .account-avatar { animation: nav-pulse 1s ease-in-out infinite; }
+@keyframes nav-pulse { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .account-chip.is-verifying .account-avatar { animation: none; } }
 .account-avatar { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--grad); color: #fff; font-weight: 700; }
 .nav-signout { width: 40px; height: 40px; color: var(--muted); }
 .menu-toggle { display: none; align-items: center; justify-content: center; width: 46px; height: 46px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); }
