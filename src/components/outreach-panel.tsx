@@ -203,6 +203,7 @@ function Birthdays({ config }: { config: Config | null }) {
         {person.consent !== "opted_in" ? <button type="button" className="profile-text-button" disabled={busy === person.id} onClick={() => void consent(person, "whatsapp", "opted_in")}>WhatsApp YES</button> : <button type="button" className="profile-text-button" disabled={busy === person.id} onClick={() => void consent(person, "whatsapp", "unknown")}>Undo YES</button>}
         {person.email && (person.emailConsent !== "opted_in" ? <button type="button" className="profile-text-button" disabled={busy === person.id} onClick={() => void consent(person, "email", "opted_in")}>Email OK</button> : <button type="button" className="profile-text-button" disabled={busy === person.id} onClick={() => void consent(person, "email", "unknown")}>Undo OK</button>)}
         <a className="profile-text-button" href={`tel:${person.phone}`}><Phone size={13}/> Call</a>
+        {person.email && person.emailConsent !== "opted_out" && <a className="profile-text-button" href={`mailto:${person.email}`}><Mail size={13}/> Email</a>}
         {person.consent !== "opted_out" && <a className="profile-text-button" href={waLink(person.phone)} target="_blank" rel="noreferrer"><MessageCircle size={13}/> Chat</a>}
         <a className="profile-text-button" href={person.cardUrl} target="_blank" rel="noreferrer" title="Open the card to save it, then post it on Instagram or WhatsApp status"><Download size={13}/> Card</a>
         <button type="button" className="profile-text-button" disabled={busy === person.id} onClick={() => void copyOne(person)} title="Copies this person's WhatsApp message to paste into WhatsApp"><Copy size={13}/> {copied === `msg-${person.id}` ? "Copied" : "WhatsApp text"}</button>
@@ -308,6 +309,7 @@ function Renewals({ config }: { config: Config | null }) {
       </div>
       <div className="contact-row__actions">
         <a className="profile-text-button" href={`tel:${person.phone}`}><Phone size={13}/> Call</a>
+        {person.email && person.emailConsent !== "opted_out" && <a className="profile-text-button" href={`mailto:${person.email}`}><Mail size={13}/> Email</a>}
         {person.consent !== "opted_out" && <a className="profile-text-button" href={waLink(person.phone)} target="_blank" rel="noreferrer"><MessageCircle size={13}/> Chat</a>}
       </div>
     </article>)}</div>
