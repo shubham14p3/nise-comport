@@ -151,3 +151,35 @@ test("the data can be refreshed once in the morning and once in the evening (Ind
   assert.equal(none.allowed, false); assert.equal(none.usedToday, 2); assert.equal(none.nextAt, "2026-10-20T18:30:00.000Z"); // midnight IST
   assert.equal(refreshStatus(afterEvening, new Date("2026-10-21T04:00:00Z")).allowed, true); // next morning
 });
+
+import { addYears, collapseRenewals, rollRenewal, renewalWhatsApp as renewalWa, DEFAULT_RENEWAL_TEMPLATES as RENEWALS } from "../src/lib/outreach-core.ts";
+
+test("old policies roll forward to the next yearly anniversary", () => {
+  assert.deepEqual(rollRenewal("2026-01-01", "2026-10-20"), { date: "2027-01-01", estimated: true });
+  assert.deepEqual(rollRenewal("2024-03-15", "2026-10-20"), { date: "2027-03-15", estimated: true });
+  assert.deepEqual(rollRenewal("2026-10-30", "2026-10-20"), { date: "2026-10-30", estimated: false });
+  assert.deepEqual(rollRenewal("2026-10-05", "2026-10-20"), { date: "2026-10-05", estimated: false }); // 15 days overdue: still real
+  assert.equal(rollRenewal("2026-09-01", "2026-10-20").date, "2027-09-01");
+  assert.equal(addYears("2024-02-29", 1), "2025-02-28");
+  assert.equal(rollRenewal("2024-02-29", "2026-10-20").date, "2027-02-28");
+});
+
+test("one reminder per person and vehicle type, but different vehicles stay separate", () => {
+  const row = (group: string, date: string, original: string, estimated: boolean, vehicleKnown = true) => ({ group, date, original, estimated, vehicleKnown });
+  // Same bike, policy history 2023 and 2025 -> both roll near the same date: keep the latest policy.
+  const kept = collapseRenewals([row("m1|bike", "2027-06-10", "2024-06-10", true), row("m1|bike", "2027-06-25", "2025-06-25", true)]);
+  assert.equal(kept.length, 1); assert.equal(kept[0].original, "2025-06-25");
+  // A real date beats an estimate.
+  assert.equal(collapseRenewals([row("m1|car", "2026-11-02", "2026-11-02", false), row("m1|car", "2026-11-05", "2025-11-05", true)])[0].estimated, false);
+  // A bike and a car for the same mobile stay as two reminders.
+  assert.equal(collapseRenewals([row("m1|bike", "2027-01-01", "2026-01-01", true), row("m1|car", "2027-01-01", "2026-01-01", true)]).length, 2);
+  // Unknown vehicle: dates far apart are two separate vehicles.
+  assert.equal(collapseRenewals([row("m2|", "2027-01-01", "2026-01-01", true, false), row("m2|", "2027-06-01", "2026-06-01", true, false)]).length, 2);
+});
+
+test("an estimated renewal date is marked as approximate in the message", () => {
+  const exact = renewalWa(RENEWALS[0], "bike", "2027-01-01", "en", "9771219893");
+  const guess = renewalWa(RENEWALS[0], "bike", "2027-01-01", "en", "9771219893", true);
+  assert.ok(!exact.includes("approx") && guess.includes("(approx.)"));
+  assert.ok(renewalWa(RENEWALS[0], "bike", "2027-01-01", "hi", "9771219893", true).includes("अनुमानित"));
+});

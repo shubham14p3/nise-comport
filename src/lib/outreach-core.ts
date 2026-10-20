@@ -39,6 +39,52 @@ export function daysUntilBirthday(birth: Birth, today: string) {
 export function addDays(iso: string, days: number) { return new Date(Date.parse(`${iso}T00:00:00Z`) + days * 86_400_000).toISOString().slice(0, 10); }
 export function daysBetween(fromIso: string, toIso: string) { return Math.round((Date.parse(`${toIso}T00:00:00Z`) - Date.parse(`${fromIso}T00:00:00Z`)) / 86_400_000); }
 
+const MONTH_DAYS = (year: number) => [31, isLeap(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+/** The same day and month `years` later (29 February becomes 28 February in other years). */
+export function addYears(iso: string, years: number) {
+  const [year, month, day] = iso.split("-").map(Number);
+  const target = year + years;
+  return `${target}-${String(month).padStart(2, "0")}-${String(Math.min(day, MONTH_DAYS(target)[month - 1])).padStart(2, "0")}`;
+}
+
+/**
+ * Policies are assumed to renew every year. A renewal date that is more than `graceDays` in the past
+ * rolls forward by whole years to its next anniversary, so a policy that ended 1 Jan 2026 is due again on 1 Jan 2027.
+ * `estimated` is true when the date was rolled forward (it is a guess from the last policy we know of).
+ */
+export function rollRenewal(renewalOn: string, today: string, graceDays = 30) {
+  const floor = addDays(today, -graceDays);
+  if (renewalOn >= floor) return { date: renewalOn, estimated: false };
+  let years = Number(floor.slice(0, 4)) - Number(renewalOn.slice(0, 4));
+  let date = addYears(renewalOn, years);
+  if (date < floor) date = addYears(renewalOn, ++years);
+  return { date, estimated: true };
+}
+
+export type RenewalCandidate = { group: string; date: string; estimated: boolean; original: string; vehicleKnown: boolean };
+/**
+ * One reminder per person and vehicle type. Rows in the same group whose rolled dates are close (150 days when the
+ * vehicle type is known, 45 days when it is not) are the same vehicle's policy history: keep a real date over an estimate,
+ * then the most recent policy. Different vehicle types, or dates far apart, stay as separate reminders.
+ */
+export function collapseRenewals<T extends RenewalCandidate>(items: T[]): T[] {
+  const groups = new Map<string, T[]>();
+  for (const item of items) groups.set(item.group, [...(groups.get(item.group) ?? []), item]);
+  const out: T[] = [];
+  for (const list of groups.values()) {
+    list.sort((a, b) => a.date.localeCompare(b.date));
+    let cluster: T[] = [];
+    const flush = () => { if (cluster.length) out.push([...cluster].sort((a, b) => Number(a.estimated) - Number(b.estimated) || b.original.localeCompare(a.original))[0]); cluster = []; };
+    for (const item of list) {
+      const window = item.vehicleKnown ? 150 : 45;
+      if (cluster.length && daysBetween(cluster[0].date, item.date) > window) flush();
+      cluster.push(item);
+    }
+    flush();
+  }
+  return out;
+}
+
 export function birthdayLabel(birth: Birth, lang: Lang = "en") {
   const tag = lang === "hi" ? "hi-IN" : lang === "bn" ? "bn-IN" : "en-IN";
   return new Date(Date.UTC(2024, birth.month - 1, birth.day)).toLocaleDateString(tag, { day: "numeric", month: "long", timeZone: "UTC", numberingSystem: "latn" });
@@ -202,12 +248,13 @@ export const VEHICLE_NAME: Record<Vehicle | "other", Text3> = {
 };
 
 /** WhatsApp renewal text with the vehicle, date and phone filled in; {name} is left for renderMessage. */
-export function renewalWhatsApp(template: RenewalTemplate, vehicle: Vehicle | null, endsOn: string, lang: Lang, phone: string) {
-  return template.whatsapp[lang].replace(/\{name\}/g, "\u0000").replace(/\{(vehicle|date|phone)\}/g, (_, key: string) => ({ vehicle: VEHICLE_NAME[vehicle ?? "other"][lang], date: dateLabel(endsOn, lang), phone })[key] ?? "").replace(/\u0000/g, "{name}");
+const APPROX: Record<Lang, string> = { en: " (approx.)", hi: " (अनुमानित)", bn: " (আনুমানিক)" };
+export function renewalWhatsApp(template: RenewalTemplate, vehicle: Vehicle | null, endsOn: string, lang: Lang, phone: string, estimated = false) {
+  return template.whatsapp[lang].replace(/\{name\}/g, "\u0000").replace(/\{(vehicle|date|phone)\}/g, (_, key: string) => ({ vehicle: VEHICLE_NAME[vehicle ?? "other"][lang], date: dateLabel(endsOn, lang) + (estimated ? APPROX[lang] : ""), phone })[key] ?? "").replace(/\u0000/g, "{name}");
 }
 
-export function renewalEmail(template: RenewalTemplate, name: string, vehicle: Vehicle | null, endsOn: string, lang: Lang, phone: string) {
-  const values = { name: friendly(name, lang), vehicle: VEHICLE_NAME[vehicle ?? "other"][lang], date: dateLabel(endsOn, lang), phone };
+export function renewalEmail(template: RenewalTemplate, name: string, vehicle: Vehicle | null, endsOn: string, lang: Lang, phone: string, estimated = false) {
+  const values = { name: friendly(name, lang), vehicle: VEHICLE_NAME[vehicle ?? "other"][lang], date: dateLabel(endsOn, lang) + (estimated ? APPROX[lang] : ""), phone };
   return {
     subject: fillText(template.emailSubject[lang], values),
     heading: { en: "Time to renew", hi: "रिन्यू का समय", bn: "রিনিউয়ের সময়" }[lang],

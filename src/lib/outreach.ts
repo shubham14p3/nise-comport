@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, isNotNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { contacts, customerRecords, outreachLog, outreachSettings } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import { queueOutreach } from "@/lib/campaigns";
@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { sendMail } from "@/lib/email";
 import { PublicError } from "@/lib/errors";
 import {
-  addDays, birthdayEmail, birthdayLabel, birthdayWhatsApp, birthFromFields, DEFAULT_SETTINGS, daysBetween, daysUntilBirthday, instagramCaption, istToday, lastBirthday, markRefreshed, mayMessage, refreshStatus,
+  addDays, collapseRenewals, rollRenewal, birthdayEmail, birthdayLabel, birthdayWhatsApp, birthFromFields, DEFAULT_SETTINGS, daysBetween, daysUntilBirthday, instagramCaption, istToday, lastBirthday, markRefreshed, mayMessage, refreshStatus,
   pickBirthdayTemplate, pickRenewalTemplate, renewalEmail, renewalWhatsApp, sanitizeBirthdayTemplates, sanitizeRenewalTemplates, sanitizeSettings, vehicleFrom,
   type BirthdayCouponInfo, type BirthdayTemplate, type Lang, type OutreachSettings, type RefreshState, type RenewalTemplate, type Vehicle,
 } from "@/lib/outreach-core";
@@ -265,6 +265,9 @@ export async function sendBirthdays(input: { ids: string[]; channels: ("email" |
 // Insurance renewals
 // ---------------------------------------------------------------------------------------------
 
+/** Log reference for a reminder: the date, plus the vehicle type so two vehicles ending the same day are both sent. */
+function renewalRef(date: string, vehicle: string | null) { return vehicle ? `${date}|${vehicle}` : date; }
+
 export async function renewalsDue(options: { days: number; overdue?: boolean; vehicle?: string; q?: string; template?: string }) {
   const config = await loadConfig();
   const template = pickRenewalTemplate(config.renewalTemplates, options.template ?? config.settings.renewal.template);
@@ -272,24 +275,31 @@ export async function renewalsDue(options: { days: number; overdue?: boolean; ve
   const days = Math.max(1, Math.min(90, Math.round(options.days || 7)));
   const from = options.overdue ? addDays(today, -30) : today;
   const to = addDays(today, days);
-  const candidates = await db.select().from(customerRecords).where(and(eq(customerRecords.service, "insurance"), gte(customerRecords.renewalOn, from), lte(customerRecords.renewalOn, to)))
-    .orderBy(asc(customerRecords.renewalOn)).limit(3000);
-  const hashes = [...new Set(candidates.flatMap((row) => (row.mobileHash ? [row.mobileHash] : [])))];
-  const later = hashes.length ? await db.select({ hash: customerRecords.mobileHash, vehicle: customerRecords.vehicle, renewalOn: customerRecords.renewalOn }).from(customerRecords)
-    .where(and(eq(customerRecords.service, "insurance"), inArray(customerRecords.mobileHash, hashes), gte(customerRecords.renewalOn, from))) : [];
+  // Every insurance row with a renewal date. Policies are assumed to renew yearly, so an old date rolls forward to its next anniversary.
+  const all = await db.select({ id: customerRecords.id, name: customerRecords.name, mobileHash: customerRecords.mobileHash, mobileEnc: customerRecords.mobileEnc, contactEnc: customerRecords.contactEnc, vehicle: customerRecords.vehicle, renewalOn: customerRecords.renewalOn })
+    .from(customerRecords).where(and(eq(customerRecords.service, "insurance"), isNotNull(customerRecords.renewalOn), isNotNull(customerRecords.mobileEnc))).limit(30_000);
+  const rolled = all.flatMap((row) => {
+    const roll = rollRenewal(row.renewalOn!, today);
+    if (roll.date < from || roll.date > to) return [];
+    return [{ row, date: roll.date, estimated: roll.estimated, original: row.renewalOn!, group: `${row.mobileHash}|${row.vehicle ?? ""}`, vehicleKnown: Boolean(row.vehicle) }];
+  });
+  // The window above only holds some of each person's policies, so look at all of them before deciding which is the latest.
+  const everyone = new Set(rolled.map((item) => item.row.mobileHash));
+  const complete = all.filter((row) => everyone.has(row.mobileHash)).flatMap((row) => {
+    const roll = rollRenewal(row.renewalOn!, today);
+    return [{ row, date: roll.date, estimated: roll.estimated, original: row.renewalOn!, group: `${row.mobileHash}|${row.vehicle ?? ""}`, vehicleKnown: Boolean(row.vehicle) }];
+  });
+  const kept = collapseRenewals(complete).filter((item) => item.date >= from && item.date <= to);
   const seen = new Set<string>();
-  const found: { name: string; phone: string; email: string | null; vehicle: Vehicle | null; renewalOn: string }[] = [];
-  for (const row of candidates) {
-    if (!row.mobileEnc || !row.renewalOn) continue;
-    // A newer policy for the same person and vehicle (more than 90 days later) means this one was already renewed.
-    const renewed = later.some((other) => other.hash === row.mobileHash && other.renewalOn && other.renewalOn > addDays(row.renewalOn!, 90) && (!other.vehicle || !row.vehicle || other.vehicle === row.vehicle));
-    if (renewed) continue;
+  const found: { name: string; phone: string; email: string | null; vehicle: Vehicle | null; renewalOn: string; estimated: boolean }[] = [];
+  for (const item of kept.sort((a, b) => a.date.localeCompare(b.date))) {
+    const row = item.row;
     let phone: string; let email: string | null = null;
-    try { phone = open<string>(row.mobileEnc); if (row.contactEnc) email = open<{ email: string | null }>(row.contactEnc).email ?? null; } catch { continue; }
-    const key = `${phone}|${row.vehicle ?? ""}|${row.renewalOn}`;
+    try { phone = open<string>(row.mobileEnc!); if (row.contactEnc) email = open<{ email: string | null }>(row.contactEnc).email ?? null; } catch { continue; }
+    const key = `${phone}|${row.vehicle ?? ""}|${item.date}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    found.push({ name: row.name, phone, email, vehicle: (row.vehicle as Vehicle | null) ?? null, renewalOn: row.renewalOn });
+    found.push({ name: row.name, phone, email, vehicle: (row.vehicle as Vehicle | null) ?? null, renewalOn: item.date, estimated: item.estimated });
   }
   const phones = [...new Set(found.map((item) => item.phone))];
   const known = phones.length ? await db.select().from(contacts).where(inArray(contacts.phone, phones)) : [];
@@ -304,10 +314,10 @@ export async function renewalsDue(options: { days: number; overdue?: boolean; ve
       const contact = byPhone.get(item.phone);
       const lang = langOf(contact?.locale);
       const email = contact?.email ?? item.email;
-      const sent = (channel: string) => Boolean(contact && logged.some((entry) => entry.contactId === contact.id && entry.channel === channel && entry.ref === item.renewalOn));
+      const sent = (channel: string) => Boolean(contact && logged.some((entry) => entry.contactId === contact.id && entry.channel === channel && (entry.ref === item.renewalOn || entry.ref === renewalRef(item.renewalOn, item.vehicle))));
       const consents = { consent: contact?.consent ?? "unknown", emailConsent: contact?.emailConsent ?? "unknown", email };
       return {
-        key: `${item.phone}|${item.renewalOn}`, contactId: contact?.id ?? null, name: item.name, phone: item.phone, email, vehicle: item.vehicle, renewalOn: item.renewalOn,
+        key: `${item.phone}|${item.vehicle ?? ""}|${item.renewalOn}`, estimated: item.estimated, contactId: contact?.id ?? null, name: item.name, phone: item.phone, email, vehicle: item.vehicle, renewalOn: item.renewalOn,
         daysLeft: daysBetween(today, item.renewalOn), locale: lang, consent: consents.consent, emailConsent: consents.emailConsent,
         canEmail: Boolean(contact) && mayMessage("renewal", "email", consents), canWhatsApp: Boolean(contact) && mayMessage("renewal", "whatsapp", consents),
         sentEmail: sent("email"), sentWhatsApp: sent("whatsapp"),
@@ -341,11 +351,11 @@ export async function sendRenewals(input: { keys: string[]; channels: ("email" |
     if (input.channels.includes("email")) {
       if (!mayMessage("renewal", "email", contact)) report.notAllowed++;
       else {
-        const marker = await claim(contact.id, "renewal", "email", year, person.renewalOn);
+        const marker = await claim(contact.id, "renewal", "email", year, renewalRef(person.renewalOn, person.vehicle));
         if (!marker) report.alreadySent++;
         else {
           try {
-            const mail = renewalEmail(template, contact.name, person.vehicle, person.renewalOn, lang, shopPhone());
+            const mail = renewalEmail(template, contact.name, person.vehicle, person.renewalOn, lang, shopPhone(), person.estimated);
             await sendMail({ to: contact.email!, subject: mail.subject, heading: mail.heading, paragraphs: mail.paragraphs, unsubscribe: unsubscribeUrl(contact.id), action: { label: lang === "hi" ? "WhatsApp पर बात करें" : lang === "bn" ? "WhatsApp-এ কথা বলুন" : "Chat on WhatsApp", href: `https://wa.me/${site.whatsapp.primary}` } });
             report.emailSent++;
           } catch (error) { await release(marker); report.failed++; if (report.errors.length < 3) report.errors.push(error instanceof Error ? error.message : "Email failed."); }
@@ -355,11 +365,11 @@ export async function sendRenewals(input: { keys: string[]; channels: ("email" |
     if (input.channels.includes("whatsapp")) {
       if (!mayMessage("renewal", "whatsapp", contact)) report.notAllowed++;
       else {
-        const marker = await claim(contact.id, "renewal", "whatsapp", year, person.renewalOn);
+        const marker = await claim(contact.id, "renewal", "whatsapp", year, renewalRef(person.renewalOn, person.vehicle));
         if (!marker) report.alreadySent++;
         else {
           queueClaims.push(marker);
-          queue.push({ contactId: contact.id, phone: contact.phone, name: contact.name, locale: lang, body: renderMessage(renewalWhatsApp(template, person.vehicle, person.renewalOn, lang, shopPhone()), { lang, kind: "renewal", name: contact.name, phone: shopPhone() }), posterUrl: null });
+          queue.push({ contactId: contact.id, phone: contact.phone, name: contact.name, locale: lang, body: renderMessage(renewalWhatsApp(template, person.vehicle, person.renewalOn, lang, shopPhone(), person.estimated), { lang, kind: "renewal", name: contact.name, phone: shopPhone() }), posterUrl: null });
         }
       }
     }
@@ -471,7 +481,7 @@ export async function copyMessages(input: { kind: "birthday" | "renewal"; ids: s
     const contact = byPhone.get(person.phone);
     if (!contact || !mayMessage("renewal", "whatsapp", contact)) { skipped++; continue; }
     const lang = langOf(contact.locale);
-    items.push({ id: person.key, name: contact.name, phone: contact.phone, text: renderMessage(renewalWhatsApp(template, person.vehicle, person.renewalOn, lang, shopPhone()), { lang, kind: "renewal", name: contact.name, phone: shopPhone() }) });
+    items.push({ id: person.key, name: contact.name, phone: contact.phone, text: renderMessage(renewalWhatsApp(template, person.vehicle, person.renewalOn, lang, shopPhone(), person.estimated), { lang, kind: "renewal", name: contact.name, phone: shopPhone() }) });
   }
   return { items, skipped };
 }

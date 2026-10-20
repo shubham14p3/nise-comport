@@ -14,7 +14,7 @@ type BirthdayPerson = {
 };
 type BirthdayList = { totals: { all: number; today: number; week: number; month: number }; matched: number; template: string; people: BirthdayPerson[]; refresh?: RefreshStatus };
 type RenewalPerson = {
-  key: string; contactId: string | null; name: string; phone: string; email: string | null; vehicle: "bike" | "car" | null; renewalOn: string; daysLeft: number; locale: Lang;
+  key: string; contactId: string | null; name: string; phone: string; email: string | null; vehicle: "bike" | "car" | null; renewalOn: string; estimated?: boolean; daysLeft: number; locale: Lang;
   consent: string; emailConsent: string; canEmail: boolean; canWhatsApp: boolean; sentEmail: boolean; sentWhatsApp: boolean;
 };
 type RenewalList = { people: RenewalPerson[]; matched: number; totals: { bike: number; car: number; unknown: number }; template: string; from: string; to: string; refresh?: RefreshStatus };
@@ -302,7 +302,7 @@ function Renewals({ config }: { config: Config | null }) {
     <div className="contact-list">{people.map((person) => <article key={person.key} className="contact-row outreach-row">
       <input type="checkbox" aria-label={`Select ${person.name}`} checked={picked.has(person.key)} onChange={(event) => setPicked((current) => { const next = new Set(current); if (event.target.checked) next.add(person.key); else next.delete(person.key); return next; })}/>
       <div>
-        <b>{person.name}</b> <span className={person.daysLeft < 0 ? "status-pill status-pill--warn" : person.daysLeft <= 3 ? "status-pill status-pill--warn" : "status-pill"}>{person.vehicle === "bike" ? "Bike" : person.vehicle === "car" ? "Car" : "Vehicle"} · ends {day(person.renewalOn)} ({when(person.daysLeft)})</span>
+        <b>{person.name}</b> <span className={person.daysLeft < 0 ? "status-pill status-pill--warn" : person.daysLeft <= 3 ? "status-pill status-pill--warn" : "status-pill"}>{person.vehicle === "bike" ? "Bike" : person.vehicle === "car" ? "Car" : "Vehicle"} · {person.estimated ? "due about" : "ends"} {day(person.renewalOn)} ({when(person.daysLeft)})</span>
         <small>{person.phone}{person.email ? ` · ${person.email}` : " · no email"} · {person.locale.toUpperCase()}{person.contactId ? "" : " · not in contacts yet"}</small>
         <span className="outreach-row__state">WhatsApp {pill(person.consent, "YES", "STOP", "ok")} Email {pill(person.emailConsent, "OK", "stopped", "ok")}{person.sentEmail && <em><Check size={12}/> emailed</em>}{person.sentWhatsApp && <em><Check size={12}/> WhatsApp queued</em>}</span>
       </div>
