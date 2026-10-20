@@ -1888,6 +1888,8 @@ a.pan-card:hover { transform: translateY(-4px); box-shadow: var(--shadow); }
 .admin-desk .profile__avatar--staff { background: var(--grad); }
 .admin-desk .profile__hello .eyebrow { display: inline-flex; align-items: center; gap: 6px; }
 .admin-desk .profile__main.admin-page { padding: 0; gap: 18px; }
+/* Wide screens: the menu floats over the banner, but the page content starts below it (headings and plain text were landing on the dark banner). */
+@media (min-width: 1061px) { .admin-desk .profile__layout .profile__main.admin-page { padding-top: clamp(64px, calc(7vw + 8px), 80px); } }
 .admin-desk .admin-queue, .admin-desk .admin-filters, .admin-desk .pan-import, .admin-desk .wallet-admin { box-shadow: var(--shadow-sm); border-radius: var(--r-lg); }
 .admin-desk .admin-filters { display: grid; grid-template-columns: 220px minmax(0, 1fr) auto auto; align-items: end; gap: 12px; }
 .admin-desk .admin-filters .btn { min-height: 48px; }
@@ -2914,3 +2916,23 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .outreach-skeleton span + span { width: 34%; }
 .contact-list.is-loading { opacity: .55; pointer-events: none; transition: opacity .15s; }
 @media (prefers-reduced-motion: reduce) { .outreach-loader__icon, .outreach-skeleton i, .outreach-skeleton b, .outreach-skeleton span { animation: none; } }
+
+/* Admin: checkbox switches sit beside their text (the generic admin label stacks them). */
+.admin-page label.loyalty-switch { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.admin-page label.loyalty-switch input[type="checkbox"] { width: 20px; height: 20px; flex: none; accent-color: var(--blue); }
+.admin-page label.loyalty-switch input:not([type="checkbox"]) { flex: 1; min-width: 0; }
+
+/* Admin: each service price is one tidy block (name on top, then type, amount, note and Save) instead of a squeezed table row. */
+.price-editor, .price-editor tbody { display: block; border: 0; }
+.price-editor tr { display: grid; grid-template-columns: 120px minmax(0, 1fr) minmax(0, 1.6fr) auto; gap: 8px 10px; align-items: center; padding: 12px 4px; border-bottom: 1px solid var(--line); }
+.price-editor tbody th { grid-column: 1 / -1; width: auto; padding: 0; border: 0; }
+.price-editor td { padding: 0; border: 0; min-width: 0; }
+.admin-page .price-editor select, .admin-page .price-editor input { width: 100%; min-width: 0; min-height: 44px; }
+@media (max-width: 640px) {
+  .price-editor tr { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .price-editor td:nth-of-type(3), .price-editor td:nth-of-type(4) { grid-column: 1 / -1; }
+  .price-editor td .btn { width: 100%; }
+}
+
+/* On phones the Admin menu is already a row of tabs, so its hide/show toggle is not needed. */
+@media (max-width: 1060px) { .admin-desk .profile__nav-toggle { display: none; } }
