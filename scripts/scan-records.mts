@@ -109,5 +109,23 @@ try {
   console.log(`Done. ${stats.scanned} records read${stats.unreadable ? ` (${stats.unreadable} could not be decrypted: wrong RECORDS_ENCRYPTION_KEY?)` : ""}.`);
   console.log(`Birthdays found in records: ${stats.birthdays}. Bike/car marked: ${stats.vehicles}.`);
   console.log(`Contacts added: ${stats.contactsAdded}, updated: ${stats.contactsUpdated}. Contacts with a birthday now: ${count.n}.`);
+  const { rows: [summary] } = await pool.query(`
+    select
+      (select count(*)::int from contacts) as contacts,
+      (select count(*)::int from contacts where birth_month is not null) as birthdays,
+      (select count(*)::int from contacts where birth_month = extract(month from (now() at time zone 'Asia/Kolkata'))::int) as birthdays_this_month,
+      (select count(*)::int from contacts where email is not null) as emails,
+      (select count(*)::int from contacts where services @> '[{"service":"insurance"}]'::jsonb) as insurance_people,
+      (select count(distinct c.id)::int from contacts c, jsonb_array_elements(c.services) s
+         where s->>'service' = 'insurance' and s->>'renewalOn' between to_char(now() at time zone 'Asia/Kolkata','YYYY-MM-DD') and to_char((now() at time zone 'Asia/Kolkata') + interval '60 days','YYYY-MM-DD')) as renewals_60,
+      (select count(distinct c.id)::int from contacts c, jsonb_array_elements(c.services) s
+         where s->>'service' = 'insurance' and s->>'renewalOn' < to_char(now() at time zone 'Asia/Kolkata','YYYY-MM-DD')) as renewals_past,
+      (select count(*)::int from customer_records where service = 'insurance' and vehicle = 'bike') as bikes,
+      (select count(*)::int from customer_records where service = 'insurance' and vehicle = 'car') as cars`);
+  console.log(`\nWhat the admin will show now:`);
+  console.log(`  Contacts: ${summary.contacts} (${summary.emails} with an email)`);
+  console.log(`  Birthdays: ${summary.birthdays} people have one, ${summary.birthdays_this_month} this month`);
+  console.log(`  Insurance: ${summary.insurance_people} people, ${summary.renewals_60} renewals due in the next 60 days, ${summary.renewals_past} already past`);
+  console.log(`  Insurance vehicles marked: ${summary.bikes} bike, ${summary.cars} car`);
   if (stats.scanned && !stats.birthdays && !count.n) console.log("No date-of-birth column was found in the saved rows. Birthdays only appear when the Excel sheet had a column like DOB / Date of Birth / Birthday.");
 } finally { await pool.end(); }
