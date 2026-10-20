@@ -24,7 +24,13 @@ build
 *.sw?
 
 # Next.js and private customer uploads
-.next/
+# The built .next is committed so the server never builds (see docs/deploy.md). Only its caches stay out.
+.next/cache/
+.next/dev/
+.next/types/
+.next/trace
+.next/trace-build
+.next/diagnostics/
 .private-uploads/
 coverage/
 *.tsbuildinfo
@@ -53,3 +59,8 @@ coverage/
 
 # Remembered Excel location for npm run records:update
 # .records-source.json
+
+# Upload archive made by "git archive" and customer Excel registers: never commit
+*.zip
+myexcel/
+.records-source.json
