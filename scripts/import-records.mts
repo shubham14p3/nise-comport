@@ -92,7 +92,22 @@ try {
     let imported = 0;
     const people = new Map<string, Person>();
     for (let offset = 0; offset < parsed.records.length; offset += 150) {
-      const chunk = parsed.records.slice(offset, offset + 150);
+      let chunk = parsed.records.slice(offset, offset + 150);
+      // Rows that already exist and only gained a bike/car column are updated instead of added again.
+      const alt = new Map(chunk.flatMap((record) => record.altKeys.map((key) => [blindIndex("row", key), record] as const)));
+      if (alt.size) {
+        const { rows: found } = await pool.query("select row_hash from customer_records where row_hash = any($1::text[])", [[...alt.keys()]]);
+        const own = new Set((await pool.query("select row_hash from customer_records where row_hash = any($1::text[])", [chunk.map((record) => blindIndex("row", record.dedupeKey))])).rows.map((row) => row.row_hash));
+        const upgraded = new Set<unknown>();
+        for (const { row_hash: hash } of found) {
+          const record = alt.get(hash)!;
+          if (own.has(blindIndex("row", record.dedupeKey))) continue;
+          await pool.query("update customer_records set vehicle = coalesce($2, vehicle), payload_enc = $3 where row_hash = $1", [hash, record.vehicle, seal({ mobile: record.mobile, pan: record.pan, aadhaar: record.aadhaar, whatsapp: record.whatsapp, altMobiles: record.altMobiles, email: record.email, address: record.address, fields: record.fields })]);
+          upgraded.add(record);
+        }
+        chunk = chunk.filter((record) => !upgraded.has(record));
+      }
+      if (!chunk.length) { done += Math.min(150, parsed.records.length - offset); progress(fileName); continue; }
       const params: unknown[] = [];
       const tuples = chunk.map((record) => {
         const phoneHashes = [...new Set([record.mobile, record.whatsapp, ...record.altMobiles].filter((value): value is string => Boolean(value)))].map((value) => blindIndex("mobile", value));
@@ -119,7 +134,7 @@ try {
         if (service) { const previous = person.services.get(service); if (!previous || (record.renewalOn && record.renewalOn > previous)) person.services.set(service, record.renewalOn ?? previous ?? null); }
         people.set(phone, person);
       }
-      done += chunk.length; progress(fileName);
+      done += Math.min(150, parsed.records.length - offset); progress(fileName);
     }
 
     // Contacts: add new people, merge services / email / birthday for people already there.

@@ -128,3 +128,13 @@ test("TP below 1,000 is a bike and 1,000 to 1,400 is left open", async () => {
   for (const amount of ["1000", "1200", "1366", "1400"]) assert.equal(vehicleFromTp({ TP: amount }), null, amount);
   assert.equal(vehicleFromTp({ TP: "2094" }), "car"); assert.equal(vehicleFromTp({ TP: "2804" }), "bike");
 });
+
+test("adding a type column keeps a link to the old row key", async () => {
+  const { parseWorkbook } = await import("../src/lib/record-import.ts");
+  const head = ["comp", "date", "mob", "name", "regn no"]; const row = ["Digit", "2025-10-20", 9876500001, "Sunil Das", "JH05AB1234"];
+  const before = parseWorkbook("Digit", [{ name: "Digit", rows: [head, row] }]).records[0];
+  const after = parseWorkbook("Digit", [{ name: "Digit", rows: [[...head, "type"], [...row, "bike"]] }]).records[0];
+  assert.notEqual(after.dedupeKey, before.dedupeKey);
+  assert.ok(after.altKeys.includes(before.dedupeKey));
+  assert.equal(after.vehicle, "bike"); assert.deepEqual(before.altKeys, []);
+});

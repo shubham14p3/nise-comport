@@ -22,6 +22,8 @@ export type ParsedRecord = {
   fields: Record<string, string>;
   /** Stable text for duplicate detection (hashed before storage). */
   dedupeKey: string;
+  /** The same key without a vehicle-type column: lets a re-import recognise rows that only gained that column. */
+  altKeys: string[];
 };
 export type SheetReport = { sheet: string; service: string | null; rows: number; records: number; skipped: number; reason?: string; droppedColumns?: string[] };
 
@@ -161,6 +163,8 @@ export type Vehicle = "bike" | "car";
 // listed on purpose, so an insurer column never decides the vehicle.
 const BIKE = /\b(bike|bikes|motor\s*cycle|motorcycle|two[\s-]*wheel(?:er)?|2[\s-]*w(?:heeler)?|scooter|scooty|moped|activa|dio|splendor|passion|hf\s*deluxe|hf\s*100|glamour|xtreme|destini|maestro|pleasure|hero\s*honda|hero\s*motocorp|shine|unicorn|livo|hornet|cb\s*shine|cb\s*unicorn|jupiter|tvs|apache|star\s*city|ntorq|raider|ronin|platina|discover|ct\s*100|avenger|dominar|chetak|pulsar|ns\s*200|fz|fascino|ray\s*zr|mt[\s-]?15|r15|aerox|access\s*125|burgman|gixxer|hayabusa|classic\s*350|meteor|himalayan|hunter|thunderbird|ktm|duke|bullet|royal\s*enfield|vespa|jawa|yezdi|ather|ola\s*s1)\b/i;
 const CAR = /\b(car|cars|four[\s-]*wheel(?:er)?|4[\s-]*w(?:heeler)?|suv|sedan|hatchback|swift|alto|wagon\s*r|baleno|dzire|ertiga|brezza|celerio|ritz|eeco|ciaz|s[\s-]?presso|fronx|grand\s*vitara|maruti|santro|i10|i20|verna|venue|creta|aura|eon|exter|xcent|honda\s*city|amaze|jazz|brio|nexon|tiago|tigor|altroz|harrier|safari|indica|indigo|nano|sumo|xuv|thar|scorpio|bolero|kuv|marazzo|kwid|duster|triber|kiger|magnite|sunny|micra|seltos|sonet|carens|innova|fortuner|etios|glanza|hyryder|ecosport|figo|aspire|endeavour|vento|rapid|slavia|kushaq|hector|astor|gloster|compass|chevrolet|tavera|cruze|omni|gypsy|ambassador)\b/i;
+/** A column that only says bike or car. Adding one to an old register must not duplicate its rows. */
+export const TYPE_COLUMN = /^\s*(vehicle(\s*type)?|veh(icle)?\s*type|v\.?\s*type|type)\s*$/i;
 const VEHICLE_LABEL = /vehicle|veh\b|type|class|make|model|reg|policy\s*for|cover\s*for/i;
 
 /**
@@ -327,13 +331,15 @@ export function parseWorkbook(fileName: string, sheets: SheetInput[]): { records
       });
       const recordDate = dateFrom(at("date"));
       const renewalOn = dateFrom(at("renewal")) ?? (service === "insurance" && recordDate ? addYear(recordDate) : null);
-      const dedupeKey = [service, name.toLowerCase(), mobile, pan, aadhaar, recordDate, JSON.stringify(Object.entries(fields).sort())].join("|");
+      const keyFor = (values: Record<string, string>) => [service, name.toLowerCase(), mobile, pan, aadhaar, recordDate, JSON.stringify(Object.entries(values).sort())].join("|");
+      const dedupeKey = keyFor(fields);
+      const altKeys = Object.keys(fields).filter((label) => TYPE_COLUMN.test(label)).map((label) => keyFor(Object.fromEntries(Object.entries(fields).filter(([key]) => key !== label))));
       if (seen.has(dedupeKey)) { report.skipped++; continue; }
       seen.add(dedupeKey);
       const source = `${fileName} › ${sheet.name.trim()}`;
       const birth = birthFromText(at("dob")) ?? birthFromFields(fields);
       const vehicle = service === "insurance" ? vehicleFrom(fields, source) : null;
-      records.push({ service, source, name, mobile, pan, aadhaar, whatsapp: whatsapp && whatsapp !== mobile ? whatsapp : null, altMobiles, email, address, recordDate, renewalOn, birthMonth: birth?.month ?? null, birthDay: birth?.day ?? null, vehicle, fields, dedupeKey });
+      records.push({ service, source, name, mobile, pan, aadhaar, whatsapp: whatsapp && whatsapp !== mobile ? whatsapp : null, altMobiles, email, address, recordDate, renewalOn, birthMonth: birth?.month ?? null, birthDay: birth?.day ?? null, vehicle, fields, dedupeKey, altKeys });
       report.records++;
     }
   }

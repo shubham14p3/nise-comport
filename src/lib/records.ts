@@ -28,7 +28,22 @@ export async function importRecords(fileName: string, sheets: SheetInput[], acto
   let imported = 0;
   const people = new Map<string, Person>();
   for (let offset = 0; offset < parsed.records.length; offset += 400) {
-    const values = parsed.records.slice(offset, offset + 400).map((record) => ({
+    let batchRecords = parsed.records.slice(offset, offset + 400);
+    // Rows that already exist and only gained a bike/car column are updated instead of added again.
+    const alt = new Map(batchRecords.flatMap((record) => record.altKeys.map((key) => [blindIndex("row", key), record] as const)));
+    if (alt.size) {
+      const found = await db.select({ hash: customerRecords.rowHash }).from(customerRecords).where(inArray(customerRecords.rowHash, [...alt.keys()]));
+      const own = new Set((await db.select({ hash: customerRecords.rowHash }).from(customerRecords).where(inArray(customerRecords.rowHash, batchRecords.map((record) => blindIndex("row", record.dedupeKey))))).map((row) => row.hash));
+      const upgraded = new Set<unknown>();
+      for (const { hash } of found) {
+        const record = alt.get(hash)!;
+        if (own.has(blindIndex("row", record.dedupeKey))) continue;
+        await db.update(customerRecords).set({ ...(record.vehicle ? { vehicle: record.vehicle } : {}), payloadEnc: seal({ mobile: record.mobile, pan: record.pan, aadhaar: record.aadhaar, whatsapp: record.whatsapp, altMobiles: record.altMobiles, email: record.email, address: record.address, fields: record.fields } satisfies Sealed) }).where(eq(customerRecords.rowHash, hash));
+        upgraded.add(record);
+      }
+      batchRecords = batchRecords.filter((record) => !upgraded.has(record));
+    }
+    const values = batchRecords.map((record) => ({
       importId: batch.id, service: record.service, source: record.source.slice(0, 200), name: record.name,
       mobileHash: record.mobile ? blindIndex("mobile", record.mobile) : null,
       mobileEnc: record.mobile ? seal(record.mobile) : null, mobileLast4: record.mobile ? record.mobile.slice(-4) : null,
@@ -40,7 +55,7 @@ export async function importRecords(fileName: string, sheets: SheetInput[], acto
       payloadEnc: seal({ mobile: record.mobile, pan: record.pan, aadhaar: record.aadhaar, whatsapp: record.whatsapp, altMobiles: record.altMobiles, email: record.email, address: record.address, fields: record.fields } satisfies Sealed),
       rowHash: blindIndex("row", record.dedupeKey),
     }));
-    imported += (await db.insert(customerRecords).values(values).onConflictDoNothing().returning({ id: customerRecords.id })).length;
+    if (values.length) imported += (await db.insert(customerRecords).values(values).onConflictDoNothing().returning({ id: customerRecords.id })).length;
     for (const record of parsed.records.slice(offset, offset + 400)) {
       // WhatsApp campaigns go to the WhatsApp number when the sheet has one.
       const phone = record.whatsapp ?? record.mobile;
