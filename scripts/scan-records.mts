@@ -76,34 +76,48 @@ try {
   process.stdout.write("\n");
 
   const useful = [...people].filter(([, person]) => person.birth || person.email || person.services.size);
+  console.log(`Records read. Updating ${useful.length.toLocaleString("en-IN")} contacts…`);
+  const started = Date.now();
   for (let offset = 0; offset < useful.length; offset += 300) {
     const chunk = useful.slice(offset, offset + 300);
-    const existing = await pool.query("select phone, services from contacts where phone = any($1)", [chunk.map(([phone]) => phone)]);
-    const known = new Map<string, Service[]>(existing.rows.map((row): [string, Service[]] => [row.phone, (row.services ?? []) as Service[]]));
+    const { rows: existing } = await pool.query("select phone, services, email, birth_month from contacts where phone = any($1::text[])", [chunk.map(([phone]) => phone)]);
+    const known = new Map<string, { services: Service[]; email: string | null; birth_month: number | null }>(existing.map((row) => [row.phone as string, { services: (row.services ?? []) as Service[], email: row.email as string | null, birth_month: row.birth_month as number | null }]));
+    const fresh: [string, Person][] = [];
     for (const [phone, person] of chunk) {
-      const fresh: Service[] = [...person.services.entries()].map(([service, renewalOn]) => ({ service, renewalOn, note: null }));
+      const list: Service[] = [...person.services.entries()].map(([service, renewalOn]) => ({ service, renewalOn, note: null }));
       const current = known.get(phone);
-      if (!current) {
-        const added = await pool.query(
-          "insert into contacts (name, phone, services, email, birth_month, birth_day, source) values ($1,$2,$3::jsonb,$4,$5,$6,$7) on conflict (phone) do nothing",
-          [person.name.slice(0, 100), phone, JSON.stringify(fresh), person.email, person.birth?.month ?? null, person.birth?.day ?? null, "import: records scan"],
-        );
-        stats.contactsAdded += added.rowCount ?? 0;
-        continue;
-      }
-      const merged = [...current];
-      for (const item of fresh) {
+      if (!current) { fresh.push([phone, person]); continue; }
+      const merged = [...current.services];
+      for (const item of list) {
         const index = merged.findIndex((old) => old.service === item.service);
         if (index < 0) merged.push(item);
         else if (item.renewalOn && (!merged[index].renewalOn || item.renewalOn > (merged[index].renewalOn ?? ""))) merged[index] = { ...merged[index], renewalOn: item.renewalOn };
       }
-      let changed = JSON.stringify(merged) !== JSON.stringify(current);
-      if (changed) await pool.query("update contacts set services = $2::jsonb, updated_at = now() where phone = $1", [phone, JSON.stringify(merged.slice(0, 12))]);
-      if (person.email) { const r = await pool.query("update contacts set email = $2 where phone = $1 and email is null", [phone, person.email]); changed ||= (r.rowCount ?? 0) > 0; }
-      if (person.birth) { const r = await pool.query("update contacts set birth_month = $2, birth_day = $3 where phone = $1 and birth_month is null", [phone, person.birth.month, person.birth.day]); changed ||= (r.rowCount ?? 0) > 0; }
-      if (changed) stats.contactsUpdated++;
+      const servicesChanged = JSON.stringify(merged) !== JSON.stringify(current.services);
+      const needsEmail = Boolean(person.email) && !current.email;
+      const needsBirth = Boolean(person.birth) && current.birth_month === null;
+      if (servicesChanged || needsEmail || needsBirth) {
+        await pool.query("update contacts set services = $2::jsonb, email = coalesce(email, $3), birth_day = case when birth_month is null then $5::smallint else birth_day end, birth_month = coalesce(birth_month, $4::smallint), updated_at = now() where phone = $1",
+          [phone, JSON.stringify(merged.slice(0, 12)), person.email, person.birth?.month ?? null, person.birth?.day ?? null]);
+        stats.contactsUpdated++;
+      }
     }
+    if (fresh.length) {
+      const params: unknown[] = [];
+      const tuples = fresh.map(([phone, person]) => {
+        const list: Service[] = [...person.services.entries()].map(([service, renewalOn]) => ({ service, renewalOn, note: null }));
+        const base = params.length;
+        params.push(person.name.slice(0, 100), phone, JSON.stringify(list), person.email, person.birth?.month ?? null, person.birth?.day ?? null, "import: records scan");
+        return `($${base + 1},$${base + 2},$${base + 3}::jsonb,$${base + 4},$${base + 5}::smallint,$${base + 6}::smallint,$${base + 7})`;
+      });
+      const added = await pool.query(`insert into contacts (name, phone, services, email, birth_month, birth_day, source) values ${tuples.join(",")} on conflict (phone) do nothing`, params);
+      stats.contactsAdded += added.rowCount ?? 0;
+    }
+    const done = Math.min(offset + 300, useful.length);
+    const left = Math.round(((Date.now() - started) / 1000 / done) * (useful.length - done));
+    process.stdout.write(`\r  ${String(Math.floor((done / useful.length) * 100)).padStart(3)}%  ${done.toLocaleString("en-IN")} / ${useful.length.toLocaleString("en-IN")} contacts  ~${Math.floor(left / 60)}m ${left % 60}s left   `);
   }
+  process.stdout.write("\n");
   for (const [index, total] of worked) console.log(`${total} records opened with ${index === 0 && process.env.PAN_ENCRYPTION_KEY?.trim() !== keys[0] ? "RECORDS_ENCRYPTION_KEY" : keys[index] === process.env.PAN_ENCRYPTION_KEY?.trim() ? "PAN_ENCRYPTION_KEY" : "RECORDS_ENCRYPTION_KEY"}.`);
   const { rows: [count] } = await pool.query("select count(*)::int as n from contacts where birth_month is not null");
   console.log(`Done. ${stats.scanned} records read${stats.unreadable ? ` (${stats.unreadable} could not be decrypted: wrong RECORDS_ENCRYPTION_KEY?)` : ""}.`);
