@@ -89,7 +89,7 @@ export async function ingestInbound(input: { fromEmail: string; fromName: string
   if (created) {
     try {
       await sendTicketMail({
-        to: email, subject: subjectWithTag(subject, ticket.number, ticket.key), kind: "received", ticketCode: ticketCode(ticket.number), statusLabel: STATUS_LABEL.open, link: absoluteUrl(`${MAIL_PATH}?t=${ticket.number}`),
+        to: email, subject: subjectWithTag(subject, ticket.number, ticket.key), kind: "received", ticketCode: ticketCode(ticket.number), statusLabel: STATUS_LABEL.open, ticketSubject: ticket.subject, openedAt: ticket.createdAt, yourMessage: body || undefined, link: absoluteUrl(`${MAIL_PATH}?t=${ticket.number}`),
         from: `"${site.name} Support" <${supportAddress()}>`, replyTo: supportAddress(), inReplyTo: input.rfcMessageId ?? undefined, references: input.rfcMessageId ? [input.rfcMessageId] : undefined, automated: true,
       });
     } catch (error) { console.error("[mail] could not acknowledge an emailed message", error instanceof Error ? error.message : error); }

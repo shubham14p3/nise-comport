@@ -23,6 +23,7 @@ test("references are found, tickets are not mistaken for jobs", () => {
 });
 test("quoted replies are cut off", () => {
   assert.equal(stripQuotedReply("Thanks, got it.\n\nOn Mon, 5 Oct 2026 at 10:00, NISE COMPORT <info@x.com> wrote:\n> old text"), "Thanks, got it.");
+  assert.equal(stripQuotedReply("Here is my PAN photo.\n\n-#-#- Please reply above this line -#-#-\nWe have received your message"), "Here is my PAN photo.");
   assert.equal(stripQuotedReply("Yes\n> quoted\n> more"), "Yes");
   assert.equal(stripQuotedReply("Line one\nLine two"), "Line one\nLine two");
 });

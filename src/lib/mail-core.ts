@@ -60,6 +60,7 @@ export function stripQuotedReply(body: string): string {
   const out: string[] = [];
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+    if (/^\s*-#-#-\s*please reply above this line/i.test(line)) break;
     if (/^\s*>/.test(line)) { if (!out.some((l) => l.trim())) continue; break; }
     if (/^\s*on .{5,200}wrote:\s*$/i.test(line) || /^\s*-{2,}\s*(original message|forwarded message)\s*-{2,}/i.test(line) || /^\s*_{5,}\s*$/.test(line)) break;
     if (/^\s*from:\s.+/i.test(line) && /^\s*(sent|date):\s/i.test(lines[i + 1] ?? "")) break;

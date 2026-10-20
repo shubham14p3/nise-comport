@@ -43,6 +43,10 @@ type Mail = {
   unsubscribe?: string;
   /** A tidy key/value card (reference numbers, status, service name) instead of a paragraph of run-on text. */
   details?: { label: string; value: string; emphasis?: boolean }[];
+  /** Small grey line above everything, e.g. "Please reply above this line". */
+  topNote?: string;
+  /** The customer's own words, shown in a quote box under the details. */
+  quote?: { label: string; text: string };
   /** Message-centre mail: threading headers, a specific From and real attachments. */
   extra?: { from?: string; replyTo?: string; messageId?: string; inReplyTo?: string; references?: string[]; headers?: Record<string, string>; attachments?: { filename: string; content: Buffer; contentType: string }[] };
 };
@@ -70,7 +74,7 @@ function socialLabel(href: string) {
 function render(mail: Mail) {
   const footer = mail.footer ?? `${site.name} · ${site.address.oneLine} · ${site.phones.primary.display}`;
   const detailLines = mail.details?.map((row) => `${row.label}: ${row.value}`) ?? [];
-  const text = [mail.heading, "", ...mail.paragraphs, ...(detailLines.length ? ["", ...detailLines] : []), ...(mail.code ? ["", `Code: ${mail.code}`] : []), ...(mail.image ? ["", `${mail.image.alt}: ${mail.image.src}`] : []), ...(mail.action ? ["", `${mail.action.label}: ${mail.action.href}`] : []), ...(mail.unsubscribe ? ["", `Stop these emails: ${mail.unsubscribe}`] : []), "", footer].join("\n");
+  const text = [...(mail.topNote ? [`-#-#- ${mail.topNote} -#-#-`, ""] : []), mail.heading, "", ...mail.paragraphs, ...(detailLines.length ? ["", ...detailLines] : []), ...(mail.quote ? ["", `${mail.quote.label}:`, mail.quote.text] : []), ...(mail.code ? ["", `Code: ${mail.code}`] : []), ...(mail.image ? ["", `${mail.image.alt}: ${mail.image.src}`] : []), ...(mail.action ? ["", `${mail.action.label}: ${mail.action.href}`] : []), ...(mail.unsubscribe ? ["", `Stop these emails: ${mail.unsubscribe}`] : []), "", footer].join("\n");
 
   const logoUrl = absoluteUrl(site.logoPath);
   const siteHost = site.url.replace(/^https?:\/\//, "");
@@ -92,8 +96,13 @@ function render(mail: Mail) {
     </tr>`).join("")}
   </table>` : "";
 
+  const quoteBox = mail.quote ? `<div style="margin:0 0 20px;padding:14px 16px;background:${BG};border-left:4px solid ${BLUE};border-radius:10px;text-align:left">
+      <p style="margin:0 0 6px;font-size:12px;color:${MUTED};font-weight:600;text-transform:uppercase;letter-spacing:.04em">${escapeHtml(mail.quote.label)}</p>
+      <p style="margin:0;font-size:14px;line-height:1.55;color:${INK};white-space:pre-wrap;word-break:break-word">${escapeHtml(mail.quote.text)}</p></div>` : "";
+  const topBar = mail.topNote ? `<p style="margin:0 0 12px;text-align:center;color:${MUTED};font-size:12px;letter-spacing:.06em">-#-#- ${escapeHtml(mail.topNote)} -#-#-</p>` : "";
+
   const html = `<!doctype html><html lang="en"><body style="margin:0;background:${BG}"><div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:28px 16px">
-<div style="background:#ffffff;border:1px solid ${LINE};border-radius:20px;overflow:hidden;text-align:center">
+${topBar}<div style="background:#ffffff;border:1px solid ${LINE};border-radius:20px;overflow:hidden;text-align:center">
   <div style="padding:26px 28px;border-bottom:1px solid ${LINE};background:${BG};text-align:center">
     <img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(site.name)}" height="40" style="display:inline-block;height:40px;width:auto"/>
   </div>
@@ -102,6 +111,7 @@ function render(mail: Mail) {
     <div style="text-align:left">
       ${mail.paragraphs.map((paragraph) => `<p style="line-height:1.55;margin:0 0 14px;color:${INK}">${escapeHtml(paragraph).replace(/\n/g, "<br/>")}</p>`).join("\n")}
       ${detailsCard}
+      ${quoteBox}
     </div>
     ${mail.image ? `<p style="margin:18px 0 6px;text-align:center"><img src="${escapeHtml(mail.image.src)}" alt="${escapeHtml(mail.image.alt)}" width="480" style="display:inline-block;max-width:100%;height:auto;border-radius:16px"/></p>` : ""}
     ${mail.code ? `<p style="font-size:32px;font-weight:bold;letter-spacing:8px;background:${BG};border:1.5px solid ${BLUE};border-radius:14px;color:${BLUE_700};padding:18px;text-align:center;margin:20px 0">${escapeHtml(mail.code)}</p>` : ""}
@@ -312,6 +322,8 @@ export async function sendTicketMail(input: {
   to: string; subject: string; kind: TicketMailKind; body?: string; ticketCode: string; statusLabel: string; link: string;
   from?: string; replyTo?: string; messageId?: string; inReplyTo?: string; references?: string[]; automated?: boolean;
   attachments?: { filename: string; content: Buffer; contentType: string }[]; extraNote?: string;
+  /** Fuller "ticket received" card: the ticket subject, when it was opened, and the customer's own message. */
+  ticketSubject?: string; openedAt?: Date; yourMessage?: string;
 }) {
   const copy = TICKET_MAIL_COPY[input.kind];
   const paragraphs = [
@@ -322,7 +334,14 @@ export async function sendTicketMail(input: {
   ];
   await sendMail({
     to: input.to, subject: input.subject, heading: copy.heading, paragraphs,
-    details: [{ label: "Ticket", value: input.ticketCode, emphasis: true }, { label: "Status", value: input.statusLabel }],
+    topNote: input.kind === "received" ? "Please reply above this line" : undefined,
+    details: [
+      { label: "Ticket #", value: input.ticketCode, emphasis: true },
+      ...(input.ticketSubject ? [{ label: "Subject", value: input.ticketSubject }] : []),
+      { label: "Status", value: input.statusLabel },
+      ...(input.openedAt ? [{ label: "Opened", value: input.openedAt.toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }) + " IST" }] : []),
+    ],
+    quote: input.yourMessage ? { label: "Your message", text: input.yourMessage.slice(0, 1500) } : undefined,
     action: { label: "Open ticket", href: input.link },
     extra: {
       from: input.from, replyTo: input.replyTo, messageId: input.messageId, inReplyTo: input.inReplyTo, references: input.references,

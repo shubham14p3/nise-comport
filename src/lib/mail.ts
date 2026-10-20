@@ -291,10 +291,10 @@ async function deliverStaffMessage(ticket: typeof mailTickets.$inferSelect, mess
   }
 }
 
-async function sendAcknowledgement(ticket: typeof mailTickets.$inferSelect, originalMessageId: string | null, subject: string) {
+async function sendAcknowledgement(ticket: typeof mailTickets.$inferSelect, originalMessageId: string | null, subject: string, yourMessage?: string) {
   try {
     await sendTicketMail({
-      to: ticket.fromEmail, subject: subjectWithTag(subject, ticket.number, ticket.key), kind: "received", ticketCode: ticketCode(ticket.number), statusLabel: STATUS_LABEL.open,
+      to: ticket.fromEmail, subject: subjectWithTag(subject, ticket.number, ticket.key), kind: "received", ticketCode: ticketCode(ticket.number), statusLabel: STATUS_LABEL.open, ticketSubject: ticket.subject, openedAt: ticket.createdAt, yourMessage,
       link: ticketLink(ticket.number), from: supportFrom(), replyTo: supportAddress(), inReplyTo: originalMessageId ?? undefined, references: originalMessageId ? [originalMessageId] : undefined, automated: true,
     });
   } catch (error) { console.error("[mail] could not send the acknowledgement", error instanceof Error ? error.message : error); }
@@ -350,7 +350,7 @@ export async function createTicket(actor: MailActor, input: { subject: string; b
   const rfc = newRfcId();
   const [message] = await db.insert(mailMessages).values({ ticketId: ticket.id, direction: "in", authorId: actor.user.id, authorName: actor.user.name, body, source: "site", rfcMessageId: rfc }).returning();
   await claimAttachments(ids, actor.user.id, ticket.id, message.id);
-  await sendAcknowledgement(ticket, rfc, subject);
+  await sendAcknowledgement(ticket, rfc, subject, body);
   await alertStaff(ticket, body || "(attachment only)");
   return { id: ticket.id, number: ticket.number, code: ticketCode(ticket.number) };
 }
