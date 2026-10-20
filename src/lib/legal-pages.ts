@@ -4,6 +4,8 @@ import { legalPages } from "@/db/schema";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { LEGAL_DEFAULTS } from "@/lib/legal-defaults";
+import { LEGAL_HI } from "@/lib/translations/legal-hi";
+import { LEGAL_BN } from "@/lib/translations/legal-bn";
 import { parseLegal, type LegalValues } from "@/lib/legal-markup";
 import { site } from "@/lib/site";
 
@@ -20,18 +22,26 @@ const loadOverrides = unstable_cache(async (): Promise<Override[]> => {
   } catch (error) { console.error("[legal] legal_pages unavailable (run npm run db:migrate)", error); return []; }
 }, ["legal-pages"], { revalidate: 300, tags: ["legal-pages"] });
 
-export function monthYear(date: Date) {
-  return new Intl.DateTimeFormat("en-IN", { month: "long", year: "numeric", timeZone: "Asia/Kolkata" }).format(date);
+export function monthYear(date: Date, locale = "en-IN") {
+  return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "Asia/Kolkata" }).format(date);
 }
 
-export function legalValues(date: Date): LegalValues {
-  return { site: site.name, domain: new URL(site.url).host.replace(/^www\./, ""), email: site.email, phone: site.phones.primary.display, address: site.address.oneLine, date: monthYear(date) };
+export function legalValues(date: Date, lang: "en" | "hi" | "bn" = "en"): LegalValues {
+  const address = lang === "hi" ? site.address.hindi : lang === "bn" ? site.address.bengali : site.address.oneLine;
+  const locale = lang === "hi" ? "hi-IN" : lang === "bn" ? "bn-IN" : "en-IN";
+  return { site: site.name, domain: new URL(site.url).host.replace(/^www\./, ""), email: site.email, phone: site.phones.primary.display, address, date: monthYear(date, locale) };
 }
 
 export function isLegalSlug(value: string): value is LegalSlug { return (LEGAL_SLUGS as readonly string[]).includes(value); }
 
 /** The page the public sees: admin text if saved, otherwise the built-in text. The effective month is always the latest: this month for built-in text, the month of the last edit for edited text. */
-export async function loadLegalPage(slug: LegalSlug) {
+export async function loadLegalPage(slug: LegalSlug, lang: "en" | "hi" | "bn" = "en") {
+  if (lang !== "en") {
+    // The Hindi and Bengali text is built in. It follows this month's date; admin edits apply to the English text only.
+    const body = (lang === "hi" ? LEGAL_HI : LEGAL_BN)[slug];
+    const values = legalValues(new Date(), lang);
+    return { doc: parseLegal(body, values), updated: values.date, custom: false };
+  }
   const override = (await loadOverrides()).find((item) => item.slug === slug);
   const effective = override ? new Date(override.updatedAt) : new Date();
   const values = legalValues(effective);

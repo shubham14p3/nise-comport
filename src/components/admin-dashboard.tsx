@@ -8,16 +8,18 @@ import PanImportPanel from "@/components/pan-import-panel";
 import WalletCreditForm from "@/components/wallet-credit-form";
 import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
-import { ArrowRight, Bell, ClipboardList, Contact, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images } from "lucide-react";
+import { ArrowRight, Bell, Cake, ClipboardList, Contact, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
 import PromotionsPanel from "@/components/promotions-panel";
 import CampaignsPanel from "@/components/campaigns-panel";
 import ContactsPanel from "@/components/contacts-panel";
+import OutreachPanel from "@/components/outreach-panel";
 import TeamPanel from "@/components/team-panel";
 import SiteTeamPanel from "@/components/site-team-panel";
 import PaymentsPanel from "@/components/payments-panel";
 import PricesPanel from "@/components/prices-panel";
 import LegalPanel from "@/components/legal-panel";
+import MailClient from "@/components/mail-client";
 import LoyaltyPanel from "@/components/loyalty-panel";
 import ChatsPanel from "@/components/chats-panel";
 import InboxPanel from "@/components/inbox-panel";
@@ -214,9 +216,10 @@ function RequestQueue() {
   </>;
 }
 
-type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "legal" | "loyalty" | "chats";
+type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "legal" | "loyalty" | "chats" | "mail" | "outreach";
 const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | "admin" | "staff" }[] = [
   { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
+  { id: "mail", label: "Messages", icon: Mail, needs: "mail" },
   { id: "requests", label: "Requests", icon: ClipboardList, needs: "requests" },
   { id: "records", label: "Records", icon: FolderLock, needs: "records" },
   { id: "promotions", label: "Promotions", icon: TicketPercent, needs: "promotions" },
@@ -226,6 +229,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "campaigns", label: "WhatsApp", icon: Megaphone, needs: "campaigns" },
   { id: "chats", label: "WhatsApp chats", icon: Megaphone, needs: "campaigns" },
   { id: "contacts", label: "Contacts", icon: Contact, needs: "campaigns" },
+  { id: "outreach", label: "Birthdays & renewals", icon: Cake, needs: "staff" },
   { id: "team", label: "Team", icon: UsersRound, needs: "admin" },
   { id: "pan", label: "PAN data", icon: Database, needs: "pan" },
   { id: "wallet", label: "Wallet", icon: WalletCards, needs: "wallet" },
@@ -242,7 +246,7 @@ const subscribeHash = (callback: () => void) => { window.addEventListener("hashc
  * Staff workspace. Each tab needs a permission (see src/lib/permissions.ts); the owner sees all
  * of them plus Team, where staff are added and their access is set.
  */
-export default function AdminDashboard({ me, viewAsStaff = false }: { me: { name: string; role: string; permissions: Permission[] }; viewAsStaff?: boolean }) {
+export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?: string; name: string; role: string; permissions: Permission[] }; viewAsStaff?: boolean }) {
   // The owner can preview the desk as a staff member would see it (hides the owner-only Team
   // tab) via "Staff view" in the account menu, without actually losing any access — they can
   // always switch back to "Admin view". Only meaningful when me.role is "admin"; for a real
@@ -259,12 +263,25 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { name
     const timer = window.setInterval(() => void check(), 60_000);
     return () => { active = false; window.clearInterval(timer); };
   }, []);
+  const canMail = isOwner || effectivePermissions.includes("mail");
+  const [mailUnread, setMailUnread] = useState(0);
+  useEffect(() => {
+    if (!canMail) return;
+    let active = true;
+    const check = () => secureApi<{ unread: number }>("Q3x8M5wT2kB7", { view: "meta" }).then((result) => { if (active) setMailUnread(result.unread); }).catch(() => undefined);
+    void check();
+    const timer = window.setInterval(() => void check(), 60_000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [canMail]);
   const hash = useSyncExternalStore(subscribeHash, readHash, () => "");
   const [picked, setPicked] = useState<Tab | null>(null);
   const fromHash = tabs.find((tab) => tab.id === hash)?.id;
   const active = picked ?? fromHash ?? tabs[0]?.id;
   const clearUnread = useCallback(() => setSummary((value) => value ? { ...value, unread: 0 } : value), []);
-  function choose(tab: Tab) { setPicked(tab); window.history.replaceState(null, "", `#${tab}`); }
+  const [railOpen, setRailOpen] = useState(true);
+  useEffect(() => { try { if (window.localStorage.getItem("nc-desk-rail") === "0") setRailOpen(false); } catch { /* ignore */ } }, []);
+  function toggleRail() { setRailOpen((open) => { try { window.localStorage.setItem("nc-desk-rail", open ? "0" : "1"); } catch { /* ignore */ } return !open; }); }
+  function choose(tab: Tab) { setPicked(tab); window.history.replaceState(null, "", `#${tab}`); window.scrollTo({ top: 0, left: 0, behavior: "instant" }); }
   const first = me.name.split(/\s+/)[0] || "there";
   const current = tabs.find((tab) => tab.id === active);
   const can = (permission: Permission) => isOwner || effectivePermissions.includes(permission);
@@ -285,10 +302,11 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { name
         </div>}
       </div>
     </section>
-    <div className="container profile__layout">
+    <div className={railOpen ? "container profile__layout" : "container profile__layout profile__layout--rail"}>
       <aside className="profile__nav" aria-label="Admin sections">
-        <nav>{tabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={active === id ? "is-active" : undefined} aria-current={active === id ? "page" : undefined} onClick={() => choose(id)}>
-          <Icon size={19}/><span>{label}</span>{id === "inbox" && unread > 0 && <small aria-label={`${unread} new`}>{unread > 99 ? "99+" : unread}</small>}
+        <button type="button" className="profile__nav-toggle" onClick={toggleRail} aria-expanded={railOpen} title={railOpen ? "Hide the menu" : "Show the menu"}>{railOpen ? <PanelLeftClose size={19}/> : <PanelLeftOpen size={19}/>}<span>Hide menu</span></button>
+        <nav>{tabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={active === id ? "is-active" : undefined} aria-current={active === id ? "page" : undefined} onClick={() => choose(id)} title={label}>
+          <Icon size={19}/><span>{label}</span>{id === "inbox" && unread > 0 && <small aria-label={`${unread} new`}>{unread > 99 ? "99+" : unread}</small>}{id === "mail" && mailUnread > 0 && <small aria-label={`${mailUnread} unread`}>{mailUnread > 99 ? "99+" : mailUnread}</small>}
         </button>)}</nav>
       </aside>
       <section className="profile__main admin-page" aria-live="polite" aria-label={current?.label}>
@@ -300,6 +318,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { name
           {can("records") && <AdminMetric tone="green" icon={<FolderLock size={22}/>} number="Search" label="Customer records" onClick={() => choose("records")}/>}
         </div>}
         {active === "inbox" && <InboxPanel onSeen={clearUnread}/>}
+        {active === "mail" && <MailClient mode="staff" onUnread={setMailUnread}/>}
         {active === "requests" && <RequestQueue/>}
         {active === "records" && <RecordsPanel/>}
         {active === "promotions" && <PromotionsPanel canEdit/>}
@@ -308,12 +327,13 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { name
         {active === "testimonials" && <TestimonialsPanel/>}
         {active === "campaigns" && <CampaignsPanel/>}
         {active === "contacts" && <ContactsPanel/>}
+        {active === "outreach" && <OutreachPanel/>}
         {active === "chats" && <ChatsPanel/>}
         {active === "prices" && <PricesPanel/>}
         {active === "legal" && <LegalPanel/>}
         {active === "loyalty" && <LoyaltyPanel/>}
         {active === "payments" && <PaymentsPanel/>}
-        {active === "team" && <><TeamPanel meRole={me.role}/><SiteTeamPanel/></>}
+        {active === "team" && <><TeamPanel meRole={me.role} meId={me.id}/><SiteTeamPanel/></>}
         {active === "pan" && <PanImportPanel/>}
         {active === "wallet" && <WalletCreditForm/>}
       </section>

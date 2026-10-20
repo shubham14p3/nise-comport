@@ -6,7 +6,7 @@ import { customerWhatsAppLink, rupees } from "@/lib/payments-core";
 
 type Row = { id: string; reference: string; amountPaise: number; feePaise: number; status: string; method: string | null; utr: string | null; note: string | null; requestName: string; customer: string; phone: string | null; createdAt: string; failureReason: string | null; issueNote: string | null; issueRaisedAt: string | null; refundChoice: string | null; refundStatus: string | null; refundDetails: string | null; refundPaise: number | null };
 type Summary = { byMethod: { method: string; count: number; paise: number }[]; totalPaise: number; verifying: number; failed: number; due: number; attention: number };
-type Data = { payments: Row[]; summary: Summary; options: { upi: boolean; razorpay: boolean; cashfree: boolean; feePercent: number } };
+type Data = { payments: Row[]; summary: Summary; options: { upi: number; razorpay: boolean; cashfree: boolean; feePercent: number } };
 const LIST = "A8s5L2nR7vE4";
 const ACT = "H6k2B9tW4xC7";
 
@@ -34,7 +34,7 @@ export default function PaymentsPanel() {
 
   return <section className="admin-card">
     <h2>Payments</h2>
-    {data && <p className="muted">UPI QR {data.options.upi ? "on" : "off (set UPI_ID)"} · Razorpay {data.options.razorpay ? "on" : "off"} · Cashfree {data.options.cashfree ? "on" : "off"} · online fee {data.options.feePercent}%</p>}
+    {data && <p className="muted">UPI QR {data.options.upi ? `on (${data.options.upi} ID${data.options.upi === 1 ? "" : "s"})` : "off (set UPI_ID)"} · Razorpay {data.options.razorpay ? "on" : "off"} · Cashfree {data.options.cashfree ? "on" : "off"} · online fee {data.options.feePercent}%</p>}
     {data && <div className="pay-summary">
       <div><b>{rupees(data.summary.totalPaise)}</b><small>collected, all methods</small></div>
       {data.summary.byMethod.map((m) => <div key={m.method}><b>{rupees(m.paise)}</b><small>{({ upi_qr: "UPI QR", razorpay: "Razorpay", cashfree: "Cashfree", cash: "Cash" } as Record<string, string>)[m.method]} · {m.count}</small></div>)}

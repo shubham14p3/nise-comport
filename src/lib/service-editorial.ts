@@ -144,11 +144,10 @@ export const serviceEditorial: Record<string, ServiceEditorial> = {
   "printing-scanning": {
     image: "/images/service/media.png", imageAlt: "Document printing and scanning service artwork",
     audience: "Residents, students and businesses who need document printing, scanning or photocopy assistance.",
-    beforeYouStart: ["Check that the uploaded file is the final version and that you have permission to share it.", "Select the page numbers carefully and preview the document before requesting a print.", "Choose pickup or delivery; delivery availability and charge are confirmed by the team."],
+    beforeYouStart: ["Keep the final version of your document ready, on your phone or a pen drive.", "Note the pages, copies, paper size and whether you need colour.", "Ask for the price first; we confirm it before we print."],
     faqs: [
-      { question: "Do I pay online when I send a print request?", answer: "No. Sending the request is not checkout. Staff review the job and confirm the final quote and any delivery charge before printing." },
-      { question: "Can I choose only some pages or make selected pages colour?", answer: "Yes. The print request form accepts page ranges, copies and print options. Check the estimate and preview before submitting." },
-      { question: "How long are uploaded files kept?", answer: "Files are stored privately and removed according to the configured retention policy. Do not upload documents you are not authorised to share." },
+      { question: "Do I need to upload my file online?", answer: "No. Ask us for the price on WhatsApp or by phone, then bring the file or send it once the price is agreed." },
+      { question: "Can I choose only some pages or make selected pages colour?", answer: "Yes. Tell us the page numbers and colour needs when you ask for the price." },
     ],
   },
   "computer-repair": {

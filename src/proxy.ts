@@ -5,7 +5,7 @@ const OPAQUE_API = "/api/x7q9m2";
 const PRIVATE_API_PREFIXES = [
   "/api/auth/", "/api/account/", "/api/profile", "/api/addresses", "/api/requests",
   "/api/pan/requests", "/api/print-jobs", "/api/uploads", "/api/coupons/validate",
-  "/api/admin/", "/api/internal/", "/api/pay", "/api/places/", "/api/leads", "/api/insurance",
+  "/api/admin/", "/api/internal/", "/api/pay", "/api/places/", "/api/leads", "/api/insurance", "/api/mail",
 ];
 
 function canonicalHost() {

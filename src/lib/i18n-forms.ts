@@ -148,6 +148,7 @@ export const WIZARD_EXTRA = {
   restored: t3("We kept your unfinished request from last time.", "पिछली बार का अधूरा अनुरोध हमने सँभाल कर रखा है।", "গতবারের অসম্পূর্ণ অনুরোধ আমরা রেখে দিয়েছি।"),
   startFresh: t3("Start fresh", "नए सिरे से शुरू करें", "নতুন করে শুরু করুন"),
   waSent: t3("We’ve also sent a copy to your WhatsApp.", "हमने आपके व्हाट्सऐप पर भी एक कॉपी भेज दी है।", "আপনার হোয়াটসঅ্যাপেও একটি কপি পাঠিয়েছি।"),
+  noFile: t3("No file needed. Tell us what you want and we reply with the price.", "फ़ाइल की ज़रूरत नहीं। बताइए क्या चाहिए, हम कीमत बताएँगे।", "ফাইল লাগবে না। কী চান জানান, আমরা দাম জানাব।"),
   waTap: t3("Tap the WhatsApp button to keep a copy in your chat with us.", "हमारे साथ चैट में कॉपी रखने के लिए व्हाट्सऐप बटन दबाएँ।", "আমাদের সঙ্গে চ্যাটে কপি রাখতে হোয়াটসঅ্যাপ বোতাম চাপুন।"),
 };
 
@@ -235,6 +236,17 @@ export function serviceName(slug: string, english: string, locale: Locale) {
 }
 
 /** "Do it yourself, or let us do it" box shown with official links. */
+export const PRICE_ENQUIRY = {
+  eyebrow: t3("PRINT & DIGITAL SERVICES", "प्रिंट व डिजिटल सेवाएँ", "প্রিন্ট ও ডিজিটাল পরিষেবা"),
+  title: t3("Printing, scanning & photocopy", "प्रिंटिंग, स्कैनिंग और फ़ोटोकॉपी", "প্রিন্টিং, স্ক্যানিং ও ফটোকপি"),
+  body: t3("Online file upload is not available right now. Tell us what you need, such as pages, size, colour or black and white, and copies, and we reply with the price. You can also visit the desk in Kharangajhar, Telco.", "ऑनलाइन फ़ाइल अपलोड अभी उपलब्ध नहीं है। बताइए क्या चाहिए: पेज, साइज़, रंगीन या ब्लैक-एंड-व्हाइट और कॉपी, हम कीमत बताएँगे। आप खरंगाझार, टेल्को डेस्क पर भी आ सकते हैं।", "অনলাইনে ফাইল আপলোড এখন বন্ধ। কী চান জানান: পেজ, সাইজ, রঙিন না সাদা-কালো ও কপি, আমরা দাম জানাব। খরংগাঝাড়, টেলকো ডেস্কেও আসতে পারেন।"),
+  ask: t3("Ask for a price", "कीमत पूछें", "দাম জিজ্ঞেস করুন"),
+  whatsapp: t3("WhatsApp us", "WhatsApp करें", "WhatsApp করুন"),
+  call: t3("Call us", "फ़ोन करें", "ফোন করুন"),
+  pricing: t3("See our pricing", "हमारी दरें देखें", "আমাদের দর দেখুন"),
+  message: t3("Hello NISE COMPORT, I would like the price for printing / photocopy / scanning. ", "नमस्ते NISE COMPORT, मुझे प्रिंटिंग / फ़ोटोकॉपी / स्कैनिंग की कीमत जाननी है। ", "নমস্কার NISE COMPORT, প্রিন্টিং / ফটোকপি / স্ক্যানিংয়ের দাম জানতে চাই। "),
+};
+
 export const OFFICIAL_TEXT = {
   boxTitle: t3("Prefer we do it for you?", "क्या हम आपके लिए कर दें?", "আমরা কি আপনার হয়ে করে দেব?"),
   boxText: t3("Leave your name and number. We check your documents, fill the form correctly and keep you updated. Our service charge is told before we start.", "अपना नाम और नंबर छोड़ें। हम दस्तावेज़ जाँचकर सही फ़ॉर्म भरेंगे और आपको अपडेट देंगे। सेवा शुल्क काम शुरू होने से पहले बताया जाएगा।", "নাম ও নম্বর দিন। আমরা কাগজপত্র দেখে সঠিক ফর্ম পূরণ করব এবং আপডেট দেব। পরিষেবা খরচ কাজ শুরুর আগে জানানো হবে।"),

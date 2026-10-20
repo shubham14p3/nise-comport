@@ -12,11 +12,11 @@ import RequestExtras from "@/components/request-extras";
 import CancelRequestButton from "@/components/cancel-request-button";
 import VoucherBoard from "@/components/voucher-board";
 import Link from "next/link";
+import { MAIL_PATH } from "@/lib/mail-route";
 import { FormEvent, useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import {
   ArrowRight, Check, CircleHelp, FileText, Gift, History, LayoutDashboard,
-  MapPin, Plus, Printer, ShieldCheck, UserRound, WalletCards,
-} from "lucide-react";
+  MapPin, Plus, Printer, ShieldCheck, UserRound, WalletCards, Mail } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi } from "@/lib/secure-api-client";
 import { whatsappHref } from "@/lib/public-contact";
@@ -210,7 +210,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
         <div className="panel"><SectionHeading eyebrow="RECENT ACTIVITY" title="Your latest requests" text="Open any request to see what you sent and its current status."/><RequestRows rows={requests.slice(0, 3)}/></div>
         <div className="quick-grid">
           <Link href="/request" className="quick tone-blue"><Plus size={20}/><span><b>Start a request</b><small>4 quick steps, any service.</small></span><ArrowRight size={18}/></Link>
-          <Link href="/print" className="quick tone-cyan"><Printer size={20}/><span><b>Print from your phone</b><small>Upload, pick pages, collect.</small></span><ArrowRight size={18}/></Link>
+          <Link href="/print" className="quick tone-cyan"><Printer size={20}/><span><b>Printing &amp; photocopy</b><small>Ask for a price.</small></span><ArrowRight size={18}/></Link>
           <button type="button" onClick={() => openSection("profile")} className="quick tone-violet"><UserRound size={20}/><span><b>Complete your profile</b><small>{completion}/5 details added.</small></span><ArrowRight size={18}/></button>
           <button type="button" onClick={() => openSection("addresses")} className="quick tone-green"><MapPin size={20}/><span><b>Saved addresses</b><small>For delivery and doorstep help.</small></span><ArrowRight size={18}/></button>
         </div>
@@ -272,7 +272,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
     </section>
     <div className="container profile__layout">
       <aside className="profile__nav" aria-label="Account sections">
-        <nav>{navigation.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={section === id ? "is-active" : undefined} aria-current={section === id ? "page" : undefined} onClick={() => openSection(id)}><Icon size={19}/><span>{label}</span>{id === "requests" && activeRequests.length > 0 && <small>{activeRequests.length}</small>}</button>)}</nav>
+        <nav>{navigation.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={section === id ? "is-active" : undefined} aria-current={section === id ? "page" : undefined} onClick={() => openSection(id)}><Icon size={19}/><span>{label}</span>{id === "requests" && activeRequests.length > 0 && <small>{activeRequests.length}</small>}</button>)}<Link href={MAIL_PATH} className="profile__nav-link"><Mail size={19}/><span>Messages</span></Link></nav>
       </aside>
       <section className="profile__main" aria-live="polite" aria-label={current?.label}>{content}
         <p className="fine"><Check size={15}/> Account data loads over an encrypted connection. Final government and provider decisions rest with the relevant authority.</p>

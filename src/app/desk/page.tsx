@@ -17,5 +17,5 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const { view } = await searchParams;
   // Only the owner can switch; a real staff account always sees its normal staff view.
   const viewAsStaff = user.role === "admin" && view === "staff";
-  return <AdminDashboard me={{ name: user.name, role: user.role, permissions: permissionsOf(user) }} viewAsStaff={viewAsStaff}/>;
+  return <AdminDashboard me={{ id: user.id, name: user.name, role: user.role, permissions: permissionsOf(user) }} viewAsStaff={viewAsStaff}/>;
 }

@@ -22,7 +22,7 @@ export default function manifest(): MetadataRoute.Manifest {
     shortcuts: [
       { name: "Start a request", url: "/request" },
       { name: "Services", url: "/services" },
-      { name: "Print a document", url: "/print" },
+      { name: "Ask printing price", url: "/print" },
       { name: "Track my request", url: "/profile#requests" },
     ],
   };

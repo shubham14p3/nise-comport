@@ -14,6 +14,7 @@ import LoopScroller from "@/components/loop-scroller";
 import OpenStatus from "@/components/open-status";
 import TestimonialsSection from "@/components/testimonials-section";
 import { articles } from "@/lib/content";
+import { serviceCatalog } from "@/lib/services";
 import { localGallery } from "@/lib/gallery";
 import { livePhotos } from "@/lib/gallery-store";
 import { getPlaceSummary } from "@/lib/google-places";
@@ -34,7 +35,7 @@ export const revalidate = 43200;
 export const metadata: Metadata = {
   ...pageMetadata(
     "CSC & Digital Services in Telco, Jamshedpur",
-    "PAN card, Aadhaar update help, income/caste/residence certificates, AEPS banking, insurance, online forms, bills and printing at NISE COMPORT, Kharangajhar, Telco, Jamshedpur.",
+    "PAN card, Aadhaar update help, income/caste/residence certificates, AEPS banking, insurance, online forms, websites and printing at NISE COMPORT, Kharangajhar, Telco, Jamshedpur.",
     "/",
     { languages: { "hi-IN": "/hi", "bn-IN": "/bn" }, keywords: ["CSC centre Jamshedpur", "Pragya Kendra Telco", "Pragya Kendra Kharangajhar", "PAN card Jamshedpur", "Aadhaar update Jamshedpur", "income certificate Jamshedpur", "caste certificate Jharkhand", "AEPS Telco", "bike insurance Jamshedpur", "online form filling Jamshedpur", "printing Telco", "प्रज्ञा केंद्र जमशेदपुर", "सीएससी सेंटर टेल्को", "জামশেদপুর প্রজ্ঞা কেন্দ্র"] },
   ),
@@ -84,16 +85,16 @@ export default async function HomePage() {
           <div className="hero__copy">
             <span className="pill pill--glass"><i className="live-dot"/> Kharangajhar · Telco · Jamshedpur</span>
             <h1 className="hero__title"><span className="hero__kicker">CSC &amp; Pragya Kendra in Telco, Jamshedpur</span>Sarkari &amp; digital kaam, <span className="grad-text">sorted in one visit.</span></h1>
-            <p className="hero__lead">PAN, Aadhaar help, certificates, AEPS banking, insurance, bills, forms and printing. Start online in 4 quick steps, track it live, and walk in only when you need to.</p>
+            <p className="hero__lead">PAN, Aadhaar help, certificates, AEPS banking, insurance, forms, websites and printing. Start online in 4 quick steps, track it live, and walk in only when you need to.</p>
             <HeroSearch popular={popular} services={publishedServiceDetails.map((item) => ({ slug: item.slug, title: item.title }))}/>
             <div className="hero__ctas">
               <Link href="/request" className="btn btn--primary btn--lg">Start a request <ArrowRight size={20}/></Link>
               <a href={whatsappLink("Hi NISE COMPORT, I need help with a service.")} className="btn btn--glass btn--lg" target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={20}/> Chat on WhatsApp</a>
             </div>
             <ul className="hero__trust">
-              <li><BadgeCheck size={18}/> Service over money, always</li>
-              <li><Clock3 size={18}/> Every charge told before we begin</li>
-              <li><Languages size={18}/> English · हिन्दी · বাংলা</li>
+              <li><BadgeCheck size={18}/> Serving since 1995</li>
+              <li><Clock3 size={18}/> 18,000+ jobs done</li>
+              <li><Star size={18}/> 600+ positive Google reviews</li>
             </ul>
             {place?.rating ? <a className="rating-chip" href={place.mapsUri ?? site.mapsUrl} target="_blank" rel="noopener noreferrer"><Star size={16} fill="currentColor"/> <b>{place.rating.toFixed(1)}</b> on Google · {place.ratingCount} reviews</a> : null}
           </div>
@@ -101,7 +102,7 @@ export default async function HomePage() {
         </div>
         <div className="container hero__stats">
           <div><strong>{publishedServiceDetails.length}+</strong><span>services under one roof</span></div>
-          <div><strong>8</strong><span>categories, from PAN to travel</span></div>
+          <div><strong>{serviceCatalog.length}</strong><span>categories, from PAN to PC repair</span></div>
           <div><strong>3</strong><span>languages on the website</span></div>
           <div><strong><OpenStatus rules={site.openingHours}/>{!site.openingHours.length && "Mon–Sat"}</strong><span>{hours[0] ?? "Walk in or call first"}</span></div>
         </div>
@@ -160,7 +161,7 @@ export default async function HomePage() {
             <article className="bento__item tone-green"><Clock3 size={28}/><h3>Track it live</h3><p>Every request gets a reference number and status updates in your account.</p></article>
             <article className="bento__item tone-violet"><Languages size={28}/><h3>Your language</h3><p>English, हिन्दी or বাংলা, on the site and at the counter.</p></article>
             <article className="bento__item tone-pink"><LockKeyhole size={28}/><h3>Private by design</h3><p>Encrypted connections. We never ask for your OTP, PIN or password.</p></article>
-            <article className="bento__item tone-cyan"><Truck size={28}/><h3>Pickup, delivery or doorstep</h3><p>Collect prints from our Kharangajhar counter, or ask for delivery.</p><Link className="text-link" href="/print">Print from your phone <ArrowRight size={16}/></Link></article>
+            <article className="bento__item tone-cyan"><Truck size={28}/><h3>Printing, photos &amp; websites</h3><p>Printing, photocopy, passport photos and business websites from our Kharangajhar counter. Ask us for the price.</p><Link className="text-link" href="/print">Ask for a printing price <ArrowRight size={16}/></Link></article>
           </div>
         </div>
       </section>

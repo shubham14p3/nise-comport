@@ -37,8 +37,14 @@ export function escapeHtml(value: string) {
 type Mail = {
   to: string; subject: string; heading: string; paragraphs: string[]; code?: string;
   action?: { label: string; href: string }; footer?: string;
+  /** A picture shown under the text (for example a birthday card). */
+  image?: { src: string; alt: string };
+  /** Link that stops this kind of email. Shown in the footer and sent as the List-Unsubscribe header. */
+  unsubscribe?: string;
   /** A tidy key/value card (reference numbers, status, service name) instead of a paragraph of run-on text. */
   details?: { label: string; value: string; emphasis?: boolean }[];
+  /** Message-centre mail: threading headers, a specific From and real attachments. */
+  extra?: { from?: string; replyTo?: string; messageId?: string; inReplyTo?: string; references?: string[]; headers?: Record<string, string>; attachments?: { filename: string; content: Buffer; contentType: string }[] };
 };
 
 // Brand colours, matched to the site (see src/app/globals.css :root). Email clients don't read
@@ -64,7 +70,7 @@ function socialLabel(href: string) {
 function render(mail: Mail) {
   const footer = mail.footer ?? `${site.name} · ${site.address.oneLine} · ${site.phones.primary.display}`;
   const detailLines = mail.details?.map((row) => `${row.label}: ${row.value}`) ?? [];
-  const text = [mail.heading, "", ...mail.paragraphs, ...(detailLines.length ? ["", ...detailLines] : []), ...(mail.code ? ["", `Code: ${mail.code}`] : []), ...(mail.action ? ["", `${mail.action.label}: ${mail.action.href}`] : []), "", footer].join("\n");
+  const text = [mail.heading, "", ...mail.paragraphs, ...(detailLines.length ? ["", ...detailLines] : []), ...(mail.code ? ["", `Code: ${mail.code}`] : []), ...(mail.image ? ["", `${mail.image.alt}: ${mail.image.src}`] : []), ...(mail.action ? ["", `${mail.action.label}: ${mail.action.href}`] : []), ...(mail.unsubscribe ? ["", `Stop these emails: ${mail.unsubscribe}`] : []), "", footer].join("\n");
 
   const logoUrl = absoluteUrl(site.logoPath);
   const siteHost = site.url.replace(/^https?:\/\//, "");
@@ -94,9 +100,10 @@ function render(mail: Mail) {
   <div style="padding:32px 28px;text-align:center">
     <h1 style="font-size:22px;margin:0 0 16px;color:${INK}">${escapeHtml(mail.heading)}</h1>
     <div style="text-align:left">
-      ${mail.paragraphs.map((paragraph) => `<p style="line-height:1.55;margin:0 0 14px;color:${INK}">${escapeHtml(paragraph)}</p>`).join("\n")}
+      ${mail.paragraphs.map((paragraph) => `<p style="line-height:1.55;margin:0 0 14px;color:${INK}">${escapeHtml(paragraph).replace(/\n/g, "<br/>")}</p>`).join("\n")}
       ${detailsCard}
     </div>
+    ${mail.image ? `<p style="margin:18px 0 6px;text-align:center"><img src="${escapeHtml(mail.image.src)}" alt="${escapeHtml(mail.image.alt)}" width="480" style="display:inline-block;max-width:100%;height:auto;border-radius:16px"/></p>` : ""}
     ${mail.code ? `<p style="font-size:32px;font-weight:bold;letter-spacing:8px;background:${BG};border:1.5px solid ${BLUE};border-radius:14px;color:${BLUE_700};padding:18px;text-align:center;margin:20px 0">${escapeHtml(mail.code)}</p>` : ""}
     ${mail.action ? `<p style="margin:24px 0 4px;text-align:center"><a href="${escapeHtml(mail.action.href)}" style="background:${BLUE};color:#ffffff;padding:12px 26px;border-radius:999px;text-decoration:none;font-weight:bold;display:inline-block">${escapeHtml(mail.action.label)}</a></p>` : ""}
   </div>
@@ -110,7 +117,7 @@ function render(mail: Mail) {
     </p>
   </div>
 </div>
-<p style="text-align:center;color:${MUTED};font-size:11px;margin:18px 0 0">You're receiving this because you have a NISE COMPORT account or submitted a request to us.</p>
+<p style="text-align:center;color:${MUTED};font-size:11px;margin:18px 0 0">${mail.unsubscribe ? `You're receiving this because you agreed to hear from NISE COMPORT. <a href="${escapeHtml(mail.unsubscribe)}" style="color:${MUTED}">Stop these emails</a>.` : "You're receiving this because you have a NISE COMPORT account or submitted a request to us."}</p>
 </div></body></html>`;
   return { text, html };
 }
@@ -131,12 +138,17 @@ export async function sendMail(mail: Mail) {
     return;
   }
   await transporter().sendMail({
-    from: process.env.SMTP_FROM,
-    ...(process.env.SMTP_REPLY_TO ? { replyTo: process.env.SMTP_REPLY_TO } : {}),
+    from: mail.extra?.from ?? process.env.SMTP_FROM,
+    ...((mail.extra?.replyTo ?? process.env.SMTP_REPLY_TO) ? { replyTo: mail.extra?.replyTo ?? process.env.SMTP_REPLY_TO } : {}),
     to: mail.to,
     subject: mail.subject,
     text,
     html,
+    ...(mail.extra?.messageId ? { messageId: mail.extra.messageId } : {}),
+    ...(mail.extra?.inReplyTo ? { inReplyTo: mail.extra.inReplyTo } : {}),
+    ...(mail.extra?.references?.length ? { references: mail.extra.references } : {}),
+    ...(mail.extra?.headers || mail.unsubscribe ? { headers: { ...(mail.unsubscribe ? { "List-Unsubscribe": `<${mail.unsubscribe}>` } : {}), ...mail.extra?.headers } } : {}),
+    ...(mail.extra?.attachments?.length ? { attachments: mail.extra.attachments } : {}),
   });
 }
 
@@ -280,5 +292,40 @@ export async function sendPaymentReceiptEmail(to: string, name: string, info: { 
     paragraphs: [`Hello ${name},`, "Thank you. We have received your payment. Keep this email as your receipt."],
     details: [{ label: "Service", value: info.service }, { label: "Our reference", value: info.reference }, { label: "Amount paid", value: info.amount, emphasis: true }],
     action: { label: "Open my account", href: `${site.url}/profile` },
+  });
+}
+
+/* ---------------------------------------------------------------- message centre (tickets) */
+
+export type TicketMailKind = "reply" | "received" | "closed" | "new";
+const TICKET_MAIL_COPY: Record<TicketMailKind, { heading: string; lead?: string }> = {
+  reply: { heading: "We replied to your message" },
+  received: { heading: "We have received your message", lead: "Thank you for writing to us. Your message is now a ticket and our team will reply as soon as possible." },
+  closed: { heading: "Your ticket has been closed", lead: "We closed this ticket because we did not hear back from you for 48 hours. Nothing is lost: reply to this email at any time to reopen it." },
+  new: { heading: "A message from NISE COMPORT" },
+};
+
+/** One email of a ticket conversation. The subject must already carry the ticket tag. */
+export async function sendTicketMail(input: {
+  to: string; subject: string; kind: TicketMailKind; body?: string; ticketCode: string; statusLabel: string; link: string;
+  from?: string; replyTo?: string; messageId?: string; inReplyTo?: string; references?: string[]; automated?: boolean;
+  attachments?: { filename: string; content: Buffer; contentType: string }[]; extraNote?: string;
+}) {
+  const copy = TICKET_MAIL_COPY[input.kind];
+  const paragraphs = [
+    ...(copy.lead ? [copy.lead] : []),
+    ...(input.body ? input.body.split(/\n{2,}/).map((part) => part.trim()).filter(Boolean).slice(0, 40) : []),
+    ...(input.extraNote ? [input.extraNote] : []),
+    "You can reply to this email to add to your ticket, or open it on our website.",
+  ];
+  await sendMail({
+    to: input.to, subject: input.subject, heading: copy.heading, paragraphs,
+    details: [{ label: "Ticket", value: input.ticketCode, emphasis: true }, { label: "Status", value: input.statusLabel }],
+    action: { label: "Open ticket", href: input.link },
+    extra: {
+      from: input.from, replyTo: input.replyTo, messageId: input.messageId, inReplyTo: input.inReplyTo, references: input.references,
+      headers: input.automated ? { "Auto-Submitted": "auto-generated", "X-Auto-Response-Suppress": "All" } : undefined,
+      attachments: input.attachments,
+    },
   });
 }

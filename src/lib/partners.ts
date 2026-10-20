@@ -6,6 +6,8 @@
  * (for example csc.png, digital-india.svg, pragya-kendra.png). It is picked up automatically;
  * until then a neutral lettered badge is shown.
  */
+import { FEATURES } from "./features.ts";
+
 export type Partner = {
   slug: string; name: string; what: string; initials: string; tone: "blue" | "violet" | "pink" | "saffron" | "green" | "cyan" | "teal" | "rose";
   href?: string;
@@ -27,5 +29,5 @@ export const partners: Partner[] = [
   { slug: "aeps", name: "AEPS and banking", what: "Aadhaar-enabled cash and transfers", initials: "AEPS", tone: "green" },
   { slug: "ayushman-ration", name: "Ayushman and ration card", what: "Health cover and food security schemes", initials: "AY", tone: "pink" },
   { slug: "udyam-fssai", name: "Udyam and FSSAI", what: "Business registration and food licence", initials: "UD", tone: "violet", href: "https://udyamregistration.gov.in/" },
-  { slug: "irctc", name: "Railway tickets", what: "IRCTC and travel bookings", initials: "IR", tone: "saffron", href: "https://www.irctc.co.in/" },
+  ...(FEATURES.travel ? [{ slug: "irctc", name: "Railway tickets", what: "IRCTC and travel bookings", initials: "IR", tone: "saffron" as const, href: "https://www.irctc.co.in/" }] : []),
 ];

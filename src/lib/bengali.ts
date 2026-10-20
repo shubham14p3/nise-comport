@@ -5,6 +5,11 @@
  * can show the right language to each searcher.
  * Please have a native Bengali speaker review wording before launch.
  */
+import { bengaliServices1 } from "./translations/bengali-services-1.ts";
+import { bengaliServices2 } from "./translations/bengali-services-2.ts";
+import { bengaliServices3 } from "./translations/bengali-services-3.ts";
+import { bengaliServices4 } from "./translations/bengali-services-4.ts";
+
 export type BengaliService = {
   slug: string;
   title: string;
@@ -35,7 +40,7 @@ export const bengaliHome = {
   ],
 };
 
-export const bengaliServices: BengaliService[] = [
+const baseBengaliServices: BengaliService[] = [
   {
     slug: "pan-card",
     title: "জামশেদপুরে প্যান কার্ডের আবেদন ও সংশোধন",
@@ -97,13 +102,13 @@ export const bengaliServices: BengaliService[] = [
   },
   {
     slug: "printing-scanning",
-    title: "জামশেদপুরে অনলাইন প্রিন্টিং, স্ক্যানিং ও ফটোকপি",
-    seoTitle: "অনলাইন প্রিন্টিং ও ফটোকপি, জামশেদপুর",
-    description: "PDF, Word বা ছবি আপলোড করুন, পেজ ও কপি বেছে নিন, আর খরংগাঝাড়, টেলকো থেকে পিকআপ বা ডেলিভারির অনুরোধ পাঠান।",
-    highlights: ["পেজ বেছে নিয়ে প্রিন্ট", "সাদা-কালো বা রঙিন", "কপির সংখ্যা, কাগজের সাইজ ও পেজের দিক বেছে নেওয়ার সুযোগ", "পিকআপ বা ডেলিভারির অনুরোধ"],
-    documents: ["PDF, Word বা ছবির ফাইল", "ডেলিভারির জন্য সেভ করা ঠিকানা"],
-    steps: ["সাইন ইন করে ফাইল আপলোড করুন।", "পেজ, রং ও কপি বেছে নিন।", "আনুমানিক দাম দেখে অনুরোধ পাঠান।", "টিম চূড়ান্ত দাম জানিয়ে তারপর প্রিন্ট করে।"],
-    faqs: [{ question: "অনলাইনে কি টাকা দিতে হবে?", answer: "না। অনুরোধ পাঠানোর সময় অনলাইনে কোনো পেমেন্ট নেওয়া হয় না; টিম চূড়ান্ত দাম নিশ্চিত করে।" }],
+    title: "জামশেদপুরে প্রিন্টিং, স্ক্যানিং ও ফটোকপি",
+    seoTitle: "প্রিন্টিং ও ফটোকপি, জামশেদপুর",
+    description: "খরংগাঝাড়, টেলকো ডেস্কে প্রিন্টিং, স্ক্যানিং ও ফটোকপি। পেজ, সাইজ ও রং জানান, আমরা দাম জানাব।",
+    highlights: ["সাদা-কালো ও রঙিন প্রিন্ট", "ফটোকপি ও স্ক্যানিং", "A4 ও অন্যান্য কাগজের সাইজ", "শুরুর আগে দামের নিশ্চিতকরণ"],
+    documents: ["আপনার নথি: ফোন, পেন ড্রাইভ বা কাগজে", "পেজ, কপি, সাইজ ও রং"],
+    steps: ["WhatsApp বা ফোনে দাম জিজ্ঞেস করুন, বা অনুরোধ পাঠান।", "পেজ, কপি, সাইজ ও রং জানান।", "আমরা দাম নিশ্চিত করব।", "টেলকো ডেস্ক থেকে নিয়ে যান।"],
+    faqs: [{ question: "ফাইল কি আপলোড করতে হবে?", answer: "না। আগে দাম জিজ্ঞেস করুন, তারপর ফাইল ফোনে বা পেন ড্রাইভে আনুন, অথবা দাম ঠিক হলে WhatsApp-এ পাঠান।" }],
   },
   {
     slug: "scholarship-forms",
@@ -166,6 +171,8 @@ export const bengaliServices: BengaliService[] = [
     faqs: [{ question: "21 দিন পরে কি রেজিস্ট্রেশন করা যায়?", answer: "হ্যাঁ, তবে দেরি অনুযায়ী অতিরিক্ত কাগজপত্র, ফি বা আদেশ লাগতে পারে। রেজিস্ট্রার তা ঠিক করেন।" }],
   },
 ];
+
+export const bengaliServices: BengaliService[] = [...baseBengaliServices, ...bengaliServices1, ...bengaliServices2, ...bengaliServices3, ...bengaliServices4];
 
 export function findBengaliService(slug: string) {
   return bengaliServices.find((service) => service.slug === slug);

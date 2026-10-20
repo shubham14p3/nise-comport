@@ -43,7 +43,7 @@ export default function PricesPanel() {
     {!loaded ? <p>Loading…</p> : serviceCatalog.map((group) => {
       const items = publishedServiceDetails.filter((s) => s.categorySlug === group.slug);
       if (!items.length) return null;
-      return <div key={group.slug}><h3>{group.title}</h3><div className="table-scroll"><table className="price-table"><tbody>
+      return <div key={group.slug}><h3>{group.title}</h3><div className="table-scroll"><table className="price-table price-editor"><tbody>
         {items.map((service) => { const d = draft(service.slug); return <tr key={service.slug}>
           <th scope="row">{service.title}</th>
           <td><select value={d.kind} onChange={(e) => change(service.slug, { kind: e.target.value as "fixed" | "from" })} aria-label="Price type"><option value="fixed">Fixed</option><option value="from">From</option></select></td>

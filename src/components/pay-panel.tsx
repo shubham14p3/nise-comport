@@ -2,13 +2,13 @@
 
 import Script from "next/script";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { secureApi } from "@/lib/secure-api-client";
 import { rupees } from "@/lib/payments-core";
 
 type Props = {
   reference: string; status: string; amountPaise: number; feePaise: number; note: string | null; paidVia: string | null;
-  upi: string | null; qr: string | null; vpa: string | null; razorpay: boolean; cashfree: boolean; feePercent: number;
+  upiSlots: { slot: number; label: string }[]; qrSeconds: number; razorpay: boolean; cashfree: boolean; feePercent: number;
   helpHref: string; failureReason: string | null; ticketRaised: boolean; ticketOpen: boolean; refundStatus: string | null; refundChoice: string | null; refundPaise: number | null;
   estimates: { choice: "wallet" | "original" | "cash"; net: number }[];
 };
@@ -18,6 +18,8 @@ type Order =
 declare global { interface Window { Razorpay?: new (options: Record<string, unknown>) => { open: () => void }; Cashfree?: (options: { mode: string }) => { checkout: (options: Record<string, unknown>) => void } } }
 
 const PAY = "Y3d7N5qV1mP8";
+type Reveal = { svg: string; link: string; vpa: string; label: string; expiresAt: number };
+const clock = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}`;
 
 export default function PayPanel(p: Props) {
   const router = useRouter();
@@ -27,7 +29,25 @@ export default function PayPanel(p: Props) {
   const [note, setNote] = useState("");
   const [choice, setChoice] = useState<"wallet" | "original" | "cash">("wallet");
   const [details, setDetails] = useState("");
+  const [reveal, setReveal] = useState<Reveal | null>(null);
+  const [left, setLeft] = useState(0);
+  const [slot, setSlot] = useState(p.upiSlots[0]?.slot ?? 0);
   const online = p.razorpay || p.cashfree;
+
+  // The QR and UPI ID disappear from the screen when the time is up (counted from the clock, so it also runs while the UPI app is open).
+  useEffect(() => {
+    if (!reveal) return;
+    const tick = () => { const remaining = reveal.expiresAt - Date.now(); if (remaining <= 0) { setReveal(null); setLeft(0); } else setLeft(remaining); };
+    tick();
+    const timer = window.setInterval(tick, 500);
+    return () => window.clearInterval(timer);
+  }, [reveal]);
+
+  async function showQr(chosen: number) {
+    setSlot(chosen);
+    const result = await run("qr", () => secureApi<Reveal & { seconds: number }>(PAY, { action: "qr", reference: p.reference, slot: chosen }));
+    if (result) setReveal({ svg: result.svg, link: result.link, vpa: result.vpa, label: result.label, expiresAt: Date.now() + result.seconds * 1000 });
+  }
   const total = p.amountPaise + p.feePaise;
 
   async function run<T>(label: string, work: () => Promise<T>) {
@@ -102,12 +122,17 @@ export default function PayPanel(p: Props) {
     {p.ticketRaised && refundBox}
     {p.status === "verifying" && <p className="pay-notice">We have your UPI reference. We will confirm it against our bank app, usually within a few hours during working time.</p>}
 
-    {p.upi && p.qr && (p.status === "due" || p.status === "failed") && <section>
+    {p.upiSlots.length > 0 && (p.status === "due" || p.status === "failed") && <section>
       <h2>Pay free with UPI</h2>
-      <p>No extra charge. Scan with any UPI app, or tap the button on your phone. Confirmation is manual, so it can take a little while.</p>
-      <div className="pay-qr" dangerouslySetInnerHTML={{ __html: p.qr }}/>
-      <p className="pay-ref">UPI ID: {p.vpa}</p>
-      <a className="btn btn--primary btn--block" href={p.upi}>Open my UPI app</a>
+      <p>No extra charge. For your safety the QR code and UPI ID are shown only after you ask, and hide again after {Math.round(p.qrSeconds / 60)} minutes. Confirmation is manual, so it can take a little while.</p>
+      {p.upiSlots.length > 1 && <div className="seg" role="group" aria-label="Choose a UPI account">{p.upiSlots.map((item) => <button key={item.slot} type="button" className={slot === item.slot ? "is-active" : undefined} disabled={busy === "qr"} onClick={() => { if (reveal) void showQr(item.slot); else setSlot(item.slot); }}>{item.label}</button>)}</div>}
+      {reveal ? <>
+        <div className="pay-qr" dangerouslySetInnerHTML={{ __html: reveal.svg }}/>
+        <p className="pay-ref">UPI ID: {reveal.vpa}</p>
+        <p className="pay-ref" role="timer" aria-live="off">Hides in {clock(left)}</p>
+        <a className="btn btn--primary btn--block" href={reveal.link}>Open my UPI app</a>
+        <button className="btn btn--ghost btn--block" type="button" onClick={() => setReveal(null)}>Hide now</button>
+      </> : <button className="btn btn--primary btn--block" type="button" disabled={busy === "qr"} onClick={() => void showQr(slot)}>{busy === "qr" ? "Opening…" : "Show payment QR"}</button>}
       <label className="field-label" htmlFor="utr">After paying, enter the 12-digit UPI reference (UTR)</label>
       <input id="utr" inputMode="text" autoComplete="off" value={utr} onChange={(e) => setUtr(e.target.value)} placeholder="e.g. 401234567890"/>
       <button className="btn btn--ghost btn--block" type="button" disabled={!utr.trim() || busy === "utr"} onClick={() => void submitUtr()}>{busy === "utr" ? "Sending…" : "I have paid"}</button>
@@ -125,12 +150,12 @@ export default function PayPanel(p: Props) {
       <button className="btn btn--ghost btn--block" type="button" disabled>Coming soon</button>
       <small>Card and net-banking payment is being set up.</small>
     </section>}
-    {!p.upi && <section>
+    {p.upiSlots.length === 0 && <section>
       <h2>Pay with us directly</h2>
       <p>Online payment is coming soon. For now, message us on WhatsApp and we will send the payment details, or pay at our centre. Your request moves ahead as soon as we confirm the payment.</p>
       <a className="btn btn--primary btn--block" href={p.helpHref} target="_blank" rel="noopener noreferrer">Message us on WhatsApp</a>
     </section>}
-    {p.upi && p.status !== "verifying" && <small>Trouble paying? <a href={p.helpHref} target="_blank" rel="noopener noreferrer">Message us on WhatsApp</a>.</small>}
+    {p.upiSlots.length > 0 && p.status !== "verifying" && <small>Trouble paying? <a href={p.helpHref} target="_blank" rel="noopener noreferrer">Message us on WhatsApp</a>.</small>}
     {error && <p role="alert" className="form-error">{error}</p>}
   </div>;
 }

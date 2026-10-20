@@ -39,7 +39,9 @@ test("language menu keeps people on the same service when a translation exists",
   assert.equal(basePath("/bn/services/x"), "/services/x");
   assert.equal(localizedHref("/services/pan-card", "bn", translatedSlugs), "/bn/services/pan-card");
   assert.equal(localizedHref("/hi/services/pan-card", "en", translatedSlugs), "/services/pan-card");
-  assert.equal(localizedHref("/services/car-insurance", "hi", translatedSlugs), "/hi");
+  assert.equal(localizedHref("/services/car-insurance", "hi", translatedSlugs), "/hi/services/car-insurance");
+  assert.equal(localizedHref("/services/some-new-service", "hi", translatedSlugs), "/hi");
+  assert.equal(localizedHref("/services/banking", "bn", translatedSlugs), "/bn/services/banking");
   assert.equal(localizedHref("/", "hi", translatedSlugs), "/hi");
   assert.equal(localizedHref("/bn", "en", translatedSlugs), "/");
   // App screens (sign-in, profile, step flows) switch text in place instead of navigating.

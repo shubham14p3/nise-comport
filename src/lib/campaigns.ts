@@ -11,7 +11,7 @@ import { normalizePhone } from "@/lib/validation";
 import { cloudApiConfigured, sendTemplate, sendText, type InboundEvent } from "@/lib/whatsapp";
 
 type CampaignRow = typeof campaigns.$inferSelect;
-const KINDS: CampaignKind[] = ["renewal", "offer", "optin"];
+const KINDS: CampaignKind[] = ["renewal", "offer", "optin", "birthday"];
 const shopPhone = () => site.phones.primary.display ?? site.phones.primary.e164;
 
 // ---------------------------------------------------------------------------------------------
@@ -129,11 +129,15 @@ function pacingOf(row: CampaignRow): Pacing {
 /** Contacts the campaign may message under the consent rules, service and renewal window. */
 async function audienceOf(row: CampaignRow) {
   const kind = row.kind as CampaignKind;
-  const consents = kind === "offer" ? ["opted_in"] : kind === "optin" ? ["unknown"] : ["unknown", "opted_in"];
+  const consents = kind === "offer" || kind === "birthday" ? ["opted_in"] : kind === "optin" ? ["unknown"] : ["unknown", "opted_in"];
   const filters: SQL[] = [inArray(contacts.consent, consents)];
   const locales = row.audience?.locales?.filter(isLang) ?? [];
   if (locales.length) filters.push(inArray(contacts.locale, locales));
   if (row.service) filters.push(sql`${contacts.services} @> ${JSON.stringify([{ service: row.service }])}::jsonb`);
+  if (kind === "birthday") {
+    const [, month, day] = new Date(Date.now() + 5.5 * 3_600_000).toISOString().slice(0, 10).split("-").map(Number);
+    filters.push(eq(contacts.birthMonth, month), eq(contacts.birthDay, day));
+  }
   const rows = await db.select().from(contacts).where(and(...filters)).orderBy(asc(contacts.createdAt)).limit(20_000);
   const within = row.audience?.renewalWithinDays;
   if (kind !== "renewal" || !within || !row.service) return rows.filter((contact) => consentAllows(kind, contact.consent));
@@ -165,6 +169,30 @@ async function queueFor(row: CampaignRow, people: { contactId: string | null; ph
       : await db.insert(campaignMessages).values(chunk).onConflictDoNothing().returning({ id: campaignMessages.id })).length;
   }
   return inserted;
+}
+
+/**
+ * Queues ready-made messages (birthday wishes, renewal reminders) in a campaign named for the day, so they
+ * go out with the usual pacing and appear in the one-tap queue (or are sent through the WhatsApp Business API).
+ * Returns how many were newly queued; a number already in today's campaign is not added twice.
+ */
+export async function queueOutreach(name: string, kind: CampaignKind, service: string | null, people: { contactId: string; phone: string; name: string; locale: string; body: string; posterUrl: string | null }[]) {
+  if (!people.length) return 0;
+  const now = new Date();
+  let [row] = await db.select().from(campaigns).where(eq(campaigns.name, name)).limit(1);
+  if (!row) {
+    const pacing = clampPacing({ batchSize: 10, dailyLimit: 200 });
+    [row] = await db.insert(campaigns).values({ name, kind, service, status: "running", message: DEFAULT_MESSAGES[kind], audience: {}, ...pacing, provider: "manual", startedAt: now, nextRoundAt: now }).returning();
+  } else if (row.status !== "running") {
+    await db.update(campaigns).set({ status: "running", finishedAt: null, nextRoundAt: now, updatedAt: now }).where(eq(campaigns.id, row.id));
+  }
+  let queued = 0;
+  for (let index = 0; index < people.length; index += 400) {
+    const chunk = people.slice(index, index + 400).map((person) => ({ campaignId: row.id, contactId: person.contactId, phone: person.phone, name: person.name, locale: person.locale, body: person.body, posterUrl: person.posterUrl, test: false, status: "queued" }));
+    queued += (await db.insert(campaignMessages).values(chunk).onConflictDoNothing().returning({ id: campaignMessages.id })).length;
+  }
+  if (queued) await runCampaigns(now, row.id);
+  return queued;
 }
 
 export type CampaignAction = "test" | "start" | "pause" | "resume" | "stop" | "run";

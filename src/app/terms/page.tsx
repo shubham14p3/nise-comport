@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import LegalPage from "@/components/legal-page";
 import { pageMetadata } from "@/lib/seo";
+import { languageAlternates } from "@/lib/tr";
 
-export const metadata: Metadata = pageMetadata("Terms and Conditions", "The terms for using NISE COMPORT, an independent CSC / Pragya Kendra service centre in Jamshedpur: what we do, fees, payments, your responsibilities, liability and how disputes are handled.", "/terms");
+export const metadata: Metadata = pageMetadata("Terms and Conditions", "The terms for using NISE COMPORT, an independent CSC / Pragya Kendra service centre in Jamshedpur: what we do, fees, payments, your responsibilities, liability and how disputes are handled.", "/terms", { languages: languageAlternates("/terms") });
 
 /** Text is edited in Admin → Legal pages; the effective month is refreshed hourly. */
 export const revalidate = 3600;

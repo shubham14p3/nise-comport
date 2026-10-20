@@ -5,16 +5,32 @@ import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { cashfreeCreateOrder, cashfreeOrderPayments, cashfreeRefund, razorpayCreateOrder, razorpayRefund } from "@/lib/gateways";
 import { sendPaymentAlertEmail, sendPaymentReceiptEmail } from "@/lib/email";
-import { cleanUtr, convenienceFee, onlineFeePercent, refundBreakdown, rupees, TICKET_AFTER_HOURS, type PayMethod, type RefundChoice } from "@/lib/payments-core";
+import { cleanUtr, convenienceFee, parseUpiAccounts, upiLink, type UpiAccount, onlineFeePercent, refundBreakdown, rupees, TICKET_AFTER_HOURS, type PayMethod, type RefundChoice } from "@/lib/payments-core";
 import { site } from "@/lib/site";
+import { qrSvg } from "@/lib/qr";
+import { enforceRate, identity } from "@/lib/rate-limit";
 
 export type PaymentRow = typeof payments.$inferSelect;
 
 /** Which payment options are switched on by the owner's environment variables. */
+/**
+ * The shop's UPI IDs from UPI_ID, UPI_ID_2 and UPI_ID_3 (label after a bar, e.g. "nisecomport@sbi|SBI current account").
+ * The IDs are never put in a page; they are sent only when a signed-in customer asks to see the payment QR (see revealUpiQr).
+ */
+export function upiAccounts(): UpiAccount[] {
+  return parseUpiAccounts([process.env.UPI_ID, process.env.UPI_ID_2, process.env.UPI_ID_3], process.env.UPI_PAYEE_NAME?.trim() || site.name);
+}
+
+/** How long the payment QR stays on screen after it is shown (seconds, 60 to 600). */
+export function upiQrSeconds() {
+  const value = Number(process.env.UPI_QR_SECONDS);
+  return Number.isFinite(value) && value > 0 ? Math.max(60, Math.min(600, Math.round(value))) : 180;
+}
+
 export function paymentOptions() {
-  const upiId = process.env.UPI_ID?.trim() ?? "";
+  const accounts = upiAccounts();
   return {
-    upi: upiId ? { vpa: upiId, name: process.env.UPI_PAYEE_NAME?.trim() || site.name } : null,
+    upi: accounts.length ? accounts : null,
     razorpay: Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET),
     cashfree: Boolean(process.env.CASHFREE_APP_ID && process.env.CASHFREE_SECRET_KEY),
     feePercent: onlineFeePercent(),
@@ -222,4 +238,23 @@ export async function paymentSummary() {
   const count = (status: string) => rows.filter((r) => r.status === status).reduce((a, x) => a + x.count, 0);
   const [attention] = await db.select({ n: sql<number>`count(*)::int` }).from(payments).where(sql`${payments.issueRaisedAt} is not null and coalesce(${payments.refundStatus},'') <> 'done' or ${payments.refundStatus} = 'requested'`);
   return { byMethod, totalPaise: byMethod.reduce((a, x) => a + x.paise, 0), verifying: count("verifying"), failed: count("failed"), due: count("due"), attention: attention?.n ?? 0 };
+}
+
+/**
+ * Shows the UPI payment QR to the signed-in person who owns the request, for a short time. The ID and QR are
+ * built here, per request, and are not in the page; each look is rate-limited. A screenshot can't be prevented,
+ * but the QR carries this payment's amount and reference, so it is only useful for paying this bill.
+ */
+export async function revealUpiQr(reference: string, slot: number, viewer: { id: string; role: string }) {
+  const accounts = upiAccounts();
+  const account = accounts.find((item) => item.slot === slot);
+  if (!account) throw new PublicError("UPI payment is not available right now.", 404);
+  const found = await paymentForReference(reference, viewer);
+  if (!found) throw new PublicError("Payment not found.", 404);
+  const { payment } = found;
+  if (payment.status !== "due" && payment.status !== "failed") throw new PublicError("This payment doesn’t need a QR code.", 400);
+  await enforceRate({ name: "upi-qr", limit: 6, windowSeconds: 3600 }, identity("upi-qr", `${viewer.id}:${payment.id}`), "You have opened the payment QR several times.");
+  const link = upiLink({ vpa: account.vpa, name: account.name, amountPaise: payment.amountPaise, note: payment.reference });
+  const seconds = upiQrSeconds();
+  return { svg: qrSvg(link, { size: 220 }), link, vpa: account.vpa, label: account.label, seconds, expiresAt: Date.now() + seconds * 1000 };
 }

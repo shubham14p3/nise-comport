@@ -15,6 +15,8 @@ const securityHeaders = [
 const noindex = [{ key: "X-Robots-Tag", value: "noindex, nofollow" }];
 
 const nextConfig: NextConfig = {
+  // Read at run time from node_modules (support-mailbox reader); never bundled.
+  serverExternalPackages: ["imapflow", "mailparser"],
   poweredByHeader: false,
   reactStrictMode: true,
   compress: true,
@@ -32,6 +34,7 @@ const nextConfig: NextConfig = {
       { source: "/desk", headers: noindex },
       { source: "/profile/:path*", headers: noindex },
       { source: "/profile", headers: noindex },
+      { source: "/mail-x7q2", headers: noindex },
       { source: "/login", headers: noindex },
       { source: "/signup", headers: noindex },
       { source: "/forgot-password", headers: noindex },

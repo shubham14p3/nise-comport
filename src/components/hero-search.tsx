@@ -7,7 +7,7 @@ import LoopScroller from "@/components/loop-scroller";
 import { Search } from "lucide-react";
 import { matchesSearch, normaliseSearch } from "@/lib/search-terms";
 
-const SUGGESTIONS = ["PAN card correction", "Income certificate", "Bike insurance renewal", "AEPS cash withdrawal", "Print from phone", "Exam form filling", "Voter ID", "Electricity bill"];
+const SUGGESTIONS = ["PAN card correction", "Income certificate", "Bike insurance renewal", "AEPS cash withdrawal", "Passport photo", "Exam form filling", "Voter ID", "Website for my shop"];
 
 /** "What do you need today?" search with a rotating hint. Searches the services page. */
 export default function HeroSearch({ popular, services = [] }: { popular: { label: string; href: string }[]; services?: { slug: string; title: string }[] }) {

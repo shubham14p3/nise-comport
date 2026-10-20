@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { apiError, readJson } from "@/lib/http";
 import { PublicError } from "@/lib/errors";
-import { createGatewayOrder, markPaid, paymentByOrder, raiseTicket, requestRefund, submitUtr } from "@/lib/payments";
+import { createGatewayOrder, markPaid, paymentByOrder, raiseTicket, requestRefund, revealUpiQr, submitUtr } from "@/lib/payments";
 import { verifyRazorpayPayment } from "@/lib/payments-verify";
 import { enforceRate, identity } from "@/lib/rate-limit";
 
@@ -12,6 +12,7 @@ export const dynamic = "force-dynamic";
 
 const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("utr"), reference: z.string().max(40), utr: z.string().max(40) }),
+  z.object({ action: z.literal("qr"), reference: z.string().max(40), slot: z.number().int().min(0).max(2) }),
   z.object({ action: z.literal("order"), reference: z.string().max(40), provider: z.enum(["razorpay", "cashfree"]) }),
   z.object({ action: z.literal("ticket"), reference: z.string().max(40), note: z.string().max(500) }),
   z.object({ action: z.literal("refund"), reference: z.string().max(40), choice: z.enum(["wallet", "original", "cash"]), details: z.string().max(300).default("") }),
@@ -28,6 +29,7 @@ export async function POST(request: NextRequest) {
     if (input.action === "utr") { await submitUtr(input.reference.trim().toUpperCase(), input.utr, user); return NextResponse.json({ ok: true }); }
     if (input.action === "ticket") { await raiseTicket(input.reference.trim().toUpperCase(), input.note, user); return NextResponse.json({ ok: true }); }
     if (input.action === "refund") { await requestRefund(input.reference.trim().toUpperCase(), input.choice, input.details, user); return NextResponse.json({ ok: true }); }
+    if (input.action === "qr") return NextResponse.json(await revealUpiQr(input.reference.trim().toUpperCase(), input.slot, user), { headers: { "cache-control": "private, no-store" } });
     if (input.action === "order") return NextResponse.json(await createGatewayOrder(input.reference.trim().toUpperCase(), input.provider, user));
     const secret = process.env.RAZORPAY_KEY_SECRET;
     // Razorpay: verify against the order id WE stored, never the one the browser reports.

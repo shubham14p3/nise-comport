@@ -7,11 +7,12 @@
  */
 export type Lang = "en" | "hi" | "bn";
 export type Text3 = Record<Lang, string>;
-export type CampaignKind = "renewal" | "offer" | "optin";
+export type CampaignKind = "renewal" | "offer" | "optin" | "birthday";
 
 export const CAMPAIGN_KINDS: Record<CampaignKind, { label: string; detail: string }> = {
   renewal: { label: "Renewal reminder", detail: "Existing customers whose policy or service is due. Goes to everyone who hasn’t said STOP." },
   offer: { label: "Offer / promotion", detail: "Advertising. Goes only to people who replied YES to receive offers." },
+  birthday: { label: "Birthday wish", detail: "People whose birthday is today. Goes only to people who replied YES." },
   optin: { label: "Ask permission (YES/STOP)", detail: "One message asking if they want offers and reminders. Goes only to people never asked before." },
 };
 
@@ -28,6 +29,11 @@ export const DEFAULT_MESSAGES: Record<CampaignKind, Text3> = {
     en: "Namaste {name} 🎉 Festive offer at NISE COMPORT, Telco:{code} Insurance, PAN, certificates, bills and printing, all under one roof. Reply here or call {phone}.",
     hi: "नमस्ते {name} 🎉 NISE COMPORT, टेल्को में त्योहार ऑफ़र:{code} बीमा, पैन, प्रमाणपत्र, बिल और प्रिंटिंग, सब एक जगह। यहीं जवाब दें या {phone} पर कॉल करें।",
     bn: "নমস্কার {name} 🎉 NISE COMPORT, টেলকোতে উৎসবের অফার:{code} বিমা, প্যান, সার্টিফিকেট, বিল আর প্রিন্টিং, সব এক জায়গায়। এখানে উত্তর দিন বা {phone}-এ ফোন করুন।",
+  },
+  birthday: {
+    en: "Happy Birthday {name}! 🎂 Wishing you a wonderful year ahead, from all of us at NISE COMPORT, Kharangajhar, Telco.",
+    hi: "जन्मदिन मुबारक {name}! 🎂 NISE COMPORT, खरंगाझार, टेल्को की पूरी टीम की ओर से आपके नए साल की ढेर सारी शुभकामनाएँ।",
+    bn: "শুভ জন্মদিন {name}! 🎂 NISE COMPORT, খরংঝাড়, টেলকোর পুরো টিমের পক্ষ থেকে নতুন বছরের অনেক শুভেচ্ছা।",
   },
   optin: {
     en: "Namaste {name} 🙏 This is NISE COMPORT, Kharangajhar, Telco. May we send you renewal reminders and festival offers on WhatsApp? Reply YES to agree or STOP to never hear from us.",
@@ -123,7 +129,7 @@ export function classifyReply(text: string): "stop" | "yes" | null {
 /** Which contacts a campaign may message (consent rules). */
 export function consentAllows(kind: CampaignKind, consent: string) {
   if (consent === "opted_out") return false;
-  if (kind === "offer") return consent === "opted_in";
+  if (kind === "offer" || kind === "birthday") return consent === "opted_in";
   if (kind === "optin") return consent === "unknown";
   return true;
 }

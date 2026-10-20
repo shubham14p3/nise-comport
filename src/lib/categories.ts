@@ -16,7 +16,9 @@ export type CategoryMeta = {
   popular: string[];
 };
 
-export const categoryMeta: CategoryMeta[] = [
+import { categoryVisible } from "./features.ts";
+
+const allCategoryMeta: CategoryMeta[] = [
   { slug: "government-services", icon: "landmark", tone: "blue", short: { en: "Govt. services", hi: "सरकारी सेवाएँ", bn: "সরকারি পরিষেবা" }, line: { en: "PAN, Aadhaar help, certificates, voter ID", hi: "पैन, आधार मदद, प्रमाण पत्र, वोटर आईडी", bn: "প্যান, আধার সাহায্য, সার্টিফিকেট, ভোটার আইডি" }, popular: ["PAN card", "Income certificate", "Voter ID"] },
   { slug: "banking", icon: "banknote", tone: "green", short: { en: "Banking & AEPS", hi: "बैंकिंग व AEPS", bn: "ব্যাংকিং ও AEPS" }, line: { en: "Cash withdrawal, transfers, new account", hi: "नकद निकासी, ट्रांसफ़र, नया खाता", bn: "নগদ তোলা, টাকা পাঠানো, নতুন অ্যাকাউন্ট" }, popular: ["AEPS", "Money transfer", "Account opening"] },
   { slug: "insurance", icon: "shield", tone: "pink", short: { en: "Insurance", hi: "बीमा", bn: "বিমা" }, line: { en: "Bike, car, health & life cover", hi: "बाइक, कार, हेल्थ और लाइफ़", bn: "বাইক, গাড়ি, হেলথ ও লাইফ" }, popular: ["Bike insurance", "Car renewal", "Health cover"] },
@@ -27,6 +29,9 @@ export const categoryMeta: CategoryMeta[] = [
   { slug: "travel", icon: "plane", tone: "rose", short: { en: "Travel tickets", hi: "यात्रा टिकट", bn: "যাত্রার টিকিট" }, line: { en: "Train, bus, flight & hotel booking help", hi: "ट्रेन, बस, फ़्लाइट और होटल बुकिंग", bn: "ট্রেন, বাস, ফ্লাইট ও হোটেল বুকিং" }, popular: ["Train ticket", "Flight", "Bus"] },
   { slug: "hardware", icon: "cpu", tone: "blue", short: { en: "Hardware & PC", hi: "हार्डवेयर व PC", bn: "হার্ডওয়্যার ও PC" }, line: { en: "Laptop & PC repair, PC builds, parts at latest price", hi: "लैपटॉप व PC मरम्मत, PC बिल्ड, ताज़ा कीमत पर पार्ट्स", bn: "ল্যাপটপ ও PC মেরামত, PC বিল্ড, সর্বশেষ দামে পার্টস" }, popular: ["Laptop repair", "PC build quote", "RAM price", "Printer repair"] },
 ];
+
+/** Only the categories that are switched on (see src/lib/features.ts). */
+export const categoryMeta: CategoryMeta[] = allCategoryMeta.filter((item) => categoryVisible(item.slug));
 
 export function categoryMetaFor(slug: string | null | undefined) {
   return categoryMeta.find((item) => item.slug === slug);

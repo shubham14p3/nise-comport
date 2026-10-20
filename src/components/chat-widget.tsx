@@ -1,5 +1,6 @@
 "use client";
 
+import { FEATURES } from "@/lib/features";
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -51,7 +52,7 @@ const TOPIC_WORDS: Record<TopicId, string[]> = {
   human: ["human", "person", "agent", "talk", "call", "whatsapp", "बात", "কথা"],
 };
 
-const TOPICS = Object.keys(TOPIC_WORDS) as TopicId[];
+const TOPICS = (Object.keys(TOPIC_WORDS) as TopicId[]).filter((topic) => topic !== "bills" || FEATURES.billsAndRecharge);
 
 function waLink(number: string, text: string) {
   const branded = text.startsWith("*NISE COMPORT*") ? text : `*NISE COMPORT* · Kharangajhar, Telco, Jamshedpur\n${text}`;

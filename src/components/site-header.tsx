@@ -7,15 +7,37 @@ import OfferTicker from "@/components/offer-ticker";
 import { ServicesMegaDesktop, ServicesMegaMobile } from "@/components/services-mega-menu";
 import { WhatsAppIcon } from "@/components/icons";
 import { ArrowRight, LayoutDashboard, LogOut, Menu, Phone, Search, ShieldCheck, UserRound, X } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { secureApi } from "@/lib/secure-api-client";
 import { dict } from "@/lib/i18n";
+import { lp, tr } from "@/lib/tr";
 import { useLocale } from "@/lib/use-locale";
 import { PHONE_E164 as PHONE, whatsappHref } from "@/lib/public-contact";
 import { isStaffRole, STAFF_HOME } from "@/lib/staff-routes";
 
 type HeaderUser = { id: string; name: string; email: string; role: string };
+
+// Only the name and role are remembered in this browser (never the email or id), so the account button can appear
+// straight away on the next visit while the real sign-in check runs. The server decides whether it is still valid.
+const REMEMBER_KEY = "nc-header-user";
+const rememberListeners = new Set<() => void>();
+function subscribeRemembered(callback: () => void) {
+  rememberListeners.add(callback);
+  window.addEventListener("storage", callback);
+  return () => { rememberListeners.delete(callback); window.removeEventListener("storage", callback); };
+}
+function rememberedSnapshot() { try { return window.localStorage.getItem(REMEMBER_KEY); } catch { return null; } }
+function parseRemembered(raw: string | null): HeaderUser | null {
+  try {
+    const value = JSON.parse(raw ?? "null") as { name?: unknown; role?: unknown } | null;
+    return value && typeof value.name === "string" && typeof value.role === "string" ? { id: "", email: "", name: value.name.slice(0, 80), role: value.role.slice(0, 20) } : null;
+  } catch { return null; }
+}
+function remember(user: HeaderUser | null) {
+  try { if (user) window.localStorage.setItem(REMEMBER_KEY, JSON.stringify({ name: user.name, role: user.role })); else window.localStorage.removeItem(REMEMBER_KEY); } catch { /* storage can be blocked */ }
+  rememberListeners.forEach((callback) => callback());
+}
 
 const WHATSAPP = whatsappHref("Hi NISE COMPORT, I need help with a service.");
 
@@ -26,6 +48,10 @@ export default function SiteHeader() {
   const t = dict(locale).nav;
   const [user, setUser] = useState<HeaderUser | null>(null);
   const [sessionLoaded, setSessionLoaded] = useState(false);
+  const [verifying, setVerifying] = useState(true);
+  // The remembered account (null on the server and during hydration, so nothing mismatches), shown until the server confirms.
+  const rememberedRaw = useSyncExternalStore(subscribeRemembered, rememberedSnapshot, () => null);
+  const remembered = useMemo(() => parseRemembered(rememberedRaw), [rememberedRaw]);
   const [signingOut, setSigningOut] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPath, setMenuPath] = useState(pathname);
@@ -37,7 +63,7 @@ export default function SiteHeader() {
     event.preventDefault();
     const value = mobileQuery.trim();
     setMenuOpen(false);
-    router.push(value ? `/services?q=${encodeURIComponent(value)}` : "/services");
+    router.push(value ? `${lp(locale, "/services")}?q=${encodeURIComponent(value)}` : lp(locale, "/services"));
   }
 
   // Close the mobile menu after navigation.
@@ -46,9 +72,9 @@ export default function SiteHeader() {
   useEffect(() => {
     let active = true;
     secureApi<{ user: HeaderUser | null }>("C4w7G2hN6kP9")
-      .then((result) => { if (active) setUser(result.user); })
+      .then((result) => { if (active) { setUser(result.user); remember(result.user); } })
       .catch(() => undefined)
-      .finally(() => { if (active) setSessionLoaded(true); });
+      .finally(() => { if (active) { setSessionLoaded(true); setVerifying(false); } });
     return () => { active = false; };
   }, []);
 
@@ -75,21 +101,27 @@ export default function SiteHeader() {
     setSigningOut(true);
     try { await secureApi("R6y0D3sJ8vM2"); } catch { /* the session may already be gone */ }
     setUser(null);
+    remember(null);
     setSigningOut(false);
     setMenuOpen(false);
     router.refresh();
   }
 
   const home = locale === "en" ? "/" : `/${locale}`;
+  const tt = tr(locale);
   const links = [
-    { href: "/services", label: t.services },
+    { href: lp(locale, "/services"), label: t.services },
     { href: "/offers", label: t.offers, live: true },
-    { href: "/gallery", label: t.gallery },
-    { href: "/blog", label: t.guides },
-    { href: "/contact", label: t.contact },
+    { href: lp(locale, "/gallery"), label: t.gallery },
+    { href: lp(locale, "/blog"), label: t.guides },
+    { href: lp(locale, "/contact"), label: t.contact },
   ];
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
-  const firstName = user?.name.trim().split(/\s+/)[0] ?? "";
+  const isServicesLink = (href: string) => href === lp(locale, "/services");
+  // Until the server answers, the remembered account (if any) is shown, so the button doesn't flash from empty to a name.
+  const account = user ?? (verifying ? remembered : null);
+  const loaded = sessionLoaded || (verifying && remembered !== null);
+  const firstName = account?.name.trim().split(/\s+/)[0] ?? "";
 
   return <>
     <OfferTicker locale={locale}/>
@@ -97,22 +129,22 @@ export default function SiteHeader() {
       <div className="container nav-wrap">
         <Link className="brand" href={home} aria-label="NISE COMPORT home"><BrandWordmark/></Link>
         <nav className="desktop-nav" aria-label="Main navigation">
-          {links.map((link) => link.href === "/services"
+          {links.map((link) => isServicesLink(link.href)
             ? <ServicesMegaDesktop key={link.href} label={link.label} active={isActive(link.href)}/>
             : <Link key={link.href} href={link.href} className={isActive(link.href) ? "is-active" : undefined} aria-current={isActive(link.href) ? "page" : undefined}>{link.label}{link.live && <i className="live-dot" aria-hidden="true"/>}</Link>)}
         </nav>
         <div className="nav-actions">
           <LanguageMenu locale={locale} label={t.changeLanguage} compact/>
-          {!sessionLoaded ? <span className="nav-placeholder" aria-hidden="true"/> : user
+          {!loaded ? <span className="nav-skeleton" role="status" aria-label={tt("Checking sign-in…", "साइन-इन जाँच रहे हैं…", "সাইন-ইন যাচাই হচ্ছে…")}><span className="nav-skeleton__dot"/><span className="nav-skeleton__bar"/></span> : account
             ? <>
               <div className="account-menu" ref={accountRef}>
-                <button className="account-chip" type="button" aria-haspopup="menu" aria-expanded={accountOpen} onClick={() => setAccountOpen((open) => !open)} title={t.myProfile}>
+                <button className={`account-chip${verifying ? " is-verifying" : ""}`} aria-busy={verifying} type="button" aria-haspopup="menu" aria-expanded={accountOpen} onClick={() => setAccountOpen((open) => !open)} title={t.myProfile}>
                   <span className="account-avatar">{firstName.slice(0, 1).toUpperCase() || <UserRound size={16}/>}</span><span className="account-name">{firstName || t.myProfile}</span>
                 </button>
                 {accountOpen && <div className="account-dropdown" role="menu">
-                  <Link role="menuitem" href="/profile"><UserRound size={16}/>Normal view</Link>
-                  {isStaffRole(user.role) && <Link role="menuitem" href={user.role === "admin" ? `${STAFF_HOME}?view=staff` : STAFF_HOME}><LayoutDashboard size={16}/>Staff view</Link>}
-                  {user.role === "admin" && <Link role="menuitem" href={STAFF_HOME}><ShieldCheck size={16}/>Admin view</Link>}
+                  <Link role="menuitem" href="/profile"><UserRound size={16}/>{tt("Normal view", "सामान्य व्यू", "সাধারণ ভিউ")}</Link>
+                  {isStaffRole(account.role) && <Link role="menuitem" href={account.role === "admin" ? `${STAFF_HOME}?view=staff` : STAFF_HOME}><LayoutDashboard size={16}/>{tt("Staff view", "स्टाफ़ व्यू", "স্টাফ ভিউ")}</Link>}
+                  {account.role === "admin" && <Link role="menuitem" href={STAFF_HOME}><ShieldCheck size={16}/>{tt("Admin view", "एडमिन व्यू", "অ্যাডমিন ভিউ")}</Link>}
                 </div>}
               </div>
               <button className="icon-btn nav-signout" type="button" onClick={() => void signOut()} disabled={signingOut} title={t.signOut} aria-label={t.signOut}><LogOut size={18}/></button>
@@ -131,18 +163,18 @@ export default function SiteHeader() {
         <div className="mobile-sheet__top"><Link className="brand" href={home}><BrandWordmark/></Link><button className="icon-btn" type="button" onClick={() => setMenuOpen(false)} aria-label={t.close}><X size={22}/></button></div>
         <form role="search" className="mobile-sheet__search" onSubmit={submitMobileSearch}>
           <Search size={18} aria-hidden="true"/>
-          <label className="sr-only" htmlFor="mobile-search">Search services</label>
-          <input id="mobile-search" type="search" value={mobileQuery} onChange={(event) => setMobileQuery(event.target.value)} placeholder="Search services…" autoComplete="off" enterKeyHint="search"/>
+          <label className="sr-only" htmlFor="mobile-search">{tt("Search services", "सेवाएँ खोजें", "পরিষেবা খুঁজুন")}</label>
+          <input id="mobile-search" type="search" value={mobileQuery} onChange={(event) => setMobileQuery(event.target.value)} placeholder={tt("Search services…", "सेवाएँ खोजें…", "পরিষেবা খুঁজুন…")} autoComplete="off" enterKeyHint="search"/>
         </form>
         <div className="mobile-sheet__links">
-          {[{ href: home, label: t.home }, ...links, { href: "/about", label: t.about }, { href: "/areas-we-serve", label: t.areas }, { href: "/faq", label: t.faq }, { href: "/track", label: "Track a request" }].map((link, index) => link.href === "/services" ? <ServicesMegaMobile key={link.href} label={link.label}/> : <Link key={link.href} href={link.href} style={{ animationDelay: `${index * 30}ms` }}>{link.label}<ArrowRight size={18}/></Link>)}
+          {[{ href: home, label: t.home }, ...links, { href: lp(locale, "/about"), label: t.about }, { href: lp(locale, "/areas-we-serve"), label: t.areas }, { href: lp(locale, "/faq"), label: t.faq }, { href: "/track", label: tt("Track a request", "अनुरोध ट्रैक करें", "অনুরোধ ট্র্যাক করুন") }].map((link, index) => isServicesLink(link.href) ? <ServicesMegaMobile key={link.href} label={link.label}/> : <Link key={link.href} href={link.href} style={{ animationDelay: `${index * 30}ms` }}>{link.label}<ArrowRight size={18}/></Link>)}
         </div>
         <div className="mobile-sheet__lang"><span>{t.changeLanguage}</span><LanguageMenu locale={locale} label={t.changeLanguage} inline/></div>
         <div className="mobile-sheet__actions">
           <Link className="btn btn--primary btn--block" href="/request">{t.startRequest}<ArrowRight size={18}/></Link>
-          {sessionLoaded && user && isStaffRole(user.role) && <Link className="btn btn--ghost btn--block" href={user.role === "admin" ? `${STAFF_HOME}?view=staff` : STAFF_HOME}><LayoutDashboard size={18}/>Staff view</Link>}
-          {sessionLoaded && user && user.role === "admin" && <Link className="btn btn--ghost btn--block" href={STAFF_HOME}><ShieldCheck size={18}/>Admin view</Link>}
-          {sessionLoaded && user
+          {loaded && account && isStaffRole(account.role) && <Link className="btn btn--ghost btn--block" href={account.role === "admin" ? `${STAFF_HOME}?view=staff` : STAFF_HOME}><LayoutDashboard size={18}/>{tt("Staff view", "स्टाफ़ व्यू", "স্টাফ ভিউ")}</Link>}
+          {loaded && account && account.role === "admin" && <Link className="btn btn--ghost btn--block" href={STAFF_HOME}><ShieldCheck size={18}/>{tt("Admin view", "एडमिन व्यू", "অ্যাডমিন ভিউ")}</Link>}
+          {loaded && account
             ? <div className="mobile-sheet__row"><Link className="btn btn--ghost" href="/profile"><UserRound size={18}/>{t.myProfile}</Link><button className="btn btn--ghost" type="button" onClick={() => void signOut()} disabled={signingOut}><LogOut size={18}/>{signingOut ? t.signingOut : t.signOut}</button></div>
             : <Link className="btn btn--ghost btn--block" href="/login">{t.signIn}</Link>}
           <div className="mobile-sheet__row"><a className="btn btn--wa" href={WHATSAPP} target="_blank" rel="noopener noreferrer"><WhatsAppIcon/>{t.whatsapp}</a><a className="btn btn--ghost" href={`tel:${PHONE}`}><Phone size={18}/>{t.call}</a></div>

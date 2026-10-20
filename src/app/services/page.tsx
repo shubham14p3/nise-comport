@@ -14,7 +14,7 @@ import { itemListLd } from "@/lib/structured-data";
 
 export const metadata: Metadata = pageMetadata(
   "All CSC & Digital Services in Jamshedpur",
-  "PAN, Aadhaar guidance, Jharkhand certificates, AEPS banking, insurance, student forms, bill payments, printing and travel help at NISE COMPORT, Kharangajhar, Telco.",
+  "PAN, Aadhaar guidance, Jharkhand certificates, AEPS banking, insurance, student forms, website creation, printing and PC repair help at NISE COMPORT, Kharangajhar, Telco.",
   "/services",
   { languages: { "hi-IN": "/hi", "bn-IN": "/bn" } },
 );

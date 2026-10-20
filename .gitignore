@@ -47,3 +47,9 @@ photo-index
 .env
 .env.local
 .env.*.local
+
+# Database backups hold customer data: never commit
+backups/
+
+# Remembered Excel location for npm run records:update
+.records-source.json

@@ -17,6 +17,19 @@ const ago = (iso: string) => {
   if (minutes < 24 * 60) return `${Math.round(minutes / 60)} h ago`;
   return new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" });
 };
+const PAGE_SIZE = 15;
+
+/** "Showing 1–15 of 52" with Previous / Next. Hidden when everything fits on one page. */
+function Pager({ page, total, onPage, label }: { page: number; total: number; onPage: (next: number) => void; label: string }) {
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (total <= PAGE_SIZE) return null;
+  const from = page * PAGE_SIZE + 1; const to = Math.min(total, (page + 1) * PAGE_SIZE);
+  return <nav className="inbox__pager" aria-label={label}>
+    <button type="button" className="btn btn--ghost btn--sm" disabled={page <= 0} onClick={() => onPage(page - 1)}>Previous</button>
+    <span>Showing {from}–{to} of {total} · page {page + 1} of {pages}</span>
+    <button type="button" className="btn btn--ghost btn--sm" disabled={page >= pages - 1} onClick={() => onPage(page + 1)}>Next</button>
+  </nav>;
+}
 const pretty = (phone: string) => phone.replace(/^\+91(\d{5})(\d{5})$/, "+91 $1 $2");
 
 /**
@@ -28,6 +41,8 @@ export default function InboxPanel({ onSeen }: { onSeen?: () => void }) {
   const [category, setCategory] = useState("");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [leadPage, setLeadPage] = useState(0);
+  const [feedPage, setFeedPage] = useState(0);
 
   async function load(nextCategory = category) {
     try { setData(await secureApi<Inbox>("I5x2N8kQ3wT6", { category: nextCategory })); setError(""); }
@@ -54,20 +69,24 @@ export default function InboxPanel({ onSeen }: { onSeen?: () => void }) {
   }
 
   const seenAt = data ? new Date(data.seenAt).getTime() : 0;
+  const leads = data?.leads ?? []; const items = data?.items ?? [];
+  // Stay on a valid page when the list shrinks (for example after marking a lead done).
+  const leadAt = Math.min(leadPage, Math.max(0, Math.ceil(leads.length / PAGE_SIZE) - 1));
+  const feedAt = Math.min(feedPage, Math.max(0, Math.ceil(items.length / PAGE_SIZE) - 1));
   return <section className="admin-queue inbox">
     <h2><Bell size={17}/> Inbox {data?.unread ? <span className="inbox__unread">{data.unread} new</span> : null}
       <button type="button" className="btn btn--ghost btn--sm inbox__refresh" onClick={() => void load()}><RefreshCw size={14}/>Refresh</button></h2>
     {error && <div className="alert alert--error" role="alert">{error}</div>}
 
     {data && data.pending.length > 0 && <div className="inbox__pending">
-      {data.pending.map((item) => <button key={item.category} type="button" className={category === item.category ? "is-active" : undefined} onClick={() => { const next = category === item.category ? "" : item.category; setCategory(next); void load(next); }}>
+      {data.pending.map((item) => <button key={item.category} type="button" className={category === item.category ? "is-active" : undefined} onClick={() => { const next = category === item.category ? "" : item.category; setCategory(next); setFeedPage(0); void load(next); }}>
         <b>{item.total}</b><span>{item.label}</span><small>waiting</small>
       </button>)}
     </div>}
 
     {data && data.leads.length > 0 && <div className="inbox__leads">
       <h3><Phone size={16}/> Call these people back <span>{data.leads.length}</span></h3>
-      {data.leads.map((row) => <article key={row.id} className={`lead-row lead-row--${row.status}`}>
+      {leads.slice(leadAt * PAGE_SIZE, (leadAt + 1) * PAGE_SIZE).map((row) => <article key={row.id} className={`lead-row lead-row--${row.status}`}>
         <div><b>{row.name}</b> <a href={`tel:${row.phone}`}>{pretty(row.phone)}</a>
           <small>{row.topic}{row.message && !row.message.includes("\n") ? ` — ${row.message}` : ""} · {ago(row.createdAt)}{row.status === "called" ? " · called once" : ""}</small>
           {row.message?.includes("\n") && <p className="lead-row__details">{row.message}</p>}</div>
@@ -79,14 +98,16 @@ export default function InboxPanel({ onSeen }: { onSeen?: () => void }) {
           <button type="button" className="profile-text-button" disabled={busy === row.id} onClick={() => void lead(row, "spam")}><X size={13}/>Spam</button>
         </div>
       </article>)}
+      <Pager page={leadAt} total={leads.length} onPage={setLeadPage} label="Call-back pages"/>
     </div>}
 
     <h3 className="inbox__feed-title">Activity{category ? ` · ${data?.pending.find((item) => item.category === category)?.label ?? category}` : ""}</h3>
-    <ol className="inbox__feed">{(data?.items ?? []).map((item) => <li key={item.id} className={new Date(item.createdAt).getTime() > seenAt ? "is-new" : undefined}>
+    <ol className="inbox__feed">{items.slice(feedAt * PAGE_SIZE, (feedAt + 1) * PAGE_SIZE).map((item) => <li key={item.id} className={new Date(item.createdAt).getTime() > seenAt ? "is-new" : undefined}>
       <span className="inbox__icon" aria-hidden="true">{ICON[item.kind] ?? "•"}</span>
       <div><b>{item.title}</b>{item.detail && <small>{item.detail}</small>}</div>
       <time dateTime={item.createdAt}>{item.kind === "record_view" ? <Eye size={12}/> : item.actor ? <UserRound size={12}/> : null} {ago(item.createdAt)}</time>
     </li>)}</ol>
+    <Pager page={feedAt} total={items.length} onPage={setFeedPage} label="Activity pages"/>
     {data && !data.items.length && <p className="admin-empty">Nothing yet. New requests, call-back requests and staff actions appear here.</p>}
   </section>;
 }

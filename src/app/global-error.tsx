@@ -6,7 +6,9 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
     <main style={{ maxWidth: 560, margin: "0 auto" }}>
       <h1>NISE COMPORT is temporarily unavailable</h1>
       <p>Please try again in a minute. For urgent help call <a href="tel:+919771219893">+91 97712 19893</a>.</p>
-      <button type="button" onClick={() => reset()} style={{ padding: "10px 18px", borderRadius: 999, border: 0, background: "#24533c", color: "#fffefa", fontWeight: 700 }}>Try again</button>
+      <p lang="hi">कृपया एक मिनट बाद फिर कोशिश करें। जरूरी हो तो फ़ोन करें: <a href="tel:+919771219893">+91 97712 19893</a></p>
+      <p lang="bn">অনুগ্রহ করে এক মিনিট পরে আবার চেষ্টা করুন। জরুরি হলে ফোন করুন: <a href="tel:+919771219893">+91 97712 19893</a></p>
+      <button type="button" onClick={() => { try { reset(); } catch { window.location.reload(); } }} style={{ padding: "10px 18px", borderRadius: 999, border: 0, background: "#24533c", color: "#fffefa", fontWeight: 700 }}>Try again</button>
     </main>
   </body></html>;
 }

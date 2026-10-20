@@ -20,6 +20,7 @@ const OPS = {
   "V3p6J0nS8yC1": { method: "POST", path: "/api/auth/password-reset/request" },
   "L8t1B5rX9mQ4": { method: "POST", path: "/api/auth/password-reset/confirm" },
   "C4w7G2hN6kP9": { method: "GET", path: "/api/auth/session" },
+  "M5q9B2nT7wR3": { method: "GET", path: "/api/auth/birthday" },
   "R6y0D3sJ8vM2": { method: "DELETE", path: "/api/auth/session" },
   "T2f9K4pW7cL1": { method: "PATCH", path: "/api/profile" },
   "B7n3Q8xH5rV0": { method: "POST", path: "/api/account/password" },
@@ -82,8 +83,10 @@ const OPS = {
   "V9n4X1rQ6bH3": { method: "POST", path: "/api/admin/loyalty" },
   "L4g8P2nT6vK1": { method: "GET", path: "/api/admin/legal" },
   "S7r3Q9mB5xD2": { method: "POST", path: "/api/admin/legal" },
+  "Z6n2K9cR4vP1": { method: "POST", path: "/api/mail" },
   "Y3d7N5qV1mP8": { method: "POST", path: "/api/pay" },
   "H6k2B9tW4xC7": { method: "POST", path: "/api/admin/payments" },
+  "O3bQ7mT5xK2n": { method: "POST", path: "/api/admin/outreach" },
 } as const;
 
 /** Encrypted file uploads: customer documents, and posters in the admin area. */
@@ -91,6 +94,7 @@ const BINARY_OPS = {
   "U7b3R8mQ4zL1": "/api/uploads",
   "P6m1T8vC3xK9": "/api/admin/media",
   "G5p8U2kV7nR3": "/api/admin/gallery/upload",
+  "A9d5W3tL7mX2": "/api/mail/attach",
 } as const;
 
 function stringValue(input: Record<string, unknown>, key: string, max = 200) {
@@ -101,6 +105,12 @@ function stringValue(input: Record<string, unknown>, key: string, max = 200) {
 function targetFor(operation: string, input: Record<string, unknown>) {
   if (operation in OPS) return OPS[operation as keyof typeof OPS];
   switch (operation) {
+    case "Q3x8M5wT2kB7": {
+      // Message centre reads: list, one ticket, counters.
+      const query = new URLSearchParams();
+      for (const [key, max] of [["view", 12], ["box", 24], ["q", 80], ["id", 60], ["before", 40]] as const) { const value = stringValue(input, key, max); if (value) query.set(key, value); }
+      return { method: "GET", path: `/api/mail?${query.toString()}` };
+    }
     case "U3j7P1xH5nQ9": {
       const phone = stringValue(input, "phone", 30);
       return { method: "GET", path: `/api/admin/chats${phone ? `?phone=${encodeURIComponent(phone)}` : ""}` };
@@ -150,6 +160,12 @@ function targetFor(operation: string, input: Record<string, unknown>) {
       if (typeof input.page === "number") params.set("page", String(Math.max(0, Math.floor(input.page))));
       return { method: "GET", path: `/api/admin/records?${params.toString()}` };
     }
+    case "B5dY8rN2cV6w": {
+      const query = new URLSearchParams();
+      for (const [key, max] of [["view", 12], ["range", 8], ["month", 3], ["q", 80], ["template", 40], ["days", 3], ["vehicle", 8]] as const) { const value = stringValue(input, key, max); if (value) query.set(key, value); }
+      if (input.overdue) query.set("overdue", "1");
+      return { method: "GET", path: `/api/admin/outreach?${query.toString()}` };
+    }
     case "D4q8M2wS7kF1": {
       const q = stringValue(input, "q", 80);
       const consent = stringValue(input, "consent", 20);
@@ -179,6 +195,10 @@ function fileTarget(operation: string, input: Record<string, unknown>) {
   if (operation === "E1n6V2kP9cF5") return `/api/uploads?id=${encodeURIComponent(id)}`;
   if (operation === "H3q7M0xP6cL2") return `/api/admin/jobs/${encodeURIComponent(id)}/file`;
   if (operation === "V8d4K1rF7nT5") return `/api/admin/requests/${encodeURIComponent(id)}/file`;
+  // Message centre: an attachment, a ticket's files as one zip, and a file of the linked request or print order.
+  if (operation === "N4c8V1bH6qY3") return `/api/mail/file?id=${encodeURIComponent(id)}`;
+  if (operation === "T2m7S5xK9wD4") return `/api/mail/zip?id=${encodeURIComponent(id)}`;
+  if (operation === "B7p3L9zF2nR6") return `/api/mail/linked?id=${encodeURIComponent(id)}&t=${encodeURIComponent(stringValue(input, "t", 60))}`;
   return null;
 }
 
@@ -283,7 +303,7 @@ async function handleBinary(request: NextRequest) {
     return secureJson(context, await jsonFromInternal(response), { status: response.status, headers: passThroughHeaders(response) });
   } catch (error) {
     console.error("[opaque-api] encrypted upload failed", error instanceof Error ? error.message : "Unknown error");
-    return secureJson(context, { error: "Request failed." }, { status: 503 });
+    return secureJson(context, { error: "We couldn’t complete that just now. Please try again in a moment.", code: "unavailable" }, { status: 503 });
   }
 }
 
@@ -297,7 +317,7 @@ export async function POST(request: NextRequest) {
     return await handleJson(request, context);
   } catch (error) {
     console.error("[opaque-api] encrypted request failed", error instanceof Error ? error.message : "Unknown error");
-    return secureJson(context, { error: "Request failed." }, { status: 503 });
+    return secureJson(context, { error: "We couldn’t complete that just now. Please try again in a moment.", code: "unavailable" }, { status: 503 });
   }
 }
 
