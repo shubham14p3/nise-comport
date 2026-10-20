@@ -67,7 +67,7 @@ function WhatsAppRow({ defaultValue, onSaved }: { defaultValue: string; onSaved:
 
 function EmailRow({ reward, onVerified }: { reward: number; onVerified: () => void }) {
   const [email, setEmail] = useState(""); const [code, setCode] = useState(""); const [sent, setSent] = useState(false); const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
-  async function send(channel: "sms" | "whatsapp") { setBusy(true); setError(""); const { ok, result } = await secureResult<{ error?: string }>("M1z6P9dS4kJ7", { newEmail: email }); setBusy(false); if (!ok) setError(result.error ?? "Could not send the code."); else setSent(true); }
+  async function send() { setBusy(true); setError(""); const { ok, result } = await secureResult<{ error?: string }>("M1z6P9dS4kJ7", { newEmail: email }); setBusy(false); if (!ok) setError(result.error ?? "Could not send the code."); else setSent(true); }
   async function confirm() { setBusy(true); setError(""); const { ok, result } = await secureResult<{ error?: string }>("F8c2L5vN0qR3", { newEmail: email, code }); setBusy(false); if (!ok) setError(result.error ?? "That code did not work."); else onVerified(); }
   return <div className="verify-row"><label className="field"><span className="field__label"><Mail size={15}/> Email · ₹{reward}</span>
     <span className="input-wrap"><input type="email" inputMode="email" autoCapitalize="none" value={email} disabled={sent} maxLength={254} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email"/></span>
@@ -80,7 +80,7 @@ function EmailRow({ reward, onVerified }: { reward: number; onVerified: () => vo
 function MobileRow({ phone, smsEnabled, whatsappEnabled, reward, onVerified }: { phone: string; smsEnabled: boolean; whatsappEnabled: boolean; reward: number; onVerified: () => void }) {
   const [value, setValue] = useState(phone); const [code, setCode] = useState(""); const [sent, setSent] = useState(false); const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
   if (!smsEnabled) return <p className="fine"><Smartphone size={14}/> Mobile verification by SMS is coming soon. We will ask again then (₹{reward}).</p>;
-  async function send() { setBusy(true); setError(""); const { ok, result } = await secureResult<{ error?: string }>("M8b5C1qJ7yL2", { action: "send", phone: value, channel }); setBusy(false); if (!ok) setError(result.error ?? "Could not send the SMS."); else setSent(true); }
+  async function send(channel: "sms" | "whatsapp") { setBusy(true); setError(""); const { ok, result } = await secureResult<{ error?: string }>("M8b5C1qJ7yL2", { action: "send", phone: value, channel }); setBusy(false); if (!ok) setError(result.error ?? "Could not send the SMS."); else setSent(true); }
   async function confirm() { setBusy(true); setError(""); const { ok, result } = await secureResult<{ error?: string }>("M8b5C1qJ7yL2", { action: "verify", phone: value, code }); setBusy(false); if (!ok) setError(result.error ?? "That code did not work."); else onVerified(); }
   return <div className="verify-row"><label className="field"><span className="field__label"><Smartphone size={15}/> Verify mobile · ₹{reward}</span>
     <span className="input-wrap"><span className="input-prefix">+91</span><input inputMode="numeric" maxLength={14} value={value} disabled={sent} onChange={(e) => setValue(e.target.value.replace(/\D/g, "").slice(-10))} autoComplete="tel-national"/></span>
