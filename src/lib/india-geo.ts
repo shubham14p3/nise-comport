@@ -95,10 +95,22 @@ export const CITIES_BY_STATE: Record<string, string[]> = mergeCities();
 
 export const CITY_NOT_LISTED = "__other__";
 
-/** ISO-ish common-name country list for the rare "address outside India" case (PAN form). */
-export const COUNTRIES = [
-  "India", "United States", "United Kingdom", "United Arab Emirates", "Saudi Arabia", "Qatar",
-  "Kuwait", "Oman", "Bahrain", "Singapore", "Malaysia", "Australia", "Canada", "Germany",
-  "France", "Netherlands", "Italy", "Spain", "South Africa", "Nigeria", "Nepal", "Bangladesh",
-  "Sri Lanka", "China", "Japan", "South Korea", "Thailand", "Indonesia", "New Zealand", "Other",
+/** Every country from the geo dataset (India first, "Other" last) for the rare "address outside India" case. */
+export const COUNTRIES: string[] = [
+  "India",
+  ...geo.countries().map((row) => row.name).filter((name) => name !== "India").sort((a, b) => a.localeCompare(b)),
+  "Other",
 ];
+
+/** States of any country: India uses our cleaned official list; other countries use the dataset (empty = let the person type it). */
+export function statesFor(country: string): string[] {
+  if (country === "India") return [...INDIA_STATES];
+  const found = geo.findCountry(country);
+  return found ? geo.states(found.id).map((state) => state.name) : [];
+}
+
+export function citiesFor(country: string, state: string): string[] {
+  if (country === "India") return CITIES_BY_STATE[state] ?? [];
+  const found = geo.findCountry(country);
+  return found && state ? geo.cities(found.id, state).map((city) => city.name) : [];
+}
