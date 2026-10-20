@@ -45,7 +45,7 @@ function sheetsFrom(workbook: InstanceType<typeof ExcelJS.Workbook>): SheetInput
     sheet.eachRow({ includeEmpty: false }, (row) => {
       if (++total > MAX_ROWS) throw new PublicError(`This workbook has more than ${MAX_ROWS.toLocaleString("en-IN")} rows. Split it into smaller files.`, 400);
       const values = Array.isArray(row.values) ? row.values.slice(1, MAX_COLUMNS + 1) : [];
-      rows.push(values.map((value) => value ?? null));
+      rows.push(Array.from(values, (value) => value ?? null));
     });
     return { name: sheet.name.slice(0, 60), rows };
   });

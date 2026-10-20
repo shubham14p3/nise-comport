@@ -232,7 +232,7 @@ export function parseWorkbook(fileName: string, sheets: SheetInput[]): { records
   const reports: SheetReport[] = [];
   const seen = new Set<string>();
   for (const sheet of sheets) {
-    const rows = sheet.rows.map((row) => (row ?? []).map(cellText)).filter((row) => row.some(Boolean));
+    const rows = sheet.rows.map((row) => Array.from(row ?? [], (cell) => cellText(cell))).filter((row) => row.some(Boolean));
     if (!rows.length) continue;
     const headerIndex = findHeader(rows);
     const headers = headerIndex >= 0 ? [...rows[headerIndex]] : [];

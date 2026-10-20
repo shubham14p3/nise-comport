@@ -61,7 +61,7 @@ try {
       const rows: unknown[][] = [];
       sheet.eachRow({ includeEmpty: false }, (row) => {
         if (++count > MAX_ROWS) throw new Error(`More than ${MAX_ROWS} rows in one workbook. Split the file.`);
-        rows.push((Array.isArray(row.values) ? row.values.slice(1, MAX_COLUMNS + 1) : []).map((value) => value ?? null));
+        rows.push(Array.from(Array.isArray(row.values) ? row.values.slice(1, MAX_COLUMNS + 1) : [], (value) => value ?? null));
       });
       return { name: sheet.name.slice(0, 60), rows };
     });
