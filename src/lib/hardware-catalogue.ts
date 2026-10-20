@@ -34,6 +34,7 @@ export const hardwareCatalogue: HardwareGroup[] = [
   { slug: "display-input", title: "Monitor, keyboard and mouse", items: [
     { name: "Monitor 19 to 24 inch", note: "Office and home" },
     { name: "Keyboard and mouse", note: "Wired or wireless" },
+    { name: "Gaming monitor", note: "High refresh rate, tell us your budget" },
   ] },
   { slug: "printer-supplies", title: "Printer ink and toner", items: [
     { name: "Printer ink (common models)", note: "Tell us the printer model" },
@@ -41,6 +42,7 @@ export const hardwareCatalogue: HardwareGroup[] = [
   ] },
   { slug: "network-cctv", title: "Network and CCTV", items: [
     { name: "Wi-Fi router or extender", note: "Home and shop" },
+    { name: "TP-Link router, switch and adapter", note: "Setup help available" },
     { name: "CCTV camera and DVR", note: "Installation enquiry available" },
   ] },
   { slug: "peripherals", title: "Mouse, keyboard, webcam and gamepad", items: [
@@ -50,6 +52,13 @@ export const hardwareCatalogue: HardwareGroup[] = [
     { name: "Gamepad and controller", note: "PC and phone compatible" },
     { name: "Headset, earphones and microphone", note: "Calls and online classes" },
     { name: "USB hub, card reader and pen drive", note: "Everyday add-ons" },
+  ] },
+  { slug: "laptops-systems", title: "Laptops, desktops and used parts", items: [
+    { name: "Student and office laptop", note: "Tell us the budget and what you will use it for" },
+    { name: "Kids' laptop", note: "Light and simple, good for online classes" },
+    { name: "MacBook enquiry", note: "Availability confirmed on WhatsApp" },
+    { name: "Branded desktop or all-in-one", note: "Home, shop and office" },
+    { name: "Used or refurbished PC parts", note: "Depends on stock today" },
   ] },
   { slug: "cables", title: "Cables and adapters", items: [
     { name: "USB-C, micro-USB and Lightning cables", note: "Charging and data" },

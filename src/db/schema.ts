@@ -426,6 +426,15 @@ export const customServices = pgTable("custom_services", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [uniqueIndex("custom_services_slug_unique").on(table.slug)]);
 
+/** Hardware parts shown on /hardware, edited in Admin → Hardware parts. kind "item" = added part; kind "hide" = a built-in part switched off. */
+export const hardwareItems = pgTable("hardware_items", {
+  id: uuid("id").defaultRandom().primaryKey(), kind: text("kind").notNull().default("item"),
+  groupSlug: text("group_slug").notNull(), name: text("name").notNull(), note: text("note").notNull().default(""), image: text("image"),
+  published: boolean("published").notNull().default(true), sortOrder: integer("sort_order").notNull().default(0),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 /** A half-filled request form, so a signed-in customer can continue on another visit or device. */
 export const requestDrafts = pgTable("request_drafts", {
   userId: uuid("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),

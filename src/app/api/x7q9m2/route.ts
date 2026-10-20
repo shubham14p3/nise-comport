@@ -75,6 +75,8 @@ const OPS = {
   "T9q4M2xV7bL3": { method: "GET", path: "/api/admin/team" },
   "W5n8H1cK6zR4": { method: "POST", path: "/api/admin/team" },
   "N2v6Z9kQ4tH1": { method: "GET", path: "/api/admin/prices" },
+  "G5t2Y8mK3rX6": { method: "GET", path: "/api/admin/hardware" },
+  "S7h4B1nW9cZ2": { method: "POST", path: "/api/admin/hardware" },
   "E8c4R1pW7mL3": { method: "POST", path: "/api/admin/prices" },
   "C5t9W2yM6kD8": { method: "POST", path: "/api/admin/chats" },
   "P3s7K1mW8xQ4": { method: "POST", path: "/api/auth/phone" },

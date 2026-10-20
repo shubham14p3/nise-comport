@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { hardwareCatalogue } from "@/lib/hardware-catalogue";
+import { hardwareCatalogue, type HardwareGroup } from "@/lib/hardware-catalogue";
 import { whatsappLink } from "@/lib/site";
 
 const PURPOSES = ["Study & home", "Office work", "Gaming", "Video or photo editing", "Shop billing / small business", "Other"];
@@ -73,7 +73,7 @@ export function PcBuildForm() {
   </div>;
 }
 
-export function PartsQuote() {
+export function PartsQuote({ groups = hardwareCatalogue }: { groups?: HardwareGroup[] }) {
   const [picked, setPicked] = useState<Record<string, boolean>>({});
   const [other, setOther] = useState("");
   const chosen = Object.keys(picked).filter((key) => picked[key]);
@@ -83,7 +83,7 @@ export function PartsQuote() {
   }, [chosen, other]);
   const ready = chosen.length > 0 || other.trim().length > 0;
   return <div className="hw-parts">
-    {hardwareCatalogue.map((group) => <section key={group.slug} className="hw-group">
+    {groups.map((group) => <section key={group.slug} className="hw-group">
       <h3>{group.title}</h3>
       <div className="hw-grid">{group.items.map((item) => {
         const label = `${item.name}`;

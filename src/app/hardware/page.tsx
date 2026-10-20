@@ -3,6 +3,7 @@ import SiteHeader from "@/components/site-header";
 import Breadcrumbs from "@/components/breadcrumbs";
 import JsonLd from "@/components/json-ld";
 import { PartsQuote, PcBuildForm } from "@/components/hardware-quote";
+import { hardwareGroups } from "@/lib/hardware-items";
 import { pageMetadata } from "@/lib/seo";
 import { webPageLd } from "@/lib/structured-data";
 
@@ -19,7 +20,8 @@ const PROMISES = [
   { title: "We stay with your order", text: "From quote to delivery or pickup, we keep you updated and explain every step." },
 ];
 
-export default function HardwarePage() {
+export default async function HardwarePage() {
+  const groups = await hardwareGroups();
   return <main className="page page--app"><SiteHeader/>
     <JsonLd data={webPageLd({ name: "Hardware, PC build and parts", description: "Custom PC builds and hardware parts with the latest price on WhatsApp.", path: "/hardware" })}/>
     <section className="content-hero"><div className="container">
@@ -41,7 +43,7 @@ export default function HardwarePage() {
 
     <section className="section"><div className="container">
       <div className="section-head section-head--left"><h2>Parts and accessories</h2><p>Pick what you need. Prices are confirmed on WhatsApp, not shown here.</p></div>
-      <PartsQuote/>
+      <PartsQuote groups={groups}/>
     </div></section>
   </main>;
 }

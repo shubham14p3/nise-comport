@@ -18,6 +18,7 @@ import TeamPanel from "@/components/team-panel";
 import SiteTeamPanel from "@/components/site-team-panel";
 import PaymentsPanel from "@/components/payments-panel";
 import PricesPanel from "@/components/prices-panel";
+import HardwarePanel from "@/components/hardware-panel";
 import LegalPanel from "@/components/legal-panel";
 import MailClient from "@/components/mail-client";
 import LoyaltyPanel from "@/components/loyalty-panel";
@@ -216,7 +217,7 @@ function RequestQueue() {
   </>;
 }
 
-type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "legal" | "loyalty" | "chats" | "mail" | "outreach";
+type Tab = "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "hardware" | "legal" | "loyalty" | "chats" | "mail" | "outreach";
 const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | "admin" | "staff" }[] = [
   { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
   { id: "mail", label: "Messages", icon: Mail, needs: "mail" },
@@ -234,6 +235,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "pan", label: "PAN data", icon: Database, needs: "pan" },
   { id: "wallet", label: "Wallet", icon: WalletCards, needs: "wallet" },
   { id: "prices", label: "Service prices", icon: TicketPercent, needs: "content" },
+  { id: "hardware", label: "Hardware parts", icon: Database, needs: "content" },
   { id: "loyalty", label: "Loyalty credit", icon: WalletCards, needs: "wallet" },
   { id: "legal", label: "Legal pages", icon: LayoutTemplate, needs: "content" },
   { id: "payments", label: "Payments", icon: WalletCards, needs: "requests" },
@@ -330,6 +332,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
         {active === "outreach" && <OutreachPanel/>}
         {active === "chats" && <ChatsPanel/>}
         {active === "prices" && <PricesPanel/>}
+        {active === "hardware" && <HardwarePanel/>}
         {active === "legal" && <LegalPanel/>}
         {active === "loyalty" && <LoyaltyPanel/>}
         {active === "payments" && <PaymentsPanel/>}
