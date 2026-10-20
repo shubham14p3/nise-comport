@@ -4,22 +4,29 @@
  * same rules as Admin → Records → Upload, then encrypted and saved. Rows that are already there
  * are skipped, so running it twice never duplicates anything.
  *
- *   npm run records:import -- "C:\path\Insurance.xlsx" "C:\path\BC-11110854.xlsx"     show what would happen (nothing is written)
+ *   npm run records:import -- "C:\path\folder"                                       every Excel file in a folder: show what would happen (nothing is written)
+ *   npm run records:import -- "C:\path\Insurance.xlsx" "C:\path\BC-11110854.xlsx"     or pick files one by one
  *   npm run records:import -- --apply "C:\path\*.xlsx files…"                          save to the database
  *
  * Needs DATABASE_URL and the same encryption key the existing records use (the script checks this first).
  * Portal passwords, PINs and user IDs are never saved. The Excel files are not changed or uploaded anywhere.
  */
-import { existsSync } from "node:fs";
-import { basename } from "node:path";
+import { existsSync, readdirSync, statSync } from "node:fs";
+import { basename, join } from "node:path";
 import { loadEnvFile } from "node:process";
 import { parseWorkbook, type SheetInput } from "../src/lib/record-import.ts";
 import { blindIndex, open, seal } from "../src/lib/vault.ts";
 
 for (const file of [".env.local", ".env"]) if (existsSync(file)) { try { loadEnvFile(file); } catch { /* reported below */ } }
 const apply = process.argv.includes("--apply");
-const files = process.argv.slice(2).filter((arg) => !arg.startsWith("--"));
-if (!files.length) { console.error('Give at least one .xlsx file: npm run records:import -- "C:\\path\\file.xlsx"'); process.exit(1); }
+// A folder means every .xlsx / .xlsm inside it (including sub-folders); Excel temp files (~$…) are ignored.
+function expand(path: string): string[] {
+  if (!existsSync(path)) return [path];
+  if (!statSync(path).isDirectory()) return [path];
+  return readdirSync(path, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? expand(join(path, entry.name)) : /\.(xlsx|xlsm)$/i.test(entry.name) && !entry.name.startsWith("~$") ? [join(path, entry.name)] : []).sort();
+}
+const files = process.argv.slice(2).filter((arg) => !arg.startsWith("--")).flatMap(expand);
+if (!files.length) { console.error('Give at least one .xlsx file or a folder: npm run records:import -- "C:\\path\\file.xlsx"'); process.exit(1); }
 const connectionString = process.env.DATABASE_URL?.trim();
 if (!connectionString) { console.error("DATABASE_URL is missing. Add it to .env.local."); process.exit(1); }
 if (!process.env.RECORDS_ENCRYPTION_KEY?.trim() && !process.env.PAN_ENCRYPTION_KEY?.trim()) { console.error("RECORDS_ENCRYPTION_KEY is missing."); process.exit(1); }
