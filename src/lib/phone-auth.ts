@@ -7,7 +7,7 @@ import { grantVerifyReward } from "@/lib/verify-rewards";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { clearRate, enforceRate, hitRate, identity, RATE_RULES } from "@/lib/rate-limit";
-import { indianMobile, sendOtpSms, smsConfigured } from "@/lib/sms";
+import { indianMobile, otpChannels, sendOtpSms } from "@/lib/sms";
 import { isSixDigitCode, normalizePhone } from "@/lib/validation";
 
 const OTP_MINUTES = 10;
@@ -57,7 +57,7 @@ async function consume(userId: string, phone: string, purpose: "verify" | "signi
 
 /** Signed-in customer asks for a code to prove a mobile number is theirs. */
 export async function requestPhoneVerification(userId: string, phoneInput: string, ip: string) {
-  if (!smsConfigured() && process.env.NODE_ENV === "production") throw new PublicError("SMS codes are not switched on yet.", 503, { code: "sms_not_configured" });
+  if (!otpChannels().length && process.env.NODE_ENV === "production") throw new PublicError("SMS codes are not switched on yet.", 503, { code: "sms_not_configured" });
   const phone = indianPhoneOrThrow(phoneInput);
   const [taken] = await db.select({ id: users.id }).from(users).where(and(eq(users.phone, phone), sql`${users.phoneVerifiedAt} is not null`, ne(users.id, userId), isNull(users.deletedAt))).limit(1);
   if (taken) throw new PublicError("This number is already verified on another account.", 409, { code: "phone_taken", fields: { phone: "This number is already used on another account." } });
