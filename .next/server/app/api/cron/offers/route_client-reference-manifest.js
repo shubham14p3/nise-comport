@@ -1,0 +1,1 @@
+globalThis.__RSC_MANIFEST=(globalThis.__RSC_MANIFEST||{});globalThis.__RSC_MANIFEST["/api/cron/offers/route"]={"moduleLoading":{"prefix":"/_next/"},"ssrModuleMapping":{},"edgeSSRModuleMapping":{},"clientModules":{},"entryCSSFiles":{"C:\\Users\\Shubham\\Downloads\\nise-comport\\src\\app\\api\\cron\\offers\\route":[]},"rscModuleMapping":{},"edgeRscModuleMapping":{}};

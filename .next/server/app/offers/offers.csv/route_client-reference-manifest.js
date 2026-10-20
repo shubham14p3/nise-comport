@@ -1,0 +1,1 @@
+globalThis.__RSC_MANIFEST=(globalThis.__RSC_MANIFEST||{});globalThis.__RSC_MANIFEST["/offers/offers.csv/route"]={"moduleLoading":{"prefix":"/_next/"},"ssrModuleMapping":{},"edgeSSRModuleMapping":{},"clientModules":{},"entryCSSFiles":{"C:\\Users\\Shubham\\Downloads\\nise-comport\\src\\app\\offers\\offers.csv\\route":[]},"rscModuleMapping":{},"edgeRscModuleMapping":{}};

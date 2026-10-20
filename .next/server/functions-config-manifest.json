@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "functions": {
+    "/_middleware": {
+      "runtime": "nodejs",
+      "matchers": [
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?(?:\\/((?!_next\\/static|_next\\/image|favicon.ico|brand\\/|og\\/|icons\\/|images\\/).*))(\\.json|\\.rsc|\\.segments\\/.+\\.segment\\.rsc)?[\\/#\\?]?$",
+          "originalSource": "/((?!_next/static|_next/image|favicon.ico|brand/|og/|icons/|images/).*)"
+        }
+      ]
+    },
+    "/api/admin/campaigns": {
+      "maxDuration": 60
+    },
+    "/api/admin/chats": {},
+    "/api/admin/claims": {},
+    "/api/admin/coupon-batches": {
+      "maxDuration": 60
+    },
+    "/api/admin/gallery": {},
+    "/api/admin/gallery/upload": {},
+    "/api/admin/inbox": {},
+    "/api/admin/leads": {},
+    "/api/admin/legal": {},
+    "/api/admin/loyalty": {},
+    "/api/admin/media": {},
+    "/api/admin/outreach": {
+      "maxDuration": 60
+    },
+    "/api/admin/pan-imports": {},
+    "/api/admin/payments": {},
+    "/api/admin/prices": {},
+    "/api/admin/promotions/sync": {
+      "maxDuration": 60
+    },
+    "/api/admin/records": {
+      "maxDuration": 120
+    },
+    "/api/admin/site-content": {},
+    "/api/admin/team": {},
+    "/api/admin/testimonials": {},
+    "/api/admin/testimonials/sync": {
+      "maxDuration": 60
+    },
+    "/api/birthday-card": {},
+    "/api/cron/cleanup": {
+      "maxDuration": 60
+    },
+    "/api/cron/mail": {
+      "maxDuration": 120
+    },
+    "/api/cron/offers": {
+      "maxDuration": 60
+    },
+    "/api/cron/whatsapp": {
+      "maxDuration": 60
+    },
+    "/api/gallery/photo/[index]": {},
+    "/api/insurance": {},
+    "/api/leads": {},
+    "/api/mail": {
+      "maxDuration": 60
+    },
+    "/api/mail/attach": {
+      "maxDuration": 60
+    },
+    "/api/mail/file": {},
+    "/api/mail/linked": {},
+    "/api/mail/zip": {
+      "maxDuration": 60
+    },
+    "/api/og": {},
+    "/api/pay": {},
+    "/api/unsubscribe": {},
+    "/api/uploads": {
+      "maxDuration": 60
+    },
+    "/api/webhooks/cashfree": {},
+    "/api/webhooks/razorpay": {},
+    "/api/whatsapp/webhook": {},
+    "/api/x7q9m2": {
+      "maxDuration": 60
+    },
+    "/gallery/photo/[name]": {},
+    "/media/[id]": {}
+  }
+}

@@ -1,0 +1,6 @@
+User-Agent: *
+Allow: /
+Disallow: /api/
+
+Host: https://www.nisecomport.com
+Sitemap: https://www.nisecomport.com/sitemap.xml

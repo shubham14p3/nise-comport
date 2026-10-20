@@ -1,0 +1,1 @@
+globalThis.__RSC_MANIFEST=(globalThis.__RSC_MANIFEST||{});globalThis.__RSC_MANIFEST["/api/admin/promotions/route"]={"moduleLoading":{"prefix":"/_next/"},"ssrModuleMapping":{},"edgeSSRModuleMapping":{},"clientModules":{},"entryCSSFiles":{"C:\\Users\\Shubham\\Downloads\\nise-comport\\src\\app\\api\\admin\\promotions\\route":[]},"rscModuleMapping":{},"edgeRscModuleMapping":{}};

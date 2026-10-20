@@ -1,0 +1,1212 @@
+self.__SERVER_FILES_MANIFEST={
+  "version": 1,
+  "config": {
+    "env": {},
+    "webpack": null,
+    "typescript": {
+      "ignoreBuildErrors": false
+    },
+    "typedRoutes": false,
+    "distDir": ".next",
+    "cleanDistDir": true,
+    "assetPrefix": "",
+    "cacheMaxMemorySize": 52428800,
+    "configOrigin": "next.config.ts",
+    "useFileSystemPublicRoutes": true,
+    "generateEtags": true,
+    "pageExtensions": [
+      "tsx",
+      "ts",
+      "jsx",
+      "js"
+    ],
+    "instrumentationClientInject": [],
+    "poweredByHeader": false,
+    "compress": true,
+    "images": {
+      "deviceSizes": [
+        640,
+        750,
+        828,
+        1080,
+        1200,
+        1920,
+        2048,
+        3840
+      ],
+      "imageSizes": [
+        32,
+        48,
+        64,
+        96,
+        128,
+        256,
+        384
+      ],
+      "path": "/_next/image",
+      "loader": "default",
+      "loaderFile": "",
+      "domains": [],
+      "disableStaticImages": false,
+      "minimumCacheTTL": 2592000,
+      "formats": [
+        "image/avif",
+        "image/webp"
+      ],
+      "maximumRedirects": 3,
+      "maximumResponseBody": 50000000,
+      "dangerouslyAllowLocalIP": false,
+      "dangerouslyAllowSVG": false,
+      "contentSecurityPolicy": "script-src 'none'; frame-src 'none'; sandbox;",
+      "contentDispositionType": "attachment",
+      "localPatterns": [
+        {
+          "pathname": "**",
+          "search": ""
+        }
+      ],
+      "remotePatterns": [],
+      "qualities": [
+        75
+      ],
+      "unoptimized": false,
+      "customCacheHandler": false
+    },
+    "devIndicators": {
+      "position": "bottom-left"
+    },
+    "onDemandEntries": {
+      "maxInactiveAge": 60000,
+      "pagesBufferLength": 5
+    },
+    "basePath": "",
+    "sassOptions": {},
+    "trailingSlash": false,
+    "i18n": null,
+    "productionBrowserSourceMaps": false,
+    "excludeDefaultMomentLocales": true,
+    "reactProductionProfiling": false,
+    "reactStrictMode": true,
+    "reactMaxHeadersLength": 6000,
+    "httpAgentOptions": {
+      "keepAlive": true
+    },
+    "logging": {
+      "serverFunctions": true,
+      "browserToTerminal": "warn"
+    },
+    "compiler": {},
+    "expireTime": 31536000,
+    "staticPageGenerationTimeout": 60,
+    "modularizeImports": {
+      "@mui/icons-material": {
+        "transform": "@mui/icons-material/{{member}}"
+      },
+      "lodash": {
+        "transform": "lodash/{{member}}"
+      }
+    },
+    "outputFileTracingRoot": "C:\\Users\\Shubham\\Downloads\\nise-comport",
+    "enablePrerenderSourceMaps": true,
+    "cacheComponents": false,
+    "cacheLife": {
+      "default": {
+        "stale": 300,
+        "revalidate": 900,
+        "expire": 4294967294
+      },
+      "seconds": {
+        "stale": 30,
+        "revalidate": 1,
+        "expire": 60
+      },
+      "minutes": {
+        "stale": 300,
+        "revalidate": 60,
+        "expire": 3600
+      },
+      "hours": {
+        "stale": 300,
+        "revalidate": 3600,
+        "expire": 86400
+      },
+      "days": {
+        "stale": 300,
+        "revalidate": 86400,
+        "expire": 604800
+      },
+      "weeks": {
+        "stale": 300,
+        "revalidate": 604800,
+        "expire": 2592000
+      },
+      "max": {
+        "stale": 300,
+        "revalidate": 2592000,
+        "expire": 31536000
+      }
+    },
+    "cacheHandlers": {},
+    "deprecated": {},
+    "experimental": {
+      "agentUpgrade": "security",
+      "agentFeedback": false,
+      "coldCacheBadge": false,
+      "collapseAdapterRoutes": true,
+      "devValidationWorker": true,
+      "useSkewCookie": false,
+      "cssChunking": true,
+      "multiZoneDraftMode": false,
+      "appNavFailHandling": false,
+      "parallelRouteMetadata": false,
+      "prerenderEarlyExit": true,
+      "serverMinification": true,
+      "linkNoTouchStart": false,
+      "caseSensitiveRoutes": false,
+      "cachedNavigations": false,
+      "dynamicOnHover": false,
+      "reactBrowserBailout": true,
+      "useOffline": false,
+      "varyParams": true,
+      "optimisticRouting": true,
+      "concurrentRouterQueue": false,
+      "instrumentationClientRouterTransitionEvents": false,
+      "prefetchInlining": {
+        "maxSize": 2048,
+        "maxBundleSize": 10240
+      },
+      "preloadEntriesOnStart": true,
+      "clientRouterFilter": true,
+      "clientRouterFilterRedirects": false,
+      "fetchCacheKeyPrefix": "",
+      "proxyPrefetch": "flexible",
+      "optimisticClientCache": true,
+      "manualClientBasePath": false,
+      "cpus": 1,
+      "memoryBasedWorkersCount": false,
+      "imgOptConcurrency": null,
+      "imgOptOperationCache": null,
+      "imgOptTimeoutInSeconds": 7,
+      "imgOptMaxInputPixels": 268402689,
+      "imgOptSequentialRead": null,
+      "imgOptMozjpeg": true,
+      "isrFlushToDisk": true,
+      "workerThreads": false,
+      "optimizeCss": false,
+      "nextScriptWorkers": false,
+      "scrollRestoration": false,
+      "externalDir": false,
+      "devMemoryThresholdRestart": true,
+      "disableOptimizedLoading": false,
+      "gzipSize": true,
+      "craCompat": false,
+      "esmExternals": true,
+      "fullySpecified": false,
+      "swcTraceProfiling": false,
+      "forceSwcTransforms": false,
+      "requestInsights": false,
+      "largePageDataBytes": 128000,
+      "typedEnv": false,
+      "parallelServerCompiles": false,
+      "parallelServerBuildTraces": false,
+      "ppr": false,
+      "authInterrupts": false,
+      "webpackMemoryOptimizations": false,
+      "optimizeServerReact": true,
+      "strictRouteTypes": false,
+      "useTypeScriptCli": true,
+      "removeUncaughtErrorAndRejectionListeners": false,
+      "validateRSCRequestHeaders": true,
+      "staleTimes": {
+        "dynamic": 0,
+        "static": 300
+      },
+      "reactDebugChannel": true,
+      "serverComponentsHmrCache": true,
+      "serverComponentsHmrCancellation": false,
+      "staticGenerationMaxConcurrency": 8,
+      "staticGenerationMinPagesPerWorker": 25,
+      "transitionIndicator": false,
+      "gestureTransition": false,
+      "inlineCss": false,
+      "useCache": false,
+      "useCacheStaticRootParamTracking": false,
+      "globalNotFound": false,
+      "explicitParallelRouteChildren": true,
+      "strictRouteMatching": true,
+      "browserDebugInfoInTerminal": "warn",
+      "lockDistDir": true,
+      "disableResumeDataCacheCompression": false,
+      "proxyClientMaxBodySize": 10485760,
+      "hideLogsAfterAbort": false,
+      "mcpServer": true,
+      "exposeRuntimeErrorsToHMR": false,
+      "turbopackFileSystemCacheForDev": true,
+      "turbopackFileSystemCacheForBuild": true,
+      "turbopackStaleOutputMaxAge": 604800000,
+      "turbopackInferModuleSideEffects": true,
+      "turbopackPluginRuntimeStrategy": "childProcesses",
+      "turbopackSharedRuntime": true,
+      "turbopackMemoryEvictionMode": "auto",
+      "optimizePackageImports": [
+        "lucide-react",
+        "date-fns",
+        "lodash-es",
+        "ramda",
+        "antd",
+        "react-bootstrap",
+        "ahooks",
+        "@ant-design/icons",
+        "@headlessui/react",
+        "@headlessui-float/react",
+        "@heroicons/react/20/solid",
+        "@heroicons/react/24/solid",
+        "@heroicons/react/24/outline",
+        "@visx/visx",
+        "@tremor/react",
+        "rxjs",
+        "@mui/material",
+        "@mui/icons-material",
+        "recharts",
+        "react-use",
+        "effect",
+        "@effect/schema",
+        "@effect/platform",
+        "@effect/platform-node",
+        "@effect/platform-browser",
+        "@effect/platform-bun",
+        "@effect/sql",
+        "@effect/sql-mssql",
+        "@effect/sql-mysql2",
+        "@effect/sql-pg",
+        "@effect/sql-sqlite-node",
+        "@effect/sql-sqlite-bun",
+        "@effect/sql-sqlite-wasm",
+        "@effect/sql-sqlite-react-native",
+        "@effect/rpc",
+        "@effect/rpc-http",
+        "@effect/typeclass",
+        "@effect/experimental",
+        "@effect/opentelemetry",
+        "@material-ui/core",
+        "@material-ui/icons",
+        "@tabler/icons-react",
+        "mui-core",
+        "react-icons/ai",
+        "react-icons/bi",
+        "react-icons/bs",
+        "react-icons/cg",
+        "react-icons/ci",
+        "react-icons/di",
+        "react-icons/fa",
+        "react-icons/fa6",
+        "react-icons/fc",
+        "react-icons/fi",
+        "react-icons/gi",
+        "react-icons/go",
+        "react-icons/gr",
+        "react-icons/hi",
+        "react-icons/hi2",
+        "react-icons/im",
+        "react-icons/io",
+        "react-icons/io5",
+        "react-icons/lia",
+        "react-icons/lib",
+        "react-icons/lu",
+        "react-icons/md",
+        "react-icons/pi",
+        "react-icons/ri",
+        "react-icons/rx",
+        "react-icons/si",
+        "react-icons/sl",
+        "react-icons/tb",
+        "react-icons/tfi",
+        "react-icons/ti",
+        "react-icons/vsc",
+        "react-icons/wi"
+      ],
+      "useCacheTimeout": 54,
+      "instantInsights": {
+        "validationLevel": "warning"
+      },
+      "trustHostHeader": false,
+      "isExperimentalCompile": false
+    },
+    "htmlLimitedBots": "[\\w-]+-Google|Google-[\\w-]+|Chrome-Lighthouse|Slurp|DuckDuckBot|baiduspider|yandex|sogou|bitlybot|tumblr|vkShare|quora link preview|redditbot|ia_archiver|Bingbot|BingPreview|applebot|facebookexternalhit|facebookcatalog|Twitterbot|LinkedInBot|Slackbot|Discordbot|WhatsApp|SkypeUriPreview|Yeti|googleweblight",
+    "bundlePagesRouterDependencies": false,
+    "configFileName": "next.config.ts",
+    "serverExternalPackages": [
+      "imapflow",
+      "mailparser"
+    ],
+    "outputFileTracingIncludes": {
+      "/api/og": [
+        "./src/assets/fonts/**",
+        "./public/images/logo/**"
+      ]
+    },
+    "repoRoot": "C:\\Users\\Shubham\\Downloads\\nise-comport",
+    "turbopack": {
+      "root": "C:\\Users\\Shubham\\Downloads\\nise-comport"
+    },
+    "distDirRoot": ".next",
+    "supportsImmutableAssets": false,
+    "_originalRedirects": [
+      {
+        "source": "/services/extra-services",
+        "destination": "/services/it-services",
+        "permanent": true
+      },
+      {
+        "source": "/admin",
+        "destination": "/login",
+        "permanent": true
+      },
+      {
+        "source": "/admin/:path*",
+        "destination": "/login",
+        "permanent": true
+      },
+      {
+        "source": "/home",
+        "destination": "/",
+        "permanent": true
+      },
+      {
+        "source": "/index.html",
+        "destination": "/",
+        "permanent": true
+      },
+      {
+        "source": "/all-services",
+        "destination": "/services",
+        "permanent": true
+      },
+      {
+        "source": "/service",
+        "destination": "/services",
+        "permanent": true
+      },
+      {
+        "source": "/offer",
+        "destination": "/offers",
+        "permanent": true
+      },
+      {
+        "source": "/offer-left-sidebar",
+        "destination": "/offers",
+        "permanent": true
+      },
+      {
+        "source": "/offer-right-sidebar",
+        "destination": "/offers",
+        "permanent": true
+      },
+      {
+        "source": "/offer-details/:slug",
+        "destination": "/offers",
+        "permanent": true
+      },
+      {
+        "source": "/offer-category/:slug",
+        "destination": "/offers",
+        "permanent": true
+      },
+      {
+        "source": "/offer-date/:date",
+        "destination": "/offers",
+        "permanent": true
+      },
+      {
+        "source": "/offer-tag/:slug",
+        "destination": "/offers",
+        "permanent": true
+      },
+      {
+        "source": "/blog-left-sidebar",
+        "destination": "/blog",
+        "permanent": true
+      },
+      {
+        "source": "/blog-right-sidebar",
+        "destination": "/blog",
+        "permanent": true
+      },
+      {
+        "source": "/author/:author",
+        "destination": "/blog",
+        "permanent": true
+      },
+      {
+        "source": "/date/:date",
+        "destination": "/blog",
+        "permanent": true
+      },
+      {
+        "source": "/tag/:slug",
+        "destination": "/blog",
+        "permanent": true
+      },
+      {
+        "source": "/category/:slug",
+        "destination": "/blog",
+        "permanent": true
+      },
+      {
+        "source": "/services/aadhaar-update-guidance",
+        "destination": "/services/aadhaar",
+        "permanent": true
+      },
+      {
+        "source": "/services/pan-card-application-jamshedpur",
+        "destination": "/services/pan-card",
+        "permanent": true
+      },
+      {
+        "source": "/aadhaar",
+        "destination": "/services/aadhaar",
+        "permanent": true
+      },
+      {
+        "source": "/areas",
+        "destination": "/areas-we-serve",
+        "permanent": true
+      },
+      {
+        "source": "/hindi",
+        "destination": "/hi",
+        "permanent": true
+      },
+      {
+        "source": "/service-details/banking",
+        "destination": "/services/banking",
+        "permanent": true
+      },
+      {
+        "source": "/service-details/government",
+        "destination": "/services/government-services",
+        "permanent": true
+      },
+      {
+        "source": "/service-details/insurance",
+        "destination": "/services/insurance",
+        "permanent": true
+      },
+      {
+        "source": "/service-details/education",
+        "destination": "/services/education",
+        "permanent": true
+      },
+      {
+        "source": "/service-details/website",
+        "destination": "/services/website-design",
+        "permanent": true
+      },
+      {
+        "source": "/service-details/form-filing",
+        "destination": "/services/form-filing",
+        "permanent": true
+      },
+      {
+        "source": "/service-details/it-sales-service",
+        "destination": "/services/it-services",
+        "permanent": true
+      },
+      {
+        "source": "/service-details/it-sales--service",
+        "destination": "/services/it-services",
+        "permanent": true
+      },
+      {
+        "source": "/service-details/travel",
+        "destination": "/services",
+        "permanent": true
+      },
+      {
+        "source": "/service-details/:slug",
+        "destination": "/services",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/aadhaar-demographic-update",
+        "destination": "/blog/aadhaar-update-help-jamshedpur",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/pan-card-service",
+        "destination": "/blog/pan-card-application-and-correction-jamshedpur",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/indian-passport",
+        "destination": "/blog/passport-driving-licence-application-help",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/voter-id-epic",
+        "destination": "/blog/voter-registration-correction-jharkhand",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/life-certificate-jeevan-praman-live",
+        "destination": "/blog/life-certificate-jeevan-pramaan-help",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/ews-certificate",
+        "destination": "/services/income-caste-residence-certificate",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/bike-car-insurance",
+        "destination": "/blog/bike-insurance-renewal-jamshedpur",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/driving-license-only-for-jharkhand",
+        "destination": "/blog/learner-driving-licence-jharkhand-sarathi",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/voter-new-apply-correction",
+        "destination": "/blog/voter-registration-correction-jharkhand",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/pvc-print-2021",
+        "destination": "/blog/aadhaar-pvc-card-order-guide",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/income-certificate",
+        "destination": "/blog/income-certificate-jharkhand-application",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/1",
+        "destination": "/blog/aadhaar-update-help-jamshedpur",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/2",
+        "destination": "/blog/pan-card-application-and-correction-jamshedpur",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/3",
+        "destination": "/blog/passport-driving-licence-application-help",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/4",
+        "destination": "/blog/voter-registration-correction-jharkhand",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/5",
+        "destination": "/blog/life-certificate-jeevan-pramaan-help",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/6",
+        "destination": "/services/income-caste-residence-certificate",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/7",
+        "destination": "/blog/bike-insurance-renewal-jamshedpur",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/8",
+        "destination": "/blog/learner-driving-licence-jharkhand-sarathi",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/9",
+        "destination": "/blog/voter-registration-correction-jharkhand",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/10",
+        "destination": "/blog/aadhaar-pvc-card-order-guide",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/11",
+        "destination": "/blog/income-certificate-jharkhand-application",
+        "permanent": true
+      },
+      {
+        "source": "/blog-details/:slug",
+        "destination": "/blog",
+        "permanent": true
+      },
+      {
+        "source": "/services/pan-card-jamshedpur",
+        "destination": "/services/pan-card",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/pan-card-jamshedpur",
+        "destination": "/hi/services/pan-card",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/pan-card-jamshedpur",
+        "destination": "/bn/services/pan-card",
+        "permanent": true
+      },
+      {
+        "source": "/services/photo-print",
+        "destination": "/services/photo-studio",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/photo-print",
+        "destination": "/hi/services/photo-studio",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/photo-print",
+        "destination": "/bn/services/photo-studio",
+        "permanent": true
+      },
+      {
+        "source": "/services/a4-a3-a2-printing",
+        "destination": "/services/printing-scanning",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/a4-a3-a2-printing",
+        "destination": "/hi/services/printing-scanning",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/a4-a3-a2-printing",
+        "destination": "/bn/services/printing-scanning",
+        "permanent": true
+      },
+      {
+        "source": "/services/aadhaar-assistance-jamshedpur",
+        "destination": "/services/aadhaar",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/aadhaar-assistance-jamshedpur",
+        "destination": "/hi/services/aadhaar",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/aadhaar-assistance-jamshedpur",
+        "destination": "/bn/services/aadhaar",
+        "permanent": true
+      },
+      {
+        "source": "/services/jharkhand-certificates-jamshedpur",
+        "destination": "/services/income-caste-residence-certificate",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/jharkhand-certificates-jamshedpur",
+        "destination": "/hi/services/income-caste-residence-certificate",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/jharkhand-certificates-jamshedpur",
+        "destination": "/bn/services/income-caste-residence-certificate",
+        "permanent": true
+      },
+      {
+        "source": "/services/voter-id-services-jamshedpur",
+        "destination": "/services/voter-id",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/voter-id-services-jamshedpur",
+        "destination": "/hi/services/voter-id",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/voter-id-services-jamshedpur",
+        "destination": "/bn/services/voter-id",
+        "permanent": true
+      },
+      {
+        "source": "/services/passport-driving-licence-help",
+        "destination": "/services/passport-driving-licence",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/passport-driving-licence-help",
+        "destination": "/hi/services/passport-driving-licence",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/passport-driving-licence-help",
+        "destination": "/bn/services/passport-driving-licence",
+        "permanent": true
+      },
+      {
+        "source": "/services/banking-aeps-money-transfer",
+        "destination": "/services/aeps-money-transfer",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/banking-aeps-money-transfer",
+        "destination": "/hi/services/aeps-money-transfer",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/banking-aeps-money-transfer",
+        "destination": "/bn/services/aeps-money-transfer",
+        "permanent": true
+      },
+      {
+        "source": "/services/bike-insurance-jamshedpur",
+        "destination": "/services/bike-insurance",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/bike-insurance-jamshedpur",
+        "destination": "/hi/services/bike-insurance",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/bike-insurance-jamshedpur",
+        "destination": "/bn/services/bike-insurance",
+        "permanent": true
+      },
+      {
+        "source": "/services/car-insurance-jamshedpur",
+        "destination": "/services/car-insurance",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/car-insurance-jamshedpur",
+        "destination": "/hi/services/car-insurance",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/car-insurance-jamshedpur",
+        "destination": "/bn/services/car-insurance",
+        "permanent": true
+      },
+      {
+        "source": "/services/health-life-insurance-help",
+        "destination": "/services/health-life-insurance",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/health-life-insurance-help",
+        "destination": "/hi/services/health-life-insurance",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/health-life-insurance-help",
+        "destination": "/bn/services/health-life-insurance",
+        "permanent": true
+      },
+      {
+        "source": "/services/student-scholarship-forms-jamshedpur",
+        "destination": "/services/scholarship-forms",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/student-scholarship-forms-jamshedpur",
+        "destination": "/hi/services/scholarship-forms",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/student-scholarship-forms-jamshedpur",
+        "destination": "/bn/services/scholarship-forms",
+        "permanent": true
+      },
+      {
+        "source": "/services/exam-form-filling-jamshedpur",
+        "destination": "/services/exam-forms",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/exam-form-filling-jamshedpur",
+        "destination": "/hi/services/exam-forms",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/exam-form-filling-jamshedpur",
+        "destination": "/bn/services/exam-forms",
+        "permanent": true
+      },
+      {
+        "source": "/services/itr-gst-form-assistance",
+        "destination": "/services/itr-gst",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/itr-gst-form-assistance",
+        "destination": "/hi/services/itr-gst",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/itr-gst-form-assistance",
+        "destination": "/bn/services/itr-gst",
+        "permanent": true
+      },
+      {
+        "source": "/services/printing-scanning-jamshedpur",
+        "destination": "/services/printing-scanning",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/printing-scanning-jamshedpur",
+        "destination": "/hi/services/printing-scanning",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/printing-scanning-jamshedpur",
+        "destination": "/bn/services/printing-scanning",
+        "permanent": true
+      },
+      {
+        "source": "/services/computer-sales-repair-jamshedpur",
+        "destination": "/services/computer-repair",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/computer-sales-repair-jamshedpur",
+        "destination": "/hi/services/computer-repair",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/computer-sales-repair-jamshedpur",
+        "destination": "/bn/services/computer-repair",
+        "permanent": true
+      },
+      {
+        "source": "/services/website-digital-services-jamshedpur",
+        "destination": "/services/website-design",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/website-digital-services-jamshedpur",
+        "destination": "/hi/services/website-design",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/website-digital-services-jamshedpur",
+        "destination": "/bn/services/website-design",
+        "permanent": true
+      },
+      {
+        "source": "/services/lic-policy-assistance-jamshedpur",
+        "destination": "/services/lic-policy",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/lic-policy-assistance-jamshedpur",
+        "destination": "/hi/services/lic-policy",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/lic-policy-assistance-jamshedpur",
+        "destination": "/bn/services/lic-policy",
+        "permanent": true
+      },
+      {
+        "source": "/services/sip-mutual-fund-enquiry-jamshedpur",
+        "destination": "/services/mutual-fund-sip",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/sip-mutual-fund-enquiry-jamshedpur",
+        "destination": "/hi/services/mutual-fund-sip",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/sip-mutual-fund-enquiry-jamshedpur",
+        "destination": "/bn/services/mutual-fund-sip",
+        "permanent": true
+      },
+      {
+        "source": "/services/rent-agreement-noc-help-jamshedpur",
+        "destination": "/services/rent-agreement",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/rent-agreement-noc-help-jamshedpur",
+        "destination": "/hi/services/rent-agreement",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/rent-agreement-noc-help-jamshedpur",
+        "destination": "/bn/services/rent-agreement",
+        "permanent": true
+      },
+      {
+        "source": "/services/fssai-food-license-assistance-jamshedpur",
+        "destination": "/services/fssai-license",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/fssai-food-license-assistance-jamshedpur",
+        "destination": "/hi/services/fssai-license",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/fssai-food-license-assistance-jamshedpur",
+        "destination": "/bn/services/fssai-license",
+        "permanent": true
+      },
+      {
+        "source": "/services/udyam-msme-registration-help-jamshedpur",
+        "destination": "/services/udyam-registration",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/udyam-msme-registration-help-jamshedpur",
+        "destination": "/hi/services/udyam-registration",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/udyam-msme-registration-help-jamshedpur",
+        "destination": "/bn/services/udyam-registration",
+        "permanent": true
+      },
+      {
+        "source": "/services/jeevan-pramaan-life-certificate-jamshedpur",
+        "destination": "/services/jeevan-pramaan",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/jeevan-pramaan-life-certificate-jamshedpur",
+        "destination": "/hi/services/jeevan-pramaan",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/jeevan-pramaan-life-certificate-jamshedpur",
+        "destination": "/bn/services/jeevan-pramaan",
+        "permanent": true
+      },
+      {
+        "source": "/services/birth-death-certificate-help-jamshedpur",
+        "destination": "/services/birth-death-certificate",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/birth-death-certificate-help-jamshedpur",
+        "destination": "/hi/services/birth-death-certificate",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/birth-death-certificate-help-jamshedpur",
+        "destination": "/bn/services/birth-death-certificate",
+        "permanent": true
+      },
+      {
+        "source": "/services/land-mutation-jharbhoomi-help",
+        "destination": "/services/land-mutation",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/land-mutation-jharbhoomi-help",
+        "destination": "/hi/services/land-mutation",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/land-mutation-jharbhoomi-help",
+        "destination": "/bn/services/land-mutation",
+        "permanent": true
+      },
+      {
+        "source": "/services/aadhaar-pvc-card-order-help",
+        "destination": "/services/aadhaar-pvc-card",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/aadhaar-pvc-card-order-help",
+        "destination": "/hi/services/aadhaar-pvc-card",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/aadhaar-pvc-card-order-help",
+        "destination": "/bn/services/aadhaar-pvc-card",
+        "permanent": true
+      },
+      {
+        "source": "/services/bank-account-opening-bc-jamshedpur",
+        "destination": "/services/bank-account-opening",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/bank-account-opening-bc-jamshedpur",
+        "destination": "/hi/services/bank-account-opening",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/bank-account-opening-bc-jamshedpur",
+        "destination": "/bn/services/bank-account-opening",
+        "permanent": true
+      },
+      {
+        "source": "/services/ayushman-card-abha-jamshedpur",
+        "destination": "/services/ayushman-card",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/ayushman-card-abha-jamshedpur",
+        "destination": "/hi/services/ayushman-card",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/ayushman-card-abha-jamshedpur",
+        "destination": "/bn/services/ayushman-card",
+        "permanent": true
+      },
+      {
+        "source": "/services/ration-card-help-jamshedpur",
+        "destination": "/services/ration-card",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/ration-card-help-jamshedpur",
+        "destination": "/hi/services/ration-card",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/ration-card-help-jamshedpur",
+        "destination": "/bn/services/ration-card",
+        "permanent": true
+      },
+      {
+        "source": "/services/abua-awas-yojana-help-jamshedpur",
+        "destination": "/services/abua-awas-yojana",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/abua-awas-yojana-help-jamshedpur",
+        "destination": "/hi/services/abua-awas-yojana",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/abua-awas-yojana-help-jamshedpur",
+        "destination": "/bn/services/abua-awas-yojana",
+        "permanent": true
+      },
+      {
+        "source": "/services/fee-payments",
+        "destination": "/services",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/fee-payments",
+        "destination": "/hi",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/fee-payments",
+        "destination": "/bn",
+        "permanent": true
+      },
+      {
+        "source": "/services/bill-payment-recharge",
+        "destination": "/services",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/bill-payment-recharge",
+        "destination": "/hi",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/bill-payment-recharge",
+        "destination": "/bn",
+        "permanent": true
+      },
+      {
+        "source": "/services/fee-bill-recharge-jamshedpur",
+        "destination": "/services",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/fee-bill-recharge-jamshedpur",
+        "destination": "/hi",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/fee-bill-recharge-jamshedpur",
+        "destination": "/bn",
+        "permanent": true
+      },
+      {
+        "source": "/services/travel",
+        "destination": "/services",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/travel",
+        "destination": "/hi",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/travel",
+        "destination": "/bn",
+        "permanent": true
+      },
+      {
+        "source": "/services/ticket-booking",
+        "destination": "/services",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/ticket-booking",
+        "destination": "/hi",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/ticket-booking",
+        "destination": "/bn",
+        "permanent": true
+      },
+      {
+        "source": "/services/train-flight-bus-booking-jamshedpur",
+        "destination": "/services",
+        "permanent": true
+      },
+      {
+        "source": "/hi/services/train-flight-bus-booking-jamshedpur",
+        "destination": "/hi",
+        "permanent": true
+      },
+      {
+        "source": "/bn/services/train-flight-bus-booking-jamshedpur",
+        "destination": "/bn",
+        "permanent": true
+      }
+    ]
+  },
+  "appDir": "C:\\Users\\Shubham\\Downloads\\nise-comport",
+  "relativeAppDir": "",
+  "files": [
+    ".next\\package.json",
+    ".next\\routes-manifest.json",
+    ".next\\server\\pages-manifest.json",
+    ".next\\build-manifest.json",
+    ".next\\prerender-manifest.json",
+    ".next\\server\\preview-props.json",
+    ".next\\server\\functions-config-manifest.json",
+    ".next\\server\\middleware-manifest.json",
+    ".next\\server\\middleware-build-manifest.js",
+    ".next\\server\\middleware-react-loadable-manifest.js",
+    ".next\\react-loadable-manifest.json",
+    ".next\\server\\app-paths-manifest.json",
+    ".next\\app-path-routes-manifest.json",
+    ".next\\server\\server-reference-manifest.js",
+    ".next\\server\\server-reference-manifest.json",
+    ".next\\server\\prefetch-hints.json",
+    ".next\\BUILD_ID",
+    ".next\\server\\next-font-manifest.js",
+    ".next\\server\\next-font-manifest.json",
+    ".next\\required-server-files.json"
+  ],
+  "ignore": []
+}

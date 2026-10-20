@@ -1,0 +1,40 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/[lang]/layout,_N_T_/[lang]/team/layout,_N_T_/[lang]/team/page,_N_T_/bn/team,offers,site-content,site-team"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/_index",
+    "/$d$lang/team/__PAGE__"
+  ],
+  "prefetchHints": {
+    "hints": 0,
+    "slots": {
+      "children": {
+        "hints": 64,
+        "slots": {
+          "children": {
+            "hints": 96,
+            "slots": {
+              "children": {
+                "hints": 160,
+                "slots": null
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "routeCache": {
+    "key": "/route-cache/APP_PAGE/04f8d26f1f9c39a124eed499f665115a1941a0c430da45c74a5482c2e3bf946d/$/bn/team",
+    "owner": {
+      "kind": "APP_PAGE",
+      "sourceRoute": "/[lang]/team/page"
+    },
+    "isFallback": false
+  }
+}

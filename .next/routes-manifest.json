@@ -1,0 +1,2174 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "app",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    },
+    {
+      "source": "/services/extra-services",
+      "destination": "/services/it-services",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/extra-services(?:/)?$"
+    },
+    {
+      "source": "/admin",
+      "destination": "/login",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/admin(?:/)?$"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/login",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/admin(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?$"
+    },
+    {
+      "source": "/home",
+      "destination": "/",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/home(?:/)?$"
+    },
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/index\\.html(?:/)?$"
+    },
+    {
+      "source": "/all-services",
+      "destination": "/services",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/all-services(?:/)?$"
+    },
+    {
+      "source": "/service",
+      "destination": "/services",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/service(?:/)?$"
+    },
+    {
+      "source": "/offer",
+      "destination": "/offers",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/offer(?:/)?$"
+    },
+    {
+      "source": "/offer-left-sidebar",
+      "destination": "/offers",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/offer-left-sidebar(?:/)?$"
+    },
+    {
+      "source": "/offer-right-sidebar",
+      "destination": "/offers",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/offer-right-sidebar(?:/)?$"
+    },
+    {
+      "source": "/offer-details/:slug",
+      "destination": "/offers",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/offer-details(?:/([^/]+?))(?:/)?$"
+    },
+    {
+      "source": "/offer-category/:slug",
+      "destination": "/offers",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/offer-category(?:/([^/]+?))(?:/)?$"
+    },
+    {
+      "source": "/offer-date/:date",
+      "destination": "/offers",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/offer-date(?:/([^/]+?))(?:/)?$"
+    },
+    {
+      "source": "/offer-tag/:slug",
+      "destination": "/offers",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/offer-tag(?:/([^/]+?))(?:/)?$"
+    },
+    {
+      "source": "/blog-left-sidebar",
+      "destination": "/blog",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-left-sidebar(?:/)?$"
+    },
+    {
+      "source": "/blog-right-sidebar",
+      "destination": "/blog",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-right-sidebar(?:/)?$"
+    },
+    {
+      "source": "/author/:author",
+      "destination": "/blog",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/author(?:/([^/]+?))(?:/)?$"
+    },
+    {
+      "source": "/date/:date",
+      "destination": "/blog",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/date(?:/([^/]+?))(?:/)?$"
+    },
+    {
+      "source": "/tag/:slug",
+      "destination": "/blog",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/tag(?:/([^/]+?))(?:/)?$"
+    },
+    {
+      "source": "/category/:slug",
+      "destination": "/blog",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/category(?:/([^/]+?))(?:/)?$"
+    },
+    {
+      "source": "/services/aadhaar-update-guidance",
+      "destination": "/services/aadhaar",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/aadhaar-update-guidance(?:/)?$"
+    },
+    {
+      "source": "/services/pan-card-application-jamshedpur",
+      "destination": "/services/pan-card",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/pan-card-application-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/aadhaar",
+      "destination": "/services/aadhaar",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/aadhaar(?:/)?$"
+    },
+    {
+      "source": "/areas",
+      "destination": "/areas-we-serve",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/areas(?:/)?$"
+    },
+    {
+      "source": "/hindi",
+      "destination": "/hi",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hindi(?:/)?$"
+    },
+    {
+      "source": "/service-details/banking",
+      "destination": "/services/banking",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/service-details/banking(?:/)?$"
+    },
+    {
+      "source": "/service-details/government",
+      "destination": "/services/government-services",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/service-details/government(?:/)?$"
+    },
+    {
+      "source": "/service-details/insurance",
+      "destination": "/services/insurance",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/service-details/insurance(?:/)?$"
+    },
+    {
+      "source": "/service-details/education",
+      "destination": "/services/education",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/service-details/education(?:/)?$"
+    },
+    {
+      "source": "/service-details/website",
+      "destination": "/services/website-design",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/service-details/website(?:/)?$"
+    },
+    {
+      "source": "/service-details/form-filing",
+      "destination": "/services/form-filing",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/service-details/form-filing(?:/)?$"
+    },
+    {
+      "source": "/service-details/it-sales-service",
+      "destination": "/services/it-services",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/service-details/it-sales-service(?:/)?$"
+    },
+    {
+      "source": "/service-details/it-sales--service",
+      "destination": "/services/it-services",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/service-details/it-sales--service(?:/)?$"
+    },
+    {
+      "source": "/service-details/travel",
+      "destination": "/services",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/service-details/travel(?:/)?$"
+    },
+    {
+      "source": "/service-details/:slug",
+      "destination": "/services",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/service-details(?:/([^/]+?))(?:/)?$"
+    },
+    {
+      "source": "/blog-details/aadhaar-demographic-update",
+      "destination": "/blog/aadhaar-update-help-jamshedpur",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/aadhaar-demographic-update(?:/)?$"
+    },
+    {
+      "source": "/blog-details/pan-card-service",
+      "destination": "/blog/pan-card-application-and-correction-jamshedpur",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/pan-card-service(?:/)?$"
+    },
+    {
+      "source": "/blog-details/indian-passport",
+      "destination": "/blog/passport-driving-licence-application-help",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/indian-passport(?:/)?$"
+    },
+    {
+      "source": "/blog-details/voter-id-epic",
+      "destination": "/blog/voter-registration-correction-jharkhand",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/voter-id-epic(?:/)?$"
+    },
+    {
+      "source": "/blog-details/life-certificate-jeevan-praman-live",
+      "destination": "/blog/life-certificate-jeevan-pramaan-help",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/life-certificate-jeevan-praman-live(?:/)?$"
+    },
+    {
+      "source": "/blog-details/ews-certificate",
+      "destination": "/services/income-caste-residence-certificate",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/ews-certificate(?:/)?$"
+    },
+    {
+      "source": "/blog-details/bike-car-insurance",
+      "destination": "/blog/bike-insurance-renewal-jamshedpur",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/bike-car-insurance(?:/)?$"
+    },
+    {
+      "source": "/blog-details/driving-license-only-for-jharkhand",
+      "destination": "/blog/learner-driving-licence-jharkhand-sarathi",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/driving-license-only-for-jharkhand(?:/)?$"
+    },
+    {
+      "source": "/blog-details/voter-new-apply-correction",
+      "destination": "/blog/voter-registration-correction-jharkhand",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/voter-new-apply-correction(?:/)?$"
+    },
+    {
+      "source": "/blog-details/pvc-print-2021",
+      "destination": "/blog/aadhaar-pvc-card-order-guide",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/pvc-print-2021(?:/)?$"
+    },
+    {
+      "source": "/blog-details/income-certificate",
+      "destination": "/blog/income-certificate-jharkhand-application",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/income-certificate(?:/)?$"
+    },
+    {
+      "source": "/blog-details/1",
+      "destination": "/blog/aadhaar-update-help-jamshedpur",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/1(?:/)?$"
+    },
+    {
+      "source": "/blog-details/2",
+      "destination": "/blog/pan-card-application-and-correction-jamshedpur",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/2(?:/)?$"
+    },
+    {
+      "source": "/blog-details/3",
+      "destination": "/blog/passport-driving-licence-application-help",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/3(?:/)?$"
+    },
+    {
+      "source": "/blog-details/4",
+      "destination": "/blog/voter-registration-correction-jharkhand",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/4(?:/)?$"
+    },
+    {
+      "source": "/blog-details/5",
+      "destination": "/blog/life-certificate-jeevan-pramaan-help",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/5(?:/)?$"
+    },
+    {
+      "source": "/blog-details/6",
+      "destination": "/services/income-caste-residence-certificate",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/6(?:/)?$"
+    },
+    {
+      "source": "/blog-details/7",
+      "destination": "/blog/bike-insurance-renewal-jamshedpur",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/7(?:/)?$"
+    },
+    {
+      "source": "/blog-details/8",
+      "destination": "/blog/learner-driving-licence-jharkhand-sarathi",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/8(?:/)?$"
+    },
+    {
+      "source": "/blog-details/9",
+      "destination": "/blog/voter-registration-correction-jharkhand",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/9(?:/)?$"
+    },
+    {
+      "source": "/blog-details/10",
+      "destination": "/blog/aadhaar-pvc-card-order-guide",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/10(?:/)?$"
+    },
+    {
+      "source": "/blog-details/11",
+      "destination": "/blog/income-certificate-jharkhand-application",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details/11(?:/)?$"
+    },
+    {
+      "source": "/blog-details/:slug",
+      "destination": "/blog",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/blog-details(?:/([^/]+?))(?:/)?$"
+    },
+    {
+      "source": "/services/pan-card-jamshedpur",
+      "destination": "/services/pan-card",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/pan-card-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/pan-card-jamshedpur",
+      "destination": "/hi/services/pan-card",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/pan-card-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/pan-card-jamshedpur",
+      "destination": "/bn/services/pan-card",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/pan-card-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/photo-print",
+      "destination": "/services/photo-studio",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/photo-print(?:/)?$"
+    },
+    {
+      "source": "/hi/services/photo-print",
+      "destination": "/hi/services/photo-studio",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/photo-print(?:/)?$"
+    },
+    {
+      "source": "/bn/services/photo-print",
+      "destination": "/bn/services/photo-studio",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/photo-print(?:/)?$"
+    },
+    {
+      "source": "/services/a4-a3-a2-printing",
+      "destination": "/services/printing-scanning",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/a4-a3-a2-printing(?:/)?$"
+    },
+    {
+      "source": "/hi/services/a4-a3-a2-printing",
+      "destination": "/hi/services/printing-scanning",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/a4-a3-a2-printing(?:/)?$"
+    },
+    {
+      "source": "/bn/services/a4-a3-a2-printing",
+      "destination": "/bn/services/printing-scanning",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/a4-a3-a2-printing(?:/)?$"
+    },
+    {
+      "source": "/services/aadhaar-assistance-jamshedpur",
+      "destination": "/services/aadhaar",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/aadhaar-assistance-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/aadhaar-assistance-jamshedpur",
+      "destination": "/hi/services/aadhaar",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/aadhaar-assistance-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/aadhaar-assistance-jamshedpur",
+      "destination": "/bn/services/aadhaar",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/aadhaar-assistance-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/jharkhand-certificates-jamshedpur",
+      "destination": "/services/income-caste-residence-certificate",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/jharkhand-certificates-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/jharkhand-certificates-jamshedpur",
+      "destination": "/hi/services/income-caste-residence-certificate",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/jharkhand-certificates-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/jharkhand-certificates-jamshedpur",
+      "destination": "/bn/services/income-caste-residence-certificate",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/jharkhand-certificates-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/voter-id-services-jamshedpur",
+      "destination": "/services/voter-id",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/voter-id-services-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/voter-id-services-jamshedpur",
+      "destination": "/hi/services/voter-id",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/voter-id-services-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/voter-id-services-jamshedpur",
+      "destination": "/bn/services/voter-id",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/voter-id-services-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/passport-driving-licence-help",
+      "destination": "/services/passport-driving-licence",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/passport-driving-licence-help(?:/)?$"
+    },
+    {
+      "source": "/hi/services/passport-driving-licence-help",
+      "destination": "/hi/services/passport-driving-licence",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/passport-driving-licence-help(?:/)?$"
+    },
+    {
+      "source": "/bn/services/passport-driving-licence-help",
+      "destination": "/bn/services/passport-driving-licence",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/passport-driving-licence-help(?:/)?$"
+    },
+    {
+      "source": "/services/banking-aeps-money-transfer",
+      "destination": "/services/aeps-money-transfer",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/banking-aeps-money-transfer(?:/)?$"
+    },
+    {
+      "source": "/hi/services/banking-aeps-money-transfer",
+      "destination": "/hi/services/aeps-money-transfer",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/banking-aeps-money-transfer(?:/)?$"
+    },
+    {
+      "source": "/bn/services/banking-aeps-money-transfer",
+      "destination": "/bn/services/aeps-money-transfer",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/banking-aeps-money-transfer(?:/)?$"
+    },
+    {
+      "source": "/services/bike-insurance-jamshedpur",
+      "destination": "/services/bike-insurance",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/bike-insurance-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/bike-insurance-jamshedpur",
+      "destination": "/hi/services/bike-insurance",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/bike-insurance-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/bike-insurance-jamshedpur",
+      "destination": "/bn/services/bike-insurance",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/bike-insurance-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/car-insurance-jamshedpur",
+      "destination": "/services/car-insurance",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/car-insurance-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/car-insurance-jamshedpur",
+      "destination": "/hi/services/car-insurance",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/car-insurance-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/car-insurance-jamshedpur",
+      "destination": "/bn/services/car-insurance",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/car-insurance-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/health-life-insurance-help",
+      "destination": "/services/health-life-insurance",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/health-life-insurance-help(?:/)?$"
+    },
+    {
+      "source": "/hi/services/health-life-insurance-help",
+      "destination": "/hi/services/health-life-insurance",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/health-life-insurance-help(?:/)?$"
+    },
+    {
+      "source": "/bn/services/health-life-insurance-help",
+      "destination": "/bn/services/health-life-insurance",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/health-life-insurance-help(?:/)?$"
+    },
+    {
+      "source": "/services/student-scholarship-forms-jamshedpur",
+      "destination": "/services/scholarship-forms",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/student-scholarship-forms-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/student-scholarship-forms-jamshedpur",
+      "destination": "/hi/services/scholarship-forms",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/student-scholarship-forms-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/student-scholarship-forms-jamshedpur",
+      "destination": "/bn/services/scholarship-forms",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/student-scholarship-forms-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/exam-form-filling-jamshedpur",
+      "destination": "/services/exam-forms",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/exam-form-filling-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/exam-form-filling-jamshedpur",
+      "destination": "/hi/services/exam-forms",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/exam-form-filling-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/exam-form-filling-jamshedpur",
+      "destination": "/bn/services/exam-forms",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/exam-form-filling-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/itr-gst-form-assistance",
+      "destination": "/services/itr-gst",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/itr-gst-form-assistance(?:/)?$"
+    },
+    {
+      "source": "/hi/services/itr-gst-form-assistance",
+      "destination": "/hi/services/itr-gst",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/itr-gst-form-assistance(?:/)?$"
+    },
+    {
+      "source": "/bn/services/itr-gst-form-assistance",
+      "destination": "/bn/services/itr-gst",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/itr-gst-form-assistance(?:/)?$"
+    },
+    {
+      "source": "/services/printing-scanning-jamshedpur",
+      "destination": "/services/printing-scanning",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/printing-scanning-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/printing-scanning-jamshedpur",
+      "destination": "/hi/services/printing-scanning",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/printing-scanning-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/printing-scanning-jamshedpur",
+      "destination": "/bn/services/printing-scanning",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/printing-scanning-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/computer-sales-repair-jamshedpur",
+      "destination": "/services/computer-repair",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/computer-sales-repair-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/computer-sales-repair-jamshedpur",
+      "destination": "/hi/services/computer-repair",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/computer-sales-repair-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/computer-sales-repair-jamshedpur",
+      "destination": "/bn/services/computer-repair",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/computer-sales-repair-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/website-digital-services-jamshedpur",
+      "destination": "/services/website-design",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/website-digital-services-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/website-digital-services-jamshedpur",
+      "destination": "/hi/services/website-design",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/website-digital-services-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/website-digital-services-jamshedpur",
+      "destination": "/bn/services/website-design",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/website-digital-services-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/lic-policy-assistance-jamshedpur",
+      "destination": "/services/lic-policy",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/lic-policy-assistance-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/lic-policy-assistance-jamshedpur",
+      "destination": "/hi/services/lic-policy",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/lic-policy-assistance-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/lic-policy-assistance-jamshedpur",
+      "destination": "/bn/services/lic-policy",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/lic-policy-assistance-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/sip-mutual-fund-enquiry-jamshedpur",
+      "destination": "/services/mutual-fund-sip",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/sip-mutual-fund-enquiry-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/sip-mutual-fund-enquiry-jamshedpur",
+      "destination": "/hi/services/mutual-fund-sip",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/sip-mutual-fund-enquiry-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/sip-mutual-fund-enquiry-jamshedpur",
+      "destination": "/bn/services/mutual-fund-sip",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/sip-mutual-fund-enquiry-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/rent-agreement-noc-help-jamshedpur",
+      "destination": "/services/rent-agreement",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/rent-agreement-noc-help-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/rent-agreement-noc-help-jamshedpur",
+      "destination": "/hi/services/rent-agreement",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/rent-agreement-noc-help-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/rent-agreement-noc-help-jamshedpur",
+      "destination": "/bn/services/rent-agreement",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/rent-agreement-noc-help-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/fssai-food-license-assistance-jamshedpur",
+      "destination": "/services/fssai-license",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/fssai-food-license-assistance-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/fssai-food-license-assistance-jamshedpur",
+      "destination": "/hi/services/fssai-license",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/fssai-food-license-assistance-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/fssai-food-license-assistance-jamshedpur",
+      "destination": "/bn/services/fssai-license",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/fssai-food-license-assistance-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/udyam-msme-registration-help-jamshedpur",
+      "destination": "/services/udyam-registration",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/udyam-msme-registration-help-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/udyam-msme-registration-help-jamshedpur",
+      "destination": "/hi/services/udyam-registration",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/udyam-msme-registration-help-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/udyam-msme-registration-help-jamshedpur",
+      "destination": "/bn/services/udyam-registration",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/udyam-msme-registration-help-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/jeevan-pramaan-life-certificate-jamshedpur",
+      "destination": "/services/jeevan-pramaan",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/jeevan-pramaan-life-certificate-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/jeevan-pramaan-life-certificate-jamshedpur",
+      "destination": "/hi/services/jeevan-pramaan",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/jeevan-pramaan-life-certificate-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/jeevan-pramaan-life-certificate-jamshedpur",
+      "destination": "/bn/services/jeevan-pramaan",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/jeevan-pramaan-life-certificate-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/birth-death-certificate-help-jamshedpur",
+      "destination": "/services/birth-death-certificate",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/birth-death-certificate-help-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/birth-death-certificate-help-jamshedpur",
+      "destination": "/hi/services/birth-death-certificate",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/birth-death-certificate-help-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/birth-death-certificate-help-jamshedpur",
+      "destination": "/bn/services/birth-death-certificate",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/birth-death-certificate-help-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/land-mutation-jharbhoomi-help",
+      "destination": "/services/land-mutation",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/land-mutation-jharbhoomi-help(?:/)?$"
+    },
+    {
+      "source": "/hi/services/land-mutation-jharbhoomi-help",
+      "destination": "/hi/services/land-mutation",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/land-mutation-jharbhoomi-help(?:/)?$"
+    },
+    {
+      "source": "/bn/services/land-mutation-jharbhoomi-help",
+      "destination": "/bn/services/land-mutation",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/land-mutation-jharbhoomi-help(?:/)?$"
+    },
+    {
+      "source": "/services/aadhaar-pvc-card-order-help",
+      "destination": "/services/aadhaar-pvc-card",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/aadhaar-pvc-card-order-help(?:/)?$"
+    },
+    {
+      "source": "/hi/services/aadhaar-pvc-card-order-help",
+      "destination": "/hi/services/aadhaar-pvc-card",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/aadhaar-pvc-card-order-help(?:/)?$"
+    },
+    {
+      "source": "/bn/services/aadhaar-pvc-card-order-help",
+      "destination": "/bn/services/aadhaar-pvc-card",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/aadhaar-pvc-card-order-help(?:/)?$"
+    },
+    {
+      "source": "/services/bank-account-opening-bc-jamshedpur",
+      "destination": "/services/bank-account-opening",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/bank-account-opening-bc-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/bank-account-opening-bc-jamshedpur",
+      "destination": "/hi/services/bank-account-opening",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/bank-account-opening-bc-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/bank-account-opening-bc-jamshedpur",
+      "destination": "/bn/services/bank-account-opening",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/bank-account-opening-bc-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/ayushman-card-abha-jamshedpur",
+      "destination": "/services/ayushman-card",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/ayushman-card-abha-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/ayushman-card-abha-jamshedpur",
+      "destination": "/hi/services/ayushman-card",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/ayushman-card-abha-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/ayushman-card-abha-jamshedpur",
+      "destination": "/bn/services/ayushman-card",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/ayushman-card-abha-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/ration-card-help-jamshedpur",
+      "destination": "/services/ration-card",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/ration-card-help-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/ration-card-help-jamshedpur",
+      "destination": "/hi/services/ration-card",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/ration-card-help-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/ration-card-help-jamshedpur",
+      "destination": "/bn/services/ration-card",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/ration-card-help-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/abua-awas-yojana-help-jamshedpur",
+      "destination": "/services/abua-awas-yojana",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/abua-awas-yojana-help-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/abua-awas-yojana-help-jamshedpur",
+      "destination": "/hi/services/abua-awas-yojana",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/abua-awas-yojana-help-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/abua-awas-yojana-help-jamshedpur",
+      "destination": "/bn/services/abua-awas-yojana",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/abua-awas-yojana-help-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/fee-payments",
+      "destination": "/services",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/fee-payments(?:/)?$"
+    },
+    {
+      "source": "/hi/services/fee-payments",
+      "destination": "/hi",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/fee-payments(?:/)?$"
+    },
+    {
+      "source": "/bn/services/fee-payments",
+      "destination": "/bn",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/fee-payments(?:/)?$"
+    },
+    {
+      "source": "/services/bill-payment-recharge",
+      "destination": "/services",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/bill-payment-recharge(?:/)?$"
+    },
+    {
+      "source": "/hi/services/bill-payment-recharge",
+      "destination": "/hi",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/bill-payment-recharge(?:/)?$"
+    },
+    {
+      "source": "/bn/services/bill-payment-recharge",
+      "destination": "/bn",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/bill-payment-recharge(?:/)?$"
+    },
+    {
+      "source": "/services/fee-bill-recharge-jamshedpur",
+      "destination": "/services",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/fee-bill-recharge-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/fee-bill-recharge-jamshedpur",
+      "destination": "/hi",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/fee-bill-recharge-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/fee-bill-recharge-jamshedpur",
+      "destination": "/bn",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/fee-bill-recharge-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/services/travel",
+      "destination": "/services",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/travel(?:/)?$"
+    },
+    {
+      "source": "/hi/services/travel",
+      "destination": "/hi",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/travel(?:/)?$"
+    },
+    {
+      "source": "/bn/services/travel",
+      "destination": "/bn",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/travel(?:/)?$"
+    },
+    {
+      "source": "/services/ticket-booking",
+      "destination": "/services",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/ticket-booking(?:/)?$"
+    },
+    {
+      "source": "/hi/services/ticket-booking",
+      "destination": "/hi",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/ticket-booking(?:/)?$"
+    },
+    {
+      "source": "/bn/services/ticket-booking",
+      "destination": "/bn",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/ticket-booking(?:/)?$"
+    },
+    {
+      "source": "/services/train-flight-bus-booking-jamshedpur",
+      "destination": "/services",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/services/train-flight-bus-booking-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/hi/services/train-flight-bus-booking-jamshedpur",
+      "destination": "/hi",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/hi/services/train-flight-bus-booking-jamshedpur(?:/)?$"
+    },
+    {
+      "source": "/bn/services/train-flight-bus-booking-jamshedpur",
+      "destination": "/bn",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/bn/services/train-flight-bus-booking-jamshedpur(?:/)?$"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/:path*",
+      "headers": [
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "Permissions-Policy",
+          "value": "camera=(), microphone=(), geolocation=(self), payment=(), usb=(), interest-cohort=()"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        }
+      ],
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?$"
+    },
+    {
+      "source": "/api/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ],
+      "regex": "^/api(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?$"
+    },
+    {
+      "source": "/desk/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ],
+      "regex": "^/desk(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?$"
+    },
+    {
+      "source": "/desk",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ],
+      "regex": "^/desk(?:/)?$"
+    },
+    {
+      "source": "/profile/:path*",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ],
+      "regex": "^/profile(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?$"
+    },
+    {
+      "source": "/profile",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ],
+      "regex": "^/profile(?:/)?$"
+    },
+    {
+      "source": "/mail-x7q2",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ],
+      "regex": "^/mail-x7q2(?:/)?$"
+    },
+    {
+      "source": "/login",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ],
+      "regex": "^/login(?:/)?$"
+    },
+    {
+      "source": "/signup",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ],
+      "regex": "^/signup(?:/)?$"
+    },
+    {
+      "source": "/forgot-password",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ],
+      "regex": "^/forgot-password(?:/)?$"
+    },
+    {
+      "source": "/pan/request",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ],
+      "regex": "^/pan/request(?:/)?$"
+    },
+    {
+      "source": "/request",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ],
+      "regex": "^/request(?:/)?$"
+    },
+    {
+      "source": "/images/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=2592000, stale-while-revalidate=86400"
+        }
+      ],
+      "regex": "^/images(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?$"
+    },
+    {
+      "source": "/og/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=604800, stale-while-revalidate=86400"
+        }
+      ],
+      "regex": "^/og(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?$"
+    },
+    {
+      "source": "/brand/:path*",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=2592000, stale-while-revalidate=86400"
+        }
+      ],
+      "regex": "^/brand(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?$"
+    }
+  ],
+  "onMatchHeaders": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/api/admin/jobs/[id]",
+      "regex": "^/api/admin/jobs/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/jobs/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/admin/jobs/[id]/file",
+      "regex": "^/api/admin/jobs/([^/]+?)/file(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/jobs/(?<nxtPid>[^/]+?)/file(?:/)?$"
+    },
+    {
+      "page": "/api/admin/requests/[id]/file",
+      "regex": "^/api/admin/requests/([^/]+?)/file(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/admin/requests/(?<nxtPid>[^/]+?)/file(?:/)?$"
+    },
+    {
+      "page": "/api/gallery/photo/[index]",
+      "regex": "^/api/gallery/photo/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPindex": "nxtPindex"
+      },
+      "namedRegex": "^/api/gallery/photo/(?<nxtPindex>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/requests/[reference]/cancel",
+      "regex": "^/api/requests/([^/]+?)/cancel(?:/)?$",
+      "routeKeys": {
+        "nxtPreference": "nxtPreference"
+      },
+      "namedRegex": "^/api/requests/(?<nxtPreference>[^/]+?)/cancel(?:/)?$"
+    },
+    {
+      "page": "/api/requests/[reference]/review",
+      "regex": "^/api/requests/([^/]+?)/review(?:/)?$",
+      "routeKeys": {
+        "nxtPreference": "nxtPreference"
+      },
+      "namedRegex": "^/api/requests/(?<nxtPreference>[^/]+?)/review(?:/)?$"
+    },
+    {
+      "page": "/blog/[slug]",
+      "regex": "^/blog/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPslug": "nxtPslug"
+      },
+      "namedRegex": "^/blog/(?<nxtPslug>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/bn/services/[slug]",
+      "regex": "^/bn/services/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPslug": "nxtPslug"
+      },
+      "namedRegex": "^/bn/services/(?<nxtPslug>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/desk/requests/[id]",
+      "regex": "^/desk/requests/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/desk/requests/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/gallery/photo/[name]",
+      "regex": "^/gallery/photo/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPname": "nxtPname"
+      },
+      "namedRegex": "^/gallery/photo/(?<nxtPname>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/hi/services/[slug]",
+      "regex": "^/hi/services/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPslug": "nxtPslug"
+      },
+      "namedRegex": "^/hi/services/(?<nxtPslug>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/media/[id]",
+      "regex": "^/media/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/media/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/pan/[topic]",
+      "regex": "^/pan/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPtopic": "nxtPtopic"
+      },
+      "namedRegex": "^/pan/(?<nxtPtopic>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/pay/[reference]",
+      "regex": "^/pay/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPreference": "nxtPreference"
+      },
+      "namedRegex": "^/pay/(?<nxtPreference>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/profile/requests/[reference]",
+      "regex": "^/profile/requests/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPreference": "nxtPreference"
+      },
+      "namedRegex": "^/profile/requests/(?<nxtPreference>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/review/[reference]",
+      "regex": "^/review/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPreference": "nxtPreference"
+      },
+      "namedRegex": "^/review/(?<nxtPreference>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/services/[slug]",
+      "regex": "^/services/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPslug": "nxtPslug"
+      },
+      "namedRegex": "^/services/(?<nxtPslug>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/[lang]/about",
+      "regex": "^/([^/]+?)/about(?:/)?$",
+      "routeKeys": {
+        "nxtPlang": "nxtPlang"
+      },
+      "namedRegex": "^/(?<nxtPlang>[^/]+?)/about(?:/)?$"
+    },
+    {
+      "page": "/[lang]/areas-we-serve",
+      "regex": "^/([^/]+?)/areas\\-we\\-serve(?:/)?$",
+      "routeKeys": {
+        "nxtPlang": "nxtPlang"
+      },
+      "namedRegex": "^/(?<nxtPlang>[^/]+?)/areas\\-we\\-serve(?:/)?$"
+    },
+    {
+      "page": "/[lang]/blog",
+      "regex": "^/([^/]+?)/blog(?:/)?$",
+      "routeKeys": {
+        "nxtPlang": "nxtPlang"
+      },
+      "namedRegex": "^/(?<nxtPlang>[^/]+?)/blog(?:/)?$"
+    },
+    {
+      "page": "/[lang]/blog/[slug]",
+      "regex": "^/([^/]+?)/blog/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPlang": "nxtPlang",
+        "nxtPslug": "nxtPslug"
+      },
+      "namedRegex": "^/(?<nxtPlang>[^/]+?)/blog/(?<nxtPslug>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/[lang]/contact",
+      "regex": "^/([^/]+?)/contact(?:/)?$",
+      "routeKeys": {
+        "nxtPlang": "nxtPlang"
+      },
+      "namedRegex": "^/(?<nxtPlang>[^/]+?)/contact(?:/)?$"
+    },
+    {
+      "page": "/[lang]/faq",
+      "regex": "^/([^/]+?)/faq(?:/)?$",
+      "routeKeys": {
+        "nxtPlang": "nxtPlang"
+      },
+      "namedRegex": "^/(?<nxtPlang>[^/]+?)/faq(?:/)?$"
+    },
+    {
+      "page": "/[lang]/insurance",
+      "regex": "^/([^/]+?)/insurance(?:/)?$",
+      "routeKeys": {
+        "nxtPlang": "nxtPlang"
+      },
+      "namedRegex": "^/(?<nxtPlang>[^/]+?)/insurance(?:/)?$"
+    },
+    {
+      "page": "/[lang]/pricing",
+      "regex": "^/([^/]+?)/pricing(?:/)?$",
+      "routeKeys": {
+        "nxtPlang": "nxtPlang"
+      },
+      "namedRegex": "^/(?<nxtPlang>[^/]+?)/pricing(?:/)?$"
+    },
+    {
+      "page": "/[lang]/privacy",
+      "regex": "^/([^/]+?)/privacy(?:/)?$",
+      "routeKeys": {
+        "nxtPlang": "nxtPlang"
+      },
+      "namedRegex": "^/(?<nxtPlang>[^/]+?)/privacy(?:/)?$"
+    },
+    {
+      "page": "/[lang]/refund-policy",
+      "regex": "^/([^/]+?)/refund\\-policy(?:/)?$",
+      "routeKeys": {
+        "nxtPlang": "nxtPlang"
+      },
+      "namedRegex": "^/(?<nxtPlang>[^/]+?)/refund\\-policy(?:/)?$"
+    },
+    {
+      "page": "/[lang]/services",
+      "regex": "^/([^/]+?)/services(?:/)?$",
+      "routeKeys": {
+        "nxtPlang": "nxtPlang"
+      },
+      "namedRegex": "^/(?<nxtPlang>[^/]+?)/services(?:/)?$"
+    },
+    {
+      "page": "/[lang]/team",
+      "regex": "^/([^/]+?)/team(?:/)?$",
+      "routeKeys": {
+        "nxtPlang": "nxtPlang"
+      },
+      "namedRegex": "^/(?<nxtPlang>[^/]+?)/team(?:/)?$"
+    },
+    {
+      "page": "/[lang]/terms",
+      "regex": "^/([^/]+?)/terms(?:/)?$",
+      "routeKeys": {
+        "nxtPlang": "nxtPlang"
+      },
+      "namedRegex": "^/(?<nxtPlang>[^/]+?)/terms(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/about",
+      "regex": "^/about(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/about(?:/)?$"
+    },
+    {
+      "page": "/api/account/delete",
+      "regex": "^/api/account/delete(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/account/delete(?:/)?$"
+    },
+    {
+      "page": "/api/account/email",
+      "regex": "^/api/account/email(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/account/email(?:/)?$"
+    },
+    {
+      "page": "/api/account/email/confirm",
+      "regex": "^/api/account/email/confirm(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/account/email/confirm(?:/)?$"
+    },
+    {
+      "page": "/api/account/password",
+      "regex": "^/api/account/password(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/account/password(?:/)?$"
+    },
+    {
+      "page": "/api/account/phone",
+      "regex": "^/api/account/phone(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/account/phone(?:/)?$"
+    },
+    {
+      "page": "/api/account/records",
+      "regex": "^/api/account/records(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/account/records(?:/)?$"
+    },
+    {
+      "page": "/api/account/sessions",
+      "regex": "^/api/account/sessions(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/account/sessions(?:/)?$"
+    },
+    {
+      "page": "/api/account/verify-status",
+      "regex": "^/api/account/verify\\-status(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/account/verify\\-status(?:/)?$"
+    },
+    {
+      "page": "/api/addresses",
+      "regex": "^/api/addresses(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/addresses(?:/)?$"
+    },
+    {
+      "page": "/api/admin/campaigns",
+      "regex": "^/api/admin/campaigns(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/campaigns(?:/)?$"
+    },
+    {
+      "page": "/api/admin/campaigns/queue",
+      "regex": "^/api/admin/campaigns/queue(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/campaigns/queue(?:/)?$"
+    },
+    {
+      "page": "/api/admin/chats",
+      "regex": "^/api/admin/chats(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/chats(?:/)?$"
+    },
+    {
+      "page": "/api/admin/claims",
+      "regex": "^/api/admin/claims(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/claims(?:/)?$"
+    },
+    {
+      "page": "/api/admin/contacts",
+      "regex": "^/api/admin/contacts(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/contacts(?:/)?$"
+    },
+    {
+      "page": "/api/admin/coupon-batches",
+      "regex": "^/api/admin/coupon\\-batches(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/coupon\\-batches(?:/)?$"
+    },
+    {
+      "page": "/api/admin/gallery",
+      "regex": "^/api/admin/gallery(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/gallery(?:/)?$"
+    },
+    {
+      "page": "/api/admin/gallery/upload",
+      "regex": "^/api/admin/gallery/upload(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/gallery/upload(?:/)?$"
+    },
+    {
+      "page": "/api/admin/inbox",
+      "regex": "^/api/admin/inbox(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/inbox(?:/)?$"
+    },
+    {
+      "page": "/api/admin/leads",
+      "regex": "^/api/admin/leads(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/leads(?:/)?$"
+    },
+    {
+      "page": "/api/admin/legal",
+      "regex": "^/api/admin/legal(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/legal(?:/)?$"
+    },
+    {
+      "page": "/api/admin/loyalty",
+      "regex": "^/api/admin/loyalty(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/loyalty(?:/)?$"
+    },
+    {
+      "page": "/api/admin/media",
+      "regex": "^/api/admin/media(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/media(?:/)?$"
+    },
+    {
+      "page": "/api/admin/outreach",
+      "regex": "^/api/admin/outreach(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/outreach(?:/)?$"
+    },
+    {
+      "page": "/api/admin/pan-imports",
+      "regex": "^/api/admin/pan\\-imports(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/pan\\-imports(?:/)?$"
+    },
+    {
+      "page": "/api/admin/payments",
+      "regex": "^/api/admin/payments(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/payments(?:/)?$"
+    },
+    {
+      "page": "/api/admin/prices",
+      "regex": "^/api/admin/prices(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/prices(?:/)?$"
+    },
+    {
+      "page": "/api/admin/promotions",
+      "regex": "^/api/admin/promotions(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/promotions(?:/)?$"
+    },
+    {
+      "page": "/api/admin/promotions/sync",
+      "regex": "^/api/admin/promotions/sync(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/promotions/sync(?:/)?$"
+    },
+    {
+      "page": "/api/admin/records",
+      "regex": "^/api/admin/records(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/records(?:/)?$"
+    },
+    {
+      "page": "/api/admin/site-content",
+      "regex": "^/api/admin/site\\-content(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/site\\-content(?:/)?$"
+    },
+    {
+      "page": "/api/admin/staff",
+      "regex": "^/api/admin/staff(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/staff(?:/)?$"
+    },
+    {
+      "page": "/api/admin/team",
+      "regex": "^/api/admin/team(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/team(?:/)?$"
+    },
+    {
+      "page": "/api/admin/testimonials",
+      "regex": "^/api/admin/testimonials(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/testimonials(?:/)?$"
+    },
+    {
+      "page": "/api/admin/testimonials/sync",
+      "regex": "^/api/admin/testimonials/sync(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/testimonials/sync(?:/)?$"
+    },
+    {
+      "page": "/api/admin/wallet-credit",
+      "regex": "^/api/admin/wallet\\-credit(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/admin/wallet\\-credit(?:/)?$"
+    },
+    {
+      "page": "/api/auth/birthday",
+      "regex": "^/api/auth/birthday(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/birthday(?:/)?$"
+    },
+    {
+      "page": "/api/auth/mobile",
+      "regex": "^/api/auth/mobile(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/mobile(?:/)?$"
+    },
+    {
+      "page": "/api/auth/password",
+      "regex": "^/api/auth/password(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/password(?:/)?$"
+    },
+    {
+      "page": "/api/auth/password-reset/confirm",
+      "regex": "^/api/auth/password\\-reset/confirm(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/password\\-reset/confirm(?:/)?$"
+    },
+    {
+      "page": "/api/auth/password-reset/request",
+      "regex": "^/api/auth/password\\-reset/request(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/password\\-reset/request(?:/)?$"
+    },
+    {
+      "page": "/api/auth/phone",
+      "regex": "^/api/auth/phone(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/phone(?:/)?$"
+    },
+    {
+      "page": "/api/auth/request-otp",
+      "regex": "^/api/auth/request\\-otp(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/request\\-otp(?:/)?$"
+    },
+    {
+      "page": "/api/auth/session",
+      "regex": "^/api/auth/session(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/session(?:/)?$"
+    },
+    {
+      "page": "/api/auth/verify-otp",
+      "regex": "^/api/auth/verify\\-otp(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/verify\\-otp(?:/)?$"
+    },
+    {
+      "page": "/api/birthday-card",
+      "regex": "^/api/birthday\\-card(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/birthday\\-card(?:/)?$"
+    },
+    {
+      "page": "/api/coupons/validate",
+      "regex": "^/api/coupons/validate(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/coupons/validate(?:/)?$"
+    },
+    {
+      "page": "/api/cron/cleanup",
+      "regex": "^/api/cron/cleanup(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/cron/cleanup(?:/)?$"
+    },
+    {
+      "page": "/api/cron/mail",
+      "regex": "^/api/cron/mail(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/cron/mail(?:/)?$"
+    },
+    {
+      "page": "/api/cron/offers",
+      "regex": "^/api/cron/offers(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/cron/offers(?:/)?$"
+    },
+    {
+      "page": "/api/cron/whatsapp",
+      "regex": "^/api/cron/whatsapp(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/cron/whatsapp(?:/)?$"
+    },
+    {
+      "page": "/api/health",
+      "regex": "^/api/health(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/health(?:/)?$"
+    },
+    {
+      "page": "/api/insurance",
+      "regex": "^/api/insurance(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/insurance(?:/)?$"
+    },
+    {
+      "page": "/api/internal/admin-request-detail",
+      "regex": "^/api/internal/admin\\-request\\-detail(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/internal/admin\\-request\\-detail(?:/)?$"
+    },
+    {
+      "page": "/api/internal/admin-snapshot",
+      "regex": "^/api/internal/admin\\-snapshot(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/internal/admin\\-snapshot(?:/)?$"
+    },
+    {
+      "page": "/api/internal/profile-snapshot",
+      "regex": "^/api/internal/profile\\-snapshot(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/internal/profile\\-snapshot(?:/)?$"
+    },
+    {
+      "page": "/api/internal/request-detail",
+      "regex": "^/api/internal/request\\-detail(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/internal/request\\-detail(?:/)?$"
+    },
+    {
+      "page": "/api/leads",
+      "regex": "^/api/leads(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/leads(?:/)?$"
+    },
+    {
+      "page": "/api/mail",
+      "regex": "^/api/mail(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/mail(?:/)?$"
+    },
+    {
+      "page": "/api/mail/attach",
+      "regex": "^/api/mail/attach(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/mail/attach(?:/)?$"
+    },
+    {
+      "page": "/api/mail/file",
+      "regex": "^/api/mail/file(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/mail/file(?:/)?$"
+    },
+    {
+      "page": "/api/mail/linked",
+      "regex": "^/api/mail/linked(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/mail/linked(?:/)?$"
+    },
+    {
+      "page": "/api/mail/zip",
+      "regex": "^/api/mail/zip(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/mail/zip(?:/)?$"
+    },
+    {
+      "page": "/api/og",
+      "regex": "^/api/og(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/og(?:/)?$"
+    },
+    {
+      "page": "/api/pan/requests",
+      "regex": "^/api/pan/requests(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/pan/requests(?:/)?$"
+    },
+    {
+      "page": "/api/pay",
+      "regex": "^/api/pay(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/pay(?:/)?$"
+    },
+    {
+      "page": "/api/places/autocomplete",
+      "regex": "^/api/places/autocomplete(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/places/autocomplete(?:/)?$"
+    },
+    {
+      "page": "/api/places/details",
+      "regex": "^/api/places/details(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/places/details(?:/)?$"
+    },
+    {
+      "page": "/api/places/reverse",
+      "regex": "^/api/places/reverse(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/places/reverse(?:/)?$"
+    },
+    {
+      "page": "/api/print-jobs",
+      "regex": "^/api/print\\-jobs(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/print\\-jobs(?:/)?$"
+    },
+    {
+      "page": "/api/profile",
+      "regex": "^/api/profile(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/profile(?:/)?$"
+    },
+    {
+      "page": "/api/requests",
+      "regex": "^/api/requests(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/requests(?:/)?$"
+    },
+    {
+      "page": "/api/requests/draft",
+      "regex": "^/api/requests/draft(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/requests/draft(?:/)?$"
+    },
+    {
+      "page": "/api/unsubscribe",
+      "regex": "^/api/unsubscribe(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/unsubscribe(?:/)?$"
+    },
+    {
+      "page": "/api/uploads",
+      "regex": "^/api/uploads(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/uploads(?:/)?$"
+    },
+    {
+      "page": "/api/webhooks/cashfree",
+      "regex": "^/api/webhooks/cashfree(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/webhooks/cashfree(?:/)?$"
+    },
+    {
+      "page": "/api/webhooks/razorpay",
+      "regex": "^/api/webhooks/razorpay(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/webhooks/razorpay(?:/)?$"
+    },
+    {
+      "page": "/api/whatsapp/webhook",
+      "regex": "^/api/whatsapp/webhook(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/whatsapp/webhook(?:/)?$"
+    },
+    {
+      "page": "/api/x7q9m2",
+      "regex": "^/api/x7q9m2(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/x7q9m2(?:/)?$"
+    },
+    {
+      "page": "/apple-icon.png",
+      "regex": "^/apple\\-icon\\.png(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/apple\\-icon\\.png(?:/)?$"
+    },
+    {
+      "page": "/areas-we-serve",
+      "regex": "^/areas\\-we\\-serve(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/areas\\-we\\-serve(?:/)?$"
+    },
+    {
+      "page": "/blog",
+      "regex": "^/blog(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/blog(?:/)?$"
+    },
+    {
+      "page": "/blog/feed.xml",
+      "regex": "^/blog/feed\\.xml(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/blog/feed\\.xml(?:/)?$"
+    },
+    {
+      "page": "/bn",
+      "regex": "^/bn(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/bn(?:/)?$"
+    },
+    {
+      "page": "/contact",
+      "regex": "^/contact(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/contact(?:/)?$"
+    },
+    {
+      "page": "/desk",
+      "regex": "^/desk(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/desk(?:/)?$"
+    },
+    {
+      "page": "/faq",
+      "regex": "^/faq(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/faq(?:/)?$"
+    },
+    {
+      "page": "/forgot-password",
+      "regex": "^/forgot\\-password(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/forgot\\-password(?:/)?$"
+    },
+    {
+      "page": "/gallery",
+      "regex": "^/gallery(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/gallery(?:/)?$"
+    },
+    {
+      "page": "/hardware",
+      "regex": "^/hardware(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/hardware(?:/)?$"
+    },
+    {
+      "page": "/hi",
+      "regex": "^/hi(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/hi(?:/)?$"
+    },
+    {
+      "page": "/icon.png",
+      "regex": "^/icon\\.png(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/icon\\.png(?:/)?$"
+    },
+    {
+      "page": "/indexnow-key.txt",
+      "regex": "^/indexnow\\-key\\.txt(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/indexnow\\-key\\.txt(?:/)?$"
+    },
+    {
+      "page": "/insurance",
+      "regex": "^/insurance(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/insurance(?:/)?$"
+    },
+    {
+      "page": "/llms.txt",
+      "regex": "^/llms\\.txt(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/llms\\.txt(?:/)?$"
+    },
+    {
+      "page": "/login",
+      "regex": "^/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/mail-x7q2",
+      "regex": "^/mail\\-x7q2(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/mail\\-x7q2(?:/)?$"
+    },
+    {
+      "page": "/manifest.webmanifest",
+      "regex": "^/manifest\\.webmanifest(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/manifest\\.webmanifest(?:/)?$"
+    },
+    {
+      "page": "/offers",
+      "regex": "^/offers(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/offers(?:/)?$"
+    },
+    {
+      "page": "/offers/calendar.ics",
+      "regex": "^/offers/calendar\\.ics(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/offers/calendar\\.ics(?:/)?$"
+    },
+    {
+      "page": "/offers/offers.csv",
+      "regex": "^/offers/offers\\.csv(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/offers/offers\\.csv(?:/)?$"
+    },
+    {
+      "page": "/pan",
+      "regex": "^/pan(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/pan(?:/)?$"
+    },
+    {
+      "page": "/pan/request",
+      "regex": "^/pan/request(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/pan/request(?:/)?$"
+    },
+    {
+      "page": "/pricing",
+      "regex": "^/pricing(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/pricing(?:/)?$"
+    },
+    {
+      "page": "/print",
+      "regex": "^/print(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/print(?:/)?$"
+    },
+    {
+      "page": "/privacy",
+      "regex": "^/privacy(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/privacy(?:/)?$"
+    },
+    {
+      "page": "/profile",
+      "regex": "^/profile(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/profile(?:/)?$"
+    },
+    {
+      "page": "/refund-policy",
+      "regex": "^/refund\\-policy(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/refund\\-policy(?:/)?$"
+    },
+    {
+      "page": "/request",
+      "regex": "^/request(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/request(?:/)?$"
+    },
+    {
+      "page": "/robots.txt",
+      "regex": "^/robots\\.txt(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/robots\\.txt(?:/)?$"
+    },
+    {
+      "page": "/services",
+      "regex": "^/services(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/services(?:/)?$"
+    },
+    {
+      "page": "/signup",
+      "regex": "^/signup(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/signup(?:/)?$"
+    },
+    {
+      "page": "/sitemap.xml",
+      "regex": "^/sitemap\\.xml(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/sitemap\\.xml(?:/)?$"
+    },
+    {
+      "page": "/social",
+      "regex": "^/social(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/social(?:/)?$"
+    },
+    {
+      "page": "/team",
+      "regex": "^/team(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/team(?:/)?$"
+    },
+    {
+      "page": "/terms",
+      "regex": "^/terms(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/terms(?:/)?$"
+    },
+    {
+      "page": "/track",
+      "regex": "^/track(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/track(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

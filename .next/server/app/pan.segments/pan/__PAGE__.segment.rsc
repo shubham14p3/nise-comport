@@ -1,0 +1,25 @@
+2:"$Sreact.fragment"
+3:I[57121,[],""]
+4:I[74581,[],""]
+a:I[90484,[],"OutletBoundary"]
+b:"$Sreact.suspense"
+e:"ViewportBoundary"
+f:I[90484,[],"$e"]
+10:"MetadataBoundary"
+11:I[90484,[],"$10"]
+12:I[86869,[],"IconMark"]
+6:X
+6:C
+7:X
+8:[["children",{"s":"__PAGE__","h":160,"d":{"r":["$","$2","c",{"children":["$L9",null,["$","$La",null,{"children":["$","$b",null,{"name":"Next.MetadataOutlet","children":"$@c"}]}]]}],"p":"$@d","v":null,"s":"$7"}}]]
+1:[["children",{"s":"pan","h":64,"d":{"r":["$","$2","c",{"children":[null,["$","$L3",null,{"parallelRouterKey":"children","template":["$","$L4",null,{}]}]]}],"p":"$@5","v":"$6","s":"$7"},"c":"$Q8"}]]
+0:{"t":{"t":{"s":"","h":16,"c":"$Q1"},"h":{"r":["$","$2","h",{"children":[null,["$","$Lf",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1, viewport-fit=cover"}],["$","meta","2",{"name":"theme-color","content":"#070b1f"}]]}],["$","$L11",null,{"children":[["$","div",null,{"hidden":true,"children":["$","$b",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"NISE COMPORT - Pragya Kendra - CSC & Digital Services in Telco, Jamshedpur"}],["$","meta","1",{"name":"description","content":"Independent CSC and Pragya Kendra in Kharangajhar, Telco, Jamshedpur: PAN, Aadhaar guidance, Jharkhand certificates, banking, insurance, forms, bill payments and printing."}],["$","meta","2",{"name":"application-name","content":"NISE COMPORT"}],["$","link","3",{"rel":"author","href":"https://www.nisecomport.com"}],["$","meta","4",{"name":"author","content":"NISE COMPORT"}],["$","link","5",{"rel":"manifest","href":"/manifest.webmanifest"}],["$","meta","6",{"name":"creator","content":"NISE COMPORT"}],["$","meta","7",{"name":"publisher","content":"NISE COMPORT"}],["$","meta","8",{"name":"robots","content":"index, follow"}],["$","meta","9",{"name":"googlebot","content":"index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1"}],["$","meta","10",{"name":"category","content":"Government & citizen services"}],["$","meta","11",{"name":"geo.region","content":"IN-JH"}],["$","meta","12",{"name":"geo.placename","content":"Jamshedpur"}],["$","meta","13",{"name":"geo.position","content":"22.772428584973422;86.25969295964137"}],["$","meta","14",{"name":"ICBM","content":"22.772428584973422, 86.25969295964137"}],["$","link","15",{"rel":"alternate","type":"application/rss+xml","href":"https://www.nisecomport.com/blog/feed.xml","title":"NISE COMPORT local guides"}],["$","meta","16",{"property":"og:title","content":"NISE COMPORT - Pragya Kendra - CSC & Digital Services in Telco, Jamshedpur"}],["$","meta","17",{"property":"og:description","content":"Independent CSC and Pragya Kendra in Kharangajhar, Telco, Jamshedpur: PAN, Aadhaar guidance, Jharkhand certificates, banking, insurance, forms, bill payments and printing."}],["$","meta","18",{"property":"og:site_name","content":"NISE COMPORT"}],["$","meta","19",{"property":"og:locale","content":"en_IN"}],["$","meta","20",{"property":"og:image","content":"https://www.nisecomport.com/api/og?title=NISE%20COMPORT%20%E2%80%93%20CSC%20%26%20Pragya%20Kendra%20in%20Jamshedpur"}],["$","meta","21",{"property":"og:image:width","content":"1200"}],["$","meta","22",{"property":"og:image:height","content":"630"}],["$","meta","23",{"property":"og:image:alt","content":"NISE COMPORT – CSC & Pragya Kendra, Kharangajhar, Telco, Jamshedpur"}],["$","meta","24",{"property":"og:type","content":"website"}],["$","meta","25",{"name":"twitter:card","content":"summary_large_image"}],["$","meta","26",{"name":"twitter:title","content":"NISE COMPORT - Pragya Kendra - CSC & Digital Services in Telco, Jamshedpur"}],["$","meta","27",{"name":"twitter:description","content":"Independent CSC and Pragya Kendra in Kharangajhar, Telco, Jamshedpur: PAN, Aadhaar guidance, Jharkhand certificates, banking, insurance, forms, bill payments and printing."}],["$","meta","28",{"name":"twitter:image","content":"https://www.nisecomport.com/api/og?title=NISE%20COMPORT%20%E2%80%93%20CSC%20%26%20Pragya%20Kendra%20in%20Jamshedpur"}],["$","link","29",{"rel":"icon","href":"/icon.png?6b4f54e66a655a73","type":"image/png","sizes":"512x512"}],["$","link","30",{"rel":"apple-touch-icon","href":"/apple-icon.png?2ce89cd7a5e55cae","type":"image/png","sizes":"180x180"}],["$","$L12","31",{}]]}]}],null]}],null]}],"p":"$@13","v":null,"s":"$7"}},"a":"$@14","u":"$@15","b":"jMyD3r-4zUnSttsjmGoXf"}
+9:E{"digest":"NEXT_REDIRECT;replace;/services/pan-card#pan-help;308;"}
+c:null
+15:true
+7:300
+7:C
+14:0
+5:"$undefined"
+13:"$undefined"
+d:"$undefined"
