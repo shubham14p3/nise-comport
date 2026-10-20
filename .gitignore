@@ -50,3 +50,6 @@ photo-index
 
 # Database backups hold customer data: never commit
 backups/
+
+# Remembered Excel location for npm run records:update
+.records-source.json
