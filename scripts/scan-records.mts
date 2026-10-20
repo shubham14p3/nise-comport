@@ -11,6 +11,7 @@
 import { existsSync } from "node:fs";
 import { loadEnvFile } from "node:process";
 import { birthFromFields, vehicleFrom } from "../src/lib/record-import.ts";
+import { addDays, collapseRenewals, istToday, rollRenewal } from "../src/lib/outreach-core.ts";
 import { open } from "../src/lib/vault.ts";
 
 for (const file of [".env.local", ".env"]) if (existsSync(file)) { try { loadEnvFile(file); } catch { /* reported below */ } }
@@ -134,16 +135,18 @@ try {
       (select count(*)::int from contacts where birth_month = extract(month from (now() at time zone 'Asia/Kolkata'))::int) as birthdays_this_month,
       (select count(*)::int from contacts where email is not null) as emails,
       (select count(*)::int from contacts where services @> '[{"service":"insurance"}]'::jsonb) as insurance_people,
-      (select count(distinct c.id)::int from contacts c, jsonb_array_elements(c.services) s
-         where s->>'service' = 'insurance' and s->>'renewalOn' between to_char(now() at time zone 'Asia/Kolkata','YYYY-MM-DD') and to_char((now() at time zone 'Asia/Kolkata') + interval '60 days','YYYY-MM-DD')) as renewals_60,
-      (select count(distinct c.id)::int from contacts c, jsonb_array_elements(c.services) s
-         where s->>'service' = 'insurance' and s->>'renewalOn' < to_char(now() at time zone 'Asia/Kolkata','YYYY-MM-DD')) as renewals_past,
       (select count(*)::int from customer_records where service = 'insurance' and vehicle = 'bike') as bikes,
       (select count(*)::int from customer_records where service = 'insurance' and vehicle = 'car') as cars`);
   console.log(`\nWhat the admin will show now:`);
   console.log(`  Contacts: ${summary.contacts} (${summary.emails} with an email)`);
   console.log(`  Birthdays: ${summary.birthdays} people have one, ${summary.birthdays_this_month} this month`);
-  console.log(`  Insurance: ${summary.insurance_people} people, ${summary.renewals_60} renewals due in the next 60 days, ${summary.renewals_past} already past`);
+  // Same rule as the admin: policies renew yearly, old dates roll forward to the next anniversary, one reminder per person and vehicle type.
+  const { rows: policies } = await pool.query("select mobile_hash, vehicle, renewal_on::text as renewal_on from customer_records where service = 'insurance' and renewal_on is not null and mobile_hash is not null");
+  const today = istToday();
+  const upcoming = collapseRenewals(policies.map((row) => { const roll = rollRenewal(row.renewal_on as string, today); return { group: `${row.mobile_hash}|${row.vehicle ?? ""}`, date: roll.date, estimated: roll.estimated, original: row.renewal_on as string, vehicleKnown: Boolean(row.vehicle) }; }));
+  const within = (days: number) => upcoming.filter((item) => item.date <= addDays(today, days) && item.date >= addDays(today, -30)).length;
+  console.log(`  Insurance: ${summary.insurance_people} people, ${upcoming.length} policies tracked (renewing yearly)`);
+  console.log(`  Renewals due: ${within(7)} in the next 7 days, ${within(30)} in 30 days, ${within(60)} in 60 days (counting the last 30 days as overdue)`);
   console.log(`  Insurance vehicles marked: ${summary.bikes} bike, ${summary.cars} car`);
   if (stats.scanned && !stats.birthdays && !count.n) console.log("No date-of-birth column was found in the saved rows. Birthdays only appear when the Excel sheet had a column like DOB / Date of Birth / Birthday.");
 } finally { await pool.end(); }
