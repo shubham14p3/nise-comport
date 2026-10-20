@@ -161,10 +161,28 @@ const BIKE = /\b(bike|bikes|motor\s*cycle|motorcycle|two[\s-]*wheel(?:er)?|2[\s-
 const CAR = /\b(car|cars|four[\s-]*wheel(?:er)?|4[\s-]*w(?:heeler)?|suv|sedan|hatchback|swift|alto|i10|i20|creta|innova|bolero|scorpio|tata|maruti)\b/i;
 const VEHICLE_LABEL = /vehicle|veh\b|type|class|make|model|reg|policy\s*for|cover\s*for/i;
 
-/** "bike" or "car" for an insurance row: from a vehicle column, the sheet or file name, then any value in the row. */
+/**
+ * The third-party (TP) premium tells bikes and cars apart: bike TP premiums are under ₹1,000 and car TP premiums are
+ * above (the shop's rule of thumb). Totals and the GST-inclusive column are ignored.
+ */
+const TP_LABEL = /^\s*tp\b|third\s*party/i;
+const TP_NOT = /gst|total|tot\b|\+|incl|with/i;
+export function vehicleFromTp(fields: Record<string, string>): Vehicle | null {
+  for (const [label, value] of Object.entries(fields)) {
+    if (!TP_LABEL.test(label) || TP_NOT.test(label)) continue;
+    const amount = Number(value.replace(/[^\d.]/g, ""));
+    if (!Number.isFinite(amount) || amount < 300 || amount > 12000) continue; // 0 / blank / a running total
+    return amount < 1000 ? "bike" : "car";
+  }
+  return null;
+}
+
+/** "bike" or "car" for an insurance row: from a vehicle column, the TP premium, the sheet or file name, then any value in the row. */
 export function vehicleFrom(fields: Record<string, string>, source = ""): Vehicle | null {
   const test = (text: string): Vehicle | null => (BIKE.test(text) ? "bike" : CAR.test(text) ? "car" : null);
   for (const [label, value] of Object.entries(fields)) if (VEHICLE_LABEL.test(label)) { const found = test(value); if (found) return found; }
+  const fromTp = vehicleFromTp(fields);
+  if (fromTp) return fromTp;
   const fromSource = test(source.replace(/^.*›/, ""));
   if (fromSource) return fromSource;
   const fromSheet = test(source);

@@ -183,3 +183,15 @@ test("an estimated renewal date is marked as approximate in the message", () => 
   assert.ok(!exact.includes("approx") && guess.includes("(approx.)"));
   assert.ok(renewalWa(RENEWALS[0], "bike", "2027-01-01", "hi", "9771219893", true).includes("अनुमानित"));
 });
+
+test("the third-party premium separates bikes (under 1,000) from cars", () => {
+  assert.equal(vehicleFrom({ Name: "A", "TP- 29": "714" }), "bike");
+  assert.equal(vehicleFrom({ Name: "A", "TP- 29": "664" }), "bike");
+  assert.equal(vehicleFrom({ Name: "A", "TP- 29": "752" }), "bike");
+  assert.equal(vehicleFrom({ Name: "A", "TP- 29": "2094" }), "car");
+  assert.equal(vehicleFrom({ Name: "A", "TP- 29": "3416.016949" }), "car");
+  assert.equal(vehicleFrom({ Name: "A", "TP- 29": "0" }), null);
+  assert.equal(vehicleFrom({ Name: "A", "TP- 29": "16979.22" }), null); // a running total, not a policy
+  assert.equal(vehicleFrom({ Name: "A", "TP+GST": "887.36" }), null);
+  assert.equal(vehicleFrom({ vehicle: "Activa", TP: "2094" }), "bike"); // an explicit vehicle name wins
+});
