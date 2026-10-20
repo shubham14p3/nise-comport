@@ -40,16 +40,16 @@ coverage/
 !/photo-inbox/*/.gitkeep
 /photo-inbox/_done/
 .next
-myexcel
-photo-index
+# myexcel
+# photo-index
 
 # local secrets, never commit
-.env
-.env.local
-.env.*.local
+# .env
+# .env.local
+# .env.*.local
 
 # Database backups hold customer data: never commit
-backups/
+# backups/
 
 # Remembered Excel location for npm run records:update
-.records-source.json
+# .records-source.json
