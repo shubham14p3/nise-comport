@@ -42,7 +42,7 @@ const TOPIC_WORDS: Record<TopicId, string[]> = {
   aadhaar: ["aadhaar", "aadhar", "adhar", "uidai", "आधार", "আধার"],
   certificates: ["certificate", "income", "caste", "residence", "ews", "domicile", "birth", "death", "प्रमाण", "जाति", "आय", "निवास", "সার্টিফিকেট", "শংসাপত্র", "জাতি", "আয়"],
   banking: ["bank", "aeps", "withdraw", "cash", "transfer", "money", "account", "बैंक", "पैसा", "ব্যাংক", "টাকা"],
-  offers: ["offer", "offers", "coupon", "promo", "discount", "deal", "festival", "diwali", "ऑफ़र", "ऑफर", "छूट", "कूपन", "অফার", "ছাড়", "কুপন"],
+  offers: ["offer", "offers", "coupon", "promo", "discount", "deal", "festival", "diwali", "ऑफ़र", "ऑफर", "छूट", "कूपन", "অফার", "ছাড়", "কুপন", "welcome", "balance", "xxxxxx", "वेलकम", "बैलेंस", "ওয়েলকাম", "ব্যালেন্স"],
   insurance: ["insurance", "bima", "policy", "bike", "car", "health", "life", "lic", "बीमा", "বিমা"],
   print: ["print", "xerox", "photocopy", "scan", "प्रिंट", "फोटोकॉपी", "প্রিন্ট", "জেরক্স"],
   bills: ["bill", "recharge", "electricity", "dth", "fee", "बिल", "रिचार्ज", "বিল", "রিচার্জ"],
