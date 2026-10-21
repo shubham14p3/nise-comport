@@ -6,13 +6,14 @@ import { site, whatsappLink } from "@/lib/site";
 // A scan landing page, not something to find on Google.
 export const metadata: Metadata = { title: "Welcome to NISE COMPORT", robots: { index: false, follow: true } };
 
-export default function WelcomePage() {
+export default async function WelcomePage({ searchParams }: { searchParams: Promise<{ src?: string }> }) {
+  const { src } = await searchParams;
   return <main className="content-page"><SiteHeader/>
     <section className="container welcome">
       <h1>Welcome to NISE COMPORT</h1>
       <p className="welcome__sub">स्वागत है · স্বাগতম</p>
       <p>Thank you for scanning. We are a CSC / Pragya Kendra in Kharangajhar, Telco. Tell us what you need and our team will reply.</p>
-      <WelcomeLinks
+      <WelcomeLinks source={src}
         email={site.email}
         subject="Hello from your QR code"
         body="Hi NISE COMPORT, I scanned your QR code. I need help with: "

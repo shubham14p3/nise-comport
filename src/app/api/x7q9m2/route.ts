@@ -78,6 +78,7 @@ const OPS = {
   "G5t2Y8mK3rX6": { method: "GET", path: "/api/admin/hardware" },
   "H3d8Y5qN2sW7": { method: "GET", path: "/api/offers/codes" },
   "B2w9F4mS7hJ6": { method: "POST", path: "/api/admin/coupon-usage" },
+  "Q4r8S2nV6kT9": { method: "GET", path: "/api/admin/qr-scans" },
   "S7h4B1nW9cZ2": { method: "POST", path: "/api/admin/hardware" },
   "E8c4R1pW7mL3": { method: "POST", path: "/api/admin/prices" },
   "C5t9W2yM6kD8": { method: "POST", path: "/api/admin/chats" },
