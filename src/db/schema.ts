@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, timestamp, uuid, integer, smallint, boolean, jsonb, numeric, uniqueIndex, index, doublePrecision, date } from "drizzle-orm/pg-core";
+import { pgTable, primaryKey, text, timestamp, uuid, integer, smallint, boolean, jsonb, numeric, uniqueIndex, index, doublePrecision, date } from "drizzle-orm/pg-core";
 import type { ServiceDetail } from "../lib/services";
 
 /** Text in the three interface languages. */
@@ -656,3 +656,12 @@ export const mailSync = pgTable("mail_sync", {
   lastError: text("last_error"),
   lastImported: integer("last_imported").notNull().default(0),
 });
+
+/** Anonymous QR scan counts per day, source and device type. No personal data is stored. */
+export const qrScans = pgTable("qr_scans", {
+  day: date("day").notNull(),
+  source: text("source").notNull(),
+  device: text("device").notNull(),
+  scans: integer("scans").notNull().default(0),
+  clicks: jsonb("clicks").$type<Record<string, number>>().notNull().default({}),
+}, (table) => [primaryKey({ columns: [table.day, table.source, table.device] })]);

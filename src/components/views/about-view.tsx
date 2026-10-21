@@ -114,6 +114,7 @@ export async function AboutView({ lang }: { lang: Locale }) {
       <h2 id="about-qr-title">{t("Scan to sign in or chat with us", "साइन इन या चैट के लिए स्कैन करें", "সাইন ইন বা চ্যাটের জন্য স্ক্যান করুন")}</h2>
       <p>{t("Print these on a poster or share them with family. Each one opens straight away.", "इन्हें पोस्टर पर छापें या परिवार को भेजें। हर कोड सीधे खुलता है।", "পোস্টারে ছাপুন বা পরিবারকে পাঠান। প্রতিটি কোড সরাসরি খোলে।")}</p>
       <SiteQrCards download={t("Download", "डाउनलोड", "ডাউনলোড")} cards={[
+        { title: t("Welcome", "स्वागत", "স্বাগতম"), hint: t("One code for every phone: WhatsApp, email and sign-in.", "हर फ़ोन के लिए एक कोड: WhatsApp, ईमेल और साइन-इन।", "সব ফোনের জন্য একটি কোড: WhatsApp, ইমেল ও সাইন-ইন।"), url: `${site.url}/welcome`, file: "nise-comport-welcome-qr.svg" },
         { title: t("Sign in", "साइन इन", "সাইন ইন"), hint: t("Opens the sign-in page with your mobile number.", "मोबाइल नंबर से साइन इन पेज खुलता है।", "মোবাইল নম্বর দিয়ে সাইন ইন পেজ খোলে।"), url: `${site.url}/login`, file: "nise-comport-login-qr.svg" },
         { title: "WhatsApp", hint: t("Starts a chat with our desk.", "हमारे डेस्क से चैट शुरू होती है।", "আমাদের ডেস্কের সাথে চ্যাট শুরু হয়।"), url: `https://wa.me/${WHATSAPP_NUMBER}`, file: "nise-comport-whatsapp-qr.svg" },
       ]}/>

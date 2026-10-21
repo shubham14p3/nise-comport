@@ -232,6 +232,13 @@
       "when": 1793959200000,
       "tag": "0032_coupon_balance",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1794045600000,
+      "tag": "0033_qr_scans",
+      "breakpoints": true
     }
   ]
 }
