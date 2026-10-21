@@ -34,7 +34,13 @@ export type PromoView = {
   appliesTo?: { categories: string[]; services: string[] } | null;
   /** Rupee cap on a % code. */
   maxDiscount?: number | null;
+  /** True for visitors who are not signed in: `code` is then an opaque token, never the real code. */
+  masked?: boolean;
 };
+
+/** What a locked code looks like on screen. */
+export const MASKED_CODE = "XXXXXX";
+export const shownCode = (view: { code: string; masked?: boolean }) => view.masked ? MASKED_CODE : view.code;
 
 /** A coupon on the customer's Vouchers page. */
 export type CustomerVoucher = PromoView & { used: boolean; live: boolean; personal: boolean };
@@ -84,14 +90,14 @@ export function promoText(view: PromoView, locale: Locale) {
       : { en: `${name} offer`, hi: `${name} ऑफ़र`, bn: `${name} অফার` }[locale];
   // The ticker shows `highlight` (₹50 OFF) in bold just before this text.
   const ticker = {
-    en: `${name} · code ${view.code}`,
-    hi: `${name} · कोड ${view.code}`,
-    bn: `${name} · কোড ${view.code}`,
+    en: `${name} · code ${shownCode(view)}`,
+    hi: `${name} · कोड ${shownCode(view)}`,
+    bn: `${name} · কোড ${shownCode(view)}`,
   }[locale];
   const detail = {
-    en: `Use code ${view.code} for ${off.replace(" OFF", " off")} our service charge on orders of ${min} or more.`,
-    hi: `${min} या उससे अधिक के ऑर्डर पर कोड ${view.code} से हमारे सेवा शुल्क में ${off}।`,
-    bn: `${min} বা তার বেশি অর্ডারে কোড ${view.code} দিয়ে আমাদের সার্ভিস চার্জে ${off}।`,
+    en: `Use code ${shownCode(view)} for ${off.replace(" OFF", " off")} our service charge on orders of ${min} or more.`,
+    hi: `${min} या उससे अधिक के ऑर्डर पर कोड ${shownCode(view)} से हमारे सेवा शुल्क में ${off}।`,
+    bn: `${min} বা তার বেশি অর্ডারে কোড ${shownCode(view)} দিয়ে আমাদের সার্ভিস চার্জে ${off}।`,
   }[locale];
   return { name, title, highlight: off, ticker, detail, blurb: view.blurb ? view.blurb[locale] || view.blurb.en : "", terms: TERMS[locale] };
 }
@@ -114,8 +120,9 @@ export function promoToOffer(view: PromoView): Offer {
     categories: view.categories?.length ? view.categories : "all",
     startsAt: view.startsOn,
     endsAt: view.endsOn,
-    href: view.kind === "welcome" ? "/profile#vouchers" : `/request?coupon=${encodeURIComponent(view.code)}`,
+    href: view.masked ? "/offers" : view.kind === "welcome" ? "/profile#vouchers" : `/request?coupon=${encodeURIComponent(view.code)}`,
     code: view.code,
+    ...(view.masked ? { masked: true } : {}),
     appliesTo: view.appliesTo ?? null,
     validOn: view.validOn ?? null,
     emoji: view.emoji,
@@ -154,7 +161,7 @@ function eventDetails(view: PromoView, options: ExportOptions) {
 
 export function eventSummary(view: PromoView, locale: Locale = "en") {
   const text = promoText(view, locale);
-  return `${view.emoji} ${view.code} · ${text.highlight} · ${text.name} (NISE COMPORT)`;
+  return `${view.emoji} ${shownCode(view)} · ${text.highlight} · ${text.name} (NISE COMPORT)`;
 }
 
 /** "Add to Google Calendar" link for one promo: an all-day event over the days the code works. */
@@ -267,7 +274,7 @@ export function promoCsv(views: PromoView[], options: ExportOptions & { communit
     const text = promoText(view, locale);
     const status = today < view.startsOn ? "upcoming" : today > view.endsOn ? "ended" : "live";
     rows.push([
-      view.code, text.name, KIND_LABEL[view.kind][locale],
+      shownCode(view), text.name, KIND_LABEL[view.kind][locale],
       view.communities.map((community) => options.communityLabel?.(community, locale) ?? community).join(" · "),
       text.highlight, String(view.minimum), view.startsOn, view.endsOn, view.eventStarts ?? "", view.eventEnds ?? "",
       view.tentative ? YES_NO[locale][1] : YES_NO[locale][0], STATUS_LABEL[status][locale], `${options.siteUrl}/offers#${view.code}`,

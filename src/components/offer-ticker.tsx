@@ -2,30 +2,34 @@
 
 import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
-import { useLiveCodes } from "@/components/offers-provider";
+import { useLiveCodes, useSignedIn, useTeaser } from "@/components/offers-provider";
 import { dict, type Locale } from "@/lib/i18n";
-import { liveOffers } from "@/lib/offers";
+
+const DEFAULT_TEASER = {
+  en: { text: "Sign up free and unlock exclusive offers", cta: "Sign up" },
+  hi: { text: "मुफ़्त साइन अप करें और खास ऑफ़र पाएँ", cta: "साइन अप" },
+  bn: { text: "বিনামূল্যে সাইন আপ করুন, বিশেষ অফার পান", cta: "সাইন আপ" },
+};
 
 /**
- * Thin scrolling strip of live offers above the header, with a blinking LIVE badge: festival and
- * Team India codes first (soonest-ending), then the shop's standing offers. Follows the language.
+ * One calm line above the header. Visitors see a single, editable "sign up to unlock offers" message
+ * (Admin → Site content → banner "The single offer line above the menu"); signed-in customers see
+ * their soonest-ending live offer. All other offers live on /offers.
  */
 export default function OfferTicker({ locale }: { locale: Locale }) {
+  const signedIn = useSignedIn();
+  const teaser = useTeaser();
   const codes = useLiveCodes();
-  const items = [...codes, ...liveOffers()];
-  if (!items.length) return null;
   const t = dict(locale).ticker;
-  const row = items.map((offer) => <Link key={offer.id} href={offer.code ? `/offers#${offer.code}` : offer.href} className={`ticker__item tone-${offer.tone}`}>
-    {offer.emoji ? <span className="ticker__emoji" aria-hidden="true">{offer.emoji}</span> : <Sparkles size={14} aria-hidden="true"/>}
-    <b>{offer.highlight[locale]}</b>{offer.ticker[locale]}
-  </Link>);
-  return <div className="ticker" role="region" aria-label={t.live}>
+  const offer = signedIn ? codes[0] : undefined;
+  const fallback = DEFAULT_TEASER[locale];
+  const text = offer ? `${offer.highlight[locale]} · ${offer.ticker[locale]}` : teaser ? teaser.title[locale] || teaser.title.en : fallback.text;
+  const href = offer ? offer.code ? `/offers#${offer.code}` : offer.href : teaser?.href || "/signup";
+  const cta = offer ? t.viewAll : teaser?.cta ? teaser.cta[locale] || teaser.cta.en : fallback.cta;
+  return <div className="ticker ticker--single" role="region" aria-label={t.live}>
     <div className="container ticker__inner">
-      <span className="badge badge--live"><i aria-hidden="true"/>{t.live}</span>
-      <div className="ticker__viewport">
-        <div className="ticker__track" style={{ animationDuration: `${Math.max(38, items.length * 7)}s` }}>{row}<span className="ticker__clone" aria-hidden="true" inert>{row}</span></div>
-      </div>
-      <Link className="ticker__all" href="/offers">{t.viewAll}<ArrowRight size={14}/></Link>
+      <Link href={href} className="ticker__one"><Sparkles size={14} aria-hidden="true"/><span>{text}</span></Link>
+      <Link className="ticker__all" href={signedIn ? "/offers" : href}>{cta}<ArrowRight size={14}/></Link>
     </div>
   </div>;
 }

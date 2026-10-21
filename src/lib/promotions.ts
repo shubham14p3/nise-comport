@@ -1,4 +1,4 @@
-import { randomInt } from "node:crypto";
+import { createHmac, randomInt } from "node:crypto";
 import { unstable_cache } from "next/cache";
 import { and, asc, count, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { couponBlocks, couponRedemptions, coupons, users } from "@/db/schema";
@@ -38,7 +38,7 @@ export function couponView(row: CouponRow): PromoView {
  * Festival and sports codes that haven't ended, soonest first. Falls back to the checked dates in
  * festivals.ts / sports-events.ts when the database isn't reachable or hasn't been migrated yet.
  */
-async function loadPromoCalendar(): Promise<{ views: PromoView[]; source: "database" | "fallback" }> {
+async function loadRealPromoCalendar(): Promise<{ views: PromoView[]; source: "database" | "fallback" }> {
   const now = new Date();
   try {
     const rows = await db.select().from(coupons)
@@ -59,8 +59,29 @@ async function loadPromoCalendar(): Promise<{ views: PromoView[]; source: "datab
   return { views: curatedEventPromos(now).map(viewFromPromo), source: "fallback" };
 }
 
-/** Cached for 5 minutes; switching a code off takes effect at checkout immediately regardless. */
-export const getPromoCalendar = unstable_cache(loadPromoCalendar, ["promo-calendar-v1"], { revalidate: 300, tags: ["offers"] });
+// ---------------------------------------------------------------------------------------------
+// Public pages never contain real codes. Visitors get an opaque token and see XXXXXX; the real
+// codes are fetched after sign-in (see /api/offers/codes), so hiding a pop-up in the browser
+// reveals nothing.
+// ---------------------------------------------------------------------------------------------
+
+function tokenFor(code: string) {
+  const secret = process.env.OTP_SECRET && process.env.OTP_SECRET.length >= 32 ? process.env.OTP_SECRET : "development-only-offer-token-secret";
+  return `m${createHmac("sha256", secret).update(`offer:${code}`).digest("hex").slice(0, 12)}`;
+}
+const maskView = (view: PromoView): PromoView => ({ ...view, code: tokenFor(view.code), masked: true });
+
+/** Cached for 5 minutes; every code in it is masked. Switching a code off takes effect at checkout immediately regardless. */
+export const getPromoCalendar = unstable_cache(async () => {
+  const { views, source } = await loadRealPromoCalendar();
+  return { views: views.map(maskView), source };
+}, ["promo-calendar-masked-v1"], { revalidate: 300, tags: ["offers"] });
+
+/** Token -> real code, for signed-in customers only. */
+export async function promoCodeReveal() {
+  const { views } = await loadRealPromoCalendar();
+  return Object.fromEntries(views.map((view) => [tokenFor(view.code), view.code])) as Record<string, string>;
+}
 
 /** Codes that can be used today (for the ticker, offer rails and chat). */
 export async function getLivePromos() {

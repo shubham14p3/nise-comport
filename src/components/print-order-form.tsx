@@ -66,7 +66,7 @@ export default function PrintOrderForm() {
   const total = subtotal - activeDiscount;
   const suggestions = [
     ...vouchers.filter((item) => item.personal && item.live && !item.used && scopeAllows(item.appliesTo, { service: "print" })).map((item) => ({ code: item.code, emoji: item.emoji, personal: true })),
-    ...liveCodes.filter((item) => item.code && scopeAllows(item.appliesTo, { service: "print" }) && !vouchers.some((voucher) => voucher.code === item.code && voucher.used)).map((item) => ({ code: item.code!, emoji: item.emoji, personal: false })),
+    ...liveCodes.filter((item) => item.code && !item.masked && scopeAllows(item.appliesTo, { service: "print" }) && !vouchers.some((voucher) => voucher.code === item.code && voucher.used)).map((item) => ({ code: item.code!, emoji: item.emoji, personal: false })),
   ].slice(0, 5);
 
   useEffect(() => {

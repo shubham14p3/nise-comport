@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, CalendarPlus, CalendarDays, Clock3, TriangleAlert } from "lucide-react";
-import CopyCode from "@/components/copy-code";
+import { CalendarPlus, CalendarDays, Clock3, TriangleAlert } from "lucide-react";
+import { CodeValue, UseNowButton } from "@/components/code-reveal";
 import { daysBetween } from "@/lib/festivals";
 import type { Locale } from "@/lib/i18n";
 import { fill } from "@/lib/i18n";
@@ -57,12 +57,11 @@ export default function PromoCard({ view, locale, today, siteUrl, variant = "ful
       {when && <p className="promo-card__when"><CalendarDays size={15} aria-hidden="true"/>{when}{view.tentative && <span className="promo-card__tbc"><TriangleAlert size={13} aria-hidden="true"/>{t.tentative}</span>}</p>}
       <div className="promo-card__code">
         <span className="promo-card__code-label">{t.code}</span>
-        <b>{view.code}</b>
-        <CopyCode text={view.code} locale={locale} className="copy-btn copy-btn--sm"/>
+        <CodeValue code={view.code} masked={view.masked} locale={locale} copyClass="copy-btn copy-btn--sm"/>
       </div>
       <p className="promo-card__meta">{fill(t.minOrder, { min: view.minimum })} · {t.oneUse} · {fill(t.validTill, { date: shortDate(view.endsOn, locale) })}</p>
       <div className="promo-card__actions">
-        {timing.live && <Link className="btn btn--primary btn--sm" href={`/request?coupon=${encodeURIComponent(view.code)}`}>{t.useNow}<ArrowRight size={16}/></Link>}
+        {timing.live && <UseNowButton code={view.code} masked={view.masked} className="btn btn--primary btn--sm" label={t.useNow}/>}
         <a className="btn btn--ghost btn--sm" href={googleCalendarLink(view, { siteUrl, locale })} target="_blank" rel="noopener noreferrer" aria-label={`${t.addToCalendar}: ${text.name}`} title={t.addToCalendar}><CalendarPlus size={16}/>{t.calendarShort}</a>
       </div>
     </div>

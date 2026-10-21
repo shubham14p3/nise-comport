@@ -44,6 +44,8 @@ export type Offer = {
   href: string;
   /** Festival / sports / welcome promotions: the code to type in, plus how to decorate the card. */
   code?: string;
+  /** The code is hidden (visitor not signed in): `code` is an opaque token. */
+  masked?: boolean;
   emoji?: string;
   theme?: string;
   kind?: "festival" | "sport" | "welcome" | "public";

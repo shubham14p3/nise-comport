@@ -11,7 +11,7 @@ type BuiltIn = { slug: string; title: string; categorySlug: string; hidden: bool
 type Custom = { id: string; slug: string; title: string; categorySlug: string; description: string; keywords: string[]; highlights: string[]; documents: string[]; steps: string[]; faqs: { question: string; answer: string }[]; seoTitle?: string; seoDescription?: string; published: boolean; sortOrder: number };
 type Content = { banners: Banner[]; builtIn: BuiltIn[]; custom: Custom[]; categories: { slug: string; title: string }[] };
 
-const PLACES: Record<string, string> = { strip: "Thin strip at the top of every page", home: "Home page, below the top section", services: "All-services page", "service-page": "Service pages (side panel)", insurer: "Insurer logo (insurance page) — only insurers you're authorised to sell" };
+const PLACES: Record<string, string> = { strip: "Thin strip at the top of every page", ticker: "The single offer line above the menu (visitors see this; keep it short, no code)", home: "Home page, below the top section", services: "All-services page", "service-page": "Service pages (side panel)", insurer: "Insurer logo (insurance page) — only insurers you're authorised to sell" };
 const TONES = ["blue", "violet", "pink", "green", "saffron", "cyan", "night"];
 const empty3 = { en: "", hi: "", bn: "" };
 
@@ -115,7 +115,7 @@ function BannerForm({ value, categories, onCancel, onSave }: { value: Partial<Ba
     </div>
     {draft.placement === "service-page" && <><span className="field__label">Only on these categories <em>none ticked = all service pages</em></span>
       <div className="scope-picker__row">{categories.map((item) => <label key={item.slug} className={draft.categories?.includes(item.slug) ? "scope-chip is-on" : "scope-chip"}><input type="checkbox" checked={Boolean(draft.categories?.includes(item.slug))} onChange={() => update({ categories: draft.categories?.includes(item.slug) ? draft.categories.filter((slug) => slug !== item.slug) : [...(draft.categories ?? []), item.slug] })}/>{item.title}</label>)}</div></>}
-    {draft.placement !== "strip" && <><span className="field__label">Image <em>optional, from the poster library or an upload</em></span>
+    {draft.placement !== "strip" && draft.placement !== "ticker" && <><span className="field__label">Image <em>optional, from the poster library or an upload</em></span>
       <PosterPicker value={draft.image ? { en: draft.image } : {}} onChange={(next) => update({ image: next.en ?? next.hi ?? next.bn ?? null })}/></>}
     <div className={`banner-preview tone-${draft.tone ?? "blue"}`}><b>{draft.title?.en || "Headline"}</b>{draft.text?.en && <small>{draft.text.en}</small>}{draft.cta?.en && <em>{draft.cta.en} →</em>}</div>
     <div className="promo-editor__actions"><button className="btn btn--primary" disabled={busy}><Save size={16}/>{busy ? "Saving…" : "Save banner"}</button><button type="button" className="btn btn--ghost" onClick={onCancel}>Cancel</button></div>

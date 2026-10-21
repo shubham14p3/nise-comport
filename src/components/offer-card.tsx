@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Clock3 } from "lucide-react";
-import CopyCode from "@/components/copy-code";
+import { CodeValue } from "@/components/code-reveal";
 import { dict, type Locale } from "@/lib/i18n";
 import { offerEndsLabel, type Offer } from "@/lib/offers";
 import { promoDict } from "@/lib/promo-i18n";
@@ -22,7 +22,7 @@ export default function OfferCard({ offer, locale = "en", variant = "full", appl
     <strong className="offer-card__highlight">{offer.highlight[locale]}</strong>
     <h3>{offer.title[locale]}</h3>
     {variant === "full" && <p>{offer.detail[locale]}</p>}
-    {offer.code && <div className="offer-card__code"><span>{p.code}</span><b>{offer.code}</b><CopyCode text={offer.code} locale={locale} className="copy-btn copy-btn--sm copy-btn--light"/></div>}
+    {offer.code && <div className="offer-card__code"><span>{p.code}</span><CodeValue code={offer.code} masked={offer.masked} locale={locale} copyClass="copy-btn copy-btn--sm copy-btn--light"/></div>}
     <div className="offer-card__meta">
       {ends && <span><Clock3 size={14} aria-hidden="true"/>{t.validTill} {ends}</span>}
       {offer.firstTimeOnly && <span>{t.firstOnly}</span>}

@@ -191,7 +191,7 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
       if (offer) text += ` 🎉 ${offer.highlight[locale]}: ${offer.ticker[locale]}.`;
     }
     if (topic === "offers") {
-      text += codes.length ? `\n${codes.slice(0, 5).map((item) => `${item.emoji ?? "🎉"} ${item.code} · ${item.title[locale]}`).join("\n")}` : " —";
+      text += codes.length ? `\n${codes.slice(0, 5).map((item) => `${item.emoji ?? "🎉"} ${item.masked ? "XXXXXX" : item.code} · ${item.title[locale]}`).join("\n")}` : " —";
     }
     botSay({ text, actions, visit: topic === "visit" });
   }

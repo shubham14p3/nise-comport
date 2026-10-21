@@ -1,5 +1,6 @@
 "use client";
 
+import { CodeText } from "@/components/code-reveal";
 import Link from "next/link";
 import LoopScroller from "@/components/loop-scroller";
 import { useMemo, useState, type ReactNode } from "react";
@@ -103,7 +104,7 @@ export default function OffersExperience({ views, siteUrl, crumbs }: { views: Pr
                 <b>{text.name}</b>
                 <small>{view.kind === "sport" && view.eventEnds && view.eventEnds !== date ? `${shortDate(date, locale)} – ${shortDate(view.eventEnds, locale, true)} · ` : ""}{timing.live ? <em className="cal-item__live">{t.live} · {timing.label}</em> : timing.label}{view.tentative && <em className="cal-item__tbc"><TriangleAlert size={12}/>{t.tentative}</em>}</small>
               </span>
-              <span className="cal-item__code">{view.code}</span>
+              <span className="cal-item__code"><CodeText code={view.code} masked={view.masked}/></span>
               <a className="icon-btn cal-item__gcal" href={googleCalendarLink(view, { siteUrl, locale })} target="_blank" rel="noopener noreferrer" aria-label={`${t.addToCalendar}: ${text.name}`} title={t.addToCalendar}><CalendarPlus size={17}/></a>
             </li>;
           })}</ol>

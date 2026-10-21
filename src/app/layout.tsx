@@ -9,6 +9,7 @@ import MobileDock from "@/components/mobile-dock";
 import OffersProvider from "@/components/offers-provider";
 import SiteFooter from "@/components/site-footer";
 import { getLivePromos } from "@/lib/promotions";
+import { liveBanners } from "@/lib/site-content";
 import { site } from "@/lib/site";
 import { graph, localBusinessLd, organizationLd, websiteLd } from "@/lib/structured-data";
 import { publishedServiceDetails, serviceSeoTitle } from "@/lib/services";
@@ -60,11 +61,13 @@ const siteGraph = graph(
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   // Live festival / sports codes for the ticker, offer rails and chat (cached; falls back to the checked dates).
-  const [promos, services] = await Promise.all([getLivePromos(), allServices()]);
+  const [promos, services, tickerBanners] = await Promise.all([getLivePromos(), allServices(), liveBanners("ticker").catch(() => [])]);
+  const teaserBanner = tickerBanners[0];
+  const teaser = teaserBanner ? { title: teaserBanner.title, cta: teaserBanner.cta, href: teaserBanner.href } : null;
   const chatServices = services.map((service) => ({ slug: service.slug, title: service.title, category: service.categorySlug, keywords: service.keywords }));
   return <html lang="en-IN">
     <body className={`${poppins.variable} ${hindSiliguri.variable}`}>
-      <OffersProvider promos={promos}>
+      <OffersProvider promos={promos} teaser={teaser}>
         <a className="skip-link" href="#main-content">Skip to content</a>
         <SiteBanners placement="strip"/>
         <ScrollToTop/>

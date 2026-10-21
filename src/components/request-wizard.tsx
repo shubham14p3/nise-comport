@@ -323,7 +323,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const suggestions: CodeSuggestion[] = [
     ...vouchers.filter((item) => item.personal && item.live && !item.used && fitsService(item.appliesTo)).map((item) => ({ code: item.code, emoji: item.emoji, label: item.names[locale] ?? item.code, personal: true })),
     ...[...liveCodes].sort((a, b) => Number(Boolean(activeCategory && b.categories !== "all" && b.categories.includes(activeCategory))) - Number(Boolean(activeCategory && a.categories !== "all" && a.categories.includes(activeCategory))))
-      .filter((item) => item.code && fitsService(item.appliesTo) && !vouchers.some((voucher) => voucher.code === item.code && voucher.used))
+      .filter((item) => item.code && !item.masked && fitsService(item.appliesTo) && !vouchers.some((voucher) => voucher.code === item.code && voucher.used))
       .map((item) => ({ code: item.code!, emoji: item.emoji, label: item.title[locale] })),
   ];
   const nameBad = showErrors && draft.step === 1 && draft.name.trim().length < 2;

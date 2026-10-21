@@ -147,7 +147,7 @@ export default function CampaignsPanel() {
     {error && <div className="alert alert--error" role="alert">{error}</div>}
     {notice && <div className="alert alert--success" role="status">{notice}</div>}
 
-    {draft && <CampaignEditor draft={draft} setDraft={setDraft} onSubmit={save} busy={busy === "save"} cloudApi={Boolean(data?.cloudApi)} liveCodes={liveCodes.map((offer) => offer.code ?? "").filter(Boolean)}/>}
+    {draft && <CampaignEditor draft={draft} setDraft={setDraft} onSubmit={save} busy={busy === "save"} cloudApi={Boolean(data?.cloudApi)} liveCodes={liveCodes.filter((offer) => !offer.masked).map((offer) => offer.code ?? "").filter(Boolean)}/>}
 
     {(ready.length > 0 || upcoming.length > 0) && <div className="send-queue">
       <h3><Send size={16}/> Ready to send <span>{ready.length}</span></h3>
