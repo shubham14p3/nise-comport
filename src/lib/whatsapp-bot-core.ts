@@ -13,6 +13,7 @@ export function detectIntent(raw: string): BotIntent {
   const text = raw.trim().toLowerCase();
   if (!text) return "attachment";
   if (/^[1-6]$/.test(text)) return (["menu", "price", "track", "pay", "documents", "hours", "human"] as const)[Number(text)] ?? "menu";
+  if (has(text, /\bscanned\b.*\bqr\b|\bqr\b.*\bscanned\b/)) return "menu"; // arrived from our welcome QR code
   if (has(text, /\b(agent|human|staff|person|call me|talk to|baat|complaint|problem|issue|refund)\b/)) return "human";
   if (has(text, /\b(status|track|stat)\b/)) return "track";
   if (has(text, /\b(pay|payment|paid|upi|qr|bhugtan|paise)\b/)) return "pay";

@@ -3036,3 +3036,9 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .gate__lock { display: inline-grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: #eef5ff; color: var(--blue-700, #0660c9); }
 .gate__close { position: absolute; top: 10px; right: 10px; }
 .gate__actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+
+.welcome { max-width: 520px; padding-block: 2.5rem; text-align: center; display: grid; gap: 1rem; }
+.welcome__sub { font-size: 1.1rem; opacity: .75; margin: 0; }
+.welcome__actions { display: grid; gap: .75rem; }
+.welcome__actions .btn { justify-content: center; gap: .5rem; }
+.welcome__hint { font-size: .9rem; opacity: .75; }

@@ -31,3 +31,7 @@ test("replies", () => {
   assert.match(payReply({ reference: "NC-1", amountPaise: 15000, status: "due" }, "https://x"), /₹150.*\/pay\/NC-1/s);
   assert.match(payReply(null, "https://x"), /don't see/);
 });
+
+test("a message from the welcome QR code gets the menu, not the payment reply", () => {
+  assert.equal(detectIntent("*NISE COMPORT* · Kharangajhar, Telco, Jamshedpur\nHi NISE COMPORT, I scanned your QR code."), "menu");
+});
