@@ -95,9 +95,12 @@ export default function MailClient({ mode, onUnread }: { mode: "customer" | "sta
   useEffect(() => { const timer = window.setTimeout(() => setQuery(search.trim()), 300); return () => window.clearTimeout(timer); }, [search]);
   useEffect(() => { void loadList(true); }, [loadList]);
   useEffect(() => { void loadMeta(); }, [loadMeta]);
+  // Poll every 45 seconds while the tab is visible, and refresh at once when the person comes back to it.
   useEffect(() => {
-    const timer = window.setInterval(() => { if (document.visibilityState === "visible") { void loadList(true); void loadMeta(); } }, 45_000);
-    return () => window.clearInterval(timer);
+    const refresh = () => { if (document.visibilityState === "visible") { void loadList(true); void loadMeta(); } };
+    const timer = window.setInterval(refresh, 45_000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", refresh); };
   }, [loadList, loadMeta]);
 
   const openTicket = useCallback(async (id: string, quiet = false) => {
@@ -124,6 +127,14 @@ export default function MailClient({ mode, onUnread }: { mode: "customer" | "sta
 
   const afterChange = useCallback(async (id?: string) => { await Promise.all([loadList(true), loadMeta(), id ? openTicket(id, true) : Promise.resolve()]); }, [loadList, loadMeta, openTicket]);
 
+  // The list poll already knows when the open conversation got a newer message. Refresh that conversation quietly,
+  // so staff and customers see replies without clicking; the reply box keeps whatever was typed.
+  useEffect(() => {
+    if (!selected || !detail) return;
+    const row = tickets.find((ticket) => ticket.id === selected);
+    if (row && row.lastMessageAt > detail.ticket.lastMessageAt) void openTicket(selected, true);
+  }, [tickets, selected, detail, openTicket]);
+
   async function syncMailbox() {
     setSyncing(true);
     try {
@@ -147,7 +158,7 @@ export default function MailClient({ mode, onUnread }: { mode: "customer" | "sta
           <Icon size={16} aria-hidden="true"/><span className="mbx-folder__name">{item.label}</span>{count > 0 && <small>{count}</small>}
         </button></li>; })}</ul>
       </nav>
-      {staff && meta?.storage && <StoragePanel meta={meta} onSync={syncMailbox} syncing={syncing}/>}
+      {staff && meta && <StoragePanel meta={meta} onSync={syncMailbox} syncing={syncing}/>}
       {!staff && <p className="mbx-side__note"><Lock size={13} aria-hidden="true"/> Your messages and files are private to you and our team.</p>}
     </aside>
 
@@ -179,7 +190,7 @@ export default function MailClient({ mode, onUnread }: { mode: "customer" | "sta
       {next && listState === "ready" && <button type="button" className="mbx-more" onClick={() => void loadList(false, next)}>Show older messages</button>}
     </div>
 
-    <div className="mbx-read" aria-live="polite">
+    <div className="mbx-read">
       {!selected && <div className="mbx-read__empty"><Mail size={34} aria-hidden="true"/><b>Select a message to read it</b><p>{staff ? "Replies you send go to the customer by email and stay on this ticket." : "Replies from our team appear here and in your email."}</p></div>}
       {selected && detailState === "loading" && <div className="mbx-read__empty"><p>Opening…</p></div>}
       {selected && detailState === "error" && <div className="mbx-read__empty"><p>This message could not be opened.</p><button type="button" className="mbx-btn mbx-btn--ghost" onClick={() => void openTicket(selected)}>Try again</button><button type="button" className="mbx-btn mbx-btn--ghost mbx-only-narrow" onClick={closeThread}>Back</button></div>}
@@ -194,19 +205,22 @@ export default function MailClient({ mode, onUnread }: { mode: "customer" | "sta
 
 /* ---------------------------------------------------------------- storage and mailbox status (staff) */
 
+/** Owner sees storage and disk figures (sent only to the owner); every staff member sees the mailbox status and can check it. */
 function StoragePanel({ meta, onSync, syncing }: { meta: MailMeta; onSync: () => void; syncing: boolean }) {
-  const storage = meta.storage!;
-  const used = Math.min(100, Math.round((storage.mailBytes / storage.limitBytes) * 100));
+  const storage = meta.storage;
+  const used = storage ? Math.min(100, Math.round((storage.mailBytes / storage.limitBytes) * 100)) : 0;
   const tone = used >= 90 ? "high" : used >= 70 ? "mid" : "low";
   return <div className="mbx-storage">
-    <h3><HardDrive size={14} aria-hidden="true"/> Storage</h3>
-    <div className="mbx-meter" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={used} aria-label="Attachment storage used"><i className={`is-${tone}`} style={{ width: `${Math.max(used, storage.mailBytes ? 2 : 0)}%` }}/></div>
-    <p><b>{formatBytes(storage.mailBytes)}</b> of {formatBytes(storage.limitBytes)} used by message attachments ({storage.mailFiles} {storage.mailFiles === 1 ? "file" : "files"})</p>
-    <dl>
-      <div><dt>Customer documents</dt><dd>{formatBytes(storage.documentsBytes)}</dd></div>
-      {storage.diskFreeBytes !== null && storage.diskTotalBytes !== null && <div><dt>Server disk free</dt><dd>{formatBytes(storage.diskFreeBytes)} of {formatBytes(storage.diskTotalBytes)}</dd></div>}
-    </dl>
-    {used >= 90 && <p className="mbx-storage__warn">Space is almost full. New attachments will be refused when it is.</p>}
+    {storage && <>
+      <h3><HardDrive size={14} aria-hidden="true"/> Storage</h3>
+      <div className="mbx-meter" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={used} aria-label="Attachment storage used"><i className={`is-${tone}`} style={{ width: `${Math.max(used, storage.mailBytes ? 2 : 0)}%` }}/></div>
+      <p><b>{formatBytes(storage.mailBytes)}</b> of {formatBytes(storage.limitBytes)} used by message attachments ({storage.mailFiles} {storage.mailFiles === 1 ? "file" : "files"})</p>
+      <dl>
+        <div><dt>Customer documents</dt><dd>{formatBytes(storage.documentsBytes)}</dd></div>
+        {storage.diskFreeBytes !== null && storage.diskTotalBytes !== null && <div><dt>Server disk free</dt><dd>{formatBytes(storage.diskFreeBytes)} of {formatBytes(storage.diskTotalBytes)}</dd></div>}
+      </dl>
+      {used >= 90 && <p className="mbx-storage__warn">Space is almost full. New attachments will be refused when it is.</p>}
+    </>}
     <h3><Mail size={14} aria-hidden="true"/> Support mailbox</h3>
     {meta.mailboxConnected
       ? <p>{meta.supportAddress}<br/><small>{meta.sync?.lastError ? `Last check failed: ${meta.sync.lastError}` : meta.sync?.lastRunAt ? `Checked ${listTime(meta.sync.lastRunAt)}` : "Not checked yet"}</small></p>
@@ -297,7 +311,8 @@ function Thread({ detail, staff, wide, onToggleWide, onBack, onChanged, onView, 
       <div ref={endRef}/>
     </div>
 
-    <Composer key={ticket.id + messages.length} ticketId={ticket.id} staff={staff} closed={closed} onSent={onChanged} flash={flash}/>
+    {/* Keyed by ticket only: a quiet refresh (new reply from the other side) must not wipe the draft. */}
+    <Composer key={ticket.id} ticketId={ticket.id} staff={staff} closed={closed} onSent={onChanged} flash={flash}/>
   </article>;
 }
 

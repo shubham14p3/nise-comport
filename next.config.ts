@@ -20,6 +20,12 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   compress: true,
+  // Keep builds inside the hosting plan: 1 CPU, worker threads instead of extra processes
+  // (the cPanel "Website Resources" panel shows ~1.3 GiB peak memory and 230 processes on the account).
+  experimental: {
+    cpus: 1,
+    workerThreads: true,
+  },
   images: { formats: ["image/avif", "image/webp"], minimumCacheTTL: 60 * 60 * 24 * 30 },
   // The share-image route reads this font from disk (Poppins covers English and Hindi).
   outputFileTracingIncludes: { "/api/og": ["./src/assets/fonts/**", "./public/images/logo/**"] },
