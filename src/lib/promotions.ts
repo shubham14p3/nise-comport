@@ -1,6 +1,6 @@
 import { randomInt } from "node:crypto";
 import { unstable_cache } from "next/cache";
-import { and, asc, count, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { couponBlocks, couponRedemptions, coupons, users } from "@/db/schema";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
@@ -211,10 +211,11 @@ export async function syncOffers() {
 // Admin
 // ---------------------------------------------------------------------------------------------
 
-export type AdminPromotion = PromoView & { id: string; active: boolean; locked: boolean; source: string | null; uses: number; perUserLimit: number | null; maxRedemptions: number | null };
+export type AdminPromotion = PromoView & { id: string; active: boolean; locked: boolean; source: string | null; uses: number; perUserLimit: number | null; maxRedemptions: number | null; customerName: string | null };
 
 export async function adminPromotions() {
-  const rows = await db.select().from(coupons).where(isNull(coupons.userId)).orderBy(asc(coupons.eventStarts), asc(coupons.code)).limit(500);
+  const rows = await db.select({ coupon: coupons, customer: users.name }).from(coupons).leftJoin(users, eq(users.id, coupons.userId)).where(and(isNull(coupons.batchId), ne(coupons.kind, "welcome"))).orderBy(asc(coupons.eventStarts), asc(coupons.code)).limit(500)
+    .then((list) => list.map((item) => ({ ...item.coupon, customerName: item.customer })));
   const uses = await db.select({ couponId: couponRedemptions.couponId, uses: count() }).from(couponRedemptions).groupBy(couponRedemptions.couponId);
   const useMap = new Map(uses.map((row) => [row.couponId, Number(row.uses)]));
   const [welcome] = await db.select({
@@ -223,7 +224,7 @@ export async function adminPromotions() {
   }).from(coupons).where(eq(coupons.kind, "welcome"));
   const today = istDate(new Date());
   const promotions: AdminPromotion[] = rows
-    .map((row) => ({ ...couponView(row), id: row.id, active: row.active, locked: row.locked, source: row.source, uses: useMap.get(row.id) ?? 0, perUserLimit: row.perUserLimit, maxRedemptions: row.maxRedemptions }))
+    .map((row) => ({ ...couponView(row), id: row.id, active: row.active, locked: row.locked, source: row.source, uses: useMap.get(row.id) ?? 0, perUserLimit: row.perUserLimit, maxRedemptions: row.maxRedemptions, customerName: row.customerName }))
     .filter((row) => row.endsOn >= addDaysIso(today, -30));
   return { promotions, welcome: { issued: Number(welcome?.issued ?? 0), used: Number(welcome?.used ?? 0) } };
 }
@@ -236,6 +237,8 @@ export type PromotionDetails = {
   appliesTo?: { categories?: string[]; services?: string[] } | null;
   /** Rupee cap for % codes (null = no cap). */
   maxDiscount?: number | null;
+  /** Create only: restrict the code to one customer, found by mobile number (10 digits or +91…). */
+  customerPhone?: string | null;
 };
 
 const cleanText = (value: string | undefined, max: number) => (value ?? "").replace(/\s+/g, " ").trim().slice(0, max);
@@ -285,6 +288,14 @@ function detailChanges(input: PromotionDetails, current?: CouponRow): Partial<ty
 }
 
 /** A promotion the owner creates by hand in Admin → Promotions. */
+async function customerByPhone(raw: string) {
+  const digits = raw.replace(/\D/g, "").slice(-10);
+  if (!/^[6-9]\d{9}$/.test(digits)) throw new PublicError("Enter the customer's 10-digit mobile number.", 400, { fields: { customerPhone: "Check the number." } });
+  const [user] = await db.select({ id: users.id }).from(users).where(and(eq(users.phone, `+91${digits}`), isNull(users.deletedAt))).limit(1);
+  if (!user) throw new PublicError("No customer account has that mobile number yet. They need to sign up first.", 404, { fields: { customerPhone: "No account with this number." } });
+  return user.id;
+}
+
 export async function createPromotion(input: PromotionDetails & { code: string; startsOn: string; endsOn: string; active?: boolean }, actor: { id: string }) {
   const code = normaliseCode(input.code);
   if (!/^[A-Z0-9][A-Z0-9-]{2,19}$/.test(code)) throw new PublicError("Use 3–20 letters, numbers or dashes for the code, e.g. RENEW50.", 400, { fields: { code: "Check the code." } });
@@ -292,11 +303,12 @@ export async function createPromotion(input: PromotionDetails & { code: string; 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.startsOn) || !/^\d{4}-\d{2}-\d{2}$/.test(input.endsOn) || input.endsOn < input.startsOn) {
     throw new PublicError("Check the dates: the code must end on or after the day it starts.", 400, { fields: { endsOn: "Check the dates." } });
   }
+  const customerId = input.customerPhone ? await customerByPhone(input.customerPhone) : null;
   const details = detailChanges({ discountType: "fixed", discount: 50, minimum: 150, perUserLimit: 1, ...input, names: input.names ?? { en: code } });
   try {
     const [row] = await db.insert(coupons).values({
       code, discountType: details.discountType ?? "fixed", discountValue: details.discountValue ?? "50.00", minimumAmount: details.minimumAmount ?? "150.00",
-      active: input.active ?? true, kind: "public", title: details.title, description: details.description ?? null,
+      active: input.active ?? true, kind: "public", userId: customerId, title: details.title, description: details.description ?? null,
       startsAt: istDayStart(input.startsOn), expiresAt: istDayEnd(input.endsOn), perUserLimit: "perUserLimit" in details ? details.perUserLimit : 1, maxRedemptions: details.maxRedemptions ?? null,
       posters: details.posters ?? null, appliesTo: details.appliesTo ?? null, maxDiscount: details.maxDiscount ?? null, emoji: details.emoji ?? "🏷️", theme: "welcome", communities: [], source: "admin", locked: true, createdBy: actor.id,
     }).returning();
@@ -309,7 +321,7 @@ export async function createPromotion(input: PromotionDetails & { code: string; 
 
 export async function updatePromotion(id: string, patch: PromotionDetails & { active?: boolean; startsOn?: string; endsOn?: string; eventStarts?: string; eventEnds?: string; unlock?: boolean }) {
   const [row] = await db.select().from(coupons).where(eq(coupons.id, id)).limit(1);
-  if (!row || row.userId) throw new PublicError("Promotion not found.", 404, { code: "not_found" });
+  if (!row || row.batchId || row.kind === "welcome") throw new PublicError("Promotion not found.", 404, { code: "not_found" });
   const changes: Partial<typeof coupons.$inferInsert> = { updatedAt: new Date() };
   if (patch.active !== undefined) changes.active = patch.active;
   const datesChanged = patch.startsOn || patch.endsOn || patch.eventStarts || patch.eventEnds;

@@ -8,7 +8,7 @@ import { todayIst } from "@/lib/festivals";
 import { secureApi } from "@/lib/secure-api-client";
 import type { PromoView } from "@/lib/promo-view";
 
-type Promotion = PromoView & { id: string; active: boolean; locked: boolean; source: string | null; uses: number; perUserLimit: number | null; maxRedemptions: number | null };
+type Promotion = PromoView & { id: string; active: boolean; locked: boolean; source: string | null; uses: number; perUserLimit: number | null; maxRedemptions: number | null; customerName?: string | null };
 type Listing = { promotions: Promotion[]; welcome: { issued: number; used: number } };
 type SyncReport = { feed: { ok: boolean; events: number; matched: number }; promos: number; created: number; updated: number; unchanged: number; conflicts: string[] };
 type View = "live" | "upcoming" | "all";
@@ -106,6 +106,9 @@ export default function PromotionsPanel({ canEdit }: { canEdit: boolean }) {
             {row.source === "google" && <span className="status-pill">Google date</span>}
             <span className={row.validOn ? "status-pill status-pill--scope" : "status-pill"} title="Where the code can be used">{row.validOn ? `Only: ${row.validOn}` : "All services"}</span>
             {row.maxDiscount ? <span className="status-pill">max ₹{row.maxDiscount}</span> : null}
+            {row.customerName ? <span className="status-pill status-pill--warn">Only {row.customerName}</span> : <span className="status-pill">Everyone</span>}
+            <span className="status-pill">{row.perUserLimit ? `${row.perUserLimit}× each` : "unlimited each"}</span>
+            {row.maxRedemptions ? <span className="status-pill">{row.uses}/{row.maxRedemptions} used</span> : <span className="status-pill">{row.uses} used</span>}
           </span>
           {isEditing && editing && <div className="promo-row__edit">
             <label>Code from<input type="date" value={editing.startsOn} onChange={(event) => setEditing({ ...editing, startsOn: event.target.value })}/></label>

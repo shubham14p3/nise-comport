@@ -3010,3 +3010,15 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
   .cu__row { grid-template-columns: 1fr; gap: 8px; }
   .cu__act { justify-content: flex-start; }
 }
+
+/* Coupon editor: sectioned cards that stack on phones */
+.pe-card { margin: 0; padding: 14px 16px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface, #fff); display: grid; gap: 12px; min-width: 0; }
+.pe-card > legend { padding: 0 8px; font-weight: 700; font-size: 14px; color: var(--blue-700, #0660c9); }
+.pe-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
+.pe-seg { display: inline-flex; border: 1.5px solid var(--line-2, #cfd6ea); border-radius: 999px; overflow: hidden; width: fit-content; max-width: 100%; }
+.pe-seg button { appearance: none; border: 0; background: transparent; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; min-height: 44px; }
+.pe-seg button.is-on { background: var(--blue, #0a7bf7); color: #fff; }
+.pe-seg button:disabled { opacity: .55; cursor: not-allowed; }
+.pe-more summary { cursor: pointer; font-size: 13px; color: var(--muted, #5b6386); margin-bottom: 8px; }
+.pe-summary { margin: 0; padding: 10px 12px; border-radius: 10px; background: #eef5ff; font-size: 14px; }
+@media (max-width: 560px) { .pe-card { padding: 12px; } .pe-seg { width: 100%; } .pe-seg button { flex: 1; padding: 10px 8px; } }
