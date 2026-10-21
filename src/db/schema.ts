@@ -160,6 +160,19 @@ export const couponRedemptions = pgTable("coupon_redemptions", {
   uniqueIndex("coupon_redemptions_request_unique").on(table.requestKind, table.requestId, table.couponId),
 ]);
 
+/** A customer barred from one coupon (couponId set) or from every coupon (couponId null). Set in Admin → Coupon use. */
+export const couponBlocks = pgTable("coupon_blocks", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  couponId: uuid("coupon_id").references(() => coupons.id, { onDelete: "cascade" }),
+  reason: text("reason"),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("coupon_blocks_user_coupon_unique").on(table.userId, table.couponId).where(sql`${table.couponId} is not null`),
+  uniqueIndex("coupon_blocks_user_all_unique").on(table.userId).where(sql`${table.couponId} is null`),
+]);
+
 export const walletEntries = pgTable("wallet_entries", {
   id: uuid("id").defaultRandom().primaryKey(), userId: uuid("user_id").notNull().references(() => users.id), amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   kind: text("kind").notNull(), description: text("description").notNull(), reference: text("reference"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

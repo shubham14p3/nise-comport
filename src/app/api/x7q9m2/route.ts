@@ -76,6 +76,7 @@ const OPS = {
   "W5n8H1cK6zR4": { method: "POST", path: "/api/admin/team" },
   "N2v6Z9kQ4tH1": { method: "GET", path: "/api/admin/prices" },
   "G5t2Y8mK3rX6": { method: "GET", path: "/api/admin/hardware" },
+  "B2w9F4mS7hJ6": { method: "POST", path: "/api/admin/coupon-usage" },
   "S7h4B1nW9cZ2": { method: "POST", path: "/api/admin/hardware" },
   "E8c4R1pW7mL3": { method: "POST", path: "/api/admin/prices" },
   "C5t9W2yM6kD8": { method: "POST", path: "/api/admin/chats" },
@@ -123,6 +124,11 @@ function targetFor(operation: string, input: Record<string, unknown>) {
     case "U3j7P1xH5nQ9": {
       const phone = stringValue(input, "phone", 30);
       return { method: "GET", path: `/api/admin/chats${phone ? `?phone=${encodeURIComponent(phone)}` : ""}` };
+    }
+    case "Y6k1D8pT3vN5": {
+      const query = new URLSearchParams();
+      for (const [key, max] of [["coupon", 60], ["user", 60], ["q", 60]] as const) { const value = stringValue(input, key, max); if (value) query.set(key, value); }
+      return { method: "GET", path: `/api/admin/coupon-usage?${query.toString()}` };
     }
     case "A8s5L2nR7vE4": {
       const status = stringValue(input, "status", 20);

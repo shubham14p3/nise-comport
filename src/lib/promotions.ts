@@ -1,7 +1,7 @@
 import { randomInt } from "node:crypto";
 import { unstable_cache } from "next/cache";
 import { and, asc, count, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
-import { couponRedemptions, coupons, users } from "@/db/schema";
+import { couponBlocks, couponRedemptions, coupons, users } from "@/db/schema";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { istDate, istDayEnd, istDayStart } from "@/lib/festivals";
@@ -107,6 +107,8 @@ export async function resolveCoupon(input: { code: string; userId: string; amoun
   const invalid = () => new PublicError("This code isn’t valid. Check the spelling or pick one of the live codes.", 400, { code: "coupon_invalid", fields: { coupon: "Unknown code." } });
   if (!coupon || !coupon.active) throw invalid();
   if (coupon.userId && coupon.userId !== input.userId) throw invalid();
+  const [blocked] = await db.select({ id: couponBlocks.id }).from(couponBlocks).where(and(eq(couponBlocks.userId, input.userId), or(eq(couponBlocks.couponId, coupon.id), isNull(couponBlocks.couponId)))).limit(1).catch(() => []);
+  if (blocked) throw new PublicError("This code can’t be used on your account. Please contact the shop.", 400, { code: "coupon_blocked", fields: { coupon: "Not available on this account." } });
   const now = new Date();
   if (coupon.startsAt && coupon.startsAt > now) {
     throw new PublicError(`This code starts on ${istDayLabel(coupon.startsAt)}.`, 400, { code: "coupon_not_started", fields: { coupon: "Not live yet." } });

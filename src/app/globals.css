@@ -2992,3 +2992,21 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .verify-row .field { margin: 0; min-width: 0; }
 @media (max-width: 480px) { .verify-row { grid-template-columns: 1fr; } .verify-row .btn { justify-self: stretch; } }
 .verify-row__send { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Admin → Coupon use */
+.cu__filters { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin: 14px 0; }
+.cu__search .input-wrap { display: flex; align-items: center; gap: 8px; }
+.cu__search input { flex: 1; min-width: 0; }
+.cu__list, .cu__blocks ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.cu__row { display: grid; grid-template-columns: 1.3fr 1fr 1.6fr auto; gap: 14px; align-items: center; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface, #fff); }
+.cu__row > div { display: grid; gap: 2px; min-width: 0; font-size: 14px; }
+.cu__row span { color: var(--muted, #5b6386); font-size: 13px; overflow-wrap: anywhere; }
+.cu__act { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.cu__blocks { margin: 0 0 16px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; }
+.cu__blocks h3 { display: flex; gap: 6px; align-items: center; margin: 0 0 8px; font-size: 15px; }
+.cu__blocks li { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; font-size: 14px; }
+@media (max-width: 760px) {
+  .cu__filters { grid-template-columns: 1fr; }
+  .cu__row { grid-template-columns: 1fr; gap: 8px; }
+  .cu__act { justify-content: flex-start; }
+}
