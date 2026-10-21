@@ -3042,3 +3042,7 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .welcome__actions { display: grid; gap: .75rem; }
 .welcome__actions .btn { justify-content: center; gap: .5rem; }
 .welcome__hint { font-size: .9rem; opacity: .75; }
+.welcome__form { display: grid; gap: .75rem; text-align: left; padding: 1rem; border: 1px solid var(--line, rgba(128,128,128,.3)); border-radius: 12px; }
+.welcome__form h2 { margin: 0; font-size: 1.1rem; }
+.welcome__agree { display: flex; gap: .5rem; font-size: .85rem; align-items: flex-start; }
+.welcome__thanks { padding: 1rem; border-radius: 12px; background: rgba(34,139,34,.12); }
