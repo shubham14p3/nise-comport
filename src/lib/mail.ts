@@ -163,15 +163,29 @@ export async function mailMeta(actor: MailActor): Promise<MailMeta> {
   counts.unread = unread;
   const meta: MailMeta = { staff: actor.staff, counts, unread, supportAddress: supportAddress(), mailboxConnected: imapConfigured() };
   if (actor.staff) {
-    const [mail] = await db.select({ bytes: sql<number>`coalesce(sum(${mailAttachments.sizeBytes}), 0)::float8`, files: sql<number>`count(*)::int` }).from(mailAttachments);
-    const [docs] = await db.select({ bytes: sql<number>`coalesce(sum(${storedFiles.sizeBytes}), 0)::float8` }).from(storedFiles);
-    let diskFree: number | null = null; let diskTotal: number | null = null;
-    try { const fs = await statfs(privateStorageRoot()); diskFree = Number(fs.bavail) * Number(fs.bsize); diskTotal = Number(fs.blocks) * Number(fs.bsize); } catch { /* folder not created yet */ }
-    meta.storage = { mailBytes: mail?.bytes ?? 0, mailFiles: mail?.files ?? 0, documentsBytes: docs?.bytes ?? 0, limitBytes: mailLimitBytes(), diskFreeBytes: diskFree, diskTotalBytes: diskTotal };
+    // Every staff member with the Messages permission can check the mailbox; only the owner sees disk and storage figures.
     const [sync] = await db.select().from(mailSync).where(eq(mailSync.id, "main")).limit(1);
     meta.sync = { lastRunAt: iso(sync?.lastRunAt ?? null), lastError: sync?.lastError ?? null, lastImported: sync?.lastImported ?? 0 };
   }
+  if (actor.user.role === "admin") meta.storage = await storageTotals();
   return meta;
+}
+
+/**
+ * Owner-only storage figures. The staff screen polls every 45 seconds, so the sums over every
+ * attachment are cached for a minute instead of being recalculated on each poll.
+ */
+const STORAGE_TTL_MS = 60_000;
+let storageCache: { at: number; value: NonNullable<MailMeta["storage"]> } | null = null;
+async function storageTotals(): Promise<NonNullable<MailMeta["storage"]>> {
+  if (storageCache && Date.now() - storageCache.at < STORAGE_TTL_MS) return storageCache.value;
+  const [mail] = await db.select({ bytes: sql<number>`coalesce(sum(${mailAttachments.sizeBytes}), 0)::float8`, files: sql<number>`count(*)::int` }).from(mailAttachments);
+  const [docs] = await db.select({ bytes: sql<number>`coalesce(sum(${storedFiles.sizeBytes}), 0)::float8` }).from(storedFiles);
+  let diskFree: number | null = null; let diskTotal: number | null = null;
+  try { const fs = await statfs(privateStorageRoot()); diskFree = Number(fs.bavail) * Number(fs.bsize); diskTotal = Number(fs.blocks) * Number(fs.bsize); } catch { /* folder not created yet */ }
+  const value = { mailBytes: mail?.bytes ?? 0, mailFiles: mail?.files ?? 0, documentsBytes: docs?.bytes ?? 0, limitBytes: mailLimitBytes(), diskFreeBytes: diskFree, diskTotalBytes: diskTotal };
+  storageCache = { at: Date.now(), value };
+  return value;
 }
 
 /* ---------------------------------------------------------------- attachments */
