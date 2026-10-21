@@ -225,6 +225,13 @@
       "when": 1793872800000,
       "tag": "0031_coupon_blocks",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793959200000,
+      "tag": "0032_coupon_balance",
+      "breakpoints": true
     }
   ]
 }

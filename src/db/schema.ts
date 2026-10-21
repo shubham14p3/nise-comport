@@ -121,6 +121,8 @@ export const coupons = pgTable("coupons", {
   appliesTo: jsonb("applies_to").$type<{ categories: string[]; services: string[] }>(),
   /** Upper limit for % codes, in rupees. */
   maxDiscount: numeric("max_discount", { precision: 10, scale: 2 }),
+  /** Balance coupons (discount_type "balance"): the most that can be taken off one order, as a % of the order. */
+  maxPercent: integer("max_percent"),
   /** Personal codes created together for a group of customers. */
   batchId: uuid("batch_id"),
   createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
@@ -132,6 +134,15 @@ export const coupons = pgTable("coupons", {
   index("coupons_batch_idx").on(table.batchId),
   index("coupons_user_idx").on(table.userId),
 ]);
+
+/** Money added to a balance coupon (e.g. welcome coupon: ₹30 for the email, ₹20 for the mobile). The unique reference makes each credit happen once. */
+export const couponCredits = pgTable("coupon_credits", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  couponId: uuid("coupon_id").notNull().references(() => coupons.id, { onDelete: "cascade" }),
+  reference: text("reference").notNull().unique(),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 /** A group of personal codes: one unique code per chosen customer, bound to their account. */
 export const couponBatches = pgTable("coupon_batches", {

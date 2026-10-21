@@ -18,7 +18,7 @@ export type PromoView = {
   theme: string;
   communities: string[];
   categories: string[] | null;
-  discountType: "fixed" | "percent";
+  discountType: "fixed" | "percent" | "balance";
   discount: number;
   minimum: number;
   /** Inclusive India-time dates the code can be used. */
@@ -36,6 +36,10 @@ export type PromoView = {
   maxDiscount?: number | null;
   /** True for visitors who are not signed in: `code` is then an opaque token, never the real code. */
   masked?: boolean;
+  /** Balance coupons: rupees still left to use, and the most one order can take (% of the order). */
+  balance?: number | null;
+  maxPercent?: number | null;
+  isBalance?: boolean;
 };
 
 /** What a locked code looks like on screen. */

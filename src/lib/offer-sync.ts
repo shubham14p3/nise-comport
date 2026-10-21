@@ -19,7 +19,8 @@ import { eventPromos } from "./promo-calendar.ts";
 export type QueryFn = (text: string, params?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }>;
 
 /** ₹50 sign-up coupon for every account that verifies its email. */
-export const WELCOME_COUPON = { discount: 50, minimum: 150, validDays: 90 };
+/** The welcome coupon is a balance: ₹30 for verifying the email + ₹20 for verifying the mobile = ₹50, at most 20% of an order at a time. */
+export const WELCOME_COUPON = { discount: 50, minimum: 100, validDays: 90, maxPercent: 20, services: ["bike-insurance", "car-insurance"] };
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 

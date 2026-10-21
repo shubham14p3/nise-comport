@@ -1,12 +1,12 @@
 import { createHmac, randomInt } from "node:crypto";
 import { unstable_cache } from "next/cache";
 import { and, asc, count, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
-import { couponBlocks, couponRedemptions, coupons, users } from "@/db/schema";
+import { couponBlocks, couponCredits, couponRedemptions, coupons, users } from "@/db/schema";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { istDate, istDayEnd, istDayStart } from "@/lib/festivals";
 import { syncEventCoupons, WELCOME_COUPON, welcomeCode, type QueryFn } from "@/lib/offer-sync";
-import { cappedDiscount, cleanScope, scopeAllows, scopeLabel, type ScopeContext } from "@/lib/promo-scope";
+import { balanceDiscount, cappedDiscount, cleanScope, scopeAllows, scopeLabel, type ScopeContext } from "@/lib/promo-scope";
 import { findService, publishedServiceDetails, serviceCatalog } from "@/lib/services";
 import { curatedEventPromos } from "@/lib/promo-calendar";
 import { isPosterUrl } from "@/lib/poster-library";
@@ -23,7 +23,7 @@ export function couponView(row: CouponRow): PromoView {
     blurb: row.description ?? null,
     emoji: row.emoji ?? (kind === "welcome" ? "🎁" : "🏷️"), theme: row.theme ?? (kind === "welcome" ? "welcome" : "diya"),
     communities: row.communities ?? [], categories: row.categories ?? null,
-    discountType: row.discountType === "percent" ? "percent" : "fixed", discount: Number(row.discountValue), minimum: Number(row.minimumAmount),
+    discountType: row.discountType === "percent" ? "percent" : row.discountType === "balance" ? "balance" : "fixed", discount: Number(row.discountValue), minimum: Number(row.minimumAmount),
     startsOn: row.startsAt ? istDate(row.startsAt) : istDate(row.createdAt ?? new Date()),
     endsOn: row.expiresAt ? istDate(new Date(row.expiresAt.getTime() - 1)) : "2099-12-31",
     eventStarts: row.eventStarts ?? null, eventEnds: row.eventEnds ?? null, tentative: row.tentative,
@@ -31,6 +31,7 @@ export function couponView(row: CouponRow): PromoView {
     appliesTo: cleanScope(row.appliesTo),
     validOn: cleanScope(row.appliesTo) ? scopeLabel(cleanScope(row.appliesTo), scopeNames()) : null,
     maxDiscount: row.maxDiscount ? Number(row.maxDiscount) : null,
+    ...(row.discountType === "balance" ? { isBalance: true, maxPercent: row.maxPercent } : {}),
   };
 }
 
@@ -139,6 +140,20 @@ export async function resolveCoupon(input: { code: string; userId: string; amoun
   if (input.context && !scopeAllows(scope, input.context)) {
     throw new PublicError(`This code works only on: ${scopeLabel(scope, scopeNames())}.`, 400, { code: "coupon_wrong_service", fields: { coupon: "Not for this service." } });
   }
+  if (coupon.discountType === "balance") {
+    // A balance coupon is used up by rupees, not by counts: each order can take at most maxPercent% of its amount.
+    const [{ spent }] = await db.select({ spent: sql<string>`coalesce(sum(${couponRedemptions.amount}), 0)` }).from(couponRedemptions).where(eq(couponRedemptions.couponId, coupon.id));
+    const remaining = Math.round((Number(coupon.discountValue) - Number(spent)) * 100) / 100;
+    if (remaining <= 0) throw new PublicError("The balance on this coupon has been used up.", 400, { code: "coupon_used_up", fields: { coupon: "No balance left." } });
+    const min = Number(coupon.minimumAmount);
+    let balanceOff: number | null = null;
+    if (input.amount !== undefined) {
+      if (input.amount < min) throw new PublicError(`Add ${rupees(Math.ceil(min - input.amount))} more to use this code (minimum order ${rupees(min)}).`, 400, { code: "coupon_minimum", fields: { coupon: `Minimum ${rupees(min)}.` } });
+      balanceOff = balanceDiscount(remaining, input.amount, coupon.maxPercent, coupon.maxDiscount ? Number(coupon.maxDiscount) : null);
+      if (!balanceOff) throw new PublicError("This code doesn’t reduce the order total.", 400, { code: "coupon_no_discount" });
+    }
+    return { coupon, view: { ...couponView(coupon), balance: remaining }, discount: balanceOff };
+  }
   if (coupon.perUserLimit !== null) {
     const [{ used }] = await db.select({ used: count() }).from(couponRedemptions).where(and(eq(couponRedemptions.couponId, coupon.id), eq(couponRedemptions.userId, input.userId)));
     if (Number(used) >= coupon.perUserLimit) throw new PublicError("You’ve already used this code. Try another live code.", 400, { code: "coupon_used", fields: { coupon: "Already used." } });
@@ -173,29 +188,49 @@ export async function releaseRedemptions(requestKind: "print" | "service", reque
 }
 
 /**
- * Issues the ₹50 welcome coupon once per verified customer account. Safe to call on every
- * sign-in: a second call returns the existing coupon. Never throws (sign-in must not fail on it).
+ * The welcome coupon is one balance per customer: ₹30 is added when they verify their email and ₹20 when
+ * they verify their mobile number (₹50 in all). Each credit happens once (unique reference). Customers who
+ * already hold an older fixed ₹50 welcome coupon keep it and get the wallet reward instead.
+ * Returns the coupon and whether this call added money. Never throws.
  */
-export async function issueWelcomeCoupon(userId: string) {
+export async function creditWelcomeBalance(userId: string, kind: "email" | "phone") {
   try {
-    const [user] = await db.select({ id: users.id, role: users.role, verified: users.emailVerifiedAt }).from(users).where(eq(users.id, userId)).limit(1);
-    if (!user || user.role !== "customer" || !user.verified) return null;
+    const [user] = await db.select({ id: users.id, role: users.role }).from(users).where(eq(users.id, userId)).limit(1);
+    if (!user || user.role !== "customer") return null;
+    const amount = kind === "email" ? 30 : 20;
     for (let attempt = 0; attempt < 3; attempt++) {
-      const [existing] = await db.select().from(coupons).where(and(eq(coupons.userId, user.id), eq(coupons.kind, "welcome"))).limit(1);
-      if (existing) return { coupon: existing, created: false };
-      const today = istDate(new Date());
-      const [created] = await db.insert(coupons).values({
-        code: welcomeCode((max) => randomInt(max)), discountType: "fixed", discountValue: WELCOME_COUPON.discount.toFixed(2), minimumAmount: WELCOME_COUPON.minimum.toFixed(2),
-        active: true, kind: "welcome", userId: user.id, perUserLimit: 1, maxRedemptions: 1, source: "signup",
-        title: { en: "Welcome coupon", hi: "वेलकम कूपन", bn: "ওয়েলকাম কুপন" },
-        startsAt: istDayStart(today), expiresAt: istDayEnd(addDaysIso(today, WELCOME_COUPON.validDays)),
-      }).onConflictDoNothing().returning();
-      if (created) return { coupon: created, created: true };
+      let [coupon] = await db.select().from(coupons).where(and(eq(coupons.userId, user.id), eq(coupons.kind, "welcome"))).limit(1);
+      if (coupon && coupon.discountType !== "balance") return { coupon, created: false, legacy: true as const };
+      if (!coupon) {
+        const today = istDate(new Date());
+        [coupon] = await db.insert(coupons).values({
+          code: welcomeCode((max) => randomInt(max)), discountType: "balance", discountValue: "0.00", minimumAmount: WELCOME_COUPON.minimum.toFixed(2), maxPercent: WELCOME_COUPON.maxPercent, appliesTo: { services: [...WELCOME_COUPON.services] },
+          active: true, kind: "welcome", userId: user.id, perUserLimit: null, maxRedemptions: null, source: "signup",
+          title: { en: "Welcome coupon", hi: "वेलकम कूपन", bn: "ওয়েলকাম কুপন" },
+          startsAt: istDayStart(today), expiresAt: istDayEnd(addDaysIso(today, WELCOME_COUPON.validDays)),
+        }).onConflictDoNothing().returning();
+        if (!coupon) continue; // another request created it first; read it on the next pass
+      }
+      const [credit] = await db.insert(couponCredits).values({ couponId: coupon.id, reference: `welcome:${kind}:${user.id}`, amount: amount.toFixed(2) }).onConflictDoNothing().returning();
+      if (credit) {
+        const today = istDate(new Date());
+        const [updated] = await db.update(coupons).set({ discountValue: sql`${coupons.discountValue} + ${amount}`, expiresAt: istDayEnd(addDaysIso(today, WELCOME_COUPON.validDays)), updatedAt: new Date() }).where(eq(coupons.id, coupon.id)).returning();
+        return { coupon: updated ?? coupon, created: true, legacy: false as const };
+      }
+      return { coupon, created: false, legacy: false as const };
     }
   } catch (error) {
-    console.error("[offers] could not issue welcome coupon", error instanceof Error ? error.message : error);
+    console.error("[offers] could not credit the welcome coupon", error instanceof Error ? error.message : error);
   }
   return null;
+}
+
+/** Kept for the email sign-up flow: adds the ₹30 email part and returns the welcome coupon. */
+export async function issueWelcomeCoupon(userId: string) {
+  const [user] = await db.select({ verified: users.emailVerifiedAt }).from(users).where(eq(users.id, userId)).limit(1).catch(() => []);
+  if (!user?.verified) return null;
+  const result = await creditWelcomeBalance(userId, "email");
+  return result ? { coupon: result.coupon, created: result.created } : null;
 }
 
 function addDaysIso(isoDate: string, days: number) {
@@ -252,7 +287,7 @@ export async function adminPromotions() {
 
 type Text3Input = { en?: string; hi?: string; bn?: string };
 export type PromotionDetails = {
-  names?: Text3Input; description?: Text3Input | null; discountType?: "fixed" | "percent"; discount?: number; minimum?: number;
+  names?: Text3Input; description?: Text3Input | null; discountType?: "fixed" | "percent" | "balance"; discount?: number; maxPercent?: number | null; minimum?: number;
   perUserLimit?: number | null; maxRedemptions?: number | null; posters?: Text3Input | null; emoji?: string | null;
   /** Limit to these categories/services ({ categories: [], services: [] } or null = everything). */
   appliesTo?: { categories?: string[]; services?: string[] } | null;
@@ -276,7 +311,7 @@ function detailChanges(input: PromotionDetails, current?: CouponRow): Partial<ty
     const en = cleanText(input.description?.en, 240);
     changes.description = en ? { en, hi: cleanText(input.description?.hi, 240) || en, bn: cleanText(input.description?.bn, 240) || en } : null;
   }
-  const type = input.discountType ?? (current?.discountType === "percent" ? "percent" : "fixed");
+  const type = input.discountType ?? (current?.discountType === "percent" ? "percent" : current?.discountType === "balance" ? "balance" : "fixed");
   if (input.discountType) changes.discountType = type;
   if (input.discount !== undefined) {
     const max = type === "percent" ? 50 : 5000;
@@ -292,6 +327,11 @@ function detailChanges(input: PromotionDetails, current?: CouponRow): Partial<ty
     if (input.maxDiscount !== null && !(input.maxDiscount > 0 && input.maxDiscount <= 5000)) throw new PublicError("Use a maximum discount between ₹1 and ₹5,000, or leave it empty.", 400, { fields: { maxDiscount: "Check the amount." } });
     changes.maxDiscount = input.maxDiscount === null ? null : input.maxDiscount.toFixed(2);
   }
+  if (input.maxPercent !== undefined) {
+    if (input.maxPercent !== null && !(Number.isInteger(input.maxPercent) && input.maxPercent >= 1 && input.maxPercent <= 100)) throw new PublicError("Use a whole percent between 1 and 100.", 400, { fields: { maxPercent: "Check the percent." } });
+    changes.maxPercent = input.maxPercent;
+  }
+  if (type === "balance" && input.maxPercent === undefined && current?.maxPercent == null && !changes.maxPercent) changes.maxPercent = 20;
   if (input.perUserLimit !== undefined) changes.perUserLimit = input.perUserLimit === null ? null : Math.max(1, Math.min(50, Math.round(input.perUserLimit)));
   if (input.maxRedemptions !== undefined) changes.maxRedemptions = input.maxRedemptions === null ? null : Math.max(1, Math.min(100_000, Math.round(input.maxRedemptions)));
   if (input.posters !== undefined) {
@@ -328,7 +368,7 @@ export async function createPromotion(input: PromotionDetails & { code: string; 
   const details = detailChanges({ discountType: "fixed", discount: 50, minimum: 150, perUserLimit: 1, ...input, names: input.names ?? { en: code } });
   try {
     const [row] = await db.insert(coupons).values({
-      code, discountType: details.discountType ?? "fixed", discountValue: details.discountValue ?? "50.00", minimumAmount: details.minimumAmount ?? "150.00",
+      code, discountType: details.discountType ?? "fixed", maxPercent: details.maxPercent ?? null, discountValue: details.discountValue ?? "50.00", minimumAmount: details.minimumAmount ?? "150.00",
       active: input.active ?? true, kind: "public", userId: customerId, title: details.title, description: details.description ?? null,
       startsAt: istDayStart(input.startsOn), expiresAt: istDayEnd(input.endsOn), perUserLimit: "perUserLimit" in details ? details.perUserLimit : 1, maxRedemptions: details.maxRedemptions ?? null,
       posters: details.posters ?? null, appliesTo: details.appliesTo ?? null, maxDiscount: details.maxDiscount ?? null, emoji: details.emoji ?? "🏷️", theme: "welcome", communities: [], source: "admin", locked: true, createdBy: actor.id,
@@ -359,7 +399,10 @@ export async function updatePromotion(id: string, patch: PromotionDetails & { ac
     changes.source = row.kind === "public" ? row.source : "admin";
   }
   // Festival / sports codes keep their generated wording and value; posters can be added to any code.
-  const editable = row.kind === "public" ? patch : { posters: patch.posters, appliesTo: patch.appliesTo, maxDiscount: patch.maxDiscount };
+  const editable = row.kind === "public" ? patch
+    : { posters: patch.posters, appliesTo: patch.appliesTo, maxDiscount: patch.maxDiscount, discountType: patch.discountType, discount: patch.discount, minimum: patch.minimum, perUserLimit: patch.perUserLimit, maxRedemptions: patch.maxRedemptions, maxPercent: patch.maxPercent };
+  // Changing the value or limits of a generated festival/sports code locks it, so the daily sync keeps the owner's version.
+  if (row.kind !== "public" && (patch.discount !== undefined || patch.discountType || patch.minimum !== undefined || patch.perUserLimit !== undefined || patch.maxRedemptions !== undefined || patch.maxPercent !== undefined)) changes.locked = true;
   Object.assign(changes, detailChanges(editable, row));
   if (patch.unlock && row.kind !== "public") changes.locked = false;
   const [updated] = await db.update(coupons).set(changes).where(eq(coupons.id, id)).returning();

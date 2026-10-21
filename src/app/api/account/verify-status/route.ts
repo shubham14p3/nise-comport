@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
-import { users, walletEntries } from "@/db/schema";
+import { couponCredits, users, walletEntries } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
@@ -17,10 +17,12 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const user = await requireUser();
-    const earned = await db.select({ reference: walletEntries.reference }).from(walletEntries).where(sql`${walletEntries.userId} = ${user.id} and ${walletEntries.reference} like 'verify:%'`);
+    const wallet = await db.select({ reference: walletEntries.reference }).from(walletEntries).where(sql`${walletEntries.userId} = ${user.id} and ${walletEntries.reference} like 'verify:%'`);
+    const credits = await db.select({ reference: couponCredits.reference }).from(couponCredits).where(sql`${couponCredits.reference} like ${`welcome:%:${user.id}`}`);
+    const earned = [...wallet.map((row) => String(row.reference).split(":")[1]), ...credits.map((row) => String(row.reference).split(":")[1])];
     return NextResponse.json({
       missing: missingDetails(user), smsEnabled: otpChannels().length > 0, whatsappEnabled: otpChannels().includes("whatsapp"), rewards: VERIFY_REWARD_RUPEES,
-      earned: earned.map((row) => String(row.reference).split(":")[1]),
+      earned,
       user: { name: user.name, email: isPlaceholderEmail(user.email) ? "" : user.email, phone: user.phone ?? "", whatsapp: user.whatsapp ?? "" },
     }, { headers: { "cache-control": "private, no-store" } });
   } catch (error) { return apiError(error); }

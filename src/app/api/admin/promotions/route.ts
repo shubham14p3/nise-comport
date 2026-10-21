@@ -19,7 +19,7 @@ const text3 = z.object({ en: z.string().max(300).optional(), hi: z.string().max(
 const posters = z.object({ en: z.string().max(200).optional(), hi: z.string().max(200).optional(), bn: z.string().max(200).optional() });
 const details = {
   names: text3.optional(), description: text3.nullable().optional(),
-  discountType: z.enum(["fixed", "percent"]).optional(), discount: z.number().positive().max(100_000).optional(), minimum: z.number().min(0).max(100_000).optional(),
+  discountType: z.enum(["fixed", "percent", "balance"]).optional(), maxPercent: z.number().int().min(1).max(100).nullable().optional(), discount: z.number().positive().max(100_000).optional(), minimum: z.number().min(0).max(100_000).optional(),
   perUserLimit: z.number().int().min(1).max(50).nullable().optional(), maxRedemptions: z.number().int().min(1).max(100_000).nullable().optional(), customerPhone: z.string().max(20).nullable().optional(),
   posters: posters.nullable().optional(), emoji: z.string().max(16).nullable().optional(),
   appliesTo: z.object({ categories: z.array(z.string().max(80)).max(60).optional(), services: z.array(z.string().max(80)).max(60).optional() }).nullable().optional(),

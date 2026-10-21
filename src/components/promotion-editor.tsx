@@ -21,7 +21,7 @@ export default function PromotionEditor({ promotion, onDone, onCancel }: { promo
   const [code, setCode] = useState(promotion?.code ?? "");
   const [names, setNames] = useState<Record<Lang, string>>({ en: promotion?.names.en ?? "", hi: promotion && promotion.names.hi !== promotion.names.en ? promotion.names.hi : "", bn: promotion && promotion.names.bn !== promotion.names.en ? promotion.names.bn : "" });
   const [blurb, setBlurb] = useState<Record<Lang, string>>({ en: promotion?.blurb?.en ?? "", hi: promotion?.blurb?.hi ?? "", bn: promotion?.blurb?.bn ?? "" });
-  const [discountType, setDiscountType] = useState<"fixed" | "percent">(promotion?.discountType ?? "fixed");
+  const [discountType, setDiscountType] = useState<"fixed" | "percent" | "balance">(promotion?.discountType ?? "fixed");
   const [discount, setDiscount] = useState(String(promotion?.discount ?? 50));
   const [minimum, setMinimum] = useState(String(promotion?.minimum ?? 150));
   const [startsOn, setStartsOn] = useState(promotion?.startsOn ?? today);
@@ -31,6 +31,7 @@ export default function PromotionEditor({ promotion, onDone, onCancel }: { promo
   const [posters, setPosters] = useState<Partial<Record<Lang, string>>>(promotion?.posters ?? {});
   const [scope, setScope] = useState<Scope | null>(promotion?.appliesTo ?? null);
   const [maxDiscount, setMaxDiscount] = useState(promotion?.maxDiscount ? String(promotion.maxDiscount) : "");
+  const [maxPercent, setMaxPercent] = useState(String(promotion?.maxPercent ?? 20));
   const [audience, setAudience] = useState<"everyone" | "customer">("everyone");
   const [customerPhone, setCustomerPhone] = useState("");
   const [busy, setBusy] = useState(false);
@@ -45,9 +46,9 @@ export default function PromotionEditor({ promotion, onDone, onCancel }: { promo
         return;
       }
       const details = {
-        names, description: blurb.en.trim() ? blurb : null, discountType, discount: Number(discount), minimum: Number(minimum),
+        names, description: blurb.en.trim() ? blurb : null, discountType, discount: Number(discount), maxPercent: discountType === "balance" ? Number(maxPercent) : null, minimum: Number(minimum),
         perUserLimit: perUser ? Number(perUser) : null, maxRedemptions: maxUses ? Number(maxUses) : null, posters,
-        appliesTo: scope, maxDiscount: discountType === "percent" && maxDiscount ? Number(maxDiscount) : null,
+        appliesTo: scope, maxDiscount: (discountType === "percent" || discountType === "balance") && maxDiscount ? Number(maxDiscount) : null,
         ...(!promotion && audience === "customer" ? { customerPhone } : {}),
       };
       if (!promotion && audience === "customer" && customerPhone.length !== 10) { setError("Enter the customer's 10-digit mobile number."); setBusy(false); return; }
@@ -85,10 +86,13 @@ export default function PromotionEditor({ promotion, onDone, onCancel }: { promo
         <div className="pe-seg" role="group" aria-label="Discount type">
           <button type="button" className={discountType === "fixed" ? "is-on" : undefined} aria-pressed={discountType === "fixed"} onClick={() => setDiscountType("fixed")}>₹ Rupees off</button>
           <button type="button" className={discountType === "percent" ? "is-on" : undefined} aria-pressed={discountType === "percent"} onClick={() => setDiscountType("percent")}>% Percent off</button>
+          <button type="button" className={discountType === "balance" ? "is-on" : undefined} aria-pressed={discountType === "balance"} onClick={() => setDiscountType("balance")}>₹ Balance</button>
         </div>
         <div className="pe-grid">
-          <label className="field"><span className="field__label">{discountType === "percent" ? "Percent off" : "Rupees off"}</span><input type="number" min={1} max={discountType === "percent" ? 50 : 5000} value={discount} onChange={(event) => setDiscount(event.target.value)} required/></label>
+          <label className="field"><span className="field__label">{discountType === "percent" ? "Percent off" : discountType === "balance" ? "Total balance (₹)" : "Rupees off"}</span><input type="number" min={1} max={discountType === "percent" ? 50 : 5000} value={discount} onChange={(event) => setDiscount(event.target.value)} required/></label>
           {discountType === "percent" && <label className="field"><span className="field__label">Most they can save (₹)</span><input type="number" min={1} max={5000} value={maxDiscount} onChange={(event) => setMaxDiscount(event.target.value)} placeholder="No cap"/></label>}
+          {discountType === "balance" && <label className="field"><span className="field__label">Most per order (% of the bill)</span><input type="number" min={1} max={100} value={maxPercent} onChange={(event) => setMaxPercent(event.target.value)} required/><small className="field__hint">₹{discount || 0} balance, max {maxPercent || 0}% per order: a ₹100 order takes ₹{Math.min(Number(discount) || 0, (100 * (Number(maxPercent) || 0)) / 100)}, the rest waits for the next order.</small></label>}
+          {discountType === "balance" && <label className="field"><span className="field__label">Most per order (₹, optional)</span><input type="number" min={1} max={5000} value={maxDiscount} onChange={(event) => setMaxDiscount(event.target.value)} placeholder="No cap"/></label>}
           <label className="field"><span className="field__label">Smallest order (₹)</span><input type="number" min={0} value={minimum} onChange={(event) => setMinimum(event.target.value)} required/><small className="field__hint">0 = works on any order.</small></label>
         </div>
         <p className="field__hint">Codes reduce your service charge or print bill only. Don’t describe them as a discount on an insurance premium or a government fee.</p>

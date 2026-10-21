@@ -41,7 +41,7 @@ export default function VerifyPrompt({ signedIn }: { signedIn: boolean }) {
       <button type="button" className="icon-btn help-dialog__close" aria-label="Close" onClick={() => setOpen(false)}><X size={20}/></button>
       <span className="chip chip--soft"><Gift size={14}/> Earn ₹{status.rewards.phone + status.rewards.email}</span>
       <h2 id="verify-title">Keep your account safe</h2>
-      <p className="muted">Add these once so we can reach you and you can always get back in. Verified mobile: ₹{status.rewards.phone}. Verified email: ₹{status.rewards.email}. Credit goes to your wallet.</p>
+      <p className="muted">Add these once so we can reach you and you can always get back in. Verified mobile: ₹{status.rewards.phone}. Verified email: ₹{status.rewards.email}. The reward is added to your welcome coupon (₹50 in all), which you can use on your orders.</p>
       {status.missing.includes("name") && <NameRow onSaved={refresh}/>}
       {status.missing.includes("whatsapp") && <WhatsAppRow defaultValue={status.user.phone.replace(/^\+91/, "")} onSaved={refresh}/>}
       {status.missing.includes("email") && <EmailRow reward={status.rewards.email} onVerified={refresh}/>}

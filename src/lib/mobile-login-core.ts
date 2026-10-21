@@ -10,7 +10,7 @@ export const CLAIM_DAYS = 7;
 export const CLAIM_REMINDER_HOURS = 48;
 export const WHATSAPP_CODE_HOURS = 48;
 export const MAX_CODE_ATTEMPTS = 5;
-export const VERIFY_REWARD_RUPEES = { phone: 20, email: 20 } as const;
+export const VERIFY_REWARD_RUPEES = { phone: 20, email: 30 } as const;
 /** How long a signed-in person uses the site before the first "add your details" prompt, and how long before it returns. */
 export const VERIFY_PROMPT_FIRST_MS = 3 * 60_000;
 export const VERIFY_PROMPT_REPEAT_MS = 24 * 3600_000;

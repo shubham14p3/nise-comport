@@ -44,6 +44,16 @@ export function cappedDiscount(type: string, value: number, amount: number, maxD
   return Math.max(0, Math.min(amount, Math.round(capped * 100) / 100));
 }
 
+/**
+ * Balance coupon: the customer holds `remaining` rupees, and one order can use at most `maxPercent`% of its
+ * amount (and at most `maxDiscount` rupees, if set). The rest stays for the next order.
+ */
+export function balanceDiscount(remaining: number, amount: number, maxPercent: number | null, maxDiscount: number | null) {
+  const byPercent = maxPercent && maxPercent > 0 ? (amount * maxPercent) / 100 : amount;
+  const capped = Math.min(remaining, byPercent, maxDiscount && maxDiscount > 0 ? maxDiscount : Infinity, amount);
+  return Math.max(0, Math.floor(capped * 100) / 100);
+}
+
 const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 /** Hard-to-guess personal code, e.g. "DIWALI-7KQ2M9XA". */
 export function personalCode(prefix: string, randomIndex: (max: number) => number) {
