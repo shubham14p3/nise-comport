@@ -305,7 +305,7 @@ async function alertRecipients() {
   const people = await db.select({ email: users.email }).from(users).where(and(isNull(users.deletedAt), isNull(users.disabledAt), or(eq(users.role, "admin"), and(eq(users.role, "staff"), sql`${users.permissions} @> '["mail"]'::jsonb`))));
   const shared = process.env.STAFF_ALERT_EMAIL?.trim() || site.email;
   const seen = new Set<string>();
-  return [...people.map((person) => person.email), shared].map((email) => email.trim()).filter((email) => /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email) && !seen.has(email.toLowerCase()) && (seen.add(email.toLowerCase()), true)).slice(0, 25);
+  return [...people.map((person) => person.email), ...shared.split(/[,;\s]+/)].map((email) => email.trim()).filter((email) => /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email) && !seen.has(email.toLowerCase()) && (seen.add(email.toLowerCase()), true)).slice(0, 25);
 }
 
 export async function alertStaff(ticket: typeof mailTickets.$inferSelect, body: string, kind: "new" | "reply" = "new") {
