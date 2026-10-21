@@ -19,6 +19,7 @@ export default async function WelcomePage({ searchParams }: { searchParams: Prom
         body="Hi NISE COMPORT, I scanned your QR code. I need help with: "
         waHref={whatsappLink("Hi NISE COMPORT, I scanned your QR code.")}
         loginHref="/login"/>
+      <p className="welcome__hint">For our own records we count QR scans and button taps, with your device type. We do not record your name or number from a scan. See our <a href="/privacy">privacy policy</a>.</p>
       <p className="welcome__hint">Sign in with your email and mobile number to get a ₹50 welcome balance (₹30 + ₹20) for bike and car insurance.</p>
     </section>
   </main>;
