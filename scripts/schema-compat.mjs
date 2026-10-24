@@ -191,8 +191,8 @@ try {
     console.log(`To apply: npm run db:schema:apply -- --backup-confirmed --confirm ${JSON.stringify(target)}`);
     if (initial.missing.length || plan.blockers.length || nonEmptyPartial.length || probeFailures) process.exitCode = 1;
   } else {
-    if (plan.blockers.length || nonEmptyPartial.length) {
-      throw new Error("Unresolved schema gaps or populated partial tables; no SQL applied.");
+    if (plan.blockers.length || nonEmptyPartial.length || initial.typeMismatch.length) {
+      throw new Error("Unresolved schema gaps, type mismatches or populated partial tables; no SQL applied.");
     }
     if (!plan.pending.length) {
       console.log("\nNo missing additive structures. Nothing changed.");
