@@ -18,6 +18,7 @@
     "seo:check": "node scripts/seo-check.mjs",
     "db:check": "node scripts/db-check.mjs",
     "db:schema:check": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/schema-compat.mjs",
+    "db:claims:inspect": "node scripts/inspect-record-claims.mjs",
     "db:schema:plan": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/schema-compat.mjs",
     "db:schema:apply": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/schema-compat.mjs --apply",
     "db:backup": "node scripts/db-backup.mjs",
