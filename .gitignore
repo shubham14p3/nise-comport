@@ -23,17 +23,17 @@ build
 *.sln
 *.sw?
 
-# Next.js and private customer uploads
-# The built .next is committed so the server never builds (see docs/deploy.md). Only its caches stay out.
-.next/cache/
-.next/dev/
-.next/types/
-.next/trace
-.next/trace-build
-.next/diagnostics/
-.private-uploads/
-coverage/
-*.tsbuildinfo
+# # Next.js and private customer uploads
+# # The built .next is committed so the server never builds (see docs/deploy.md). Only its caches stay out.
+# .next/cache/
+# .next/dev/
+# .next/types/
+# .next/trace
+# .next/trace-build
+# .next/diagnostics/
+# .private-uploads/
+# coverage/
+# *.tsbuildinfo
 # Keep curated legacy brand and gallery assets available to Next.js.
 /public/csc/
 /public/nise-logo.png
