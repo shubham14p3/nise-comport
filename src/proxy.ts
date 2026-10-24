@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isCrossSiteApiRequest } from "@/lib/api-routing";
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const OPAQUE_API = "/api/x7q9m2";
@@ -53,15 +54,9 @@ export function proxy(request: NextRequest) {
 
   // Cron jobs (bearer secret), payment webhooks (signed) and Meta's WhatsApp webhook (signed) come from other servers, not browsers.
   if (pathname.startsWith("/api/") && !SAFE_METHODS.has(request.method) && !pathname.startsWith("/api/cron/") && !pathname.startsWith("/api/webhooks/") && pathname !== "/api/whatsapp/webhook") {
-    const origin = request.headers.get("origin");
-    const fetchSite = request.headers.get("sec-fetch-site");
-    let crossSite = fetchSite === "cross-site";
-    if (origin) {
-      try {
-        const originHost = new URL(origin).host;
-        crossSite = originHost !== host && originHost !== canonical;
-      } catch { crossSite = true; }
-    }
+    const crossSite = isCrossSiteApiRequest(
+      host, canonical, request.headers.get("origin"), request.headers.get("sec-fetch-site"),
+    );
     if (crossSite) {
       if (pathname === OPAQUE_API) return new NextResponse(null, { status: 404, headers: { "cache-control": "no-store" } });
       return NextResponse.json({ error: "This request came from another website and was blocked.", code: "cross_site" }, { status: 403 });
