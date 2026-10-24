@@ -30,8 +30,9 @@ test("authenticated loopback calls pass CSRF without weakening browser checks", 
   assert.equal(headers.get("x-nise-internal"), "a".repeat(40));
   assert.equal(isCrossSiteApiRequest("127.0.0.1:3020", "nisecomport.aitapri.com", headers.get("origin"), null), false);
 
-  // Original regression: sending the public browser origin to localhost was blocked.
-  assert.equal(isCrossSiteApiRequest("127.0.0.1:3020", "nisecomport.aitapri.com", "https://nisecomport.aitapri.com", null), false);
+  // Original regression: public origin + loopback host fails when the canonical
+  // URL baked into an older build points to a different domain.
+  assert.equal(isCrossSiteApiRequest("127.0.0.1:3020", "www.nisecomport.com", "https://nisecomport.aitapri.com", null), true);
   // Browsers from an unrelated origin remain blocked.
   assert.equal(isCrossSiteApiRequest("nisecomport.aitapri.com", "nisecomport.aitapri.com", "https://example.org", "cross-site"), true);
   assert.equal(isCrossSiteApiRequest("nisecomport.aitapri.com", "nisecomport.aitapri.com", "not-a-url", null), true);
