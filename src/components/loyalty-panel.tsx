@@ -18,7 +18,7 @@ export default function LoyaltyPanel() {
     const result = await secureApi<{ settings: LoyaltySettings; history: { count: number; total: number } }>("J5w2D8kM3zT7");
     setSettings(result.settings); setHistory(result.history);
   }
-  useEffect(() => { void load().catch((e) => setError(e instanceof Error ? e.message : "Could not load.")); }, []);
+  useEffect(() => { void Promise.resolve().then(load).catch((e) => setError(e instanceof Error ? e.message : "Could not load.")); }, []);
 
   const change = (index: number, patch: Partial<LoyaltyRule> & { keywordText?: string }) => setSettings((current) => {
     if (!current) return current;
