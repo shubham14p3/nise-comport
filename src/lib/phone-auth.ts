@@ -1,9 +1,8 @@
 import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 import { and, desc, eq, gt, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { hash } from "@node-rs/argon2";
-import { phoneOtps, recordClaims, users } from "@/db/schema";
+import { phoneOtps, recordClaims, sessions, users } from "@/db/schema";
 import { createSession } from "@/lib/auth";
-import { endSessions } from "@/lib/claims";
 import { generatePin } from "@/lib/mobile-login-core";
 import { seal } from "@/lib/vault";
 import { approveClaimsForVerifiedPhone } from "@/lib/claims";
@@ -157,16 +156,24 @@ export async function confirmMobileCredentialReset(phoneInput: string, kind: Mob
   await consume(owner.id, phone, kind === "pin" ? "reset-pin" : "reset-password", code, ip);
   if (kind === "pin") {
     const pin = generatePin((below) => randomInt(0, below));
-    await db.update(users).set({ loginPinHash: await hash(pin), updatedAt: new Date() }).where(eq(users.id, owner.id));
-    await db.update(recordClaims).set({ pinEnc: seal(pin) }).where(and(eq(recordClaims.userId, owner.id), eq(recordClaims.status, "pending")));
-    await endSessions(owner.id);
-    await clearRate(RATE_RULES.pinFailuresPerPhone15m, identity("pin-phone", phone.slice(-10)));
+    const hashed = await hash(pin);
+    let encryptedPin: string | null = null;
+    try { encryptedPin = seal(pin); } catch { /* records PIN display is optional; never break account recovery */ }
+    await db.transaction(async (tx) => {
+      await tx.update(users).set({ loginPinHash: hashed, updatedAt: new Date() }).where(eq(users.id, owner.id));
+      await tx.delete(sessions).where(eq(sessions.userId, owner.id));
+      if (encryptedPin) await tx.update(recordClaims).set({ pinEnc: encryptedPin }).where(and(eq(recordClaims.userId, owner.id), eq(recordClaims.status, "pending")));
+    });
+    await clearRate(RATE_RULES.pinFailuresPerPhone15m, identity("pin-phone", phone.slice(-10))).catch(() => undefined);
     return { pin };
   }
-  await db.update(users).set({
-    passwordHash: await hash(newPassword!), passwordChangedAt: new Date(),
-    mustChangePassword: false, updatedAt: new Date(),
-  }).where(eq(users.id, owner.id));
-  await endSessions(owner.id);
+  const passwordHash = await hash(newPassword!);
+  await db.transaction(async (tx) => {
+    await tx.update(users).set({
+      passwordHash, passwordChangedAt: new Date(),
+      mustChangePassword: false, updatedAt: new Date(),
+    }).where(eq(users.id, owner.id));
+    await tx.delete(sessions).where(eq(sessions.userId, owner.id));
+  });
   return { message: "Password updated. Sign in using your registered mobile number and new password." };
 }
