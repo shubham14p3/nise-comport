@@ -61,17 +61,6 @@ const BLUE = "#0a7bf7";
 const BLUE_700 = "#0660c9";
 const BG = "#f5f7fc";
 
-/** Best-guess label for a profile URL in site.sameAs, so the footer reads "Facebook" not a raw link. */
-function socialLabel(href: string) {
-  const host = (() => { try { return new URL(href).hostname.replace(/^www\./, ""); } catch { return ""; } })();
-  if (host.includes("facebook.com")) return "Facebook";
-  if (host.includes("instagram.com")) return "Instagram";
-  if (host.includes("youtube.com") || host.includes("youtu.be")) return "YouTube";
-  if (host.includes("justdial.com")) return "Justdial";
-  if (host.includes("g.page") || host.includes("maps.app.goo.gl") || host.includes("google.com")) return "Google";
-  return host || "Link";
-}
-
 function render(mail: Mail) {
   const footer = mail.footer ?? `${site.name} · ${site.address.oneLine} · ${site.phones.primary.display}`;
   const detailLines = mail.details?.map((row) => `${row.label}: ${row.value}`) ?? [];
