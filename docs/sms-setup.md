@@ -1,7 +1,6 @@
 # SMS codes (mobile number sign-in)
 
-SMS is off until you add keys. With it on, customers can verify their mobile number in **Profile** and then sign in with
-the number plus a 6-digit SMS code (or the number plus password). Without keys nothing changes and the SMS buttons stay hidden.
+SMS is off until you add valid provider keys **and** a production `OTP_SECRET` (32 or more characters). Customers can always use their existing email/password or mobile/PIN; mobile/password does not depend on SMS. SMS/WhatsApp one-time-code buttons appear only when configured. With a previously verified phone number, customers may use an OTP to recover a PIN or password.
 
 Pick one provider. Both are supported; set `SMS_PROVIDER=msg91` or `fast2sms` if you add keys for both.
 
@@ -17,9 +16,9 @@ Pick one provider. Both are supported; set `SMS_PROVIDER=msg91` or `fast2sms` if
 3. If you have your own DLT-approved template, also set `FAST2SMS_SENDER_ID` and `FAST2SMS_TEMPLATE_ID` to use the DLT route.
 
 ## Check it
-- Run `npm run db:migrate` first (adds the phone code table and the verified-number column).
+- Run `npm run db:schema:check` to verify the existing production database. Do **not** blindly replay all historical migrations or use `db:push` against production.
 - Sign in, open Profile, enter your mobile number, Save, then choose "Verify this number by SMS".
-- Provider request formats were written from their public documentation. If a provider changes its API, the error shows in the server log as `[sms] send failed`.
+- Provider keys only indicate configuration, not live network health. Test one real delivery before announcing the feature. Failed delivery is reported to the user, and no new verification code can be accepted if sending fails.
 
 ## WhatsApp codes (optional)
 Both providers can also send the code on WhatsApp. Add `OTP_CHANNEL=whatsapp,sms` (WhatsApp first, SMS if it fails).
@@ -31,6 +30,12 @@ Both providers can also send the code on WhatsApp. Add `OTP_CHANNEL=whatsapp,sms
 
 ## Safety built in
 - One code per minute and six a day per number, 30 an hour per network, five wrong guesses per code, codes last 10 minutes.
-- Only a number proven by SMS can sign in once SMS is on. A number can be verified on one account only.
+- SMS/WhatsApp code sign-in and self-service mobile recovery require a number previously verified for one account. A registered, unambiguous mobile number may also be used with the account password independently of OTP configuration.
 - A sign-in code request gives the same reply whether or not the number is registered.
 - Changing the number in the profile removes its verified status.
+
+## Configuration and safety
+- Add `OTP_SECRET` (32 or more random characters) to the **backend environment only**; never `NEXT_PUBLIC_` keys or GitHub.
+- Configure `OTP_CHANNEL=sms`, `whatsapp` or `sms,whatsapp` (plus the corresponding provider keys).
+- With no keys or an invalid production OTP secret, the account pages hide self-service mobile recovery and any SMS/WhatsApp OTP choices. Email/password and mobile PIN remain available.
+- Manual staff-assisted PIN recovery requires identity verification; staff must never reset a PIN simply because someone knows the phone number.
