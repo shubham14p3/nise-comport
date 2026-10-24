@@ -95,7 +95,7 @@ export async function sendOtpSms(e164: string, code: string, preferred?: string 
   if (!mobile) throw new PublicError("SMS codes can be sent to Indian mobile numbers only.", 400, { fields: { phone: "Enter an Indian mobile number, e.g. 98765 43210." } });
   // Vault-configured WhatsApp OTP takes precedence when explicitly selected.
   if (preferred === "whatsapp") {
-    const vault = await getIntegration("whatsapp");
+    const vault = await getIntegration("whatsapp").catch(() => null);
     if (vault?.token && vault.phoneId && vault.template) {
       const components: unknown[] = [{ type: "body", parameters: [{ type: "text", text: code }] }];
       const response = await post(`https://graph.facebook.com/v23.0/${encodeURIComponent(vault.phoneId)}/messages`, {
