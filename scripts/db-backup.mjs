@@ -4,10 +4,11 @@
  *   npm run db:backup                 -> backups/nise-comport-2026-10-19_11-30.sql
  *   npm run db:backup -- --keep 30    -> also deletes copies older than the newest 30
  *   npm run db:backup -- --with-sessions  -> also include sign-in sessions and one-time codes (normally left out)
- *   npm run db:backup -- --no-readable    -> skip the readable (decrypted) spreadsheets described below
+ *   npm run db:backup -- --no-readable    -> explicit privacy-first default (SQL only)
+ *   npm run db:backup -- --with-readable  -> OPTIONAL: additionally export decrypted spreadsheets
  *
- * Besides the .sql file (which keeps customer records encrypted, exactly as the site stores them), two READABLE files are saved
- * for you to open in Excel: backups/nise-comport-records-readable-<date>.csv (every customer record, decrypted) and
+ * Besides the .sql file (which keeps customer records encrypted, exactly as the site stores them), two optional READABLE files can be saved
+ * with --with-readable for you to open in Excel: backups/nise-comport-records-readable-<date>.csv (every customer record, decrypted) and
  * backups/nise-comport-pan-readable-<date>.csv (the PAN list, decrypted). Needs RECORDS_ENCRYPTION_KEY / PAN_ENCRYPTION_KEY in .env.
  * These two files are plain text: keep them on an encrypted disk, never commit, email or share them. They are not for db:restore.
  * Aadhaar numbers are shortened to the last four digits, as in the admin screens.
@@ -31,7 +32,8 @@ const args = process.argv.slice(2);
 const keepIndex = args.indexOf("--keep");
 const keep = keepIndex >= 0 ? Number(args[keepIndex + 1]) : 0;
 const withSessions = args.includes("--with-sessions");
-const readable = !args.includes("--no-readable");
+// Privacy-first: never produce decrypted personal-data CSVs unless explicitly requested.
+const readable = args.includes("--with-readable") && !args.includes("--no-readable");
 const SKIP = withSessions ? [] : ["sessions", "email_otps", "phone_otps", "rate_limits"];
 
 const ssl = process.env.DATABASE_SSL?.trim().toLowerCase();
