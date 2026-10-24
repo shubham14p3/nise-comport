@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import { KeyRound, LogOut, Mail, ShieldCheck, Trash2 } from "lucide-react";
 import { passwordProblem, PASSWORD_MIN } from "@/lib/validation";
 import { secureResult } from "@/lib/secure-api-client";
+import { invalidateSessionCache } from "@/lib/session-client";
 
 type ApiResult = { error?: string; message?: string; signedOut?: number; email?: string };
 
@@ -59,6 +60,7 @@ export default function AccountSecurityPanel({ email, emailVerified, activeSessi
     setBusy("");
     if (!ok) { setEmailError(result.error ?? "Could not confirm the new email."); return; }
     setEmailStage("start"); setEmailCode(""); setEmailMessage(`Your sign-in email is now ${result.email ?? newEmail}.`); setNewEmail("");
+    invalidateSessionCache();
     router.refresh();
   }
 
@@ -77,6 +79,7 @@ export default function AccountSecurityPanel({ email, emailVerified, activeSessi
     const { ok, result } = await call("J9r5W2bC8nX1", { password: deletePassword, confirmation });
     setBusy("");
     if (!ok) { setDeleteError(result.error ?? "Could not delete your account."); return; }
+    invalidateSessionCache();
     router.push("/"); router.refresh();
   }
 
