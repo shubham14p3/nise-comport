@@ -45,6 +45,13 @@ export function typedMobile(raw: string) {
   return digits.slice(0, 10);
 }
 
+/** Email-created accounts can opt into PIN sign-in, but only after a PIN hash
+ * has been deliberately provisioned for the account. A saved profile phone
+ * number alone never enables PIN login. Signup history stays unchanged. */
+export function loginPinHashForAccount(account: { loginPinHash?: string | null; signupMethod?: string } | null | undefined): string | null {
+  return account?.loginPinHash || null;
+}
+
 export function pinProblem(pin: string): string {
   if (!/^\d{6}$/.test(String(pin ?? ""))) return "Your PIN is exactly 6 digits.";
   return "";
