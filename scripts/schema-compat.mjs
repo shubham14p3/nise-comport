@@ -65,6 +65,23 @@ const client = new pg.Client({
   connectionTimeoutMillis: 10000,
 });
 
+function quoteIdentifier(value) {
+  if (!/^[a-z][a-z0-9_]*$/.test(value)) throw new Error("Unexpected SQL identifier in migration inventory.");
+  return '"' + value + '"';
+}
+
+/** Never access or print customer rows; only check whether an existing table is empty. */
+async function nonEmptyPartialTables(tables) {
+  const nonEmpty = [];
+  for (const table of tables) {
+    const check = await client.query(
+      `SELECT EXISTS (SELECT 1 FROM public.${quoteIdentifier(table)} LIMIT 1) AS has_rows`,
+    );
+    if (check.rows[0]?.has_rows) nonEmpty.push(table);
+  }
+  return nonEmpty;
+}
+
 async function inventory() {
   const rows = (await client.query(`
     SELECT cls.relname AS table_name, att.attname AS column_name,
@@ -150,8 +167,15 @@ try {
   }
   const initial = drift(before);
   const plan = planRepair(expected, before.tables, steps, before.indices);
+  const nonEmptyPartial = await nonEmptyPartialTables(plan.partialTables);
   printGroup(initial.missing, "MISSING TABLES / COLUMNS");
-  printGroup(plan.blockers, "UNSAFE OR UNDOCUMENTED GAPS (MANUAL REVIEW)");
+  printGroup([...plan.blockers, ...nonEmptyPartial.map((table) =>
+    `Existing partial table ${table} HAS ROWS; automated column repair blocked to preserve data`
+  )], "UNSAFE OR UNDOCUMENTED GAPS (MANUAL REVIEW)");
+  if (plan.partialTables.length) {
+    console.log(`\nPartially created tables (add columns only if EMPTY): ${plan.partialTables.join(", ")}`);
+    for (const table of plan.partialTables) console.log(`  ${nonEmptyPartial.includes(table) ? "BLOCKED: HAS ROWS" : "EMPTY: eligible for guarded repair"} ${table}`);
+  }
   console.log(`\nPlanned safe additive statements: ${plan.pending.length}`);
   for (const step of plan.pending) console.log(`  ${step.kind.padEnd(6)} ${step.table}${step.column ? "." + step.column : ""} [${step.name}]`);
   console.log(`\nIndexes on existing tables not automatically rebuilt: ${plan.deferredIndexes.length}`);
@@ -165,9 +189,11 @@ try {
     const probeFailures = await criticalQueries();
     console.log(`\nTo back up locally: npm run db:backup -- --no-readable`);
     console.log(`To apply: npm run db:schema:apply -- --backup-confirmed --confirm ${JSON.stringify(target)}`);
-    if (initial.missing.length || plan.blockers.length || probeFailures) process.exitCode = 1;
+    if (initial.missing.length || plan.blockers.length || nonEmptyPartial.length || probeFailures) process.exitCode = 1;
   } else {
-    if (plan.blockers.length) throw new Error("Unresolved table/column gaps; no SQL applied.");
+    if (plan.blockers.length || nonEmptyPartial.length) {
+      throw new Error("Unresolved schema gaps or populated partial tables; no SQL applied.");
+    }
     if (!plan.pending.length) {
       console.log("\nNo missing additive structures. Nothing changed.");
     } else {
@@ -176,6 +202,13 @@ try {
         await client.query("SET LOCAL lock_timeout = '5s'");
         await client.query("SET LOCAL statement_timeout = '60s'");
         await client.query("SELECT pg_advisory_xact_lock(hashtext('nise-schema-additive-sync-v1'))");
+        // Prevent concurrent writes between the emptiness check and adding
+        // required columns, including NOT NULL columns without defaults.
+        for (const table of plan.partialTables) {
+          await client.query(`LOCK TABLE public.${quoteIdentifier(table)} IN ACCESS EXCLUSIVE MODE NOWAIT`);
+        }
+        const populated = await nonEmptyPartialTables(plan.partialTables);
+        if (populated.length) throw new Error(`Existing table(s) contain customer rows: ${populated.join(", ")}. No schema changes applied.`);
         for (const [i, step] of plan.pending.entries()) {
           console.log(`APPLY ${i + 1}/${plan.pending.length}: ${step.kind} ${step.table}${step.column ? "." + step.column : ""}`);
           await client.query(step.sql);
