@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const user = await requireUser();
-    return NextResponse.json({ ...(await myRecords(user)), smsEnabled: otpChannels().length > 0, whatsappEnabled: otpChannels().includes("whatsapp") }, { headers: { "cache-control": "private, no-store" } });
+    return NextResponse.json({ ...(await myRecords(user)), smsEnabled: otpChannels().includes("sms"), whatsappEnabled: otpChannels().includes("whatsapp") }, { headers: { "cache-control": "private, no-store" } });
   } catch (error) { return apiError(error); }
 }
 
