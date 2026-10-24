@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { orderChannels, otpChannels, whatsappConfigured } from "../src/lib/sms-core.ts";
 
-const KEYS = ["SMS_PROVIDER","OTP_CHANNEL","MSG91_AUTH_KEY","MSG91_TEMPLATE_ID","MSG91_WHATSAPP_NUMBER","MSG91_WHATSAPP_TEMPLATE","FAST2SMS_API_KEY","FAST2SMS_WHATSAPP_MESSAGE_ID","WHATSAPP_PROVIDER","META_WA_TOKEN","META_WA_PHONE_ID","META_WA_TEMPLATE"];
+const KEYS = ["SMS_PROVIDER","OTP_CHANNEL","OTP_SECRET","NODE_ENV","MSG91_AUTH_KEY","MSG91_TEMPLATE_ID","MSG91_WHATSAPP_NUMBER","MSG91_WHATSAPP_TEMPLATE","FAST2SMS_API_KEY","FAST2SMS_WHATSAPP_MESSAGE_ID","WHATSAPP_PROVIDER","META_WA_TOKEN","META_WA_PHONE_ID","META_WA_TEMPLATE"];
 function withEnv(values: Record<string, string>, run: () => void) {
   const saved = Object.fromEntries(KEYS.map((key) => [key, process.env[key]]));
   for (const key of KEYS) delete process.env[key];
@@ -23,3 +23,20 @@ test("Meta is picked when its keys are set, and the customer choice goes first",
   assert.deepEqual(orderChannels("whatsapp"), ["whatsapp", "sms"]);
   assert.deepEqual(orderChannels("nonsense"), ["sms", "whatsapp"]);
 }));
+
+test("production disables OTP even with provider keys when OTP_SECRET is absent", () => {
+  withEnv({ NODE_ENV: "production", SMS_PROVIDER: "msg91", MSG91_AUTH_KEY: "test-key", MSG91_TEMPLATE_ID: "test-template" }, () => {
+    assert.deepEqual(otpChannels(), []);
+  });
+  withEnv({ NODE_ENV: "production", SMS_PROVIDER: "msg91", MSG91_AUTH_KEY: "test-key", MSG91_TEMPLATE_ID: "test-template", OTP_SECRET: "x".repeat(32) }, () => {
+    assert.deepEqual(otpChannels(), ["sms"]);
+  });
+});
+test("production OTP requires the full key set, not a partial provider configuration", () => {
+  withEnv({ NODE_ENV: "production", MSG91_AUTH_KEY: "test-key", OTP_SECRET: "x".repeat(32) }, () => {
+    assert.deepEqual(otpChannels(), []);
+  });
+  withEnv({ NODE_ENV: "production", OTP_CHANNEL: "sms,whatsapp", META_WA_TOKEN: "tok", META_WA_PHONE_ID: "123", META_WA_TEMPLATE: "otp", OTP_SECRET: "x".repeat(32) }, () => {
+    assert.deepEqual(otpChannels(), ["whatsapp"]);
+  });
+});
