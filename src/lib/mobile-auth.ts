@@ -1,5 +1,5 @@
 import { randomBytes, randomInt } from "node:crypto";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { hash, verify } from "@node-rs/argon2";
 import { contacts, recordClaims, users } from "@/db/schema";
 import { createSession, type User } from "@/lib/auth";
@@ -40,7 +40,10 @@ export async function mobileSignIn(phoneInput: string, pin: string, ip: string) 
     const wait = secondsUntilWindowEnds(Date.now(), RATE_RULES.pinFailuresPerPhone15m.windowSeconds);
     throw new RateLimitError(`Too many wrong PINs, so sign-in for this number is paused for ${humanDuration(wait)}. Message us on WhatsApp and we will reset your PIN.`, wait);
   }
-  const found = await db.select().from(users).where(and(eq(users.phone, e164), eq(users.signupMethod, "mobile"), isNull(users.deletedAt), isNull(users.disabledAt))).limit(2);
+  // A PIN may be enabled on an existing email account too. Require a server-provisioned
+  // Argon2 PIN hash and an unambiguous active phone match; never infer access from
+  // a profile phone number alone or change signup_method.
+  const found = await db.select().from(users).where(and(eq(users.phone, e164), isNotNull(users.loginPinHash), isNull(users.deletedAt), isNull(users.disabledAt))).limit(2);
   const user = found.length === 1 ? found[0] : null;
   const valid = user?.loginPinHash ? await verify(user.loginPinHash, pin).catch(() => false) : (await verify(await dummyHash(), pin).catch(() => false), false);
   if (!user || !valid) {
@@ -95,7 +98,8 @@ export async function mobileSignUp(input: { phone: string; name: string; whatsap
 /** Staff reset a customer's PIN: a new random PIN (shown once to staff), the old sessions end and the lock is cleared. */
 export async function resetPin(staff: { id: string; name: string }, phoneInput: string) {
   const { e164, digits } = mobileOrThrow(phoneInput);
-  const found = await db.select().from(users).where(and(eq(users.phone, e164), eq(users.signupMethod, "mobile"), isNull(users.deletedAt))).limit(2);
+  // Staff may reset an explicitly enabled PIN regardless of original signup method.
+  const found = await db.select().from(users).where(and(eq(users.phone, e164), isNotNull(users.loginPinHash), isNull(users.deletedAt), isNull(users.disabledAt))).limit(2);
   if (found.length !== 1) throw new PublicError("No mobile-PIN account uses this number.", 404);
   const pin = generatePin((below) => randomInt(0, below));
   await db.update(users).set({ loginPinHash: await hash(pin), updatedAt: new Date() }).where(eq(users.id, found[0].id));
