@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { clientIp } from "@/lib/http";
+import { internalApiHeaders, internalApiOrigin } from "@/lib/api-routing";
 import {
   emptySecureFailure, openSecureBinaryRequest, openSecureRequest,
   secureBinary, secureJson, type SecureApiContext,
@@ -240,25 +241,9 @@ async function internalFetch(request: NextRequest, target: { method: string; pat
   const secret = process.env.INTERNAL_API_TOKEN;
   if (!secret || secret.length < 32) throw new Error("Internal API transport is not configured.");
 
-  // Explicit environment switch. Both modes call the local Node listener instead
-  // of leaving the server through the public hostname / LiteSpeed reverse proxy.
-  // APP_ENV=prod uses MilesWeb :3020; APP_ENV=local uses next dev :3000.
-  // An optional INTERNAL_API_PORT supports custom local/hosting ports.
-  const mode = (process.env.APP_ENV || (process.env.NODE_ENV === "production" ? "prod" : "local")).trim().toLowerCase();
-  if (mode !== "prod" && mode !== "local") throw new Error("APP_ENV must be 'prod' or 'local'.");
-  const rawPort = process.env.INTERNAL_API_PORT || (mode === "prod" ? "3020" : "3000");
-  const port = Number(rawPort);
-  if (!/^\d{1,5}$/.test(rawPort) || !Number.isInteger(port) || port < 1 || port > 65535) {
-    throw new Error("INTERNAL_API_PORT must be a valid TCP port.");
-  }
-  const url = new URL(target.path, `http://127.0.0.1:${port}`);
-  const headers = new Headers();
-  headers.set("x-nise-internal", secret);
-  // The authenticated server-to-server fetch targets the loopback listener.
-  // Its Origin must match that local host; forwarding the browser's public
-  // Origin causes the proxy CSRF check to reject a legitimate internal call.
-  // Direct browser requests still undergo the normal same-origin checks.
-  headers.set("origin", url.origin);
+  // Use loopback for both modes, preserving the API token and CSRF checks.
+  const url = new URL(target.path, internalApiOrigin(process.env));
+  const headers = internalApiHeaders(secret, url);
 
   const cookie = request.headers.get("cookie");
   if (cookie) headers.set("cookie", cookie);
