@@ -110,7 +110,7 @@ async function criticalQueries(failClosed = false, skipped = new Set()) {
     "users", "rate_limits", "email_otps", "sessions", "coupons",
     "coupon_blocks", "coupon_credits", "hardware_items",
     "mail_tickets", "mail_messages", "mail_attachments", "mail_sync",
-    "qr_scans", "record_claims", "record_flags", "outreach_log", "outreach_settings",
+    "qr_scans", "mobile_record_claims", "mobile_record_flags", "outreach_log", "outreach_settings",
   ];
   let failed = 0;
   console.log("\nCritical read-only SQL probes (LIMIT 0):");
