@@ -85,3 +85,67 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;`,
   assert.equal(plan.pending.at(-1).kind, "fk");
   assert.equal(plan.pending.at(-1).constraint, "mail_messages_ticket_fk");
 });
+
+test("partially created record_claims table gets exact SQL definitions only with empty-table guard", () => {
+  const files = [{
+    name: "0029_mobile_claims.sql",
+    content: `CREATE TABLE IF NOT EXISTS "record_claims" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+      "user_id" uuid NOT NULL REFERENCES "users"("id") ON DELETE CASCADE,
+      "phone" text NOT NULL,
+      "status" text DEFAULT 'pending' NOT NULL,
+      "matched_count" integer DEFAULT 0 NOT NULL,
+      "pin_enc" text,
+      "method" text,
+      "code_hash" text,
+      "code_expires_at" timestamp with time zone,
+      "code_attempts" integer DEFAULT 0 NOT NULL,
+      "expires_at" timestamp with time zone NOT NULL,
+      "reminded_at" timestamp with time zone,
+      "decided_by" uuid REFERENCES "users"("id") ON DELETE SET NULL,
+      "decided_at" timestamp with time zone,
+      "created_at" timestamp with time zone DEFAULT now() NOT NULL
+    );
+    --> statement-breakpoint
+    CREATE UNIQUE INDEX IF NOT EXISTS "record_claims_one_open" ON "record_claims" ("user_id", "phone") WHERE "status" IN ('pending', 'approved');`,
+  }];
+  const steps = migrationSteps(files);
+  const original = steps.find((s) => s.kind === "table");
+  assert.equal(original.columns.length, 15);
+  const expected = new Map([["record_claims", new Set(original.columns)]]);
+  const existing = new Map([["record_claims", new Set([
+    "id", "user_id", "status", "method", "decided_by", "decided_at", "created_at",
+  ])]]);
+  const plan = planRepair(expected, existing, steps);
+  assert.deepEqual(plan.blockers, []);
+  assert.deepEqual(plan.partialTables, ["record_claims"]);
+  const adds = plan.pending.filter((s) => s.kind === "partial-column");
+  assert.deepEqual(adds.map((s) => s.column), [
+    "phone", "matched_count", "pin_enc", "code_hash", "code_expires_at",
+    "code_attempts", "expires_at", "reminded_at",
+  ]);
+  assert.ok(adds.every((s) => s.requiresEmptyTable && s.sql.startsWith('ALTER TABLE "record_claims" ADD COLUMN IF NOT EXISTS')));
+  assert.match(adds.find((s) => s.column === "phone").sql, /text NOT NULL;/);
+  assert.match(adds.find((s) => s.column === "expires_at").sql, /timestamp with time zone NOT NULL;/);
+  assert.ok(plan.pending.some((s) => s.kind === "index" && s.requiresEmptyTable));
+});
+
+test("CREATE TABLE definitions with numeric commas and JSON quoted commas stay intact", () => {
+  const [table] = migrationSteps([{
+    name: "test.sql",
+    content: `CREATE TABLE "parts" (
+      "id" uuid PRIMARY KEY,
+      "amount" numeric(10, 2) NOT NULL,
+      "flags" jsonb DEFAULT '{"en":"a,b"}'::jsonb NOT NULL,
+      "label" text DEFAULT 'A, B'
+    );`,
+  }]);
+  assert.deepEqual(table.columns, ["id", "amount", "flags", "label"]);
+  const expected = new Map([["parts", new Set(table.columns)]]);
+  const existing = new Map([["parts", new Set(["id"])]]);
+  const plan = planRepair(expected, existing, [table]);
+  assert.deepEqual(plan.blockers, []);
+  assert.equal(plan.pending.filter((s) => s.kind === "partial-column").length, 3);
+  assert.match(plan.pending.find((s) => s.column === "amount").sql, /numeric\(10, 2\)/);
+  assert.match(plan.pending.find((s) => s.column === "flags").sql, /a,b/);
+});
