@@ -33,7 +33,7 @@ if (!["postgres:", "postgresql:"].includes(target.protocol)) {
 }
 
 const sslSetting = process.env.DATABASE_SSL?.trim().toLowerCase();
-const useSsl = sslSetting ? sslSetting !== "false" : process.env.NODE_ENV === "production";
+const useSsl = sslSetting ? sslSetting !== "false" : !["localhost", "127.0.0.1", "::1"].includes(target.hostname);
 const { Pool } = pg;
 
 const pool = new Pool({
@@ -70,7 +70,7 @@ try {
   console.log(`  Drizzle migration table: ${info.migrations_table ? "present" : "not created yet"}`);
 
   if (!info.users_table || !info.migrations_table) {
-    console.log("\nConnection is working. Run `npm run db:migrate` (or `npm run db:setup`) to make the NISE schema ready.");
+    console.log("\nRun `npm run db:schema:check` for a read-only compatibility audit. Do not blindly migrate an existing live database.");
   }
 } catch (error) {
   console.error("✗ PostgreSQL connection failed");
