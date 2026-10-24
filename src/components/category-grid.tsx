@@ -10,7 +10,7 @@ export default function CategoryGrid({ locale = "en", countLabel }: { locale?: L
   return <div className="cat-grid">
     {categoryMeta.map((meta, index) => {
       const count = servicesInCategory(meta.slug).length;
-      return <Link key={meta.slug} href={`/services?category=${meta.slug}`} className={`cat-tile tone-${meta.tone}`} style={{ animationDelay: `${index * 45}ms` }}>
+      return <Link prefetch={false} key={meta.slug} href={`/services?category=${meta.slug}`} className={`cat-tile tone-${meta.tone}`} style={{ animationDelay: `${index * 45}ms` }}>
         <span className="cat-tile__icon"><CategoryIcon icon={meta.icon} size={26}/></span>
         <span className="cat-tile__body">
           <strong>{meta.short[locale]}</strong>
