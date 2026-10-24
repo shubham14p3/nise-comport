@@ -370,8 +370,10 @@ export const activityLog = pgTable("activity_log", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("activity_log_created_idx").on(table.createdAt), index("activity_log_permission_created_idx").on(table.permission, table.createdAt)]);
 
-/** A signed-in person whose mobile number matches imported records. Records stay hidden until staff or a code approves it. */
-export const recordClaims = pgTable("record_claims", {
+/** Separate from the 9,890 legacy register-based approvals in record_claims.
+ * Modern mobile-record claims are never automatically approved by an imported
+ * legacy claim; staff approval or verified phone ownership is required. */
+export const recordClaims = pgTable("mobile_record_claims", {
   id: uuid("id").defaultRandom().primaryKey(), userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   phone: text("phone").notNull(), status: text("status").notNull().default("pending"), matchedCount: integer("matched_count").notNull().default(0),
   /** The PIN sealed for the staff reference; removed once the claim is decided. */
@@ -380,14 +382,14 @@ export const recordClaims = pgTable("record_claims", {
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(), remindedAt: timestamp("reminded_at", { withTimezone: true }),
   decidedBy: uuid("decided_by").references(() => users.id, { onDelete: "set null" }), decidedAt: timestamp("decided_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [index("record_claims_status_idx").on(table.status, table.createdAt), index("record_claims_user_idx").on(table.userId)]);
+}, (table) => [index("mobile_record_claims_status_idx").on(table.status, table.createdAt), index("mobile_record_claims_user_idx").on(table.userId)]);
 
 /** "This isn't me": a customer says a record shown to them is not theirs. */
-export const recordFlags = pgTable("record_flags", {
+export const recordFlags = pgTable("mobile_record_flags", {
   id: uuid("id").defaultRandom().primaryKey(), userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   claimId: uuid("claim_id").references(() => recordClaims.id, { onDelete: "set null" }), recordId: uuid("record_id"), note: text("note"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(), resolvedAt: timestamp("resolved_at", { withTimezone: true }),
-}, (table) => [index("record_flags_open_idx").on(table.resolvedAt, table.createdAt)]);
+}, (table) => [index("mobile_record_flags_open_idx").on(table.resolvedAt, table.createdAt)]);
 
 /** One uploaded Excel register and what came out of each sheet. */
 export const recordImports = pgTable("record_imports", {
