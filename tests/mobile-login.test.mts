@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { checkMobile, claimExpiry, claimIsOpen, claimReminderDue, generatePin, isPlaceholderEmail, isWeakPin, missingDetails, ownRecordView, pinProblem, placeholderEmail, promptDue, rewardReference, typedMobile } from "../src/lib/mobile-login-core.ts";
+import { checkMobile, claimExpiry, claimIsOpen, claimReminderDue, generatePin, isPlaceholderEmail, isWeakPin, loginPinHashForAccount, missingDetails, ownRecordView, pinProblem, placeholderEmail, promptDue, rewardReference, typedMobile } from "../src/lib/mobile-login-core.ts";
 
 test("mobile numbers: formats and junk", () => {
   for (const good of ["9876543210", "98765 43210", "98765-43210", "+91 98765 43210", "919876543210", "09876543210", "+91-(98765)-43210", "6000000001"]) {
@@ -58,4 +58,11 @@ test("customers see a first name and the service only", () => {
   assert.deepEqual(Object.keys(view).sort(), ["date", "id", "name", "nextRenewal", "service", "vehicle"]);
   assert.equal(view.name, "RAMESH");
   assert.equal(rewardReference("email", "u1"), "verify:email:u1");
+});
+
+test("email accounts can explicitly enable mobile PIN login without changing their signup method", () => {
+  assert.equal(loginPinHashForAccount({ signupMethod: "email", loginPinHash: null }), null);
+  assert.equal(loginPinHashForAccount({ signupMethod: "email", loginPinHash: "argon2-hash" }), "argon2-hash");
+  assert.equal(loginPinHashForAccount({ signupMethod: "mobile", loginPinHash: "other-argon2-hash" }), "other-argon2-hash");
+  assert.equal(loginPinHashForAccount(null), null);
 });
