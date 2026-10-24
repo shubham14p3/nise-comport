@@ -16,6 +16,7 @@ import { promoDict, shortDate } from "@/lib/promo-i18n";
 import { useLocale } from "@/lib/use-locale";
 import { takeReturn } from "@/lib/after-login";
 import { secureApi } from "@/lib/secure-api-client";
+import { getSessionUser, invalidateSessionCache } from "@/lib/session-client";
 import { isStaffRole, STAFF_HOME } from "@/lib/staff-routes";
 import { passwordProblem, PASSWORD_MIN } from "@/lib/validation";
 
@@ -72,11 +73,14 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
 
   // Staff with no saved page to return to go straight to the staff desk.
   async function done() {
+    // Clear the anonymous session cache after successful authentication, and
+    // signal persistent layout providers (offers) to load signed-in state.
+    invalidateSessionCache();
     let target = takeReturn();
     if (target === "/profile") {
       try {
-        const session = await secureApi<{ user: { role: string } | null }>("C4w7G2hN6kP9");
-        if (isStaffRole(session.user?.role)) target = STAFF_HOME;
+        const user = await getSessionUser();
+        if (isStaffRole(user?.role)) target = STAFF_HOME;
       } catch { /* keep the profile fallback */ }
     }
     router.push(target); router.refresh();
