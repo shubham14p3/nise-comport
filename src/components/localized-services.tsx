@@ -6,7 +6,7 @@ import JsonLd from "@/components/json-ld";
 import ServiceBrowser from "@/components/service-browser";
 import SiteHeader from "@/components/site-header";
 import { bengaliServices } from "@/lib/bengali";
-import { categoryMeta, categoryMetaFor } from "@/lib/categories";
+import { categoryMetaFor } from "@/lib/categories";
 import { hindiServices } from "@/lib/hindi";
 import { LOCALE_META, type Locale } from "@/lib/i18n";
 import { serviceName } from "@/lib/i18n-forms";
