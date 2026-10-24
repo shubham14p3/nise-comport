@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import type { Locale } from "@/lib/i18n";
 import { tr } from "@/lib/tr";
@@ -12,7 +12,8 @@ import { tr } from "@/lib/tr";
 export function useShowMore(page: number, resetKey: string) {
   const [state, setState] = useState({ key: resetKey, count: page });
   const count = state.key === resetKey ? state.count : page;
-  return { count, more: () => setState({ key: resetKey, count: count + page }) };
+  const more = useCallback(() => setState((previous) => ({ key: resetKey, count: (previous.key === resetKey ? previous.count : page) + page })), [page, resetKey]);
+  return { count, more };
 }
 
 export default function ShowMore({ shown, total, onMore, label = "items", lang = "en" }: { shown: number; total: number; onMore: () => void; label?: string; lang?: Locale }) {
