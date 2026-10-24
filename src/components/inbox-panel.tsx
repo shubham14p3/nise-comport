@@ -58,8 +58,15 @@ export default function InboxPanel({ onSeen }: { onSeen?: () => void }) {
     void refresh();
     // Opening the inbox marks what's here as seen (after a moment, so the highlights are visible).
     const seen = window.setTimeout(() => { void secureApi("O9c4V7mB2pL5").then(() => onSeen?.()).catch(() => undefined); }, 4000);
-    const timer = window.setInterval(() => void refresh(), 60_000);
-    return () => { active = false; window.clearTimeout(seen); window.clearInterval(timer); };
+    const poll = () => { if (document.visibilityState === "visible") void refresh(); };
+    const timer = window.setInterval(poll, 60_000);
+    document.addEventListener("visibilitychange", poll);
+    return () => {
+      active = false;
+      window.clearTimeout(seen);
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", poll);
+    };
   }, [onSeen]);
 
   async function lead(row: Lead, status: "called" | "done" | "spam") {
