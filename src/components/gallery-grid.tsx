@@ -54,15 +54,16 @@ export default function GalleryGrid({ items }: { items: GalleryEntry[] }) {
   const paging = useShowMore(12, filter);
   const shown = Math.min(paging.count, visible.length);
   const sentinel = useRef<HTMLDivElement>(null);
+  const showNextPage = paging.more;
 
   // Infinite scroll: load the next batch shortly before the sentinel scrolls into view.
   useEffect(() => {
     const node = sentinel.current;
     if (!node || shown >= visible.length || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting)) paging.more(); }, { rootMargin: "600px 0px" });
+    const observer = new IntersectionObserver((entries) => { if (entries.some((entry) => entry.isIntersecting)) showNextPage(); }, { rootMargin: "600px 0px" });
     observer.observe(node);
     return () => observer.disconnect();
-  }, [shown, visible.length]);
+  }, [shown, visible.length, showNextPage]);
 
   useEffect(() => {
     if (open === null) return;
