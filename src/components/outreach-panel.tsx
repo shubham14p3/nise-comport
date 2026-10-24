@@ -32,7 +32,7 @@ export default function OutreachPanel() {
   const [tab, setTab] = useState<Tab>("birthdays");
   const [config, setConfig] = useState<Config | null>(null);
   const loadConfig = useCallback(async () => { try { setConfig(await secureApi<Config>("B5dY8rN2cV6w", { view: "config" })); } catch { /* the lists show their own errors */ } }, []);
-  useEffect(() => { void loadConfig(); }, [loadConfig]);
+  useEffect(() => { void Promise.resolve().then(loadConfig); }, [loadConfig]);
   return <section className="admin-queue outreach">
     <h2><Cake size={17}/> Birthdays &amp; insurance renewals</h2>
     <div className="seg" role="tablist" aria-label="Birthdays and renewals">
