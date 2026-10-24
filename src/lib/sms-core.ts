@@ -15,6 +15,9 @@ export function smsConfigured(): SmsProvider | null {
 
 /** Which channels are switched on, in the order they will be tried. */
 export function otpChannels(): OtpChannel[] {
+  // A delivery API key alone cannot make OTP functional: production also needs
+  // the HMAC secret used to verify received codes. Do not advertise a broken flow.
+  if (process.env.NODE_ENV === "production" && (env("OTP_SECRET")?.length ?? 0) < 32) return [];
   const wanted = (env("OTP_CHANNEL") ?? "sms").toLowerCase().split(/[\s,]+/).filter((item) => item === "sms" || item === "whatsapp") as OtpChannel[];
   return [...new Set(wanted)].filter((channel) => channel === "sms" ? smsConfigured() !== null : whatsappConfigured() !== null);
 }
