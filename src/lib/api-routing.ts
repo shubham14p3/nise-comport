@@ -13,7 +13,7 @@ export function internalApiOrigin(env: ApiRoutingEnv): string {
 
   const rawPort = env.INTERNAL_API_PORT || (mode === "prod" ? "3020" : "3000");
   const port = Number(rawPort);
-  if (!/^\d{1,5}$/.test(rawPort) || !Number.isInteger(port) || port < 1 || port > 65535) {
+  if (!(/^[1-9]\d{0,4}$/).test(rawPort) || !Number.isInteger(port) || port < 1 || port > 65535) {
     throw new Error("INTERNAL_API_PORT must be a valid TCP port.");
   }
 
