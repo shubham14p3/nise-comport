@@ -44,9 +44,9 @@ coverage/
 # photo-index
 
 # local secrets, never commit
-.env
-.env.local
-.env.*.local
+# .env
+# .env.local
+# .env.*.local
 
 # Database backups hold customer data: never commit
 backups/
