@@ -16,7 +16,7 @@ const fields: Record<Provider, { name: string; keys: { id: string; label: string
   ] },
   whatsapp: { name: "WhatsApp OTP", help: "Requires an approved Meta authentication template and Cloud API credentials.", keys: [
     { id: "token", label: "System-user access token", secret: true }, { id: "phoneId", label: "WhatsApp phone number ID" },
-    { id: "template", label: "Approved OTP template name" }, { id: "language", label: "Template language (e.g. en)" },
+    { id: "template", label: "Approved OTP template name" }, { id: "language", label: "Template language (e.g. en)" }, { id: "button", label: "Copy-code button (off to disable; default enabled)" },
   ] },
   email: { name: "Email OTP", help: "Use cPanel → Email Accounts → Connect Devices for SMTP details.", keys: [
     { id: "host", label: "SMTP host" }, { id: "port", label: "SMTP port (465 or 587)" },
