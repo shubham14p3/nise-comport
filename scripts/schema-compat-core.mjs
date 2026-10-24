@@ -12,7 +12,8 @@ export function migrationSteps(files) {
       if (!raw) continue;
       const tableMatch = raw.match(/^CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:"public"\.)?"([^"]+)"\s*\(/i);
       if (tableMatch) {
-        const columns = [...raw.matchAll(/^\s*"([^"]+)"\s+[^\r\n]+/gm)].map((m) => m[1]);
+        const body = raw.slice(raw.indexOf("(", tableMatch[0].length - 1) + 1, raw.lastIndexOf(")"));
+        const columns = [...body.matchAll(/(?:^|[,\n])\s*"([^"]+)"\s+[a-z]/gim)].map((m) => m[1]);
         steps.push({ name, kind: "table", table: tableMatch[1], columns, sql: raw.replace(/^CREATE\s+TABLE\s+/i, "CREATE TABLE IF NOT EXISTS ").replace(/^CREATE TABLE IF NOT EXISTS IF NOT EXISTS /i, "CREATE TABLE IF NOT EXISTS ") });
         continue;
       }
