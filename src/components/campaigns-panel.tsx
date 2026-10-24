@@ -81,8 +81,10 @@ export default function CampaignsPanel() {
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load campaigns."); });
     void refresh();
     // The queue fills over time (one round every 10–30 minutes), so keep it fresh while the tab is open.
-    const timer = window.setInterval(() => void refresh(), 60_000);
-    return () => { active = false; window.clearInterval(timer); };
+    const poll = () => { if (document.visibilityState === "visible") void refresh(); };
+    const timer = window.setInterval(poll, 60_000);
+    document.addEventListener("visibilitychange", poll);
+    return () => { active = false; window.clearInterval(timer); document.removeEventListener("visibilitychange", poll); };
   }, []);
 
   async function act(id: string, action: string, label: string) {
