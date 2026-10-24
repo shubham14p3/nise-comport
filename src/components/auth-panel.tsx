@@ -51,6 +51,9 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
   const [error, setError] = useState(""); const [success, setSuccess] = useState(""); const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [resendIn, setResendIn] = useState(0);
   const [viaSms, setViaSms] = useState(false);
+  const [unavailableChannels, setUnavailableChannels] = useState<("sms" | "whatsapp")[]>([]);
+  const availableSms = smsEnabled && !unavailableChannels.includes("sms");
+  const availableWhatsapp = whatsappEnabled && !unavailableChannels.includes("whatsapp");
   // Mobile number + PIN is the default way in; the toggle switches to email.
   const [method, setMethod] = useState<"mobile" | "email">("mobile");
   const isMobileInput = mode === "signin" && !email.includes("@") && /^[+\d\s()-]{8,}$/.test(email.trim());
@@ -113,8 +116,12 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
   async function requestSmsCode(channel?: "sms" | "whatsapp") {
     setBusy(true); setError(""); setSuccess(""); setFieldErrors({});
     try {
-      const { ok, result } = await post("P3s7K1mW8xQ4", { action: "send", phone: email, website, ...(channel ? { channel } : {}) });
-      if (!ok) { showFailure(result, t.failSend); return; }
+      const { ok, status, result } = await post("P3s7K1mW8xQ4", { action: "send", phone: email, website, ...(channel ? { channel } : {}) });
+      if (!ok) {
+        if (status === 503 && channel) setUnavailableChannels((previous) => previous.includes(channel) ? previous : [...previous, channel]);
+        showFailure(result, t.failSend);
+        return;
+      }
       setViaSms(true); setStage("otp"); setResendIn(result.resendAfter ?? 60); setSuccess(result.message ?? "");
     } finally { setBusy(false); }
   }
@@ -215,7 +222,7 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
           <label className="field"><span className="field__label">{t.phone} <em>{t.optional}</em></span><span className="input-wrap"><span className="input-prefix">+91</span><input type="tel" autoComplete="tel-national" inputMode="tel" maxLength={20} value={phone} onChange={e => setPhone(e.target.value)} placeholder="98765 43210" aria-invalid={Boolean(fieldErrors.phone)}/></span><span className="field__hint">{x.mobileHint}</span>{fieldError("phone")}</label>
           {error && <div className="alert alert--error" role="alert">{error}</div>}
           <button className="btn btn--primary btn--lg btn--block" disabled={busy}>{busy ? t.wait : x.create}<ArrowRight size={18}/></button>
-        </form> : stage === "details" && method === "mobile" ? <MobileAuthForm mode={mode} onDone={done} recoveryEnabled={smsEnabled || whatsappEnabled}/> : stage === "details" ? <form onSubmit={submitDetails} className="auth__form" noValidate>
+        </form> : stage === "details" && method === "mobile" ? <MobileAuthForm mode={mode} onDone={done} recoveryEnabled={availableSms || availableWhatsapp}/> : stage === "details" ? <form onSubmit={submitDetails} className="auth__form" noValidate>
           {mode === "signin"
             ? <label className="field"><span className="field__label">{x.idLabel}</span><span className="input-wrap"><Mail size={18}/><input type="text" autoComplete="username" inputMode="email" autoCapitalize="none" spellCheck={false} required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} placeholder={x.idPh} aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? "email-error" : undefined}/></span>{fieldError("email")}</label>
             : <label className="field"><span className="field__label">{t.email}</span><span className="input-wrap"><Mail size={18}/><input type="email" autoComplete="email" inputMode="email" required maxLength={254} value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? "email-error" : undefined} autoFocus/></span>{fieldError("email")}</label>}
@@ -224,7 +231,7 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
           <div className="hp-field" aria-hidden="true"><label>Website<input tabIndex={-1} autoComplete="off" value={website} onChange={e => setWebsite(e.target.value)}/></label></div>
           {error && <div className="alert alert--error" role="alert">{error}</div>}{success && <div className="alert alert--success" role="status">{success}</div>}
           <button className="btn btn--primary btn--lg btn--block" disabled={busy}>{busy ? t.wait : mode === "signup" ? x.sendCode : t.signin}<ArrowRight size={18}/></button>
-          {mode === "signin" && <div className="auth__links">{isMobileInput && (smsEnabled || whatsappEnabled) ? <>{smsEnabled && <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSmsCode("sms")}>{x.smsCode}</button>}{whatsappEnabled && <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSmsCode("whatsapp")}>Code on WhatsApp</button>}</> : email.includes("@") ? <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSignInCode()}>{t.codeSignin}</button> : null}<Link className="link-btn" href="/forgot-password" onClick={rememberEmailForReset}>{t.forgot}</Link></div>}
+          {mode === "signin" && <div className="auth__links">{isMobileInput && (availableSms || availableWhatsapp) ? <>{availableSms && <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSmsCode("sms")}>{x.smsCode}</button>}{availableWhatsapp && <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSmsCode("whatsapp")}>Code on WhatsApp</button>}</> : email.includes("@") ? <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSignInCode()}>{t.codeSignin}</button> : null}<Link className="link-btn" href="/forgot-password" onClick={rememberEmailForReset}>{t.forgot}</Link></div>}
         </form> : <form onSubmit={verify} className="auth__form" noValidate>
           <label className="field"><span className="field__label">{t.codeLabel}</span><input inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6}" maxLength={6} value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="••••••" className="otp-input" aria-invalid={Boolean(fieldErrors.code)} autoFocus/></label>
           {DEV && <p className="alert alert--dev"><Terminal size={18}/>{t.devHint}</p>}
