@@ -33,7 +33,7 @@ async function loadAll(): Promise<{ people: TeamPerson[]; fromDatabase: boolean 
   return { people: fromDefaults(), fromDatabase: false };
 }
 
-const cachedPublic = unstable_cache(async () => (await loadAll()).people.filter((person) => person.active).map(({ phone: _phone, email: _email, ...person }) => person), ["site-team"], { revalidate: 300, tags: ["site-team"] });
+const cachedPublic = unstable_cache(async () => (await loadAll()).people.filter((person) => person.active).map(({ phone, email, ...person }) => { void phone; void email; return person; }), ["site-team"], { revalidate: 300, tags: ["site-team"] });
 
 /** Active team members in display order, for the public pages. */
 export function publicTeam() { return cachedPublic(); }
