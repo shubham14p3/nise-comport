@@ -18,7 +18,7 @@ export default function MyRecordsPanel() {
   const load = useCallback(async () => {
     try { setData(await secureApi<Data>("R3v8N5pH1wD6")); setError(""); } catch (e) { setError(e instanceof Error ? e.message : "Could not load your records."); }
   }, []);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void Promise.resolve().then(load); }, [load]);
 
   async function submitCode(event: FormEvent) {
     event.preventDefault(); setCodeError(""); setBusy(true);
