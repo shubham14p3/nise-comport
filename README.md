@@ -1,3 +1,5 @@
+> **Production maintenance (October 2026):** Use `npm run db:schema:check` before changing the populated database; do not blindly replay legacy migrations. See `docs/database-safe-sync.md` and `docs/maintenance-scripts.md`. SQL data backups: `npm run db:backup -- --no-readable`.
+
 # NISE COMPORT
 
 Next.js application for NISE COMPORT, the independent CSC / Pragya Kendra service centre in Kharangajhar, Telco, Jamshedpur.
@@ -74,7 +76,7 @@ Setup and upkeep:
 
 ```bash
 npm run db:migrate        # adds the columns, the coupon_redemptions table and all codes to Dec 2028
-npm run offers:sync       # refreshes dates from Google now (also part of npm run db:setup)
+npm run offers:sync       # refreshes dates from Google now (also part of npm run db:schema:check)
 npm run offers:sync -- --dry   # print the code list without touching the database
 ```
 
@@ -131,10 +133,10 @@ Run `npm run db:migrate` for migration 0010.
 ## Your photos (gallery and service pages)
 
 1. Put photos (JPG, PNG, WebP, HEIC…) in `photo-inbox/<service>/`, e.g. `photo-inbox/pan-card/`, `photo-inbox/aadhaar/`, or `photo-inbox/shop/` for the counter and team. Folder names are listed in `photo-inbox/README.md`.
-2. Run `npm run photos`. Each photo is turned upright, stripped of GPS/camera data, resized to 1600 px and saved as WebP with an SEO name (`public/images/gallery/photos/pan-card-telco-jamshedpur-1.webp`), title and alt text in `src/lib/gallery-photos.ts`. Originals move to `photo-inbox/_done/` (never uploaded to GitHub). Running it again skips photos already added.
+2. Run `node --experimental-strip-types scripts/photos.mjs`. Each photo is turned upright, stripped of GPS/camera data, resized to 1600 px and saved as WebP with an SEO name (`public/images/gallery/photos/pan-card-telco-jamshedpur-1.webp`), title and alt text in `src/lib/gallery-photos.ts`. Originals move to `photo-inbox/_done/` (never uploaded to GitHub). Running it again skips photos already added.
 3. Commit `public/images/gallery/photos/` and `src/lib/gallery-photos.ts`, then deploy.
 
-Other ways: `npm run photos -- "C:\path\to\folder"`, `npm run photos -- --service voter-id photo1.jpg photo2.jpg`, or `npm run photos -- https://…/photo.jpg` (your own photos only).
+Other ways: `node --experimental-strip-types scripts/photos.mjs "C:\path\to\folder"`, `node --experimental-strip-types scripts/photos.mjs --service voter-id photo1.jpg photo2.jpg`, or `node --experimental-strip-types scripts/photos.mjs https://…/photo.jpg` (your own photos only).
 
 Photos appear on `/gallery` (filter chips per service, `/gallery?service=pan-card` opens one service), as a "From our desk" strip on that service's page, on the home page, in the image sitemap and as ImageObject data for Google Images.
 
@@ -159,8 +161,8 @@ Run `npm run db:migrate` for migration 0011 (adds `leads.details`).
 - **Pacing:** at most **10 per round**, messages inside a round 25–90 seconds apart, then a random pause of **10–30 minutes** (plus up to a minute) before the next round, a daily limit (default 10) and sending hours 09:00–20:00 IST (after hours or at the limit, it continues next morning at a slightly different time). Set "Messages per round" to 1 to space every single message 10–30 minutes apart. **Preview schedule** on a campaign shows the rounds, or run:
 
   ```bash
-  npm run campaign:preview -- 25                 # 25 messages with the default pacing
-  npm run campaign:preview -- 40 --daily 30 --gap 10-30 --batch 10 --window 9-20
+  node --experimental-strip-types scripts/campaign-preview.mts 25                 # 25 messages with the default pacing
+  node --experimental-strip-types scripts/campaign-preview.mts 40 --daily 30 --gap 10-30 --batch 10 --window 9-20
   ```
 
 - **Send test** sends to the campaign's test numbers only (any time, not counted). **Start**, **Pause**, **Resume**, **Stop** and **Run now** control the real run.
@@ -224,12 +226,12 @@ For local development with the hosted PostgreSQL database:
 ```bash
 npm ci
 npm run db:check
-npm run db:setup
+npm run db:schema:check
 npm run dev
 ```
 
 - `npm run db:check` connects using `DATABASE_URL`, shows only the host/database/user and schema status, and never prints the password.
-- `npm run db:setup` checks the connection, applies all Drizzle migrations, then checks again.
+- `npm run db:schema:check` performs a **read-only** compatibility audit. For production, never run an automated migration blindly; review the plan, back up, and use the additive repair procedure in `docs/database-safe-sync.md`.
 - `/api/health` also performs a live `select 1` check when the Next.js app is running.
 
 When developing on your own computer, set `DATABASE_URL` to the hosting server's public PostgreSQL host. When Next.js is deployed on the same hosting server as PostgreSQL, change only the host portion to `localhost` (or provide a server-level `DATABASE_URL`); the database name, user and encoded password remain the same.
@@ -332,7 +334,7 @@ Set the new environment values (see `.env.example`). The important ones:
 
 ```bash
 npm run seo:check      # after `npm run build && npm start`: checks every sitemap URL
-npm run seo:indexnow   # after a production deploy (needs INDEXNOW_KEY on the server and locally)
+node scripts/indexnow.mjs   # after a production deploy (needs INDEXNOW_KEY on the server and locally)
 python3 scripts/generate-og-images.py   # after adding a service or guide (needs Pillow)
 ```
 
@@ -349,7 +351,7 @@ The previous private `/api/auth/*`, `/api/profile`, `/api/requests*`, `/api/uplo
 Generate a fresh transport keypair and internal token for each environment:
 
 ```bash
-npm run api:keygen
+node scripts/generate-api-transport-key.mjs
 ```
 
 Set all three printed values in the deployment environment. Keep `API_ENVELOPE_PRIVATE_JWK` and `INTERNAL_API_TOKEN` server-only. `NEXT_PUBLIC_API_ENVELOPE_PUBLIC_JWK` is intentionally public.
