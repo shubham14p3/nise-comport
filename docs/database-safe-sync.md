@@ -27,7 +27,7 @@ npm run db:schema:check
 npm run db:backup -- --no-readable
 
 # Repeat the dry-run plan if needed; both commands do the same read-only audit.
-npm run db:schema:plan
+npm run db:schema:check
 ```
 
 The audit prints the **database hostname and name, not its password**, a list of missing tables/columns, safe SQL steps, and a final command containing your database's exact `--confirm` value. Check the hostname and name carefully before proceeding.
@@ -62,7 +62,7 @@ Run from Windows Git Bash:
 
 ```bash
 git pull --ff-only origin dev
-npm run db:claims:inspect
+node scripts/inspect-record-claims.mjs
 npm run db:schema:check
 ```
 
@@ -71,7 +71,7 @@ npm run db:schema:check
 To fix *only the independent missing structures*, after verifying the existing backup:
 
 ```bash
-npm run db:schema:apply-safe -- --backup-confirmed --confirm "nisecomp1_nisecomport@45.199.139.25"
+node --experimental-strip-types scripts/schema-compat.mjs --apply --skip-populated-partials --backup-confirmed --confirm "nisecomp1_nisecomport@45.199.139.25"
 ```
 
 The `--skip-populated-partials` safety mode skips **all** DDL touching `record_claims` and applies the independent safe plan atomically. It is intentionally a **partial** repair. If it prints `PARTIAL SUCCESS` and exits non-zero, that is expected because the incompatible populated `record_claims` schema remains unresolved. Re-run the read-only audit; expect that `record_claims` still fails while independent tables pass.
@@ -123,7 +123,7 @@ git pull --ff-only origin dev
 npm test
 npm run db:schema:check
 # The Oct 24 backup is already saved locally. Confirm you still have it.
-npm run db:schema:apply-safe -- --backup-confirmed --confirm "nisecomp1_nisecomport@45.199.139.25"
+node --experimental-strip-types scripts/schema-compat.mjs --apply --skip-populated-partials --backup-confirmed --confirm "nisecomp1_nisecomport@45.199.139.25"
 npm run db:schema:check
 ```
 
@@ -140,3 +140,7 @@ The schema audit should now list **mobile_record_claims** and **mobile_record_fl
 | Oct 24 | 9,892 | 9,890 | 21,125 | 10,279 | 118 |
 
 The backups are **data-only** and cannot serve as a PostgreSQL schema migration. Restoring them over production would risk data loss; retain them as recovery artifacts, not repair scripts.
+
+### After October 24 schema repair
+
+The 15-item additive repair was applied and a read-only audit reported **0 missing tables/columns and 0 blockers**. Do not rerun the repair unnecessarily. Use `npm run db:schema:check` to verify future changes, and `npm run db:backup` to capture a new dated private backup before deployments. See `docs/maintenance-scripts.md` for the simplified npm command list.
