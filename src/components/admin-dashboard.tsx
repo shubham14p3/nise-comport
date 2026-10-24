@@ -299,7 +299,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
   const active = picked ?? fromHash ?? tabs[0]?.id;
   const clearUnread = useCallback(() => setSummary((value) => value ? { ...value, unread: 0 } : value), []);
   const [railOpen, setRailOpen] = useState(true);
-  useEffect(() => { try { if (window.localStorage.getItem("nc-desk-rail") === "0") setRailOpen(false); } catch { /* ignore */ } }, []);
+  useEffect(() => { try { if (window.localStorage.getItem("nc-desk-rail") === "0") queueMicrotask(() => setRailOpen(false)); } catch { /* ignore */ } }, []);
   function toggleRail() { setRailOpen((open) => { try { window.localStorage.setItem("nc-desk-rail", open ? "0" : "1"); } catch { /* ignore */ } return !open; }); }
   function choose(tab: Tab) { setPicked(tab); window.history.replaceState(null, "", `#${tab}`); window.scrollTo({ top: 0, left: 0, behavior: "instant" }); }
   const first = me.name.split(/\s+/)[0] || "there";
