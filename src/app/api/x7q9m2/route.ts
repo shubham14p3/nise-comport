@@ -240,7 +240,14 @@ async function internalFetch(request: NextRequest, target: { method: string; pat
   const secret = process.env.INTERNAL_API_TOKEN;
   if (!secret || secret.length < 32) throw new Error("Internal API transport is not configured.");
 
-  const url = new URL(target.path, request.nextUrl.origin);
+  // On shared hosting, fetching our public HTTPS hostname from the server itself can
+  // fail (DNS, outbound access, or the reverse proxy). Stay on the same Node process
+  // through its loopback listener; the internal token and proxy checks still apply.
+  // The default production port must match the `start` script in package.json.
+  const origin = process.env.NODE_ENV === "production"
+    ? `http://127.0.0.1:${process.env.INTERNAL_API_PORT || "3020"}`
+    : request.nextUrl.origin;
+  const url = new URL(target.path, origin);
   const headers = new Headers();
   headers.set("x-nise-internal", secret);
   headers.set("origin", request.nextUrl.origin);
