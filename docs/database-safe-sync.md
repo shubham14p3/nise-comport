@@ -107,3 +107,36 @@ The audit is metadata/SQL compatibility only. After that, test a real login, one
 Applying the additive repair intentionally **does not mark whole migrations as applied** because old migrations include data seeding and backfills that the safe sync deliberately skips. Subsequently running `npm run db:migrate` blindly can attempt to replay those migrations. Review/reconcile the migration ledger separately before switching back to standard automated migrations.
 
 The backup contains private customer records. Keep it on a secure local disk and outside GitHub. Because it contains data rather than a standalone database-schema dump, retain the repository's schema/migration SQL alongside the backup for restoration.
+
+## October 19–24 backups: confirmed legacy-vs-mobile claim collision
+
+Three data-only backups dated October 19, October 20, and October 24 were compared without restoring data or exposing customer details. All three contain **9,890 unchanged rows** in the legacy `record_claims` table, each `status=approved`, `method=register`. Their 9,890 users have `from_records=true`; the backup shows zero verified phone timestamps across all 9,892 users. Legacy columns include `claimed_name`, `matched_name`, `mobile_hash`, and `whatsapp_code`, which are not the modern claim model.
+
+Migration 0029 reused the exact `record_claims` name for an unrelated, verification-driven workflow requiring `phone`, `expires_at`, `pin_enc` and code details. Do NOT add fake phone/expiry values to those approved legacy records or treat them as phone-verified: doing so would confuse historical import approvals with proof of mobile-number control.
+
+**Fixed in application schema/migration 0034:** modern claims are now in `mobile_record_claims`, modern flags in `mobile_record_flags`. The existing legacy `record_claims` and `record_flags` (if present) are preserved byte-for-byte and are not part of the new authorization queries. The new tables start empty; mobile access is gated by fresh phone verification or staff approval.
+
+### After pulling the updated `dev` branch
+
+```bash
+git pull --ff-only origin dev
+npm test
+npm run db:schema:check
+# The Oct 24 backup is already saved locally. Confirm you still have it.
+npm run db:schema:apply-safe -- --backup-confirmed --confirm "nisecomp1_nisecomport@45.199.139.25"
+npm run db:schema:check
+```
+
+The schema audit should now list **mobile_record_claims** and **mobile_record_flags** as missing until created, instead of reporting eight missing columns in the populated legacy `record_claims`. The safe schema apply only creates missing tables and selected columns/indexes, never migrates historical claim data.
+
+**Deployment sequencing:** The database DDL is additive and does not affect old running code immediately. Once the audit passes, build locally (`npm run release`) and upload the new `.next` ZIP with cPanel; the updated code must be deployed before using the new mobile-record claims feature. Do not run `npm run db:migrate` against production until the historical migration ledger and colliding 0029 are reconciled.
+
+### Row counts by snapshot
+
+| Snapshot | Users | Register claims | Customer records | Contacts | Coupons |
+|---|---:|---:|---:|---:|---:|
+| Oct 19 | 9,892 | 9,890 | 19,391 | 1 | 118 |
+| Oct 20 | 9,892 | 9,890 | 21,125 | 10,279 | 118 |
+| Oct 24 | 9,892 | 9,890 | 21,125 | 10,279 | 118 |
+
+The backups are **data-only** and cannot serve as a PostgreSQL schema migration. Restoring them over production would risk data loss; retain them as recovery artifacts, not repair scripts.
