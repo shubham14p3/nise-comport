@@ -9,7 +9,7 @@ import { PublicError, isUniqueViolation } from "@/lib/errors";
 import { logActivity } from "@/lib/activity";
 import { checkMobile, generatePin, loginPinHashForAccount, pinProblem, placeholderEmail } from "@/lib/mobile-login-core";
 import { clearRate, enforceRate, hitRate, identity, peekRate, RATE_RULES } from "@/lib/rate-limit";
-import { cleanName } from "@/lib/validation";
+import { cleanName, passwordProblem } from "@/lib/validation";
 import { seal } from "@/lib/vault";
 import { RateLimitError, humanDuration } from "@/lib/errors";
 import { secondsUntilWindowEnds } from "@/lib/rate-limit-core";
@@ -66,15 +66,23 @@ export async function mobileSignIn(phoneInput: string, pin: string, ip: string) 
  * Creates an account from a mobile number and a name, makes a random 6-digit PIN, signs the person in and returns the PIN
  * once (it is stored hashed). If records already exist under the number, a pending claim is opened for staff.
  */
-export async function mobileSignUp(input: { phone: string; name: string; whatsappConsent?: boolean; emailConsent?: boolean }, ip: string) {
+export async function mobileSignUp(input: { phone: string; name: string; password?: string; whatsappConsent?: boolean; emailConsent?: boolean }, ip: string) {
   const { e164, digits } = mobileOrThrow(input.phone);
   const name = cleanName(input.name);
   if (name.length < 2 || name.length > 100) throw new PublicError("Enter your name (at least 2 letters).", 400, { fields: { name: "Enter your name (at least 2 letters)." } });
+  if (input.password) {
+    const problem = passwordProblem(input.password, { email: placeholderEmail(digits), name });
+    if (problem) throw new PublicError(problem, 400, { fields: { password: problem } });
+  }
   await enforceRate(RATE_RULES.mobileSignupPerIpHour, identity("ip", ip), "Too many accounts were created from this network.");
   const [taken] = await db.select({ id: users.id }).from(users).where(and(eq(users.phone, e164), isNull(users.deletedAt))).limit(1);
   if (taken) throw new PublicError("This number already has an account. Sign in with your PIN. If you forgot it, message us on WhatsApp and we will reset it.", 409, { code: "account_exists", fields: { phone: "This number already has an account." } });
   const pin = generatePin((below) => randomInt(0, below));
-  const [loginPinHash, passwordHash] = await Promise.all([hash(pin), hash(randomBytes(32).toString("base64url"))]);
+  // Existing mobile sign-ups retain PIN-only behavior. Customers who opt in to
+  // password access get their own password hash rather than an unknowable random password.
+  const [loginPinHash, passwordHash] = await Promise.all([
+    hash(pin), hash(input.password || randomBytes(32).toString("base64url")),
+  ]);
   let created: User;
   try {
     [created] = await db.insert(users).values({ name, email: placeholderEmail(digits), phone: e164, passwordHash, loginPinHash, signupMethod: "mobile", preferredContact: "whatsapp", passwordChangedAt: new Date() }).returning();
