@@ -268,8 +268,14 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
     let active = true;
     const check = () => secureApi<{ unread: number; waiting: number; callbacks: number }>("I5x2N8kQ3wT6", { count: true }).then((result) => { if (active) setSummary(result); }).catch(() => undefined);
     void check();
-    const timer = window.setInterval(() => void check(), 60_000);
-    return () => { active = false; window.clearInterval(timer); };
+    const poll = () => { if (document.visibilityState === "visible") void check(); };
+    const timer = window.setInterval(poll, 60_000);
+    document.addEventListener("visibilitychange", poll);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", poll);
+    };
   }, []);
   const canMail = isOwner || effectivePermissions.includes("mail");
   const [mailUnread, setMailUnread] = useState(0);
@@ -278,8 +284,14 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
     let active = true;
     const check = () => secureApi<{ unread: number }>("Q3x8M5wT2kB7", { view: "meta" }).then((result) => { if (active) setMailUnread(result.unread); }).catch(() => undefined);
     void check();
-    const timer = window.setInterval(() => void check(), 60_000);
-    return () => { active = false; window.clearInterval(timer); };
+    const poll = () => { if (document.visibilityState === "visible") void check(); };
+    const timer = window.setInterval(poll, 60_000);
+    document.addEventListener("visibilitychange", poll);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", poll);
+    };
   }, [canMail]);
   const hash = useSyncExternalStore(subscribeHash, readHash, () => "");
   const [picked, setPicked] = useState<Tab | null>(null);
