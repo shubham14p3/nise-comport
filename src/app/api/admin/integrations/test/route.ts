@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const token = provider === "facebook" ? c.pageAccessToken : provider === "instagram" ? c.accessToken : c.token;
     const id = provider === "facebook" ? c.pageId : provider === "instagram" ? c.instagramUserId : c.phoneId;
     if (!token || !id) return NextResponse.json({ ok: false, error: "Token and account ID required." }, { status: 400 });
-    const response = await fetch(`https://graph.facebook.com/v23.0/${encodeURIComponent(id)}?fields=id&access_token=${encodeURIComponent(token)}`, { cache: "no-store", signal: AbortSignal.timeout(10000) });
+    const response = await fetch(`https://graph.facebook.com/v23.0/${encodeURIComponent(id)}?fields=id&access_token=${encodeURIComponent(token)}`, { headers: { authorization: `Bearer ${token}` }, cache: "no-store", signal: AbortSignal.timeout(10000) });
     const json = await response.json() as { id?: string; error?: { message?: string } };
     if (!response.ok || !json.id) return NextResponse.json({ ok: false, error: json.error?.message || "Meta validation failed." }, { status: 400 });
     return NextResponse.json({ ok: true, message: "Meta credentials validated against the configured account." });
