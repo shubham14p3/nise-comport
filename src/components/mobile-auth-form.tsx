@@ -11,7 +11,7 @@ import { whatsappHref } from "@/lib/public-contact";
 type Result = { error?: string; fields?: Record<string, string>; pin?: string; hasRecords?: boolean; requiresOtp?: boolean };
 
 /** Sign in (mobile number + 6-digit PIN) or sign up (mobile number + name → a PIN is made and shown once). */
-export default function MobileAuthForm({ mode, onDone }: { mode: "signin" | "signup"; onDone: () => void | Promise<void> }) {
+export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }: { mode: "signin" | "signup"; onDone: () => void | Promise<void>; recoveryEnabled?: boolean }) {
   const [phone, setPhone] = useState(""); const [pin, setPin] = useState(""); const [name, setName] = useState("");
   const [whatsappConsent, setWhatsappConsent] = useState(false); const [emailConsent, setEmailConsent] = useState(false);
   const [showPin, setShowPin] = useState(false); const [busy, setBusy] = useState(false); const [website, setWebsite] = useState("");
@@ -69,7 +69,7 @@ export default function MobileAuthForm({ mode, onDone }: { mode: "signin" | "sig
     <h2 className="pin-reveal__title">Your PIN</h2>
     <p>This is how you sign in next time. We show it only once and keep just a scrambled copy, so write it down or take a screenshot.</p>
     <div className="pin-reveal__box" aria-live="polite"><b>{created.pin}</b><button type="button" className="btn btn--ghost btn--sm" onClick={() => void copyPin()}>{copied ? <Check size={15}/> : <Copy size={15}/>}{copied ? "Copied" : "Copy"}</button></div>
-    {created.hasRecords && <p className="alert alert--success" role="status">We found earlier work under this number. Our team will check it with you before showing it. Share this PIN with us on WhatsApp if we ask.</p>}
+    {created.hasRecords && <p className="alert alert--success" role="status">We found earlier work under this number. Our team will check it with you before showing it. Never share this PIN with anyone, including staff.</p>}
     <label className="check-row"><input type="checkbox" checked={saved} onChange={(e) => setSaved(e.target.checked)}/> I have saved my PIN</label>
     <button type="button" className="btn btn--primary btn--lg btn--block" disabled={!saved} onClick={() => void onDone()}>Continue<ArrowRight size={18}/></button>
   </div>;
@@ -89,7 +89,7 @@ export default function MobileAuthForm({ mode, onDone }: { mode: "signin" | "sig
         <span className="input-wrap"><LockKeyhole size={18}/><input type={showPin ? "text" : "password"} inputMode="numeric" autoComplete="current-password" maxLength={6} required value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="••••••" aria-invalid={Boolean(fields.pin)}/>
           <button type="button" className="icon-btn" aria-label={showPin ? "Hide PIN" : "Show PIN"} onClick={() => setShowPin((value) => !value)}>{showPin ? <EyeOff size={18}/> : <Eye size={18}/>}</button></span>
         {fieldError("pin")}
-        <span className="field__hint">Forgot it? <Link href="/forgot-password?method=mobile">Recover mobile PIN</Link> (verified numbers only), or <a href={whatsappHref("Hello, I forgot my sign-in PIN. Please help me verify my identity and recover my account.")} target="_blank" rel="noopener noreferrer">contact our team</a>.</span></label>
+        <span className="field__hint">Forgot it? {recoveryEnabled && <><Link href="/forgot-password?method=mobile">Recover mobile PIN</Link> (verified numbers only), or </>}<a href={whatsappHref("Hello, I forgot my sign-in PIN. Please help me verify my identity and recover my account.")} target="_blank" rel="noopener noreferrer">contact our team</a>.</span></label>
       : <label className="field"><span className="field__label">Password</span>
           <span className="input-wrap"><LockKeyhole size={18}/><input type={showPin ? "text" : "password"} autoComplete="current-password" required maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your account password"/></span>
           {fieldError("password")}
