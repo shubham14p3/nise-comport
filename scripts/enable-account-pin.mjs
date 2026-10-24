@@ -15,7 +15,7 @@ import { randomInt } from "node:crypto";
 import { existsSync } from "node:fs";
 import { loadEnvFile } from "node:process";
 import pg from "pg";
-import argon2 from "@node-rs/argon2";
+import { hash, verify } from "@node-rs/argon2";
 
 const [emailInput, phoneInput, flag] = process.argv.slice(2);
 const email = String(emailInput || "").trim().toLowerCase();
@@ -37,7 +37,6 @@ if (!process.env.DATABASE_URL) {
 }
 
 const { Client } = pg;
-const { hash, verify } = argon2;
 const client = new Client({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_SSL === "false" ? false : { rejectUnauthorized: false },
