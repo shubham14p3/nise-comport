@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { migrationSteps, planRepair, safeSubsetForPopulatedPartials } from "../scripts/schema-compat-core.mjs";
 
 const sql = [
@@ -163,4 +164,24 @@ test("safe-only mode never applies SQL against a populated partial table", () =>
   assert.ok(result.skipped.has("record_claims"));
   assert.deepEqual(result.executableSteps.map((s) => s.table), ["hardware_items", "coupons"]);
   assert.ok(result.executableSteps.every((s) => !s.sql.includes("DO NOT RUN")));
+});
+
+test("isolate modern verified mobile claims without touching 9890 legacy register approvals", () => {
+  const sql = readFileSync(new URL("../drizzle/0034_isolated_mobile_claims.sql", import.meta.url), "utf8");
+  const steps = migrationSteps([{ name: "0034_isolated_mobile_claims.sql", content: sql }]);
+  assert.deepEqual(steps.filter((s) => s.kind === "table").map((s) => s.table), [
+    "mobile_record_claims", "mobile_record_flags",
+  ]);
+  assert.equal(steps.filter((s) => s.kind === "index").length, 4);
+  assert.match(sql, /REFERENCES "mobile_record_claims"\("id"\)/);
+  assert.equal(/\b(?:INSERT|UPDATE|DELETE|DROP|TRUNCATE)\b/i.test(sql), false);
+  assert.equal(steps.some((s) => ["record_claims", "record_flags"].includes(s.table)), false);
+
+  const expected = new Map(steps.filter((s) => s.kind === "table").map((s) => [s.table, new Set(s.columns)]));
+  const populatedLegacy = new Map([["record_claims", new Set(["id", "user_id", "mobile_hash", "claimed_name", "matched_name", "status"])]]);
+  const plan = planRepair(expected, populatedLegacy, steps);
+  assert.deepEqual(plan.blockers, []);
+  assert.deepEqual(plan.partialTables, []);
+  assert.equal(plan.pending.filter((s) => s.kind === "table").length, 2);
+  assert.equal(plan.pending.every((s) => s.table.startsWith("mobile_record_")), true);
 });
