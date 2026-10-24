@@ -15,7 +15,6 @@ import { findOffer } from "@/lib/offers";
 import { promoDict, shortDate } from "@/lib/promo-i18n";
 import { useLocale } from "@/lib/use-locale";
 import { takeReturn } from "@/lib/after-login";
-import { secureApi } from "@/lib/secure-api-client";
 import { getSessionUser, invalidateSessionCache } from "@/lib/session-client";
 import { isStaffRole, STAFF_HOME } from "@/lib/staff-routes";
 import { passwordProblem, PASSWORD_MIN } from "@/lib/validation";
