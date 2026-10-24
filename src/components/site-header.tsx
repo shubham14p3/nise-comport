@@ -111,7 +111,7 @@ export default function SiteHeader() {
   }, [menuOpen]);
 
   // Close the account menu on outside click or Escape, and after navigation.
-  useEffect(() => { setAccountOpen(false); }, [pathname]);
+  useEffect(() => { queueMicrotask(() => setAccountOpen(false)); }, [pathname]);
   useEffect(() => {
     if (!accountOpen) return;
     const onPointer = (event: MouseEvent) => { if (!accountRef.current?.contains(event.target as Node)) setAccountOpen(false); };
