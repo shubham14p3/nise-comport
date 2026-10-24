@@ -2,6 +2,7 @@
 // Reads APP_ENV and NEXT_PUBLIC_SITE_URL from your environment file. The site URL
 // is baked into the build. Upload .next separately, never commit it to Git.
 import { spawnSync, execSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, writeFileSync } from "node:fs";
 import { loadEnvFile } from "node:process";
 import { join } from "node:path";
@@ -25,8 +26,32 @@ try {
 const env = { ...process.env, APP_ENV: mode, NEXT_PUBLIC_SITE_URL: SITE, NEXT_TELEMETRY_DISABLED: "1" };
 
 const key = (process.env.NEXT_PUBLIC_API_ENVELOPE_PUBLIC_JWK ?? "").trim();
-if (!existsSync(".env.local") && !existsSync(".env") && !key) {
-  console.error("No .env.local or .env found. The browser key (NEXT_PUBLIC_API_ENVELOPE_PUBLIC_JWK) is baked into the build, so create it first.");
+const privateKey = (process.env.API_ENVELOPE_PRIVATE_JWK ?? "").trim();
+if (!key || !privateKey) {
+  console.error("A matching public/private API envelope JWK pair is required before release.");
+  process.exit(1);
+}
+
+function keyFingerprint(jwk) {
+  if (jwk?.kty !== "EC" || jwk?.crv !== "P-256" || !jwk.x || !jwk.y) throw new Error("Expected a P-256 ECDH key.");
+  return createHash("sha256").update([jwk.crv, jwk.x, jwk.y].join("|")).digest("hex");
+}
+let publicFingerprint;
+try {
+  const publicJwk = JSON.parse(key);
+  const privateJwk = JSON.parse(privateKey);
+  if (!privateJwk.d || publicJwk.d) throw new Error("Private/public JWK material is incorrectly assigned.");
+  publicFingerprint = keyFingerprint(publicJwk);
+  if (publicFingerprint !== keyFingerprint(privateJwk)) throw new Error("Browser public JWK does not match server private JWK.");
+} catch (error) {
+  console.error("API envelope key validation failed:", error instanceof Error ? error.message : String(error));
+  process.exit(1);
+}
+
+const parsedSite = new URL(SITE);
+if ((mode === "prod" && ["localhost", "127.0.0.1", "0.0.0.0"].includes(parsedSite.hostname))
+    || (mode === "local" && parsedSite.hostname === "nisecomport.aitapri.com")) {
+  console.error("APP_ENV and NEXT_PUBLIC_SITE_URL point to different environments.");
   process.exit(1);
 }
 
@@ -40,6 +65,11 @@ if (missing.length) { console.error(`\nBuild exited cleanly but .next is incompl
 let commit = "unknown commit";
 try { commit = execSync("git rev-parse --short HEAD", { encoding: "utf8" }).trim() + (execSync('git status --porcelain -- . ":!.next"', { encoding: "utf8" }).trim() ? " + uncommitted changes" : ""); } catch { /* not a git folder */ }
 writeFileSync(join(".next", "BUILT_FROM"), `${commit} at ${new Date().toISOString().replace("T", " ").slice(0, 16)} UTC\n`);
+writeFileSync(join(".next", "DEPLOY_INFO.json"), JSON.stringify({
+  mode, siteUrl: SITE, publicKeyFingerprint: publicFingerprint,
+  port: process.env.INTERNAL_API_PORT || (mode === "prod" ? "3020" : "3000"),
+}, null, 2) + "\n");
+
 
 console.log(`\nBuild ready (${commit}). Deploy .next over SSH without committing it:\n`);
 console.log("  tar -czf nise-next.tar.gz --exclude=\'.next/cache\' --exclude=\'.next/dev\' .next");
