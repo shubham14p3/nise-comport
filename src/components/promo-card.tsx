@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { CalendarPlus, CalendarDays, Clock3, TriangleAlert } from "lucide-react";
 import { CodeValue, UseNowButton } from "@/components/code-reveal";
 import { daysBetween } from "@/lib/festivals";
