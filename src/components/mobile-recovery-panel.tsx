@@ -26,6 +26,8 @@ export default function MobileRecoveryPanel({ channels }: { channels: Channel[] 
   const [newPin, setNewPin] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [website, setWebsite] = useState("");
+  const [unavailable, setUnavailable] = useState<Channel[]>([]);
+  const available = channels.filter((channel) => !unavailable.includes(channel));
 
   function chooseKind(next: Kind) {
     setKind(next); setStep("phone"); setCode(""); setPassword(""); setConfirmPassword("");
@@ -35,13 +37,16 @@ export default function MobileRecoveryPanel({ channels }: { channels: Channel[] 
   async function sendCode(channel: Channel) {
     const mobile = checkMobile(phone);
     if (!mobile.ok) { setError(mobile.error); return; }
-    if (!channels.includes(channel)) { setError("This recovery channel is not enabled."); return; }
+    if (!available.includes(channel)) { setError("This recovery channel is not available."); return; }
     setBusy(true); setError(""); setMessage("");
-    const { ok, result } = await secureResult<Result>("F3m8J6pQ1vT9", {
+    const { ok, status, result } = await secureResult<Result>("F3m8J6pQ1vT9", {
       action: "send", kind, phone: mobile.e164, channel, website,
     });
     setBusy(false);
-    if (!ok) { setError(result.error ?? "Mobile recovery is temporarily unavailable."); return; }
+    if (!ok) {
+      if (status === 503) setUnavailable((previous) => previous.includes(channel) ? previous : [...previous, channel]);
+      setError(result.error ?? "Mobile recovery is temporarily unavailable."); return;
+    }
     setMessage(result.message ?? "If eligible, a recovery code was sent.");
     setStep("code");
   }
@@ -91,9 +96,10 @@ export default function MobileRecoveryPanel({ channels }: { channels: Channel[] 
     <div className="hp-field" aria-hidden="true"><label>Website<input tabIndex={-1} autoComplete="off" value={website} onChange={(event) => setWebsite(event.target.value)}/></label></div>
     {step === "phone" ? <div>
       <div className="auth__links">
-        {channels.includes("sms") && <button className="btn btn--primary btn--sm" type="button" disabled={busy || phone.length !== 10} onClick={() => void sendCode("sms")}>Send SMS code</button>}
-        {channels.includes("whatsapp") && <button className="btn btn--ghost btn--sm" type="button" disabled={busy || phone.length !== 10} onClick={() => void sendCode("whatsapp")}>Send WhatsApp code</button>}
+        {available.includes("sms") && <button className="btn btn--primary btn--sm" type="button" disabled={busy || phone.length !== 10} onClick={() => void sendCode("sms")}>Send SMS code</button>}
+        {available.includes("whatsapp") && <button className="btn btn--ghost btn--sm" type="button" disabled={busy || phone.length !== 10} onClick={() => void sendCode("whatsapp")}>Send WhatsApp code</button>}
       </div>
+      {!available.length && <p className="field__hint">Mobile verification is currently unavailable. Please use email recovery or contact the service desk.</p>}
       {error && <p className="alert alert--error" role="alert">{error}</p>}
     </div> : <form onSubmit={(event) => void confirmCode(event)}>
       <p className="field__hint">{message}</p>
