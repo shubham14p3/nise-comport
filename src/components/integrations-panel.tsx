@@ -67,6 +67,14 @@ export default function IntegrationsPanel() {
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
         <button className="btn btn--primary" disabled={busy || !Object.values(values).some(Boolean)} type="submit">Save encrypted credentials</button>
+        {statuses.find(item => item.provider === provider)?.configured && <button className="btn btn--ghost" disabled={busy} type="button" onClick={async () => {
+          setBusy(true); setNotice("");
+          try {
+            const result = await secureApi<{ message: string }>("I2t7V4mC9nK5", { provider });
+            setNotice(result.message);
+          } catch (error) { setNotice(error instanceof Error ? error.message : "Connection test failed."); }
+          finally { setBusy(false); }
+        }}>Test connection</button>}
         {statuses.find(item => item.provider === provider)?.configured && <button className="btn btn--ghost" disabled={busy} type="button" onClick={() => void submit("delete")}>Remove credentials</button>}
       </div>
     </form>
