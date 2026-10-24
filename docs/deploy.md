@@ -1,62 +1,100 @@
-# Deploying NISE COMPORT
+# NiSE COMPORT deployment — MilesWeb Node.js
 
-## 1. Netlify (preview of the public pages only)
-`netlify.toml` sets Node 22 and the Next.js output folder. In Netlify → Site settings → Environment variables add at least:
-- `INTERNAL_API_TOKEN` (random, 32+ characters), `OTP_SECRET` (random, 32+), `CRON_SECRET` (random, 16+)
-- `NEXT_PUBLIC_SITE_URL` = your Netlify preview URL
-- `DATABASE_URL`: leave empty for a look-only preview, or use a separate throwaway Postgres (never the live one). Public pages fall back to built-in content when the database is unreachable.
+Production URL: **https://nisecomport.aitapri.com**. Node listens on port **3020**. Working directory: `~/nisecomport.aitapri.com`. Startup command: **`npm start`**. Node.js version: **26.12.1**.
 
-What works on a preview without a database: home, services, about, team, pricing, FAQ, areas, guides, offers, track page, legal pages.
-What does not: sign-in, requests, payments, admin, WhatsApp. They need the database and secrets.
+> MilesWeb runs out of process slots when compiling Next.js (`EAGAIN`). **Do not run `npm run build`, `npm run release`, `npm run init`, `npm run db:setup`, or `npm run db:migrate` on MilesWeb.** The existing PostgreSQL database is retained unchanged; inspect schema and obtain approval before any migration. Build locally, ship only the production build, and restart the panel app.
 
-## 2. cPanel / MilesWeb (live site): the same method as AI Tapri and Satsang Vani
+## Environment switches
 
-**The server never builds.** Building Next.js on shared hosting fails (too many processes, out of memory). You build `.next` on your PC, commit it with the code, and the server only installs, migrates and starts.
+Keep the following in the **server's own** `.env.local` (outside Git):
 
-**Secrets never go through git.** This repository is public. `.env`, `.env.local`, `backups/`, `myexcel/` and `*.zip` are ignored. The live `.env` is uploaded once by hand and stays on the server.
-
-### One-time panel setup
-| Field | Value |
-| --- | --- |
-| Mode | Automatic (Production) |
-| Node version | 22 or newer |
-| Startup command | `npm run init` |
-| Working directory | `nisecomport`, a folder in Root next to `public_html`, never inside it |
-| Proxy path | blank |
-| Port | `3002` (must equal `-p 3002` in `package.json` `start`; pick another free port in both places if 3002 is taken) |
-| WebSocket upgrade | on |
-
-Then upload your `.env` (the full file) into that folder once. Extracting a new zip over the folder does not remove it.
-
-`npm run init` on the server does: `npm ci` (with dev tools) → `db:migrate` → `check-build` → `next start -p 3002`.
-
-### Releasing a change (on your PC, Git Bash, in the project folder)
-```bash
-git pull
-npm install
-npm run release        # builds .next for https://www.nisecomport.com
-git add -A
-git commit -m "build: release"
-git push
-git archive --format=zip -o ../nisecomport-upload.zip HEAD
+```dotenv
+APP_ENV=prod
+INTERNAL_API_PORT=3020
+NEXT_PUBLIC_SITE_URL=https://nisecomport.aitapri.com
+CANONICAL_HOST_REDIRECT=true
 ```
-Then in File Manager: open the `nisecomport` folder, delete the old `.next`, upload `nisecomport-upload.zip`, extract it (overwrite), and press Restart on the Node app.
 
-The log should end with `Schema is up to date`, `Serving build … of <commit>`, `Ready`.
+For development on Windows use a separate `.env.local`:
 
-`NEXT_PUBLIC_*` values (including the browser key `NEXT_PUBLIC_API_ENVELOPE_PUBLIC_JWK`) are baked in at build time from the `.env` on your PC. The server's `.env` must hold the matching private key `API_ENVELOPE_PRIVATE_JWK`, so use the same `.env` on both.
+```dotenv
+APP_ENV=local
+INTERNAL_API_PORT=3000
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+CANONICAL_HOST_REDIRECT=false
+```
 
-### After the first start
-1. Open `https://www.nisecomport.com/api/health`.
-2. In cPanel → Cron Jobs add `curl -s -X POST -H "Authorization: Bearer <CRON_SECRET>" https://www.nisecomport.com/api/cron/cleanup` every 10-15 minutes, `/api/cron/whatsapp` every 5 minutes and `/api/cron/offers` once a day (and `/api/cron/mail` every 5 minutes if the message centre mailbox is connected).
-3. `npm run smtp:check` (SSH or Terminal) to test email.
+**Important:** `APP_ENV` selects the port of the internal encrypted API hop. It does **not** change `DATABASE_URL`. Use a separate development database if you must not touch production records during development.
 
-### When something breaks
-| Symptom | Cause |
-| --- | --- |
-| `No complete build in .next` | You pushed code without `npm run release`, or `.next` was not committed |
-| Panel 404 while the log says `Ready` | Panel port and `-p` in `start` differ, or the proxy path is not blank |
-| `next: Permission denied` / `Bus error` | `node_modules` was uploaded; never upload it (`npm run init` reinstalls) |
-| `spawn … EAGAIN` / `SIGABRT` | Something ran `next build` on the server; use `npm run release` on your PC |
-| Site shows old content | Rebuild with `npm run release`, commit, re-upload |
-| Emails link to localhost | Built with plain `npm run build`; use `npm run release` |
+Both environments use a same-process loopback connection to the internal Node listener. The encrypted gateway adds a server-only `INTERNAL_API_TOKEN` and a loopback `Origin` header; the Next.js proxy still rejects unauthenticated private API calls and cross-site browser writes.
+
+The browser's `NEXT_PUBLIC_API_ENVELOPE_PUBLIC_JWK` is baked into the local build. It must match the server's `API_ENVELOPE_PRIVATE_JWK` or encrypted requests will fail. Do not put private keys or credentials in Git.
+
+## Build on Windows Git Bash
+
+Before any `git pull`, **make backups of local `.env.local` files**. Earlier versions of the repository incorrectly tracked `.env.local` despite the intent to ignore it. Do not lose your local secrets while updating the checkout; never transfer them via public Git.
+
+```bash
+cd ~/Downloads/nise-comport
+git pull origin dev
+npm test
+npm run release
+```
+
+Confirm that the release output says `APP_ENV=prod` and the **actual** deployment URL above. To ship a production build, set the matching production variables in your *local* build environment first. Changing `NEXT_PUBLIC_*` values on MilesWeb alone will not change compiled client JavaScript.
+
+The `.next/` directory is intentionally ignored by Git. Archive it directly; exclude caches and development assets:
+
+```bash
+tar -czf nise-next.tar.gz --exclude='.next/cache' --exclude='.next/dev' .next
+scp -P 22 nise-next.tar.gz nisecomp2@45.199.139.25:~/nisecomport.aitapri.com/
+```
+
+Do **not** upload Windows `node_modules/` to Linux. Leave Linux-installed production dependencies on the server.
+
+## Install build on MilesWeb
+
+1. Stop the Node.js application in the MilesWeb panel. Do not start a second copy using SSH.
+2. SSH to the server and run:
+
+```bash
+ssh -p 22 nisecomp2@45.199.139.25
+cd ~/nisecomport.aitapri.com
+mv .next .next-previous
+tar -xzf nise-next.tar.gz
+node scripts/check-build.mjs
+```
+
+3. If the complete build is found, use the panel's **Restart** button. Keep `.next-previous` until the deployed app passes smoke tests; archive/clean it after confirmation. Transferring a tarball does not automatically deploy code outside `.next`; ensure the server source, `next.config.ts`, and package version match the build where necessary.
+
+## Smoke tests — every deployment
+
+**Public endpoints (safe checks):**
+
+```bash
+curl -I --max-time 15 https://nisecomport.aitapri.com/
+curl -i --max-time 15 https://nisecomport.aitapri.com/api/health
+curl -i --max-time 15 http://127.0.0.1:3020/api/health
+```
+
+**Browser tests (using a test account):**
+
+1. Load `/login`, sign in, confirm session and dashboard; log out.
+2. From `/forgot-password`, request a code and verify it actually reaches the mailbox. Do not post OTPs in logs or chats.
+3. Test one non-destructive authenticated dashboard query. Verify session cookies persist after page reload.
+4. Inspect the encrypted `/api/x7q9m2` response. Outer HTTP 200 is **not** proof of success: application status is sealed inside the response.
+5. Verify ordinary cross-site browser requests to private APIs are still denied; never disable the proxy or expose `INTERNAL_API_TOKEN` to the browser.
+
+**Logs:**
+
+```bash
+grep -Ei 'opaque-api|cross_site|fetch failed|smtp|password|postgres|error' ~/persistent_app_*.log | tail -60
+```
+
+If you get `fetch failed`, verify `APP_ENV=prod`, the internal port matches the listener, and `curl http://127.0.0.1:3020/api/health` succeeds. If you get `cross_site`, confirm the new build uses a loopback `Origin` matching `127.0.0.1:3020` (regression tests are in `tests/api-routing.test.mts`). These errors happen before SMTP or password validation. For email failures that remain, run `npm run smtp:check` on MilesWeb (it checks `SMTP_PASSWORD`, **not** `SMTP_PASS`).
+
+## Security and secrets
+
+**Urgent repository history issue:** the `dev` branch previously contained a tracked `.env.local`. Adding it to `.gitignore` does **not** untrack it or erase history. Back up your environment file, remove it from Git tracking deliberately, rotate exposed credentials, and consider history cleanup across every branch. Avoid blindly pulling a commit that deletes your only copy of the environment file. Existing database-encryption keys require a planned migration; changing them arbitrarily can make stored data unreadable.
+
+Never run automatic database migrations when deploying a UI/API fix.
