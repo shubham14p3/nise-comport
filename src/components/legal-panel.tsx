@@ -21,7 +21,7 @@ export default function LegalPanel() {
     const current = result.pages.find((page) => page.slug === (keep ?? slug)) ?? result.pages[0];
     setSlug(current.slug); setText(current.body); setLoaded(true);
   }
-  useEffect(() => { void load().catch((e) => { setError(e instanceof Error ? e.message : "Could not load pages."); setLoaded(true); }); // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { void Promise.resolve().then(() => load()).catch((e) => { setError(e instanceof Error ? e.message : "Could not load pages."); setLoaded(true); }); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const page = pages.find((item) => item.slug === slug);
