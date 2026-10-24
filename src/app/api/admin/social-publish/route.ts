@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     // Instagram creation is asynchronous. Poll status_code before media_publish.
     let ready = false;
     for (let attempt = 0; attempt < 6; attempt++) {
-      const response = await fetch(`https://graph.facebook.com/v23.0/${encodeURIComponent(id)}?fields=status_code&access_token=${encodeURIComponent(credentials.accessToken)}`, { cache: "no-store", signal: AbortSignal.timeout(10000) });
+      const response = await fetch(`https://graph.facebook.com/v23.0/${encodeURIComponent(id)}?fields=status_code&access_token=${encodeURIComponent(credentials.accessToken)}`, { headers: { authorization: `Bearer ${credentials.accessToken}` }, cache: "no-store", signal: AbortSignal.timeout(10000) });
       const status = await response.json() as { status_code?: string };
       if (status.status_code === "FINISHED") { ready = true; break; }
       if (status.status_code === "ERROR" || status.status_code === "EXPIRED") break;
