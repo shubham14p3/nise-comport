@@ -46,6 +46,8 @@ export function basePath(pathname: string) {
  * service; other content pages go to the translated home page; app screens stay put.
  */
 export function localizedHref(pathname: string, target: Locale, _translated?: { hi: readonly string[]; bn: readonly string[] }) {
+  // Preserve the public call signature while translations are looked up through hasTranslation.
+  void _translated;
   if (isAppPath(pathname)) return null;
   const base = basePath(pathname);
   if (target === "en") return base;
