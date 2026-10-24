@@ -14,6 +14,7 @@ const ROUTE = "/api/x7q9m2";
 type Payload = { o?: string; i?: Record<string, unknown> };
 
 const OPS = {
+  "S9p2C6mV4tK8": { method: "POST", path: "/api/admin/social-publish" },
   "I8n3T5gR2sV7": { method: "GET", path: "/api/admin/integrations" },
   "I4n9S6vC1pT8": { method: "POST", path: "/api/admin/integrations" },
   "Q7m4kP2vL9sD": { method: "POST", path: "/api/auth/password" },
