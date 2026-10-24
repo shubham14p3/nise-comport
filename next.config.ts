@@ -17,6 +17,8 @@ const noindex = [{ key: "X-Robots-Tag", value: "noindex, nofollow" }];
 const nextConfig: NextConfig = {
   // Read at run time from node_modules (support-mailbox reader); never bundled.
   serverExternalPackages: ["imapflow", "mailparser"],
+  // Keep file tracing inside this application on shared /var/www hosting.
+  outputFileTracingRoot: process.cwd(),
   poweredByHeader: false,
   reactStrictMode: true,
   compress: true,
