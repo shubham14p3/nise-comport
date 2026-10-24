@@ -115,7 +115,7 @@ export default function TrackPage() {
     <section className="section section--flush"><div className="container"><PanStatusTool/></div></section>
 
     <section className="section section--tint"><div className="container">
-      <div className="note-card"><Search size={22}/><p>Lost your reference number or not sure which portal to check? Send us a message with your name and roughly when you applied — we keep a note of applications we've helped submit and can help you find the right reference.</p></div>
+      <div className="note-card"><Search size={22}/><p>Lost your reference number or not sure which portal to check? Send us a message with your name and roughly when you applied — we keep a note of applications we&apos;ve helped submit and can help you find the right reference.</p></div>
       <div className="page-hero__ctas" style={{ marginTop: 16 }}>
         <a className="btn btn--wa btn--lg" href={whatsapp} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> WhatsApp us</a>
         <a className="btn btn--glass btn--lg" href={`tel:${site.phones.primary.e164}`}><Phone size={18}/> Call</a>
