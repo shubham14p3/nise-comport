@@ -68,7 +68,7 @@ export default function PromotionEditor({ promotion, onDone, onCancel }: { promo
     {!eventCode && <>
       <fieldset className="pe-card"><legend>1 · The code</legend>
         <div className="pe-grid">
-          <label className="field"><span className="field__label">Code</span><input value={code} disabled={Boolean(promotion)} required onChange={(event) => setCode(event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 20))} placeholder="e.g. RENEW50"/><small className="field__hint">Letters, numbers and dashes. Can't be changed later.</small></label>
+          <label className="field"><span className="field__label">Code</span><input value={code} disabled={Boolean(promotion)} required onChange={(event) => setCode(event.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 20))} placeholder="e.g. RENEW50"/><small className="field__hint">Letters, numbers and dashes. Can&apos;t be changed later.</small></label>
           <label className="field"><span className="field__label">Name (English)</span><input value={names.en} onChange={(event) => setNames({ ...names, en: event.target.value })} required maxLength={80} placeholder="Insurance renewal week"/></label>
         </div>
         <details className="pe-more"><summary>Hindi, Bengali names and short lines (optional)</summary>
@@ -103,7 +103,7 @@ export default function PromotionEditor({ promotion, onDone, onCancel }: { promo
           <button type="button" className={audience === "everyone" ? "is-on" : undefined} aria-pressed={audience === "everyone"} disabled={Boolean(promotion)} onClick={() => setAudience("everyone")}>Everyone</button>
           <button type="button" className={audience === "customer" ? "is-on" : undefined} aria-pressed={audience === "customer"} disabled={Boolean(promotion)} onClick={() => setAudience("customer")}>One customer</button>
         </div>
-        {audience === "customer" && <label className="field"><span className="field__label">Customer's mobile number</span><span className="input-wrap"><span className="input-prefix">+91</span><input inputMode="numeric" maxLength={10} value={customerPhone} disabled={Boolean(promotion)} onChange={(event) => setCustomerPhone(event.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="98765 43210"/></span><small className="field__hint">They must already have an account. Only they can use the code.</small></label>}
+        {audience === "customer" && <label className="field"><span className="field__label">Customer&apos;s mobile number</span><span className="input-wrap"><span className="input-prefix">+91</span><input inputMode="numeric" maxLength={10} value={customerPhone} disabled={Boolean(promotion)} onChange={(event) => setCustomerPhone(event.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="98765 43210"/></span><small className="field__hint">They must already have an account. Only they can use the code.</small></label>}
         {promotion && <small className="field__hint">Who can use a code is fixed when it is created. Create a new code to change it.</small>}
         <div className="pe-grid">
           <div className="field"><span className="field__label">How many customers can use it, in total?</span>
