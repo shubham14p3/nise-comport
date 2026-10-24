@@ -3,6 +3,7 @@
 import ShowMore, { useShowMore } from "@/components/show-more";
 import { FormEvent, useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import SiteHeader from "@/components/site-header";
+import IntegrationsPanel from "@/components/integrations-panel";
 import { WhatsAppIcon } from "@/components/icons";
 import PanImportPanel from "@/components/pan-import-panel";
 import WalletCreditForm from "@/components/wallet-credit-form";
@@ -235,6 +236,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "chats", label: "WhatsApp chats", icon: Megaphone, needs: "campaigns" },
   { id: "contacts", label: "Contacts", icon: Contact, needs: "campaigns" },
   { id: "outreach", label: "Birthdays & renewals", icon: Cake, needs: "staff" },
+  { id: "integrations", label: "Integrations", icon: ShieldCheck, needs: "admin" },
   { id: "team", label: "Team", icon: UsersRound, needs: "admin" },
   { id: "pan", label: "PAN data", icon: Database, needs: "pan" },
   { id: "wallet", label: "Wallet", icon: WalletCards, needs: "wallet" },
@@ -342,6 +344,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
         {active === "legal" && <LegalPanel/>}
         {active === "loyalty" && <LoyaltyPanel/>}
         {active === "payments" && <PaymentsPanel/>}
+        {active === "integrations" && <IntegrationsPanel/>}
         {active === "team" && <><TeamPanel meRole={me.role} meId={me.id}/><SiteTeamPanel/></>}
         {active === "pan" && <PanImportPanel/>}
         {active === "wallet" && <WalletCreditForm/>}
