@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import MobileRecoveryPanel from "@/components/mobile-recovery-panel";
+import { whatsappHref } from "@/lib/public-contact";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Eye, EyeOff, KeyRound, Languages, Mail, Terminal } from "lucide-react";
 import { FormEvent, useEffect, useState, useSyncExternalStore } from "react";
@@ -23,12 +25,13 @@ const noopSubscribe = () => () => undefined;
 function storedEmail() { try { return sessionStorage.getItem(RESET_EMAIL_KEY) ?? ""; } catch { return ""; } }
 
 /** Forgot password: email → 6-digit code + new password. All devices are signed out afterwards. */
-export default function ForgotPasswordPanel() {
+export default function ForgotPasswordPanel({ channels = [], initialMethod = "email" }: { channels?: ("sms" | "whatsapp")[]; initialMethod?: "email" | "mobile" }) {
   const router = useRouter();
   const locale = useLocale();
   const t = dict(locale).auth;
   const remembered = useSyncExternalStore(noopSubscribe, storedEmail, () => "");
   const [stage, setStage] = useState<"email" | "reset">("email");
+  const [method, setMethod] = useState<"email" | "mobile">(initialMethod === "mobile" && channels.length ? "mobile" : "email");
   const [typedEmail, setTypedEmail] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
@@ -78,9 +81,13 @@ export default function ForgotPasswordPanel() {
       <section className="auth__card">
         <div className="auth__lang"><span><Languages size={17}/>{t.language}</span><LanguageMenu locale={locale} label={t.language} inline/></div>
         <span className="auth__icon"><KeyRound size={26}/></span>
-        <h1>{stage === "email" ? t.resetTitle : t.resetCodeTitle}</h1>
-        <p className="auth__sub">{stage === "email" ? t.resetSub : <>{t.otpSub} <b>{email}</b>.</>}</p>
-        {stage === "email" ? <form className="auth__form" onSubmit={sendCode} noValidate>
+        <h1>{method === "mobile" ? "Recover mobile sign-in" : stage === "email" ? t.resetTitle : t.resetCodeTitle}</h1>
+        <p className="auth__sub">{method === "mobile" ? "Recover your mobile PIN or password using a code sent to your previously verified number." : stage === "email" ? t.resetSub : <>{t.otpSub} <b>{email}</b>.</>}</p>
+        <div className="auth__method" role="group" aria-label="Choose recovery method">
+          <button type="button" className="link-btn" aria-pressed={method === "email"} onClick={() => setMethod("email")}>Reset via email</button>
+          {channels.length > 0 && <button type="button" className="link-btn" aria-pressed={method === "mobile"} onClick={() => setMethod("mobile")}>Reset via verified mobile</button>}
+        </div>
+        {method === "mobile" ? <MobileRecoveryPanel channels={channels}/> : stage === "email" ? <form className="auth__form" onSubmit={sendCode} noValidate>
           <label className="field"><span className="field__label">{t.email}</span><span className="input-wrap"><Mail size={18}/><input type="email" inputMode="email" autoComplete="email" required maxLength={254} value={email} onChange={(e) => setTypedEmail(e.target.value)} placeholder="you@example.com"/></span></label>
           <div className="hp-field" aria-hidden="true"><label>Website<input tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}/></label></div>
           {error && <div className="alert alert--error" role="alert">{error}</div>}
@@ -94,6 +101,7 @@ export default function ForgotPasswordPanel() {
           <button className="btn btn--primary btn--lg btn--block" disabled={busy || code.length !== 6}>{busy ? t.wait : t.resetSave}<ArrowRight size={18}/></button>
           <div className="auth__links"><button type="button" className="link-btn" disabled={busy || resendIn > 0} onClick={() => void sendCode()}>{resendIn > 0 ? fill(t.resendIn, { s: resendIn }) : t.resend}</button><button type="button" className="link-btn" onClick={() => { setStage("email"); setCode(""); setError(""); setNotice(""); }}>{t.differentEmail}</button></div>
         </form>}
+        {channels.length === 0 && <p className="field__hint">Mobile PIN recovery by SMS/WhatsApp is coming soon. For a lost PIN, <a href={whatsappHref("Hello, I need to recover access to my NISE COMPORT account. Please help me verify my identity.")} target="_blank" rel="noopener noreferrer">contact the service desk</a> for identity-checked help.</p>}
         <p className="auth__switch"><Link href="/login">{t.backToSignin}</Link> · <Link href="/signup">{t.createAccount}</Link></p>
       </section>
     </div>
