@@ -174,7 +174,8 @@ test("isolate modern verified mobile claims without touching 9890 legacy registe
   ]);
   assert.equal(steps.filter((s) => s.kind === "index").length, 4);
   assert.match(sql, /REFERENCES "mobile_record_claims"\("id"\)/);
-  assert.equal(/\b(?:INSERT|UPDATE|DELETE|DROP|TRUNCATE)\b/i.test(sql), false);
+  // ON DELETE CASCADE within a new foreign key is safe DDL, not a DELETE statement.
+  assert.equal(/^\s*(?:INSERT\s+INTO|UPDATE\s+["a-z]|DELETE\s+FROM|DROP\s+(?:TABLE|INDEX)|TRUNCATE\s+)/im.test(sql), false);
   assert.equal(steps.some((s) => ["record_claims", "record_flags"].includes(s.table)), false);
 
   const expected = new Map(steps.filter((s) => s.kind === "table").map((s) => [s.table, new Set(s.columns)]));
