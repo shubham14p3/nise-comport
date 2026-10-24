@@ -22,7 +22,7 @@ export default function WelcomeLinks({ source = "qr", email, subject, body, waHr
   };
   useEffect(() => {
     const kind = detect();
-    setDevice(kind);
+    queueMicrotask(() => setDevice(kind));
     try { if (sessionStorage.getItem("qr-counted")) return; sessionStorage.setItem("qr-counted", "1"); } catch { /* count anyway */ }
     count(kind);
   // eslint-disable-next-line react-hooks/exhaustive-deps
