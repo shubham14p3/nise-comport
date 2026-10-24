@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { migrationSteps, planRepair } from "../scripts/schema-compat-core.mjs";
+import { migrationSteps, planRepair, safeSubsetForPopulatedPartials } from "../scripts/schema-compat-core.mjs";
 
 const sql = [
   { name: "0000_init.sql", content: `CREATE TABLE "users" (
@@ -148,4 +148,19 @@ test("CREATE TABLE definitions with numeric commas and JSON quoted commas stay i
   assert.equal(plan.pending.filter((s) => s.kind === "partial-column").length, 3);
   assert.match(plan.pending.find((s) => s.column === "amount").sql, /numeric\(10, 2\)/);
   assert.match(plan.pending.find((s) => s.column === "flags").sql, /a,b/);
+});
+
+test("safe-only mode never applies SQL against a populated partial table", () => {
+  const plan = {
+    pending: [
+      { kind: "partial-column", table: "record_claims", column: "phone", sql: "DO NOT RUN" },
+      { kind: "index", table: "record_claims", sql: "DO NOT RUN" },
+      { kind: "table", table: "hardware_items", sql: "CREATE TABLE IF NOT EXISTS hardware_items (...)" },
+      { kind: "column", table: "coupons", column: "max_percent", sql: "ALTER TABLE coupons ADD COLUMN max_percent integer" },
+    ],
+  };
+  const result = safeSubsetForPopulatedPartials(plan, ["record_claims"]);
+  assert.ok(result.skipped.has("record_claims"));
+  assert.deepEqual(result.executableSteps.map((s) => s.table), ["hardware_items", "coupons"]);
+  assert.ok(result.executableSteps.every((s) => !s.sql.includes("DO NOT RUN")));
 });
