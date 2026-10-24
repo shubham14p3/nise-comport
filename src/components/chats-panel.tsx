@@ -25,7 +25,13 @@ export default function ChatsPanel() {
   const loadChat = useCallback(async (phone: string) => {
     try { setMessages((await secureApi<{ messages: Message[] }>(LIST, { phone })).messages); } catch (e) { setError(e instanceof Error ? e.message : "Could not load the chat."); }
   }, []);
-  useEffect(() => { void loadList(); const t = setInterval(() => void loadList(), 30000); return () => clearInterval(t); }, [loadList]);
+  useEffect(() => {
+    void loadList();
+    const poll = () => { if (document.visibilityState === "visible") void loadList(); };
+    const timer = window.setInterval(poll, 30_000);
+    document.addEventListener("visibilitychange", poll);
+    return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", poll); };
+  }, [loadList]);
   useEffect(() => { if (open) void loadChat(open); }, [open, loadChat]);
 
   async function send(event: FormEvent) {
