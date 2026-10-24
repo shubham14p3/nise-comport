@@ -32,8 +32,7 @@ export default function MobileRecoveryPanel({ channels }: { channels: Channel[] 
     setNewPin(null); setError(""); setMessage("");
   }
 
-  async function sendCode(event: FormEvent, channel: Channel) {
-    event.preventDefault();
+  async function sendCode(channel: Channel) {
     const mobile = checkMobile(phone);
     if (!mobile.ok) { setError(mobile.error); return; }
     if (!channels.includes(channel)) { setError("This recovery channel is not enabled."); return; }
@@ -90,13 +89,13 @@ export default function MobileRecoveryPanel({ channels }: { channels: Channel[] 
       <span className="field__hint">For security, recovery codes are sent only to a mobile number previously verified on your account.</span>
     </label>
     <div className="hp-field" aria-hidden="true"><label>Website<input tabIndex={-1} autoComplete="off" value={website} onChange={(event) => setWebsite(event.target.value)}/></label></div>
-    {step === "phone" ? <form onSubmit={(event) => void sendCode(event, channels[0])}>
+    {step === "phone" ? <div>
       <div className="auth__links">
-        {channels.includes("sms") && <button className="btn btn--primary btn--sm" type="button" disabled={busy || phone.length !== 10} onClick={(event) => void sendCode(event as unknown as FormEvent, "sms")}>Send SMS code</button>}
-        {channels.includes("whatsapp") && <button className="btn btn--ghost btn--sm" type="button" disabled={busy || phone.length !== 10} onClick={(event) => void sendCode(event as unknown as FormEvent, "whatsapp")}>Send WhatsApp code</button>}
+        {channels.includes("sms") && <button className="btn btn--primary btn--sm" type="button" disabled={busy || phone.length !== 10} onClick={() => void sendCode("sms")}>Send SMS code</button>}
+        {channels.includes("whatsapp") && <button className="btn btn--ghost btn--sm" type="button" disabled={busy || phone.length !== 10} onClick={() => void sendCode("whatsapp")}>Send WhatsApp code</button>}
       </div>
       {error && <p className="alert alert--error" role="alert">{error}</p>}
-    </form> : <form onSubmit={(event) => void confirmCode(event)}>
+    </div> : <form onSubmit={(event) => void confirmCode(event)}>
       <p className="field__hint">{message}</p>
       <label className="field"><span className="field__label">6-digit recovery code</span><input inputMode="numeric" autoComplete="one-time-code" required maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} className="otp-input" placeholder="••••••"/></label>
       {kind === "password" && <>
