@@ -204,7 +204,7 @@ export async function creditWelcomeBalance(userId: string, kind: "email" | "phon
       if (!coupon) {
         const today = istDate(new Date());
         [coupon] = await db.insert(coupons).values({
-          code: welcomeCode((max) => randomInt(max)), discountType: "balance", discountValue: "0.00", minimumAmount: WELCOME_COUPON.minimum.toFixed(2), maxPercent: WELCOME_COUPON.maxPercent, appliesTo: { services: [...WELCOME_COUPON.services] },
+          code: welcomeCode((max) => randomInt(max)), discountType: "balance", discountValue: "0.00", minimumAmount: WELCOME_COUPON.minimum.toFixed(2), maxPercent: WELCOME_COUPON.maxPercent, appliesTo: { categories: [], services: [...WELCOME_COUPON.services] },
           active: true, kind: "welcome", userId: user.id, perUserLimit: null, maxRedemptions: null, source: "signup",
           title: { en: "Welcome coupon", hi: "वेलकम कूपन", bn: "ওয়েলকাম কুপন" },
           startsAt: istDayStart(today), expiresAt: istDayEnd(addDaysIso(today, WELCOME_COUPON.validDays)),
