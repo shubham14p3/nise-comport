@@ -57,7 +57,9 @@ const migrations = readdirSync("drizzle").filter((name) => /^\d{4}_.+\.sql$/.tes
   .map((name) => ({ name, content: readFileSync(join("drizzle", name), "utf8") }));
 const steps = migrationSteps(migrations);
 const sslFlag = process.env.DATABASE_SSL?.trim().toLowerCase();
-const useSsl = sslFlag ? sslFlag !== "false" : process.env.NODE_ENV === "production";
+// Hosted PostgreSQL usually requires TLS even for scripts invoked on Windows.
+const remoteHost = !["localhost", "127.0.0.1", "::1"].includes(uri.hostname);
+const useSsl = sslFlag ? sslFlag !== "false" : remoteHost;
 const client = new pg.Client({
   connectionString, ssl: useSsl ? { rejectUnauthorized: false } : undefined,
   connectionTimeoutMillis: 10000,
@@ -82,6 +84,31 @@ async function inventory() {
   }
   const indices = new Set((await client.query("SELECT indexname FROM pg_indexes WHERE schemaname = 'public'")).rows.map((r) => r.indexname));
   return { tables, types, indices };
+}
+
+/** Execute real SELECTs without touching customer rows. */
+async function criticalQueries() {
+  const critical = [
+    "users", "rate_limits", "email_otps", "sessions", "coupons",
+    "coupon_blocks", "coupon_credits", "hardware_items",
+    "mail_tickets", "mail_messages", "mail_attachments", "mail_sync",
+    "qr_scans", "record_claims", "record_flags", "outreach_log", "outreach_settings",
+  ];
+  let failed = 0;
+  console.log("\nCritical read-only SQL probes (LIMIT 0):");
+  for (const table of critical) {
+    const columns = expected.get(table);
+    if (!columns) continue;
+    const quote = (name) => '"' + name.replaceAll('"', '""') + '"';
+    try {
+      await client.query(`SELECT ${[...columns].map(quote).join(", ")} FROM public.${quote(table)} LIMIT 0`);
+      console.log(`  PASS ${table}`);
+    } catch (error) {
+      failed += 1;
+      console.log(`  FAIL ${table}: ${error?.code || "query_failed"}`);
+    }
+  }
+  return failed;
 }
 
 const normalizeType = (text) => String(text).toLowerCase().replace(/\s+/g, "").replace(/int4/g, "integer").replace(/int8/g, "bigint").replace(/bool/g, "boolean").replace(/timestamp\(6\)/g, "timestamp").replace(/timestamptz/g, "timestampwithtimezone");
@@ -134,9 +161,10 @@ try {
   }
 
   if (!apply) {
+    const probeFailures = await criticalQueries();
     console.log(`\nTo back up locally: npm run db:backup -- --no-readable`);
     console.log(`To apply: npm run db:schema:apply -- --backup-confirmed --confirm ${JSON.stringify(target)}`);
-    if (initial.missing.length || plan.blockers.length) process.exitCode = 1;
+    if (initial.missing.length || plan.blockers.length || probeFailures) process.exitCode = 1;
   } else {
     if (plan.blockers.length) throw new Error("Unresolved table/column gaps; no SQL applied.");
     if (!plan.pending.length) {
@@ -163,7 +191,8 @@ try {
     }
     const completed = drift(await inventory());
     printGroup(completed.missing, "REMAINING MISSING TABLES / COLUMNS");
-    if (completed.missing.length) process.exitCode = 1;
+    const probeFailures = await criticalQueries();
+    if (completed.missing.length || probeFailures) process.exitCode = 1;
   }
 } catch (error) {
   console.error("SCHEMA COMPATIBILITY FAILED:", error instanceof Error ? error.message : String(error));
