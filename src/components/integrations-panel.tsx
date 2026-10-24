@@ -29,6 +29,8 @@ export default function IntegrationsPanel() {
   const [provider, setProvider] = useState<Provider>("instagram");
   const [values, setValues] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  const [caption, setCaption] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [notice, setNotice] = useState("");
   const load = useCallback(async () => {
     const result = await secureApi<{ integrations: Status[] }>("I8n3T5gR2sV7", {});
@@ -68,6 +70,20 @@ export default function IntegrationsPanel() {
         {statuses.find(item => item.provider === provider)?.configured && <button className="btn btn--ghost" disabled={busy} type="button" onClick={() => void submit("delete")}>Remove credentials</button>}
       </div>
     </form>
+    {(provider === "facebook" || provider === "instagram") && <form style={{ marginTop: 24, display: "grid", gap: 12 }} onSubmit={async event => {
+      event.preventDefault(); setBusy(true); setNotice("");
+      try {
+        const result = await secureApi<{ id: string }>("S9p2C6mV4tK8", { provider, caption, ...(imageUrl ? { imageUrl } : {}) });
+        setNotice(`Published successfully. Meta post ID: ${result.id}`);
+        setCaption(""); setImageUrl("");
+      } catch (error) { setNotice(error instanceof Error ? error.message : "Publishing failed."); }
+      finally { setBusy(false); }
+    }}>
+      <h3>Publish to {current.name}</h3>
+      <label>Caption<textarea className="input" required maxLength={2200} value={caption} onChange={event => setCaption(event.target.value)} rows={4}/></label>
+      <label>Public HTTPS image URL {provider === "instagram" ? "(required)" : "(optional)"}<input className="input" type="url" value={imageUrl} onChange={event => setImageUrl(event.target.value)} required={provider === "instagram"} placeholder="https://example.com/photo.jpg"/></label>
+      <button className="btn btn--primary" disabled={busy || !caption.trim()} type="submit">Publish now</button>
+    </form>}
     {notice && <p role="status" style={{ marginTop: 12 }}>{notice}</p>}
     <p style={{ marginTop: 20, fontSize: 13 }}>Encryption master key must be configured in cPanel as INTEGRATIONS_ENCRYPTION_KEY. Saving credentials does not grant Meta permissions or activate publishing automatically.</p>
   </section>;
