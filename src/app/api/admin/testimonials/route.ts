@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, testimonial: row });
     }
     if (input.action === "delete") { await deleteTestimonial(input.id); return NextResponse.json({ ok: true }); }
-    const { id, action: _action, ...patch } = input;
-    const cleanPatch = Object.fromEntries(Object.entries(patch).filter(([, value]) => value !== undefined));
+    const { id } = input;
+    const cleanPatch = Object.fromEntries(Object.entries(input).filter(([key, value]) => key !== "action" && key !== "id" && value !== undefined));
     const row = await updateTestimonial(id, cleanPatch as Parameters<typeof updateTestimonial>[1]);
     if (!row) return NextResponse.json({ error: "Testimonial not found." }, { status: 404 });
     return NextResponse.json({ ok: true, testimonial: row });
