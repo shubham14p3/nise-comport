@@ -82,7 +82,7 @@ export default function TestimonialsPanel() {
   return <section className="panel">
     <div className="panel__head"><div>
       <h2>Testimonials</h2>
-      <p className="muted">Paste in reviews copied from your Google Business Profile — Google's public API only ever exposes up to 5 of your reviews, so this is how the rest get on the site. Tag a review to a service to also show it on that service's page; leave it general for the homepage mix.</p>
+      <p className="muted">Paste in reviews copied from your Google Business Profile — Google&apos;s public API only ever exposes up to 5 of your reviews, so this is how the rest get on the site. Tag a review to a service to also show it on that service&apos;s page; leave it general for the homepage mix.</p>
       {syncConfigured
         ? <button type="button" className="btn btn--ghost btn--sm" disabled={syncing} onClick={() => void syncFromGoogle()}>{syncing ? "Syncing…" : "Sync from Google now"}</button>
         : <p className="muted" style={{ fontSize: 13 }}>Automated sync isn’t set up yet — it needs Google’s Business Profile API access (a manual approval from Google) plus OAuth credentials in the server’s environment. Until then, paste reviews in below, or run the one-off <code>npm run testimonials:seed</code> import.</p>}
