@@ -3,16 +3,20 @@
 import { ArrowRight, Check, Copy, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { checkMobile, pinProblem, typedMobile } from "@/lib/mobile-login-core";
+import { passwordProblem, PASSWORD_MIN } from "@/lib/validation";
+import Link from "next/link";
 import { secureResult } from "@/lib/secure-api-client";
 import { whatsappHref } from "@/lib/public-contact";
 
-type Result = { error?: string; fields?: Record<string, string>; pin?: string; hasRecords?: boolean };
+type Result = { error?: string; fields?: Record<string, string>; pin?: string; hasRecords?: boolean; requiresOtp?: boolean };
 
 /** Sign in (mobile number + 6-digit PIN) or sign up (mobile number + name → a PIN is made and shown once). */
 export default function MobileAuthForm({ mode, onDone }: { mode: "signin" | "signup"; onDone: () => void | Promise<void> }) {
   const [phone, setPhone] = useState(""); const [pin, setPin] = useState(""); const [name, setName] = useState("");
   const [whatsappConsent, setWhatsappConsent] = useState(false); const [emailConsent, setEmailConsent] = useState(false);
   const [showPin, setShowPin] = useState(false); const [busy, setBusy] = useState(false); const [website, setWebsite] = useState("");
+  const [password, setPassword] = useState("");
+  const [credential, setCredential] = useState<"pin" | "password">("pin");
   const [error, setError] = useState(""); const [fields, setFields] = useState<Record<string, string>>({});
   const [created, setCreated] = useState<{ pin: string; hasRecords: boolean } | null>(null);
   const [saved, setSaved] = useState(false); const [copied, setCopied] = useState(false);
@@ -23,16 +27,34 @@ export default function MobileAuthForm({ mode, onDone }: { mode: "signin" | "sig
     event.preventDefault(); setError("");
     const problems: Record<string, string> = {};
     const mobile = checkMobile(phone); if (!mobile.ok) problems.phone = mobile.error;
-    if (mode === "signin") { const bad = pinProblem(pin); if (bad) problems.pin = bad; }
-    else if (name.trim().length < 2) problems.name = "Enter your name (at least 2 letters).";
+    if (mode === "signin") {
+      if (credential === "pin") { const bad = pinProblem(pin); if (bad) problems.pin = bad; }
+      else if (!password) problems.password = "Enter your password.";
+    } else {
+      if (name.trim().length < 2) problems.name = "Enter your name (at least 2 letters).";
+      if (password) {
+        const problem = passwordProblem(password, { name, email: "" });
+        if (problem) problems.password = problem;
+      }
+    }
     setFields(problems);
     if (Object.keys(problems).length || !mobile.ok) return;
     setBusy(true);
     try {
-      const body = mode === "signin" ? { action: "signin", phone: mobile.digits, pin, website } : { action: "signup", phone: mobile.digits, name, whatsappConsent, emailConsent, website };
-      const { ok, result } = await secureResult<Result>("K7m2Q9xV4cT8", body);
+      const passwordSignIn = mode === "signin" && credential === "password";
+      const body = mode === "signin"
+        ? { action: "signin", phone: mobile.digits, pin, website }
+        : { action: "signup", phone: mobile.digits, name, ...(password ? { password } : {}), whatsappConsent, emailConsent, website };
+      const { ok, result } = await secureResult<Result>(
+        passwordSignIn ? "Q7m4kP2vL9sD" : "K7m2Q9xV4cT8",
+        passwordSignIn ? { email: mobile.e164, password } : body,
+      );
       if (!ok) { setFields(result.fields ?? {}); setError(result.error ?? "Something went wrong. Please try again."); return; }
       if (mode === "signup" && result.pin) { setCreated({ pin: result.pin, hasRecords: Boolean(result.hasRecords) }); return; }
+      if (result.requiresOtp) {
+        setError("Your email address must be verified first. Choose email sign-in and enter the code we sent, or sign in with your existing PIN.");
+        return;
+      }
       await onDone();
     } finally { setBusy(false); }
   }
@@ -57,16 +79,31 @@ export default function MobileAuthForm({ mode, onDone }: { mode: "signin" | "sig
       <span className="input-wrap"><span className="input-prefix" aria-hidden="true">+91</span>
         <input type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={14} required value={phone} onChange={(e) => setPhone(typedMobile(e.target.value))} placeholder="98765 43210" aria-invalid={Boolean(fields.phone)} autoFocus/></span>
       <span className="field__hint">10 digits, without +91 or 0.</span>{fieldError("phone")}</label>
+    {mode === "signin" && <div className="auth__method" role="group" aria-label="Choose mobile sign-in secret">
+      <button type="button" className="link-btn" aria-pressed={credential === "pin"} onClick={() => { setCredential("pin"); setError(""); setFields({}); }}>6-digit PIN</button>
+      <span aria-hidden="true"> · </span>
+      <button type="button" className="link-btn" aria-pressed={credential === "password"} onClick={() => { setCredential("password"); setError(""); setFields({}); }}>Password</button>
+    </div>}
     {mode === "signin"
-      ? <label className="field"><span className="field__label">6-digit PIN</span>
+      ? credential === "pin" ? <label className="field"><span className="field__label">6-digit PIN</span>
         <span className="input-wrap"><LockKeyhole size={18}/><input type={showPin ? "text" : "password"} inputMode="numeric" autoComplete="current-password" maxLength={6} required value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="••••••" aria-invalid={Boolean(fields.pin)}/>
           <button type="button" className="icon-btn" aria-label={showPin ? "Hide PIN" : "Show PIN"} onClick={() => setShowPin((value) => !value)}>{showPin ? <EyeOff size={18}/> : <Eye size={18}/>}</button></span>
         {fieldError("pin")}
-        <span className="field__hint">Forgot it? <a href={whatsappHref("Hello, I forgot my sign-in PIN. Please reset it for my mobile number.")} target="_blank" rel="noopener noreferrer">Message us on WhatsApp</a> and we will reset it.</span></label>
+        <span className="field__hint">Forgot it? <Link href="/forgot-password?method=mobile">Recover mobile PIN</Link> (verified numbers only), or <a href={whatsappHref("Hello, I forgot my sign-in PIN. Please help me verify my identity and recover my account.")} target="_blank" rel="noopener noreferrer">contact our team</a>.</span></label>
+      : <label className="field"><span className="field__label">Password</span>
+          <span className="input-wrap"><LockKeyhole size={18}/><input type={showPin ? "text" : "password"} autoComplete="current-password" required maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your account password"/></span>
+          {fieldError("password")}
+          <span className="field__hint">Password works for accounts that have set one. <Link href="/forgot-password">Forgot password?</Link></span>
+        </label>
       : <>
         <label className="field"><span className="field__label">Your name</span><span className="input-wrap"><UserRound size={18}/><input autoComplete="name" required minLength={2} maxLength={100} value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" aria-invalid={Boolean(fields.name)}/></span>{fieldError("name")}</label>
         <label className="check-row"><input type="checkbox" checked={whatsappConsent} onChange={(e) => setWhatsappConsent(e.target.checked)}/> Send me WhatsApp updates and reminders (birthday wishes, renewals, offers).</label>
         <label className="check-row"><input type="checkbox" checked={emailConsent} onChange={(e) => setEmailConsent(e.target.checked)}/> Send me email reminders too, once I add my email.</label>
+        <label className="field"><span className="field__label">Password <em>optional</em></span>
+          <span className="input-wrap"><LockKeyhole size={18}/><input type={showPin ? "text" : "password"} autoComplete="new-password" maxLength={128} minLength={PASSWORD_MIN} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Set a password for another sign-in option"/></span>
+          {fieldError("password")}
+          <span className="field__hint">Leave blank to sign in with PIN only. A password lets you also sign in with your mobile number.</span>
+        </label>
         <p className="field__hint">We will make a 6-digit PIN for you and show it on the next screen.</p>
       </>}
     <div className="hp-field" aria-hidden="true"><label>Website<input tabIndex={-1} autoComplete="off" value={website} onChange={(e) => setWebsite(e.target.value)}/></label></div>
