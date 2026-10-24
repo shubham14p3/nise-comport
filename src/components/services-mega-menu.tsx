@@ -53,21 +53,21 @@ export function ServicesMegaDesktop({ label, active }: { label: string; active: 
           {groups.map((group) => (
             <section key={group.slug} className={`mega__group tone-${group.tone}`}>
               <h3>
-                <Link href={lp(lc, `/services/${group.slug}`)} onClick={close}>
+                <Link prefetch={false} href={lp(lc, `/services/${group.slug}`)} onClick={close}>
                   <span className="mega__icon"><CategoryIcon icon={group.icon} size={18}/></span>
                   {lc === "en" ? group.title : catName(group.slug, group.title)}
                 </Link>
               </h3>
               <ul>
                 {group.items.map((service) => (
-                  <li key={service.slug}><Link href={lp(lc, `/services/${service.slug}`)} onClick={close}>{lc === "en" ? shortServiceName(service.title) : serviceName(service.slug, shortServiceName(service.title), lc)}</Link></li>
+                  <li key={service.slug}><Link prefetch={false} href={lp(lc, `/services/${service.slug}`)} onClick={close}>{lc === "en" ? shortServiceName(service.title) : serviceName(service.slug, shortServiceName(service.title), lc)}</Link></li>
                 ))}
-                {group.more > 0 && <li><Link className="mega__more" href={lp(lc, `/services/${group.slug}`)} onClick={close}>+{group.more} {t("more", "और", "আরও")}</Link></li>}
+                {group.more > 0 && <li><Link prefetch={false} className="mega__more" href={lp(lc, `/services/${group.slug}`)} onClick={close}>+{group.more} {t("more", "और", "আরও")}</Link></li>}
               </ul>
             </section>
           ))}
         </div>
-        <Link className="mega__all" href={lp(lc, "/services")} onClick={close}>{t("View all services", "सभी सेवाएँ देखें", "সব পরিষেবা দেখুন")}<ArrowRight size={16} aria-hidden="true"/></Link>
+        <Link prefetch={false} className="mega__all" href={lp(lc, "/services")} onClick={close}>{t("View all services", "सभी सेवाएँ देखें", "সব পরিষেবা দেখুন")}<ArrowRight size={16} aria-hidden="true"/></Link>
       </div>
     </div>
   );
@@ -87,7 +87,7 @@ export function ServicesMegaMobile({ label }: { label: string }) {
         {label}
         <ChevronDown size={18} aria-hidden="true" className="mobile-mega__chevron"/>
       </summary>
-      <Link className="mobile-mega__viewall" href={lp(lc, "/services")}>{t("View all services", "सभी सेवाएँ देखें", "সব পরিষেবা দেখুন")}<span aria-hidden="true">→</span></Link>
+      <Link prefetch={false} className="mobile-mega__viewall" href={lp(lc, "/services")}>{t("View all services", "सभी सेवाएँ देखें", "সব পরিষেবা দেখুন")}<span aria-hidden="true">→</span></Link>
       {groups.map((group) => (
         <details key={group.slug} className="mobile-mega__group">
           <summary>
@@ -97,9 +97,9 @@ export function ServicesMegaMobile({ label }: { label: string }) {
           </summary>
           <ul>
             {group.items.map((service) => (
-              <li key={service.slug}><Link href={lp(lc, `/services/${service.slug}`)}>{lc === "en" ? shortServiceName(service.title) : serviceName(service.slug, shortServiceName(service.title), lc)}</Link></li>
+              <li key={service.slug}><Link prefetch={false} href={lp(lc, `/services/${service.slug}`)}>{lc === "en" ? shortServiceName(service.title) : serviceName(service.slug, shortServiceName(service.title), lc)}</Link></li>
             ))}
-            <li><Link className="mega__more" href={lp(lc, `/services/${group.slug}`)}>{lc === "en" ? `All ${group.title.toLowerCase()} →` : `${catName(group.slug, group.title)} →`}</Link></li>
+            <li><Link prefetch={false} className="mega__more" href={lp(lc, `/services/${group.slug}`)}>{lc === "en" ? `All ${group.title.toLowerCase()} →` : `${catName(group.slug, group.title)} →`}</Link></li>
           </ul>
         </details>
       ))}
