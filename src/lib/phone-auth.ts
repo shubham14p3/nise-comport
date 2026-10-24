@@ -1,10 +1,11 @@
 import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 import { and, desc, eq, gt, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { hash } from "@node-rs/argon2";
-import { phoneOtps, users } from "@/db/schema";
+import { phoneOtps, recordClaims, users } from "@/db/schema";
 import { createSession } from "@/lib/auth";
 import { endSessions } from "@/lib/claims";
-import { checkMobile, generatePin } from "@/lib/mobile-login-core";
+import { generatePin } from "@/lib/mobile-login-core";
+import { seal } from "@/lib/vault";
 import { approveClaimsForVerifiedPhone } from "@/lib/claims";
 import { grantVerifyReward } from "@/lib/verify-rewards";
 import { db } from "@/lib/db";
@@ -32,6 +33,10 @@ export function indianPhoneOrThrow(input: string) {
 }
 
 async function issue(userId: string, phone: string, purpose: "verify" | "signin" | "reset-pin" | "reset-password", ip: string, channel?: string | null) {
+  const available = otpChannels();
+  if (!available.length || (channel && !available.includes(channel as "sms" | "whatsapp"))) {
+    throw new PublicError("This verification method is not currently available.", 503, { code: "sms_not_configured" });
+  }
   const phoneId = identity("phone", phone);
   await enforceRate(RATE_RULES.smsSendPerIpHour, identity("ip", ip), "Too many codes were requested from this network.");
   await enforceRate(RATE_RULES.smsSendPerPhoneMinute, phoneId, "A code was sent moments ago. Please wait a minute.");
@@ -60,7 +65,7 @@ async function consume(userId: string, phone: string, purpose: "verify" | "signi
 
 /** Signed-in customer asks for a code to prove a mobile number is theirs. */
 export async function requestPhoneVerification(userId: string, phoneInput: string, ip: string, channel?: string | null) {
-  if (!otpChannels().length && process.env.NODE_ENV === "production") throw new PublicError("SMS codes are not switched on yet.", 503, { code: "sms_not_configured" });
+  if (!otpChannels().length) throw new PublicError("SMS verification is coming soon.", 503, { code: "sms_not_configured" });
   const phone = indianPhoneOrThrow(phoneInput);
   const [taken] = await db.select({ id: users.id }).from(users).where(and(eq(users.phone, phone), sql`${users.phoneVerifiedAt} is not null`, ne(users.id, userId), isNull(users.deletedAt))).limit(1);
   if (taken) throw new PublicError("This number is already verified on another account.", 409, { code: "phone_taken", fields: { phone: "This number is already used on another account." } });
@@ -86,6 +91,7 @@ async function verifiedOwner(phone: string) {
 
 /** Sign-in by SMS. The reply is the same whether or not the number is registered. */
 export async function requestSignInSms(phoneInput: string, ip: string, channel?: string | null) {
+  if (!otpChannels().length) throw new PublicError("SMS sign-in is coming soon.", 503, { code: "sms_not_configured" });
   const phone = indianPhoneOrThrow(phoneInput);
   const owner = await verifiedOwner(phone);
   if (!owner) {
@@ -152,8 +158,9 @@ export async function confirmMobileCredentialReset(phoneInput: string, kind: Mob
   if (kind === "pin") {
     const pin = generatePin((below) => randomInt(0, below));
     await db.update(users).set({ loginPinHash: await hash(pin), updatedAt: new Date() }).where(eq(users.id, owner.id));
+    await db.update(recordClaims).set({ pinEnc: seal(pin) }).where(and(eq(recordClaims.userId, owner.id), eq(recordClaims.status, "pending")));
     await endSessions(owner.id);
-    await clearRate(RATE_RULES.pinFailuresPerPhone15m, identity("pin-phone", checkMobile(phone).ok ? phone.slice(-10) : phone));
+    await clearRate(RATE_RULES.pinFailuresPerPhone15m, identity("pin-phone", phone.slice(-10)));
     return { pin };
   }
   await db.update(users).set({
