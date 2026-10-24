@@ -11,13 +11,14 @@ import { ArrowRight, LayoutDashboard, LogOut, Menu, Phone, Search, ShieldCheck, 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { secureApi } from "@/lib/secure-api-client";
+import { getSessionUser, invalidateSessionCache, SESSION_CHANGED, type SessionUser } from "@/lib/session-client";
 import { dict } from "@/lib/i18n";
 import { lp, tr } from "@/lib/tr";
 import { useLocale } from "@/lib/use-locale";
 import { PHONE_E164 as PHONE, whatsappHref } from "@/lib/public-contact";
 import { isStaffRole, STAFF_HOME } from "@/lib/staff-routes";
 
-type HeaderUser = { id: string; name: string; email: string; role: string };
+type HeaderUser = SessionUser;
 
 // Only the name and role are remembered in this browser (never the email or id), so the account button can appear
 // straight away on the next visit while the real sign-in check runs. The server decides whether it is still valid.
@@ -36,7 +37,12 @@ function parseRemembered(raw: string | null): HeaderUser | null {
   } catch { return null; }
 }
 function remember(user: HeaderUser | null) {
-  try { if (user) window.localStorage.setItem(REMEMBER_KEY, JSON.stringify({ name: user.name, role: user.role })); else window.localStorage.removeItem(REMEMBER_KEY); } catch { /* storage can be blocked */ }
+  const next = user ? JSON.stringify({ name: user.name, role: user.role }) : null;
+  try {
+    if (window.localStorage.getItem(REMEMBER_KEY) === next) return;
+    if (next) window.localStorage.setItem(REMEMBER_KEY, next);
+    else window.localStorage.removeItem(REMEMBER_KEY);
+  } catch { /* storage can be blocked */ }
   rememberListeners.forEach((callback) => callback());
 }
 
@@ -72,11 +78,28 @@ export default function SiteHeader() {
 
   useEffect(() => {
     let active = true;
-    secureApi<{ user: HeaderUser | null }>("C4w7G2hN6kP9")
-      .then((result) => { if (active) { setUser(result.user); remember(result.user); } })
-      .catch(() => undefined)
-      .finally(() => { if (active) { setSessionLoaded(true); setVerifying(false); } });
-    return () => { active = false; };
+    const load = () => {
+      getSessionUser()
+        .then((next) => { if (active) { setUser(next); remember(next); } })
+        .catch(() => undefined)
+        .finally(() => { if (active) { setSessionLoaded(true); setVerifying(false); } });
+    };
+    load();
+
+    // Login/logout changes the session explicitly. Ordinary navigation uses
+    // the in-memory cache, avoiding a fresh network request on every page.
+    window.addEventListener(SESSION_CHANGED, load);
+    const onOtherTab = (event: StorageEvent) => {
+      if (event.key !== REMEMBER_KEY) return;
+      invalidateSessionCache(false);
+      load();
+    };
+    window.addEventListener("storage", onOtherTab);
+    return () => {
+      active = false;
+      window.removeEventListener(SESSION_CHANGED, load);
+      window.removeEventListener("storage", onOtherTab);
+    };
   }, []);
 
   useEffect(() => {
@@ -101,6 +124,7 @@ export default function SiteHeader() {
   async function signOut() {
     setSigningOut(true);
     try { await secureApi("R6y0D3sJ8vM2"); } catch { /* the session may already be gone */ }
+    invalidateSessionCache();
     setUser(null);
     remember(null);
     setSigningOut(false);
