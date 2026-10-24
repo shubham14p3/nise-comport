@@ -26,6 +26,7 @@ else if (existsSync(".env")) loadEnvFile(".env");
 
 const args = process.argv.slice(2);
 const apply = args.includes("--apply");
+const safeSubset = args.includes("--skip-populated-partials");
 const reportOnly = !apply;
 const confirmation = args[args.indexOf("--confirm") + 1];
 const connectionString = process.env.DATABASE_URL?.trim();
@@ -104,7 +105,7 @@ async function inventory() {
 }
 
 /** Execute real SELECTs without touching customer rows. */
-async function criticalQueries(failClosed = false) {
+async function criticalQueries(failClosed = false, skipped = new Set()) {
   const critical = [
     "users", "rate_limits", "email_otps", "sessions", "coupons",
     "coupon_blocks", "coupon_credits", "hardware_items",
@@ -114,6 +115,10 @@ async function criticalQueries(failClosed = false) {
   let failed = 0;
   console.log("\nCritical read-only SQL probes (LIMIT 0):");
   for (const table of critical) {
+    if (skipped.has(table)) {
+      console.log(`  SKIPPED ${table}: contains existing rows; deferred pending data reconciliation`);
+      continue;
+    }
     const columns = expected.get(table);
     if (!columns) continue;
     const quote = (name) => '"' + name.replaceAll('"', '""') + '"';
@@ -168,6 +173,8 @@ try {
   const initial = drift(before);
   const plan = planRepair(expected, before.tables, steps, before.indices);
   const nonEmptyPartial = await nonEmptyPartialTables(plan.partialTables);
+  const skippedPartial = new Set(safeSubset ? nonEmptyPartial : []);
+  const executableSteps = safeSubset ? plan.pending.filter((step) => !skippedPartial.has(step.table)) : plan.pending;
   printGroup(initial.missing, "MISSING TABLES / COLUMNS");
   printGroup([...plan.blockers, ...nonEmptyPartial.map((table) =>
     `Existing partial table ${table} HAS ROWS; automated column repair blocked to preserve data`
@@ -191,10 +198,13 @@ try {
     console.log(`To apply: npm run db:schema:apply -- --backup-confirmed --confirm ${JSON.stringify(target)}`);
     if (initial.missing.length || plan.blockers.length || nonEmptyPartial.length || probeFailures) process.exitCode = 1;
   } else {
-    if (plan.blockers.length || nonEmptyPartial.length || initial.typeMismatch.length) {
+    if (plan.blockers.length || (!safeSubset && nonEmptyPartial.length) || initial.typeMismatch.length) {
       throw new Error("Unresolved schema gaps, type mismatches or populated partial tables; no SQL applied.");
     }
-    if (!plan.pending.length) {
+    if (safeSubset && skippedPartial.size) {
+      console.log("\nSAFE SUBSET ONLY: deferring these populated partial tables: " + [...skippedPartial].join(", "));
+    }
+    if (!executableSteps.length) {
       console.log("\nNo missing additive structures. Nothing changed.");
     } else {
       await client.query("BEGIN");
@@ -204,21 +214,26 @@ try {
         await client.query("SELECT pg_advisory_xact_lock(hashtext('nise-schema-additive-sync-v1'))");
         // Prevent concurrent writes between the emptiness check and adding
         // required columns, including NOT NULL columns without defaults.
-        for (const table of plan.partialTables) {
+        const partialToPatch = plan.partialTables.filter((table) => !skippedPartial.has(table));
+        for (const table of partialToPatch) {
           await client.query(`LOCK TABLE public.${quoteIdentifier(table)} IN ACCESS EXCLUSIVE MODE NOWAIT`);
         }
-        const populated = await nonEmptyPartialTables(plan.partialTables);
+        const populated = await nonEmptyPartialTables(partialToPatch);
         if (populated.length) throw new Error(`Existing table(s) contain customer rows: ${populated.join(", ")}. No schema changes applied.`);
-        for (const [i, step] of plan.pending.entries()) {
-          console.log(`APPLY ${i + 1}/${plan.pending.length}: ${step.kind} ${step.table}${step.column ? "." + step.column : ""}`);
+        for (const [i, step] of executableSteps.entries()) {
+          console.log(`APPLY ${i + 1}/${executableSteps.length}: ${step.kind} ${step.table}${step.column ? "." + step.column : ""}`);
           await client.query(step.sql);
         }
         const after = await inventory();
         const result = drift(after);
-        if (result.missing.length) throw new Error(`Still missing ${result.missing.length} required table(s)/column(s). Rolling back ALL changes.`);
-        await criticalQueries(true);
+        const unsafeLeftovers = result.missing.filter((item) => !skippedPartial.has(item.table));
+        if (unsafeLeftovers.length) throw new Error(`Still missing ${unsafeLeftovers.length} unexcluded table(s)/column(s). Rolling back ALL changes.`);
+        await criticalQueries(true, skippedPartial);
         await client.query("COMMIT");
-        console.log("\nSUCCESS: additive schema sync committed. No customer rows were modified or deleted.");
+        if (skippedPartial.size) {
+          console.log("\nPARTIAL SUCCESS: unrelated schema additions committed; populated partial table(s) left untouched.");
+          console.log("A full schema check will still report missing columns until those existing rows are reconciled.");
+        } else console.log("\nSUCCESS: additive schema sync committed. No customer rows were modified or deleted.");
       } catch (error) {
         await client.query("ROLLBACK").catch(() => {});
         throw error;
@@ -226,8 +241,11 @@ try {
     }
     const completed = drift(await inventory());
     printGroup(completed.missing, "REMAINING MISSING TABLES / COLUMNS");
-    const probeFailures = await criticalQueries();
-    if (completed.missing.length || probeFailures) process.exitCode = 1;
+    const probeFailures = await criticalQueries(false, skippedPartial);
+    if (completed.missing.length || probeFailures) {
+      console.log("\nSCHEMA IS STILL INCOMPLETE. Address remaining populated partial tables before building production.");
+      process.exitCode = 1;
+    }
   }
 } catch (error) {
   console.error("SCHEMA COMPATIBILITY FAILED:", error instanceof Error ? error.message : String(error));
