@@ -188,6 +188,13 @@ export async function verifyEmailOtp(emailInput: string, code: string, purpose: 
   if (purpose === "signup") {
     if (!profile) throw new PublicError("Complete your account details to continue.", 400);
     const { name, phone } = validateSignupProfile(email, profile);
+    // Keep mobile/password sign-in unambiguous for new registrations. Historical
+    // duplicate numbers stay untouched; they can still log in with email.
+    if (phone) {
+      const [existingPhone] = await db.select({ id: users.id }).from(users)
+        .where(and(eq(users.phone, phone), isNull(users.deletedAt))).limit(1);
+      if (existingPhone) throw new PublicError("This mobile number is already linked to an account. Sign in with that account, or leave the mobile field empty.", 409, { code: "phone_taken", fields: { phone: "This number is already registered." } });
+    }
     await consumeOtp(email, "signup", code, ip);
     const passwordHash = await hash(profile.password);
     let created: User;
