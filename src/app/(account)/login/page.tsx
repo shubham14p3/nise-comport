@@ -11,5 +11,6 @@ export const metadata = privateMetadata("Sign in", "Sign in to your NISE COMPORT
 export default async function LoginPage() {
   const user = await getCurrentUser().catch(() => null);
   if (user) redirect(isStaffRole(user.role) ? STAFF_HOME : "/profile");
-  return <AuthPanel mode="signin" demoEnabled={isDemoAuthEnabled()} smsEnabled={otpChannels().length > 0} whatsappEnabled={otpChannels().includes("whatsapp")}/>;
+  const channels = otpChannels();
+  return <AuthPanel mode="signin" demoEnabled={isDemoAuthEnabled()} smsEnabled={channels.includes("sms")} whatsappEnabled={channels.includes("whatsapp")}/>;
 }
