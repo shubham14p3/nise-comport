@@ -19,11 +19,11 @@ export default function ConsentModal({ open, onClose, onConfirm, busy, serviceLa
       <div className="help-dialog__docs">
         <p style={{ marginTop: 0 }}>To complete your {serviceLabel ?? "request"}, we may need to contact you again — by call, WhatsApp or email — for:</p>
         <ol>
-          <li>Extra information or a clarification on something you've shared.</li>
-          <li>Documents we don't have yet, including hard-copy originals where the government portal or insurer requires one in person.</li>
+          <li>Extra information or a clarification on something you&apos;ve shared.</li>
+          <li>Documents we don&apos;t have yet, including hard-copy originals where the government portal or insurer requires one in person.</li>
         </ol>
-        <p>By sending this request, you're giving NISE COMPORT consent to collect and use the details and documents you share, solely to provide this service on your behalf. We will never ask you for OTPs, PINs or passwords.</p>
-        <p style={{ marginBottom: 0 }}>If anything about your request needs sorting out, we'll get back to you directly — and you're always welcome to reach us the same way.</p>
+        <p>By sending this request, you&apos;re giving NISE COMPORT consent to collect and use the details and documents you share, solely to provide this service on your behalf. We will never ask you for OTPs, PINs or passwords.</p>
+        <p style={{ marginBottom: 0 }}>If anything about your request needs sorting out, we&apos;ll get back to you directly — and you&apos;re always welcome to reach us the same way.</p>
       </div>
       <div className="form-actions">
         <button type="button" className="btn btn--primary" disabled={busy} onClick={onConfirm}>{busy ? "Sending…" : "I agree — send my request"}</button>
