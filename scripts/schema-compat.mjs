@@ -87,7 +87,7 @@ async function inventory() {
 }
 
 /** Execute real SELECTs without touching customer rows. */
-async function criticalQueries() {
+async function criticalQueries(failClosed = false) {
   const critical = [
     "users", "rate_limits", "email_otps", "sessions", "coupons",
     "coupon_blocks", "coupon_credits", "hardware_items",
@@ -106,6 +106,7 @@ async function criticalQueries() {
     } catch (error) {
       failed += 1;
       console.log(`  FAIL ${table}: ${error?.code || "query_failed"}`);
+      if (failClosed) throw error;
     }
   }
   return failed;
@@ -182,6 +183,7 @@ try {
         const after = await inventory();
         const result = drift(after);
         if (result.missing.length) throw new Error(`Still missing ${result.missing.length} required table(s)/column(s). Rolling back ALL changes.`);
+        await criticalQueries(true);
         await client.query("COMMIT");
         console.log("\nSUCCESS: additive schema sync committed. No customer rows were modified or deleted.");
       } catch (error) {
