@@ -7,7 +7,7 @@ import { endSessions, ensureClaim, matchedRecordCount } from "@/lib/claims";
 import { db } from "@/lib/db";
 import { PublicError, isUniqueViolation } from "@/lib/errors";
 import { logActivity } from "@/lib/activity";
-import { checkMobile, generatePin, pinProblem, placeholderEmail } from "@/lib/mobile-login-core";
+import { checkMobile, generatePin, loginPinHashForAccount, pinProblem, placeholderEmail } from "@/lib/mobile-login-core";
 import { clearRate, enforceRate, hitRate, identity, peekRate, RATE_RULES } from "@/lib/rate-limit";
 import { cleanName } from "@/lib/validation";
 import { seal } from "@/lib/vault";
@@ -45,7 +45,8 @@ export async function mobileSignIn(phoneInput: string, pin: string, ip: string) 
   // a profile phone number alone or change signup_method.
   const found = await db.select().from(users).where(and(eq(users.phone, e164), isNotNull(users.loginPinHash), isNull(users.deletedAt), isNull(users.disabledAt))).limit(2);
   const user = found.length === 1 ? found[0] : null;
-  const valid = user?.loginPinHash ? await verify(user.loginPinHash, pin).catch(() => false) : (await verify(await dummyHash(), pin).catch(() => false), false);
+  const pinHash = loginPinHashForAccount(user);
+  const valid = pinHash ? await verify(pinHash, pin).catch(() => false) : (await verify(await dummyHash(), pin).catch(() => false), false);
   if (!user || !valid) {
     const recent = await hitRate(RATE_RULES.pinFailuresPerPhone15m, failId);
     const left = RATE_RULES.pinFailuresPerPhone15m.limit - recent.count;
