@@ -5,7 +5,7 @@
  * Local Windows (no Next build, no SSH):
  *   npm run db:schema:check
  *   npm run db:backup -- --no-readable
- *   npm run db:schema:plan
+ *   npm run db:schema:check  # read-only plan
  *   npm run db:schema:apply -- --backup-confirmed --confirm "database@hostname"
  *   npm run db:schema:check
  *
@@ -197,7 +197,7 @@ try {
     const probeFailures = await criticalQueries();
     console.log(`\nTo back up locally: npm run db:backup -- --no-readable`);
     console.log(`To apply full sync (all gaps must be resolvable): npm run db:schema:apply -- --backup-confirmed --confirm ${JSON.stringify(target)}`);
-    if (nonEmptyPartial.length) console.log(`To repair only UNRELATED missing structures (leave populated tables untouched): npm run db:schema:apply-safe -- --backup-confirmed --confirm ${JSON.stringify(target)}`);
+    if (nonEmptyPartial.length) console.log(`To repair only unrelated missing structures, consult docs/database-safe-sync.md (the unsafe gap must be reviewed).`);
     if (initial.missing.length || plan.blockers.length || nonEmptyPartial.length || probeFailures) process.exitCode = 1;
   } else {
     if (plan.blockers.length || (!safeSubset && nonEmptyPartial.length) || initial.typeMismatch.length) {
