@@ -21,7 +21,7 @@ export default function PaymentsPanel() {
   const load = useCallback(async (status: string) => {
     try { setData(await secureApi<Data>(LIST, { status })); setError(""); } catch (e) { setError(e instanceof Error ? e.message : "Could not load payments."); }
   }, []);
-  useEffect(() => { void load(filter); }, [filter, load]);
+  useEffect(() => { void Promise.resolve().then(() => load(filter)); }, [filter, load]);
 
   async function act(label: string, body: Record<string, unknown>) {
     setBusy(label); setError("");
