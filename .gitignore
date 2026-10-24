@@ -43,10 +43,18 @@ coverage/
 # myexcel
 # photo-index
 
-# local secrets, never commit
-# .env
-# .env.local
-# .env.*.local
+# Local and server secrets. These patterns do NOT untrack already committed files.
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+!.env.example
+*.pem
+*.key
+# SSH-transfer build archives
+*.tar.gz
+*.tgz
 
 # Database backups hold customer data: never commit
 backups/
