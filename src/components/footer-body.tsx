@@ -38,47 +38,47 @@ export default function FooterBody({ year, partners }: { year: number; partners:
     <div className="footer-glow" aria-hidden="true"/>
     <div className="container footer-main">
       <div className="footer-brand">
-        <Link className="brand brand--on-dark" href={href("/")} aria-label={`${site.name} home`}><BrandWordmark/></Link>
+        <Link prefetch={false} className="brand brand--on-dark" href={href("/")} aria-label={`${site.name} home`}><BrandWordmark/></Link>
         <p>{t("Your neighbourhood CSC & Pragya Kendra in Kharangajhar, Telco. Sarkari & digital kaam, sorted with a human touch.", "खरंगाझार, टेल्को में आपका अपना CSC व प्रज्ञा केंद्र। सरकारी और डिजिटल काम, अपनेपन के साथ।", "খরংগাঝাড়, টেলকোতে আপনার নিজের CSC ও প্রজ্ঞা কেন্দ্র। সরকারি ও ডিজিটাল কাজ, আপন করে।")}</p>
         <div className="footer-cta">
           <a className="btn btn--wa btn--sm" href={whatsappLink(t("Hello NISE COMPORT, I need help with a service.", "नमस्ते NISE COMPORT, मुझे एक सेवा में मदद चाहिए।", "নমস্কার NISE COMPORT, একটি পরিষেবায় আমার সাহায্য দরকার।"))} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={17}/> WhatsApp</a>
           <a className="btn btn--glass btn--sm" href={`tel:${site.phones.primary.e164}`}><Phone size={16}/> {t("Call", "फ़ोन करें", "ফোন করুন")}</a>
         </div>
         <div className="footer-langs" aria-label="Languages">
-          <Link href="/" hrefLang="en-IN" lang="en">English</Link>
-          <Link href="/hi" hrefLang="hi-IN" lang="hi">हिन्दी</Link>
-          <Link href="/bn" hrefLang="bn-IN" lang="bn">বাংলা</Link>
+          <Link prefetch={false} href="/" hrefLang="en-IN" lang="en">English</Link>
+          <Link prefetch={false} href="/hi" hrefLang="hi-IN" lang="hi">हिन्दी</Link>
+          <Link prefetch={false} href="/bn" hrefLang="bn-IN" lang="bn">বাংলা</Link>
         </div>
       </div>
       <nav className="footer-col" aria-label="Service categories">
         <strong>{t("Services", "सेवाएँ", "পরিষেবা")}</strong>
         {serviceCatalog.map((group) => {
           const meta = categoryMeta.find((item) => item.slug === group.slug);
-          return <Link key={group.slug} href={href(`/services/${group.slug}`)}>{meta && <span className={`mini-icon tone-${meta.tone}`}><CategoryIcon icon={meta.icon} size={14}/></span>}{meta?.short[lc] ?? group.title}</Link>;
+          return <Link prefetch={false} key={group.slug} href={href(`/services/${group.slug}`)}>{meta && <span className={`mini-icon tone-${meta.tone}`}><CategoryIcon icon={meta.icon} size={14}/></span>}{meta?.short[lc] ?? group.title}</Link>;
         })}
       </nav>
       <nav className="footer-col" aria-label="Popular services">
         <strong>{t("Popular", "लोकप्रिय", "জনপ্রিয়")}</strong>
-        {POPULAR.map(([path, en, hi, bn]) => <Link key={path} href={href(path)}>{t(en, hi, bn)}</Link>)}
-        <Link href={href("/services")}>{t("All services →", "सभी सेवाएँ →", "সব পরিষেবা →")}</Link>
+        {POPULAR.map(([path, en, hi, bn]) => <Link prefetch={false} key={path} href={href(path)}>{t(en, hi, bn)}</Link>)}
+        <Link prefetch={false} href={href("/services")}>{t("All services →", "सभी सेवाएँ →", "সব পরিষেবা →")}</Link>
       </nav>
       <nav className="footer-col" aria-label="Help and account">
         <strong>{t("Help", "सहायता", "সাহায্য")}</strong>
-        <Link href="/request">{t("Start a request", "अनुरोध शुरू करें", "অনুরোধ শুরু করুন")}</Link>
-        <Link href="/track">{t("Track a request", "अनुरोध ट्रैक करें", "অনুরোধ ট্র্যাক করুন")}</Link>
-        <Link href="/offers">{t("Offers", "ऑफ़र", "অফার")}</Link>
-        <Link href={href("/pricing")}>{t("Pricing", "दरें", "দর")}</Link>
-        <Link href={href("/gallery")}>{t("Gallery", "गैलरी", "গ্যালারি")}</Link>
-        <Link href={href("/blog")}>{t("Local guides", "स्थानीय गाइड", "স্থানীয় গাইড")}</Link>
-        <Link href={href("/faq")}>{t("FAQs", "सवाल-जवाब", "প্রশ্নোত্তর")}</Link>
-        <Link href={href("/about")}>{t("About us", "हमारे बारे में", "আমাদের সম্পর্কে")}</Link>
-        <Link href={href("/team")}>{t("Our team", "हमारी टीम", "আমাদের টিম")}</Link>
-        <Link href={href("/areas-we-serve")}>{t("Areas we serve", "हम कहाँ सेवा देते हैं", "আমরা যেখানে সেবা দিই")}</Link>
+        <Link prefetch={false} href="/request">{t("Start a request", "अनुरोध शुरू करें", "অনুরোধ শুরু করুন")}</Link>
+        <Link prefetch={false} href="/track">{t("Track a request", "अनुरोध ट्रैक करें", "অনুরোধ ট্র্যাক করুন")}</Link>
+        <Link prefetch={false} href="/offers">{t("Offers", "ऑफ़र", "অফার")}</Link>
+        <Link prefetch={false} href={href("/pricing")}>{t("Pricing", "दरें", "দর")}</Link>
+        <Link prefetch={false} href={href("/gallery")}>{t("Gallery", "गैलरी", "গ্যালারি")}</Link>
+        <Link prefetch={false} href={href("/blog")}>{t("Local guides", "स्थानीय गाइड", "স্থানীয় গাইড")}</Link>
+        <Link prefetch={false} href={href("/faq")}>{t("FAQs", "सवाल-जवाब", "প্রশ্নোত্তর")}</Link>
+        <Link prefetch={false} href={href("/about")}>{t("About us", "हमारे बारे में", "আমাদের সম্পর্কে")}</Link>
+        <Link prefetch={false} href={href("/team")}>{t("Our team", "हमारी टीम", "আমাদের টিম")}</Link>
+        <Link prefetch={false} href={href("/areas-we-serve")}>{t("Areas we serve", "हम कहाँ सेवा देते हैं", "আমরা যেখানে সেবা দিই")}</Link>
         <strong className="footer-col__sub">{t("Policies", "नीतियाँ", "নীতি")}</strong>
-        <Link href={href("/terms")}>{t("Terms and Conditions", "नियम और शर्तें", "নিয়ম ও শর্তাবলি")}</Link>
-        <Link href={href("/refund-policy")}>{t("Refund & Cancellation Policy", "रिफ़ंड व रद्दीकरण नीति", "রিফান্ড ও বাতিল নীতি")}</Link>
-        <Link href={href("/privacy")}>{t("Privacy Policy", "गोपनीयता नीति", "গোপনীয়তা নীতি")}</Link>
-        <Link href={href("/contact")}>{t("Contact us", "संपर्क करें", "যোগাযোগ করুন")}</Link>
+        <Link prefetch={false} href={href("/terms")}>{t("Terms and Conditions", "नियम और शर्तें", "নিয়ম ও শর্তাবলি")}</Link>
+        <Link prefetch={false} href={href("/refund-policy")}>{t("Refund & Cancellation Policy", "रिफ़ंड व रद्दीकरण नीति", "রিফান্ড ও বাতিল নীতি")}</Link>
+        <Link prefetch={false} href={href("/privacy")}>{t("Privacy Policy", "गोपनीयता नीति", "গোপনীয়তা নীতি")}</Link>
+        <Link prefetch={false} href={href("/contact")}>{t("Contact us", "संपर्क करें", "যোগাযোগ করুন")}</Link>
       </nav>
       <div className="footer-col footer-visit">
         <strong>{t("Visit us", "हमसे मिलें", "আমাদের কাছে আসুন")}</strong>
@@ -102,12 +102,12 @@ export default function FooterBody({ year, partners }: { year: number; partners:
         <li>{t("Kharangajhar, Telco · Since 1995", "खरंगाझार, टेल्को · 1995 से", "খরংগাঝাড়, টেলকো · ১৯৯৫ সাল থেকে")}</li>
       </ul>
       {/* <nav className="footer-policies" aria-label="Policies">
-        <Link href="/terms">Terms and Conditions</Link><Link href="/refund-policy">Refund &amp; Cancellation Policy</Link><Link href="/privacy">Privacy Policy</Link><Link href="/pricing">Pricing</Link>
+        <Link prefetch={false} href="/terms">Terms and Conditions</Link><Link prefetch={false} href="/refund-policy">Refund &amp; Cancellation Policy</Link><Link prefetch={false} href="/privacy">Privacy Policy</Link><Link prefetch={false} href="/pricing">Pricing</Link>
       </nav> */}
     </div>
     <div className="container footer-bottom">
       <p>{t("NISE COMPORT is an independent CSC / Pragya Kendra service centre, not a government office, bank or insurer. Official and third-party fees are separate from our service charge; final approvals rest with the relevant authority.", "NISE COMPORT एक स्वतंत्र CSC / प्रज्ञा केंद्र है, सरकारी कार्यालय, बैंक या बीमा कंपनी नहीं। सरकारी और तीसरे पक्ष का शुल्क हमारे सेवा शुल्क से अलग है; अंतिम मंज़ूरी संबंधित प्राधिकरण की होती है।", "NISE COMPORT একটি স্বাধীন CSC / প্রজ্ঞা কেন্দ্র, সরকারি অফিস, ব্যাংক বা বিমা কোম্পানি নয়। সরকারি ও তৃতীয় পক্ষের ফি আমাদের সার্ভিস চার্জ থেকে আলাদা; চূড়ান্ত অনুমোদন সংশ্লিষ্ট কর্তৃপক্ষের।")}</p>
-      <div className="footer-bottom__row"><span>© {year} {site.name}. {t("All rights reserved.", "सर्वाधिकार सुरक्षित।", "সর্বস্বত্ব সংরক্ষিত।")}</span><span><Link href={href("/contact")}>{t("Contact", "संपर्क", "যোগাযোগ")}</Link><Link href="/login">{t("Admin login", "एडमिन लॉगिन", "অ্যাডমিন লগইন")}</Link><Link href={MAIL_PATH}>{t("Mail login", "मेल लॉगिन", "মেল লগইন")}</Link></span></div>
+      <div className="footer-bottom__row"><span>© {year} {site.name}. {t("All rights reserved.", "सर्वाधिकार सुरक्षित।", "সর্বস্বত্ব সংরক্ষিত।")}</span><span><Link prefetch={false} href={href("/contact")}>{t("Contact", "संपर्क", "যোগাযোগ")}</Link><Link prefetch={false} href="/login">{t("Admin login", "एडमिन लॉगिन", "অ্যাডমিন লগইন")}</Link><Link prefetch={false} href={MAIL_PATH}>{t("Mail login", "मेल लॉगिन", "মেল লগইন")}</Link></span></div>
     </div>
   </footer>;
 }
