@@ -20,7 +20,7 @@ export default function ClaimsPanel({ onChange }: { onChange?: () => void }) {
   const load = useCallback(async () => {
     try { setData(await secureApi<Data>("Z2n5G8yL6bK3")); setError(""); } catch { setHidden(true); }
   }, []);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void Promise.resolve().then(load); }, [load]);
 
   async function act(action: "approve" | "reject" | "code" | "resolve", id: string) {
     setBusy(id + action); setError("");
