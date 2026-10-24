@@ -54,6 +54,30 @@ The planner compares **every exported Drizzle PostgreSQL table and column** in `
 
 If the planner lists **UNSAFE OR UNDOCUMENTED GAPS** or type mismatches, stop and review them before applying other migrations. It intentionally refuses to invent column types or modify existing column types. Indexes on populated existing tables are reported, not rebuilt automatically, since unique indexes may conflict with existing records.
 
+### Safe-subset procedure for the October 24 production audit
+
+A data backup saved **51,741 rows from 44 tables**, including **9,890 existing record_claims rows**. That table is **NOT EMPTY**. Never run full `db:schema:apply` on this state.
+
+Run from Windows Git Bash:
+
+```bash
+git pull --ff-only origin dev
+npm run db:claims:inspect
+npm run db:schema:check
+```
+
+`db:claims:inspect` is read-only and prints column definitions, aggregate claim counts, status counts and account phone coverage **without personal data**.
+
+To fix *only the independent missing structures*, after verifying the existing backup:
+
+```bash
+npm run db:schema:apply-safe -- --backup-confirmed --confirm "nisecomp1_nisecomport@45.199.139.25"
+```
+
+The `--skip-populated-partials` safety mode skips **all** DDL touching `record_claims` and applies the independent safe plan atomically. It is intentionally a **partial** repair. If it prints `PARTIAL SUCCESS` and exits non-zero, that is expected because the incompatible populated `record_claims` schema remains unresolved. Re-run the read-only audit; expect that `record_claims` still fails while independent tables pass.
+
+Do not force `phone` or `expires_at` values onto 9,890 historical claims: that could incorrectly grant access to customer records. Determine the provenance/status distribution first, then design a data-preserving migration. Do not run a production release build until all required tables pass.
+
 ### Partially created `record_claims` table (observed on 24 October)
 
 The production audit found eight missing columns on an **existing** `record_claims` table. These definitions are present in the migration's `CREATE TABLE`, not separate `ALTER TABLE` statements. The planner now extracts the exact column definitions and can complete **only an EMPTY existing table**, holding an exclusive lock during the transaction. The audit shows `EMPTY: eligible for guarded repair` or `BLOCKED: HAS ROWS`.
