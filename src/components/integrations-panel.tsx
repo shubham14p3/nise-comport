@@ -36,7 +36,7 @@ export default function IntegrationsPanel() {
     const result = await secureApi<{ integrations: Status[] }>("I8n3T5gR2sV7", {});
     setStatuses(result.integrations);
   }, []);
-  useEffect(() => { void load().catch(() => setNotice("Unable to load integrations. Check the server configuration.")); }, [load]);
+  useEffect(() => { void Promise.resolve().then(load).catch(() => setNotice("Unable to load integrations. Check the server configuration.")); }, [load]);
   const current = fields[provider];
   async function submit(action: "save" | "delete") {
     if (action === "delete" && !window.confirm("Remove this provider's stored credentials?")) return;
