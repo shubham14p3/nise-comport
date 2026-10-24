@@ -48,6 +48,9 @@ export async function getIntegration(provider: Provider): Promise<Record<string,
   const { rows } = await pool.query<{ ciphertext: string }>("SELECT ciphertext FROM integration_credentials WHERE provider=$1", [provider]);
   return rows[0] ? decrypt(rows[0].ciphertext) : null;
 }
+export async function resolveIntegration(provider: Provider) {
+  return (await getIntegration(provider)) ?? {};
+}
 export async function deleteIntegration(provider: Provider) {
   await ensureTable();
   await pool.query("DELETE FROM integration_credentials WHERE provider=$1", [provider]);
