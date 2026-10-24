@@ -9,7 +9,6 @@ import { isUniqueViolation, PublicError, RateLimitError, humanDuration } from "@
 import { clearRate, enforceRate, hitRate, identity, peekRate, RATE_RULES } from "@/lib/rate-limit";
 import { secondsUntilWindowEnds } from "@/lib/rate-limit-core";
 import { cleanName, isSixDigitCode, looksLikeEmail, normalizeEmail, normalizePhone, passwordProblem } from "@/lib/validation";
-import { otpChannels } from "@/lib/sms";
 import { isPlaceholderEmail } from "@/lib/mobile-login-core";
 import { grantVerifyReward } from "@/lib/verify-rewards";
 import { hasPermission, type Permission } from "@/lib/permissions";
@@ -222,9 +221,10 @@ async function resolveLoginEmail(input: string) {
   if (input.includes("@")) return normalizeEmail(input);
   const phone = normalizePhone(input);
   if (!phone) return normalizeEmail(input);
-  // Once SMS codes are switched on, only numbers proven with a code can be used to sign in.
-  const proven = otpChannels().length > 0 ? sql`${users.phoneVerifiedAt} is not null` : undefined;
-  const rows = await db.select({ email: users.email }).from(users).where(and(eq(users.phone, phone), isNull(users.deletedAt), proven)).limit(2);
+  // A password proves account access. SMS verification is required for SMS sign-in and
+  // self-service phone recovery, not to use a unique registered number as a login ID.
+  // Keep ambiguity fail-closed; never select the first of two matching accounts.
+  const rows = await db.select({ email: users.email }).from(users).where(and(eq(users.phone, phone), isNull(users.deletedAt), isNull(users.disabledAt))).limit(2);
   return rows.length === 1 ? rows[0].email : `phone-${phone.replace(/\D/g, "")}@unmatched.invalid`;
 }
 
@@ -254,7 +254,9 @@ export async function signInWithPassword(emailInput: string, password: string, i
     throw new PublicError(`Email, mobile number or password is incorrect.${warning}`, 401, { code: "invalid_credentials" });
   }
   await clearRate(RATE_RULES.passwordFailuresPerEmail15m, emailId);
-  if (!user.emailVerifiedAt) {
+  // Mobile-first accounts have a non-deliverable placeholder address. They may
+  // still use a password they explicitly set, without triggering an impossible email OTP.
+  if (!user.emailVerifiedAt && !isPlaceholderEmail(user.email)) {
     try { await issueCode(email, "signin", "signin"); } catch (error) { if (!(error instanceof RateLimitError)) throw error; }
     return { requiresOtp: true as const };
   }
