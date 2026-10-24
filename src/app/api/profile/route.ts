@@ -35,6 +35,11 @@ export async function PATCH(request: NextRequest) {
     if (input.phone.trim() && !phone) fields.phone = "Enter a valid phone number, e.g. 98765 43210.";
     const whatsapp = input.whatsapp.trim() ? normalizePhone(input.whatsapp) : null;
     if (input.whatsapp.trim() && !whatsapp) fields.whatsapp = "Enter a valid WhatsApp number, e.g. 98765 43210.";
+    if (phone && phone !== user.phone) {
+      const [other] = await db.select({ id: users.id }).from(users)
+        .where(and(eq(users.phone, phone), sql`${users.id} <> ${user.id}`, sql`${users.deletedAt} is null`)).limit(1);
+      if (other) fields.phone = "This mobile number is already linked to another account.";
+    }
     if (input.postalCode && !isIndianPin(input.postalCode)) fields.postalCode = "Enter a valid 6-digit PIN code.";
     if ((input.preferredContact === "phone" || input.preferredContact === "whatsapp") && !phone) fields.preferredContact = "Add a phone number to get updates by phone or WhatsApp.";
     if (Object.keys(fields).length) throw new PublicError(Object.values(fields)[0], 400, { code: "invalid_input", fields });
