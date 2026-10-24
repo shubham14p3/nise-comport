@@ -254,7 +254,11 @@ async function internalFetch(request: NextRequest, target: { method: string; pat
   const url = new URL(target.path, `http://127.0.0.1:${port}`);
   const headers = new Headers();
   headers.set("x-nise-internal", secret);
-  headers.set("origin", request.nextUrl.origin);
+  // The authenticated server-to-server fetch targets the loopback listener.
+  // Its Origin must match that local host; forwarding the browser's public
+  // Origin causes the proxy CSRF check to reject a legitimate internal call.
+  // Direct browser requests still undergo the normal same-origin checks.
+  headers.set("origin", url.origin);
 
   const cookie = request.headers.get("cookie");
   if (cookie) headers.set("cookie", cookie);
