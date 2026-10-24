@@ -48,6 +48,8 @@ The `.next/` directory is intentionally ignored by Git. Archive it directly; exc
 ```bash
 tar -czf nise-next.tar.gz --exclude='.next/cache' --exclude='.next/dev' .next
 scp -P 22 nise-next.tar.gz nisecomp2@45.199.139.25:~/nisecomport.aitapri.com/
+# Update the two verification scripts as well; these are NOT included in .next.
+scp -P 22 scripts/check-build.mjs scripts/api-smoke-check.mjs nisecomp2@45.199.139.25:~/nisecomport.aitapri.com/scripts/
 ```
 
 Do **not** upload Windows `node_modules/` to Linux. Leave Linux-installed production dependencies on the server.
@@ -66,6 +68,8 @@ node scripts/check-build.mjs
 ```
 
 3. If the complete build is found, use the panel's **Restart** button. Keep `.next-previous` until the deployed app passes smoke tests; archive/clean it after confirmation. Transferring a tarball does not automatically deploy code outside `.next`; ensure the server source, `next.config.ts`, and package version match the build where necessary.
+
+4. With the panel-managed app running, execute `node scripts/api-smoke-check.mjs` over SSH. It checks private-route token enforcement, a safe invalid login payload, and rejection of foreign Origins **without writing user data**. All three checks must report PASS.
 
 ## Smoke tests — every deployment
 
