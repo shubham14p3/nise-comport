@@ -146,3 +146,16 @@ export function planRepair(expected, existing, steps, existingIndexes = new Set(
   const deferredIndexes = indexCandidates.filter((item) => !created.has(item.table) && !patchedExisting.has(item.table));
   return { pending, blockers, deferredIndexes, documentedIndexes, createdTables: [...created], partialTables: [...patchedExisting] };
 }
+
+
+/** Explicitly separate safe additive operations from populated legacy partial tables.
+ * Unrelated missing structures can be repaired without touching preserved rows.
+ * This only partitions a plan; permission and atomicity checks happen in the runner.
+ */
+export function safeSubsetForPopulatedPartials(plan, populatedTables) {
+  const skipped = new Set(populatedTables);
+  return {
+    skipped,
+    executableSteps: plan.pending.filter((step) => !skipped.has(step.table)),
+  };
+}
