@@ -14,12 +14,12 @@ function env(name: string) {
 }
 
 function canonicalUrl() {
-  const raw = env("NEXT_PUBLIC_SITE_URL") ?? "https://www.nisecomport.com";
+  const raw = env("NEXT_PUBLIC_SITE_URL") ?? "https://nisecomport.aitapri.com";
   try {
     const url = new URL(raw);
     return `${url.protocol}//${url.host}`;
   } catch {
-    return "https://www.nisecomport.com";
+    return "https://nisecomport.aitapri.com";
   }
 }
 
