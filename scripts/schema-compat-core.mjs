@@ -4,6 +4,45 @@
  * plus the narrowly scoped ADD CONSTRAINT statements used for brand-new tables.
  * Never executes INSERT/UPDATE/DELETE, DROP, TRUNCATE, or ledger modifications.
  */
+/** Extract exact column definitions from CREATE TABLE, splitting only top-level commas.
+ * This supports repairing an existing, EMPTY table that was partially created.
+ * It deliberately does not infer definitions from the ORM model.
+ */
+function createColumnDefinitions(statement) {
+  const start = statement.indexOf("(");
+  const end = statement.lastIndexOf(")");
+  if (start < 0 || end <= start) return [];
+  const body = statement.slice(start + 1, end);
+  const parts = [];
+  let part = "", depth = 0, quote = "";
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i];
+    const next = body[i + 1];
+    if (quote) {
+      part += ch;
+      if (ch === quote) {
+        if (next === quote) { part += next; i++; }
+        else quote = "";
+      }
+    } else if (ch === "'" || ch === '"') {
+      quote = ch; part += ch;
+    } else if (ch === "(") {
+      depth++; part += ch;
+    } else if (ch === ")") {
+      depth--; part += ch;
+    } else if (ch === "," && depth === 0) {
+      parts.push(part.trim()); part = "";
+    } else {
+      part += ch;
+    }
+  }
+  if (part.trim()) parts.push(part.trim());
+  return parts.flatMap((item) => {
+    const m = item.match(/^"([^"]+)"\s+([\s\S]+)$/);
+    return m ? [{ name: m[1], definition: m[2].trim() }] : [];
+  });
+}
+
 export function migrationSteps(files) {
   const steps = [];
   for (const { name, content } of files) {
@@ -12,9 +51,9 @@ export function migrationSteps(files) {
       if (!raw) continue;
       const tableMatch = raw.match(/^CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:"public"\.)?"([^"]+)"\s*\(/i);
       if (tableMatch) {
-        const body = raw.slice(raw.indexOf("(", tableMatch[0].length - 1) + 1, raw.lastIndexOf(")"));
-        const columns = [...body.matchAll(/(?:^|[,\n])\s*"([^"]+)"\s+[a-z]/gim)].map((m) => m[1]);
-        steps.push({ name, kind: "table", table: tableMatch[1], columns, sql: raw.replace(/^CREATE\s+TABLE\s+/i, "CREATE TABLE IF NOT EXISTS ").replace(/^CREATE TABLE IF NOT EXISTS IF NOT EXISTS /i, "CREATE TABLE IF NOT EXISTS ") });
+        const definitions = createColumnDefinitions(raw);
+        const columns = definitions.map((item) => item.name);
+        steps.push({ name, kind: "table", table: tableMatch[1], columns, definitions, sql: raw.replace(/^CREATE\s+TABLE\s+/i, "CREATE TABLE IF NOT EXISTS ").replace(/^CREATE TABLE IF NOT EXISTS IF NOT EXISTS /i, "CREATE TABLE IF NOT EXISTS ") });
         continue;
       }
       const columnMatch = raw.match(/^ALTER\s+TABLE\s+(?:"public"\.)?"([^"]+)"\s+ADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?"([^"]+)"\s+([\s\S]+)$/i);
@@ -51,6 +90,7 @@ export function planRepair(expected, existing, steps, existingIndexes = new Set(
   const have = new Map([...existing].map(([name, cols]) => [name, new Set(cols)]));
   const pending = [];
   const created = new Set();
+  const patchedExisting = new Set();
   const indexCandidates = [];
   const fkCandidates = [];
   const documentedIndexes = [];
@@ -59,7 +99,21 @@ export function planRepair(expected, existing, steps, existingIndexes = new Set(
     const required = expected.get(step.table);
     if (!required) continue;
     if (step.kind === "table") {
-      if (have.has(step.table)) continue;
+      if (have.has(step.table)) {
+        // A partially created table can be completed only if it is empty.
+        // The apply script rechecks this under an exclusive transaction lock.
+        for (const { name, definition } of step.definitions ?? []) {
+          if (!required.has(name) || have.get(step.table).has(name)) continue;
+          pending.push({
+            name: step.name, kind: "partial-column", table: step.table,
+            column: name, requiresEmptyTable: true,
+            sql: `ALTER TABLE "${step.table}" ADD COLUMN IF NOT EXISTS "${name}" ${definition};`,
+          });
+          have.get(step.table).add(name);
+          patchedExisting.add(step.table);
+        }
+        continue;
+      }
       have.set(step.table, new Set(step.columns));
       created.add(step.table);
       pending.push(step);
@@ -78,7 +132,10 @@ export function planRepair(expected, existing, steps, existingIndexes = new Set(
   // Indexes and FKs on new, empty tables are safe to add after all tables and
   // columns exist. Indexes on populated existing tables are review-only.
   for (const step of fkCandidates) if (created.has(step.table)) pending.push(step);
-  for (const step of indexCandidates) if (created.has(step.table)) pending.push(step);
+  for (const step of indexCandidates) {
+    if (created.has(step.table)) pending.push(step);
+    else if (patchedExisting.has(step.table)) pending.push({ ...step, requiresEmptyTable: true });
+  }
 
   const blockers = [];
   for (const [table, cols] of expected) {
@@ -86,6 +143,6 @@ export function planRepair(expected, existing, steps, existingIndexes = new Set(
     for (const col of cols) if (!have.get(table).has(col)) blockers.push(`No additive migration for ${table}.${col}`);
   }
 
-  const deferredIndexes = indexCandidates.filter((item) => !created.has(item.table));
-  return { pending, blockers, deferredIndexes, documentedIndexes, createdTables: [...created] };
+  const deferredIndexes = indexCandidates.filter((item) => !created.has(item.table) && !patchedExisting.has(item.table));
+  return { pending, blockers, deferredIndexes, documentedIndexes, createdTables: [...created], partialTables: [...patchedExisting] };
 }
