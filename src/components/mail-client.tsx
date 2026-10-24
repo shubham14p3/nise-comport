@@ -7,7 +7,7 @@ import { secureApi, secureFile, SecureApiError } from "@/lib/secure-api-client";
 import {
   findReferences, formatBytes, QUICK_REPLIES, STAFF_STATUS_LABEL, STATUS_LABEL, TICKET_STATUSES, type MailAttachmentInfo, type MailMeta, type MailTicketDetail, type MailTicketSummary, type TicketStatus,
 } from "@/lib/mail-core";
-import { FileGlyph, FileViewer, linkedFileSource, mailFileSource, PendingList, printBlob, saveBlob, Thumb, useAttachments, type FileSource } from "@/components/mail-files";
+import { FileViewer, linkedFileSource, mailFileSource, PendingList, printBlob, saveBlob, Thumb, useAttachments, type FileSource } from "@/components/mail-files";
 
 const OP = { read: "Q3x8M5wT2kB7", write: "Z6n2K9cR4vP1", zip: "T2m7S5xK9wD4" } as const;
 
@@ -69,7 +69,7 @@ export default function MailClient({ mode, onUnread }: { mode: "customer" | "sta
   // Wider reading: fold the folder column into a slim rail, or hide the list while reading. Remembered on this device.
   const [rail, setRail] = useState(false);
   const [wide, setWide] = useState(false);
-  useEffect(() => { try { setRail(window.localStorage.getItem("nc-mail-rail") === "1"); } catch { /* storage blocked */ } }, []);
+  useEffect(() => { try { const storedRail = window.localStorage.getItem("nc-mail-rail") === "1"; queueMicrotask(() => setRail(storedRail)); } catch { /* storage blocked */ } }, []);
   const toggleRail = () => setRail((value) => { try { window.localStorage.setItem("nc-mail-rail", value ? "0" : "1"); } catch { /* storage blocked */ } return !value; });
   const listRequest = useRef(0);
   const selectedRef = useRef<string | null>(null);
@@ -93,8 +93,8 @@ export default function MailClient({ mode, onUnread }: { mode: "customer" | "sta
   }, [box, query]);
 
   useEffect(() => { const timer = window.setTimeout(() => setQuery(search.trim()), 300); return () => window.clearTimeout(timer); }, [search]);
-  useEffect(() => { void loadList(true); }, [loadList]);
-  useEffect(() => { void loadMeta(); }, [loadMeta]);
+  useEffect(() => { void Promise.resolve().then(() => loadList(true)); }, [loadList]);
+  useEffect(() => { void Promise.resolve().then(loadMeta); }, [loadMeta]);
   // Poll every 45 seconds while the tab is visible, and refresh at once when the person comes back to it.
   useEffect(() => {
     const refresh = () => { if (document.visibilityState === "visible") { void loadList(true); void loadMeta(); } };
@@ -132,7 +132,7 @@ export default function MailClient({ mode, onUnread }: { mode: "customer" | "sta
   useEffect(() => {
     if (!selected || !detail) return;
     const row = tickets.find((ticket) => ticket.id === selected);
-    if (row && row.lastMessageAt > detail.ticket.lastMessageAt) void openTicket(selected, true);
+    if (row && row.lastMessageAt > detail.ticket.lastMessageAt) void Promise.resolve().then(() => openTicket(selected, true));
   }, [tickets, selected, detail, openTicket]);
 
   async function syncMailbox() {
