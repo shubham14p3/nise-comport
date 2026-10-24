@@ -153,11 +153,11 @@ export default function SiteHeader() {
     <OfferTicker locale={locale}/>
     <header className="site-header">
       <div className="container nav-wrap">
-        <Link className="brand" href={home} aria-label="NISE COMPORT home"><BrandWordmark/></Link>
+        <Link prefetch={false} className="brand" href={home} aria-label="NISE COMPORT home"><BrandWordmark/></Link>
         <nav className="desktop-nav" aria-label="Main navigation">
           {links.map((link) => isServicesLink(link.href)
             ? <ServicesMegaDesktop key={link.href} label={link.label} active={isActive(link.href)}/>
-            : <Link key={link.href} href={link.href} className={isActive(link.href) ? "is-active" : undefined} aria-current={isActive(link.href) ? "page" : undefined}>{link.label}{link.live && <i className="live-dot" aria-hidden="true"/>}</Link>)}
+            : <Link prefetch={false} key={link.href} href={link.href} className={isActive(link.href) ? "is-active" : undefined} aria-current={isActive(link.href) ? "page" : undefined}>{link.label}{link.live && <i className="live-dot" aria-hidden="true"/>}</Link>)}
         </nav>
         <div className="nav-actions">
           <LanguageMenu locale={locale} label={t.changeLanguage} compact/>
@@ -168,15 +168,15 @@ export default function SiteHeader() {
                   <span className="account-avatar">{firstName.slice(0, 1).toUpperCase() || <UserRound size={16}/>}</span><span className="account-name">{firstName || t.myProfile}</span>
                 </button>
                 {accountOpen && <div className="account-dropdown" role="menu">
-                  <Link role="menuitem" href="/profile"><UserRound size={16}/>{tt("Normal view", "सामान्य व्यू", "সাধারণ ভিউ")}</Link>
-                  {isStaffRole(account.role) && <Link role="menuitem" href={account.role === "admin" ? `${STAFF_HOME}?view=staff` : STAFF_HOME}><LayoutDashboard size={16}/>{tt("Staff view", "स्टाफ़ व्यू", "স্টাফ ভিউ")}</Link>}
-                  {account.role === "admin" && <Link role="menuitem" href={STAFF_HOME}><ShieldCheck size={16}/>{tt("Admin view", "एडमिन व्यू", "অ্যাডমিন ভিউ")}</Link>}
+                  <Link prefetch={false} role="menuitem" href="/profile"><UserRound size={16}/>{tt("Normal view", "सामान्य व्यू", "সাধারণ ভিউ")}</Link>
+                  {isStaffRole(account.role) && <Link prefetch={false} role="menuitem" href={account.role === "admin" ? `${STAFF_HOME}?view=staff` : STAFF_HOME}><LayoutDashboard size={16}/>{tt("Staff view", "स्टाफ़ व्यू", "স্টাফ ভিউ")}</Link>}
+                  {account.role === "admin" && <Link prefetch={false} role="menuitem" href={STAFF_HOME}><ShieldCheck size={16}/>{tt("Admin view", "एडमिन व्यू", "অ্যাডমিন ভিউ")}</Link>}
                 </div>}
               </div>
               <button className="icon-btn nav-signout" type="button" onClick={() => void signOut()} disabled={signingOut} title={t.signOut} aria-label={t.signOut}><LogOut size={18}/></button>
             </>
-            : <Link className="nav-signin" href="/login">{t.signIn}</Link>}
-          <Link className="btn btn--primary btn--sm nav-cta" href="/request">{t.startRequest}<ArrowRight size={16}/></Link>
+            : <Link prefetch={false} className="nav-signin" href="/login">{t.signIn}</Link>}
+          <Link prefetch={false} className="btn btn--primary btn--sm nav-cta" href="/request">{t.startRequest}<ArrowRight size={16}/></Link>
           <button className="menu-toggle" type="button" aria-expanded={menuOpen} aria-controls="mobile-sheet" onClick={() => setMenuOpen((value) => !value)}>
             {menuOpen ? <X size={22}/> : <Menu size={22}/>}<span className="sr-only">{menuOpen ? t.close : t.menu}</span>
           </button>
@@ -186,23 +186,23 @@ export default function SiteHeader() {
     <div id="mobile-sheet" className={menuOpen ? "mobile-sheet is-open" : "mobile-sheet"} hidden={!menuOpen}>
       <div className="mobile-sheet__backdrop" onClick={() => setMenuOpen(false)}/>
       <nav className="mobile-sheet__panel" aria-label="Mobile navigation">
-        <div className="mobile-sheet__top"><Link className="brand" href={home}><BrandWordmark/></Link><button className="icon-btn" type="button" onClick={() => setMenuOpen(false)} aria-label={t.close}><X size={22}/></button></div>
+        <div className="mobile-sheet__top"><Link prefetch={false} className="brand" href={home}><BrandWordmark/></Link><button className="icon-btn" type="button" onClick={() => setMenuOpen(false)} aria-label={t.close}><X size={22}/></button></div>
         <form role="search" className="mobile-sheet__search" onSubmit={submitMobileSearch}>
           <Search size={18} aria-hidden="true"/>
           <label className="sr-only" htmlFor="mobile-search">{tt("Search services", "सेवाएँ खोजें", "পরিষেবা খুঁজুন")}</label>
           <input id="mobile-search" type="search" value={mobileQuery} onChange={(event) => setMobileQuery(event.target.value)} placeholder={tt("Search services…", "सेवाएँ खोजें…", "পরিষেবা খুঁজুন…")} autoComplete="off" enterKeyHint="search"/>
         </form>
         <div className="mobile-sheet__links">
-          {[{ href: home, label: t.home }, ...links, { href: lp(locale, "/about"), label: t.about }, { href: lp(locale, "/areas-we-serve"), label: t.areas }, { href: lp(locale, "/faq"), label: t.faq }, { href: "/track", label: tt("Track a request", "अनुरोध ट्रैक करें", "অনুরোধ ট্র্যাক করুন") }].map((link, index) => isServicesLink(link.href) ? <ServicesMegaMobile key={link.href} label={link.label}/> : <Link key={link.href} href={link.href} style={{ animationDelay: `${index * 30}ms` }}>{link.label}<ArrowRight size={18}/></Link>)}
+          {[{ href: home, label: t.home }, ...links, { href: lp(locale, "/about"), label: t.about }, { href: lp(locale, "/areas-we-serve"), label: t.areas }, { href: lp(locale, "/faq"), label: t.faq }, { href: "/track", label: tt("Track a request", "अनुरोध ट्रैक करें", "অনুরোধ ট্র্যাক করুন") }].map((link, index) => isServicesLink(link.href) ? <ServicesMegaMobile key={link.href} label={link.label}/> : <Link prefetch={false} key={link.href} href={link.href} style={{ animationDelay: `${index * 30}ms` }}>{link.label}<ArrowRight size={18}/></Link>)}
         </div>
         <div className="mobile-sheet__lang"><span>{t.changeLanguage}</span><LanguageMenu locale={locale} label={t.changeLanguage} inline/></div>
         <div className="mobile-sheet__actions">
-          <Link className="btn btn--primary btn--block" href="/request">{t.startRequest}<ArrowRight size={18}/></Link>
-          {loaded && account && isStaffRole(account.role) && <Link className="btn btn--ghost btn--block" href={account.role === "admin" ? `${STAFF_HOME}?view=staff` : STAFF_HOME}><LayoutDashboard size={18}/>{tt("Staff view", "स्टाफ़ व्यू", "স্টাফ ভিউ")}</Link>}
-          {loaded && account && account.role === "admin" && <Link className="btn btn--ghost btn--block" href={STAFF_HOME}><ShieldCheck size={18}/>{tt("Admin view", "एडमिन व्यू", "অ্যাডমিন ভিউ")}</Link>}
+          <Link prefetch={false} className="btn btn--primary btn--block" href="/request">{t.startRequest}<ArrowRight size={18}/></Link>
+          {loaded && account && isStaffRole(account.role) && <Link prefetch={false} className="btn btn--ghost btn--block" href={account.role === "admin" ? `${STAFF_HOME}?view=staff` : STAFF_HOME}><LayoutDashboard size={18}/>{tt("Staff view", "स्टाफ़ व्यू", "স্টাফ ভিউ")}</Link>}
+          {loaded && account && account.role === "admin" && <Link prefetch={false} className="btn btn--ghost btn--block" href={STAFF_HOME}><ShieldCheck size={18}/>{tt("Admin view", "एडमिन व्यू", "অ্যাডমিন ভিউ")}</Link>}
           {loaded && account
-            ? <div className="mobile-sheet__row"><Link className="btn btn--ghost" href="/profile"><UserRound size={18}/>{t.myProfile}</Link><button className="btn btn--ghost" type="button" onClick={() => void signOut()} disabled={signingOut}><LogOut size={18}/>{signingOut ? t.signingOut : t.signOut}</button></div>
-            : <Link className="btn btn--ghost btn--block" href="/login">{t.signIn}</Link>}
+            ? <div className="mobile-sheet__row"><Link prefetch={false} className="btn btn--ghost" href="/profile"><UserRound size={18}/>{t.myProfile}</Link><button className="btn btn--ghost" type="button" onClick={() => void signOut()} disabled={signingOut}><LogOut size={18}/>{signingOut ? t.signingOut : t.signOut}</button></div>
+            : <Link prefetch={false} className="btn btn--ghost btn--block" href="/login">{t.signIn}</Link>}
           <div className="mobile-sheet__row"><a className="btn btn--wa" href={WHATSAPP} target="_blank" rel="noopener noreferrer"><WhatsAppIcon/>{t.whatsapp}</a><a className="btn btn--ghost" href={`tel:${PHONE}`}><Phone size={18}/>{t.call}</a></div>
         </div>
       </nav>
