@@ -19,7 +19,7 @@ import { loadEnvFile } from "node:process";
 import pg from "pg";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import * as models from "../src/db/schema.ts";
-import { migrationSteps, planRepair } from "./schema-compat-core.mjs";
+import { migrationSteps, planRepair, safeSubsetForPopulatedPartials } from "./schema-compat-core.mjs";
 
 if (existsSync(".env.local")) loadEnvFile(".env.local");
 else if (existsSync(".env")) loadEnvFile(".env");
@@ -173,8 +173,9 @@ try {
   const initial = drift(before);
   const plan = planRepair(expected, before.tables, steps, before.indices);
   const nonEmptyPartial = await nonEmptyPartialTables(plan.partialTables);
-  const skippedPartial = new Set(safeSubset ? nonEmptyPartial : []);
-  const executableSteps = safeSubset ? plan.pending.filter((step) => !skippedPartial.has(step.table)) : plan.pending;
+  const { skipped: skippedPartial, executableSteps } = safeSubset
+    ? safeSubsetForPopulatedPartials(plan, nonEmptyPartial)
+    : { skipped: new Set(), executableSteps: plan.pending };
   printGroup(initial.missing, "MISSING TABLES / COLUMNS");
   printGroup([...plan.blockers, ...nonEmptyPartial.map((table) =>
     `Existing partial table ${table} HAS ROWS; automated column repair blocked to preserve data`
@@ -195,7 +196,8 @@ try {
   if (!apply) {
     const probeFailures = await criticalQueries();
     console.log(`\nTo back up locally: npm run db:backup -- --no-readable`);
-    console.log(`To apply: npm run db:schema:apply -- --backup-confirmed --confirm ${JSON.stringify(target)}`);
+    console.log(`To apply full sync (all gaps must be resolvable): npm run db:schema:apply -- --backup-confirmed --confirm ${JSON.stringify(target)}`);
+    if (nonEmptyPartial.length) console.log(`To repair only UNRELATED missing structures (leave populated tables untouched): npm run db:schema:apply-safe -- --backup-confirmed --confirm ${JSON.stringify(target)}`);
     if (initial.missing.length || plan.blockers.length || nonEmptyPartial.length || probeFailures) process.exitCode = 1;
   } else {
     if (plan.blockers.length || (!safeSubset && nonEmptyPartial.length) || initial.typeMismatch.length) {
