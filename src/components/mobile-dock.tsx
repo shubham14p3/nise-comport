@@ -18,10 +18,10 @@ export default function MobileDock() {
   const home = locale === "en" ? "/" : `/${locale}`;
   const active = (href: string) => (href === home ? pathname === href : pathname.startsWith(href));
   return <nav className="mobile-dock" aria-label="Quick navigation">
-    <Link href={home} className={active(home) ? "is-active" : undefined}><House size={21}/><span>{t.home}</span></Link>
-    <Link href="/services" className={active("/services") ? "is-active" : undefined}><LayoutGrid size={21}/><span>{t.services}</span></Link>
-    <Link href="/request" className="mobile-dock__fab" aria-label={t.startRequest}><span className="mobile-dock__fab-circle"><Plus size={26}/></span><span>{t.request}</span></Link>
-    <Link href="/offers" className={active("/offers") ? "is-active" : undefined}><BadgePercent size={21}/><span>{t.offers}</span><i className="live-dot" aria-hidden="true"/></Link>
-    <Link href="/profile" className={active("/profile") ? "is-active" : undefined}><UserRound size={21}/><span>{t.account}</span></Link>
+    <Link prefetch={false} href={home} className={active(home) ? "is-active" : undefined}><House size={21}/><span>{t.home}</span></Link>
+    <Link prefetch={false} href="/services" className={active("/services") ? "is-active" : undefined}><LayoutGrid size={21}/><span>{t.services}</span></Link>
+    <Link prefetch={false} href="/request" className="mobile-dock__fab" aria-label={t.startRequest}><span className="mobile-dock__fab-circle"><Plus size={26}/></span><span>{t.request}</span></Link>
+    <Link prefetch={false} href="/offers" className={active("/offers") ? "is-active" : undefined}><BadgePercent size={21}/><span>{t.offers}</span><i className="live-dot" aria-hidden="true"/></Link>
+    <Link prefetch={false} href="/profile" className={active("/profile") ? "is-active" : undefined}><UserRound size={21}/><span>{t.account}</span></Link>
   </nav>;
 }
