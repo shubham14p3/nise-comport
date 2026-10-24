@@ -21,7 +21,7 @@ export async function GET() {
     const credits = await db.select({ reference: couponCredits.reference }).from(couponCredits).where(sql`${couponCredits.reference} like ${`welcome:%:${user.id}`}`);
     const earned = [...wallet.map((row) => String(row.reference).split(":")[1]), ...credits.map((row) => String(row.reference).split(":")[1])];
     return NextResponse.json({
-      missing: missingDetails(user), smsEnabled: otpChannels().length > 0, whatsappEnabled: otpChannels().includes("whatsapp"), rewards: VERIFY_REWARD_RUPEES,
+      missing: missingDetails(user), smsEnabled: otpChannels().includes("sms"), whatsappEnabled: otpChannels().includes("whatsapp"), rewards: VERIFY_REWARD_RUPEES,
       earned,
       user: { name: user.name, email: isPlaceholderEmail(user.email) ? "" : user.email, phone: user.phone ?? "", whatsapp: user.whatsapp ?? "" },
     }, { headers: { "cache-control": "private, no-store" } });
