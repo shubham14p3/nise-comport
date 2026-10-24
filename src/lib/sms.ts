@@ -98,6 +98,7 @@ export async function sendOtpSms(e164: string, code: string, preferred?: string 
     const vault = await getIntegration("whatsapp").catch(() => null);
     if (vault?.token && vault.phoneId && vault.template) {
       const components: unknown[] = [{ type: "body", parameters: [{ type: "text", text: code }] }];
+      if (vault.button !== "off") components.push({ type: "button", sub_type: "url", index: "0", parameters: [{ type: "text", text: code }] });
       const response = await post(`https://graph.facebook.com/v23.0/${encodeURIComponent(vault.phoneId)}/messages`, {
         method: "POST",
         headers: { authorization: `Bearer ${vault.token}`, "content-type": "application/json" },
