@@ -49,7 +49,7 @@ export default function ReviewForm({ reference }: { reference: string }) {
   if (!snapshot.completed) {
     return <div className="pan-card">
       <h3>{snapshot.serviceName}</h3>
-      <p>{snapshot.reference} is currently “{snapshot.statusLabel}”. We'll ask you to rate it once it's marked complete.</p>
+      <p>{snapshot.reference} is currently “{snapshot.statusLabel}”. We&apos;ll ask you to rate it once it&apos;s marked complete.</p>
       <Link className="btn btn--ghost btn--sm" href="/profile#requests">Back to my requests</Link>
     </div>;
   }
@@ -79,11 +79,11 @@ export default function ReviewForm({ reference }: { reference: string }) {
       {feedback && <p>Your note: “{feedback}”</p>}
       {showGoogleNudge && snapshot.googleReviewUrl && <div className="note-card" style={{ marginTop: 16 }}>
         <Star size={20}/>
-        <p>Glad we could help! Would you mind sharing this on Google too? It's the biggest way neighbours find honest local help.<br/>
+        <p>Glad we could help! Would you mind sharing this on Google too? It&apos;s the biggest way neighbours find honest local help.<br/>
           <a className="btn btn--primary btn--sm" style={{ marginTop: 10 }} href={snapshot.googleReviewUrl} target="_blank" rel="noopener noreferrer">Leave a Google review <ArrowUpRight size={16}/></a>
         </p>
       </div>}
-      {!showGoogleNudge && <p className="muted">We've passed your note to the team — thank you for taking the time.</p>}
+      {!showGoogleNudge && <p className="muted">We&apos;ve passed your note to the team — thank you for taking the time.</p>}
       <Link className="profile-text-button" href="/profile#requests" style={{ marginTop: 12, display: "inline-block" }}>Back to my requests</Link>
     </>}
   </div>;
