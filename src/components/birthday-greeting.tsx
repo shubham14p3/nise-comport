@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Check, Copy, X } from "lucide-react";
 import { dateLabel } from "@/lib/outreach-core";
 import { secureApi } from "@/lib/secure-api-client";
+import { getSessionUser, SESSION_CHANGED } from "@/lib/session-client";
 import { lp, tr } from "@/lib/tr";
 import { useLocale } from "@/lib/use-locale";
 
@@ -26,24 +27,30 @@ export default function BirthdayGreeting() {
 
   useEffect(() => {
     if (skip(path)) return;
-    try {
-      if (sessionStorage.getItem("nc-bday-checked") === "1") return;
-      // Not signed in: don't ask again on every page, only every half minute.
-      if (Date.now() - Number(sessionStorage.getItem("nc-bday-anon") ?? 0) < 30_000) return;
-    } catch { /* storage unavailable: just ask */ }
     let live = true;
-    secureApi<{ signedIn?: boolean; greeting?: Greeting | null }>("M5q9B2nT7wR3")
-      .then((data) => {
-        if (!live) return;
-        if (!data?.signedIn) { try { sessionStorage.setItem("nc-bday-anon", String(Date.now())); } catch { /* ignore */ } return; }
+    const check = async () => {
+      try {
+        if (sessionStorage.getItem("nc-bday-checked") === "1") return;
+      } catch { /* storage unavailable */ }
+
+      try {
+        // Previously this hit the birthday endpoint on every anonymous visit
+        // (after a 30-second cooldown). Share the navbar's session lookup.
+        const user = await getSessionUser();
+        if (!live || !user) return;
+        const data = await secureApi<{ signedIn?: boolean; greeting?: Greeting | null }>("M5q9B2nT7wR3");
+        if (!live || !data?.signedIn) return;
         try { sessionStorage.setItem("nc-bday-checked", "1"); } catch { /* ignore */ }
         const found = data.greeting;
         if (!found) return;
         try { if (localStorage.getItem(`nc-bday-${found.birthday}`) === "1") return; } catch { /* ignore */ }
         setGreeting(found);
-      })
-      .catch(() => undefined);
-    return () => { live = false; };
+      } catch { /* birthday notification is optional */ }
+    };
+    void check();
+    // The root layout persists after login, so retry when auth changes.
+    window.addEventListener(SESSION_CHANGED, check);
+    return () => { live = false; window.removeEventListener(SESSION_CHANGED, check); };
   }, [path]);
 
   const close = useCallback(() => {
