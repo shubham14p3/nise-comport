@@ -6,6 +6,7 @@ import { Lock, X } from "lucide-react";
 import type { Offer } from "@/lib/offers";
 import { liveOfferCodes, type PromoView } from "@/lib/promo-view";
 import { secureApi } from "@/lib/secure-api-client";
+import { getSessionUser, SESSION_CHANGED } from "@/lib/session-client";
 
 /** Festival and sports codes that are live today, loaded once by the root layout. Visitors only ever get masked codes. */
 const OffersContext = createContext<PromoView[]>([]);
@@ -30,11 +31,33 @@ export default function OffersProvider({ promos, teaser = null, children }: { pr
 
   useEffect(() => {
     let active = true;
+    let sequence = 0;
     if (document.documentElement.lang.startsWith("hi")) setLang("hi"); else if (document.documentElement.lang.startsWith("bn")) setLang("bn");
-    secureApi<{ signedIn: boolean; codes: Record<string, string> }>("H3d8Y5qN2sW7")
-      .then((result) => { if (active && result.signedIn) setReveal({ signedIn: true, codes: result.codes ?? {} }); })
-      .catch(() => { /* stays masked */ });
-    return () => { active = false; };
+
+    const refresh = async () => {
+      const current = ++sequence;
+      try {
+        // Before this check, every anonymous page load made an extra encrypted
+        // /api/offers/codes request in addition to the navbar session request.
+        // Both now share one session check; only signed-in users need code data.
+        const user = await getSessionUser();
+        if (!active || current !== sequence) return;
+        if (!user) { setReveal({ signedIn: false, codes: {} }); return; }
+        const result = await secureApi<{ signedIn: boolean; codes: Record<string, string> }>("H3d8Y5qN2sW7");
+        if (active && current === sequence) setReveal(result.signedIn
+          ? { signedIn: true, codes: result.codes ?? {} }
+          : { signedIn: false, codes: {} });
+      } catch {
+        if (active && current === sequence) setReveal({ signedIn: false, codes: {} });
+      }
+    };
+
+    void refresh();
+    window.addEventListener(SESSION_CHANGED, refresh);
+    return () => {
+      active = false;
+      window.removeEventListener(SESSION_CHANGED, refresh);
+    };
   }, []);
 
   const openGate = useCallback(() => setGate(true), []);
