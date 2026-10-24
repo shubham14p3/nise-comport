@@ -12,6 +12,11 @@ import { whatsappLink } from "@/lib/site";
 export const metadata: Metadata = privateMetadata("Pay for your request");
 export const dynamic = "force-dynamic";
 
+// This is evaluated on the server for each dynamic request, not during a React component render.
+function refundTicketAvailable(updatedAt: Date) {
+  return Date.now() - updatedAt.getTime() >= TICKET_AFTER_HOURS * 3600_000;
+}
+
 export default async function PayPage({ params }: { params: Promise<{ reference: string }> }) {
   const { reference } = await params;
   const user = await getCurrentUser();
@@ -25,7 +30,7 @@ export default async function PayPage({ params }: { params: Promise<{ reference:
   const fee = convenienceFee(payment.amountPaise, options.feePercent);
   const paid = payment.amountPaise + payment.feePaise;
   const estimates = (["wallet", "original", "cash"] as const).map((choice) => ({ choice, net: refundBreakdown({ paidPaise: paid, method: payment.method, choice, feePercent: options.feePercent }).netPaise }));
-  const ticketOpen = Date.now() - payment.updatedAt.getTime() >= TICKET_AFTER_HOURS * 3600_000;
+  const ticketOpen = refundTicketAvailable(payment.updatedAt);
   return <main className="content-page"><SiteHeader/>
     <section className="container legal-content pay-page">
       <span className="eyebrow eyebrow-muted">PAYMENT</span>
