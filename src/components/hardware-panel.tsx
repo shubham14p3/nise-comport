@@ -21,7 +21,7 @@ export default function HardwarePanel() {
   async function load() {
     try { setData(await secureApi<Data>("G5t2Y8mK3rX6")); } catch (e) { setError(e instanceof Error ? e.message : "Could not load parts."); }
   }
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void Promise.resolve().then(load); }, []);
 
   async function act(body: Record<string, unknown>, done: string) {
     setBusy(true); setError(""); setMessage("");
