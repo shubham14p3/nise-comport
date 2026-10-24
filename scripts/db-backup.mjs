@@ -35,7 +35,9 @@ const readable = !args.includes("--no-readable");
 const SKIP = withSessions ? [] : ["sessions", "email_otps", "phone_otps", "rate_limits"];
 
 const ssl = process.env.DATABASE_SSL?.trim().toLowerCase();
-const pool = new pg.Pool({ connectionString: url, max: 1, connectionTimeoutMillis: 15_000, ssl: ssl && ssl !== "false" ? { rejectUnauthorized: false } : undefined });
+const dbHost = new URL(url).hostname;
+const useSsl = ssl ? ssl !== "false" : !["localhost", "127.0.0.1", "::1"].includes(dbHost);
+const pool = new pg.Pool({ connectionString: url, max: 1, connectionTimeoutMillis: 15_000, ssl: useSsl ? { rejectUnauthorized: false } : undefined });
 const pad = (n) => String(n).padStart(2, "0");
 const now = new Date();
 const stamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}`;
