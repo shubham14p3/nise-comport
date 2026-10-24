@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Copy, Plus, Save, Trash2 } from "lucide-react";
 import { secureApi } from "@/lib/secure-api-client";
 import type { BirthdayTemplate, Lang, OutreachSettings, RenewalTemplate } from "@/lib/outreach-core";
@@ -77,7 +78,7 @@ export default function OutreachTemplates({ onChanged }: { onChanged?: () => voi
         <div className="outreach-card__preview" style={{ backgroundImage: `linear-gradient(150deg, ${item.from}, ${item.to})`, color: item.ink }}>
           <b style={{ color: item.accent }}>{item.title[lang]}</b><span>Anita Devi</span><small>{item.line[lang]}</small><i style={{ background: item.shape }}/>
         </div>
-        {config.previews?.[item.id] && <details className="outreach-card__real"><summary>See the real card</summary>{/* eslint-disable-next-line @next/next/no-img-element -- generated card image, not a static asset */}<img src={config.previews[item.id][lang]} alt={`${item.name} card in ${lang}`} loading="lazy" width={320} height={320}/><small>Shows the last saved version.</small></details>}
+        {config.previews?.[item.id] && <details className="outreach-card__real"><summary>See the real card</summary><Image unoptimized src={config.previews[item.id][lang]} alt={`${item.name} card in ${lang}`} loading="lazy" width={320} height={320}/><small>Shows the last saved version.</small></details>}
         <label className="field"><span className="field__label">Name of this card</span><input value={item.name} maxLength={40} onChange={(event) => editBirthday(item.id, { name: event.target.value })}/></label>
         <div className="outreach-colours">{COLOURS.map(({ key, label }) => <label key={key} className="outreach-colour"><input type="color" value={item[key]} onChange={(event) => editBirthday(item.id, { [key]: event.target.value } as Partial<BirthdayTemplate>)} aria-label={label}/><span>{label}</span></label>)}</div>
         <label className="field"><span className="field__label">Big title on the card</span><input value={item.title[lang]} maxLength={40} onChange={(event) => setText(item, "title", event.target.value)}/></label>
