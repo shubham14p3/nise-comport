@@ -153,7 +153,7 @@ export async function sendMail(mail: Mail) {
   // A vault outage must not break an existing SMTP configuration.
   const vault = await resolveIntegration("email").catch((error) => {
     console.error("[mail] integration vault unavailable; falling back to environment SMTP", error instanceof Error ? error.message : error);
-    return {};
+    return {} as Record<string, string>;
   });
   const hasVault = Boolean(vault.host && vault.port && vault.user && vault.password && vault.from);
   const sender = hasVault ? nodemailer.createTransport({
