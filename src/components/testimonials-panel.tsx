@@ -35,7 +35,7 @@ export default function TestimonialsPanel() {
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load testimonials."); }
     finally { setLoaded(true); }
   }, []);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void Promise.resolve().then(load); }, [load]);
   useEffect(() => { secureApi<{ configured: boolean }>("K6w3H9pL2vN7").then((result) => setSyncConfigured(result.configured)).catch(() => undefined); }, []);
 
   async function syncFromGoogle() {
