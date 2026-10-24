@@ -54,6 +54,14 @@ The planner compares **every exported Drizzle PostgreSQL table and column** in `
 
 If the planner lists **UNSAFE OR UNDOCUMENTED GAPS** or type mismatches, stop and review them before applying other migrations. It intentionally refuses to invent column types or modify existing column types. Indexes on populated existing tables are reported, not rebuilt automatically, since unique indexes may conflict with existing records.
 
+### Partially created `record_claims` table (observed on 24 October)
+
+The production audit found eight missing columns on an **existing** `record_claims` table. These definitions are present in the migration's `CREATE TABLE`, not separate `ALTER TABLE` statements. The planner now extracts the exact column definitions and can complete **only an EMPTY existing table**, holding an exclusive lock during the transaction. The audit shows `EMPTY: eligible for guarded repair` or `BLOCKED: HAS ROWS`.
+
+**If `record_claims` contains rows, do not apply automatically.** There is no trustworthy value to backfill `phone` and `expires_at` (both `NOT NULL`). Those rows require individual data-preserving reconciliation first; don't delete or truncate them just to make the script pass.
+
+After the sync, run `npm run db:schema:check`. The SQL probes should all PASS; UI operations and SMTP delivery require separate functional tests.
+
 ## Verification
 
 ```bash
