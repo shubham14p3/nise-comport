@@ -32,7 +32,8 @@ export default function OffersProvider({ promos, teaser = null, children }: { pr
   useEffect(() => {
     let active = true;
     let sequence = 0;
-    if (document.documentElement.lang.startsWith("hi")) setLang("hi"); else if (document.documentElement.lang.startsWith("bn")) setLang("bn");
+    const pageLang = document.documentElement.lang;
+    if (pageLang.startsWith("hi") || pageLang.startsWith("bn")) queueMicrotask(() => { if (active) setLang(pageLang.startsWith("hi") ? "hi" : "bn"); });
 
     const refresh = async () => {
       const current = ++sequence;
