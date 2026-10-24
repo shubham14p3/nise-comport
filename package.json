@@ -7,7 +7,7 @@
     "build": "next build --webpack",
     "release": "node scripts/release-build.mjs",
     "init": "npm ci --no-audit --no-fund --include=dev && npm run db:migrate && node scripts/check-build.mjs && npm start",
-    "start": "node node_modules/next/dist/bin/next start -H 0.0.0.0 -p 3002",
+    "start": "node node_modules/next/dist/bin/next start -H 0.0.0.0 -p ${PORT:-3000}",
     "lint": "eslint src --max-warnings=0",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

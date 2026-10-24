@@ -1,5 +1,6 @@
 import nodemailer, { type Transporter } from "nodemailer";
 import { PublicError } from "@/lib/errors";
+import { resolveIntegration } from "@/lib/integration-vault";
 import { absoluteUrl, site, whatsappLink } from "@/lib/site";
 
 let cachedTransporter: Transporter | null = null;
@@ -149,8 +150,16 @@ export async function sendMail(mail: Mail) {
     console.info(`\n──── [dev mail] to ${mail.to} ────\nSubject: ${mail.subject}\n${text}\n──────────────────────────────\n`);
     return;
   }
-  await transporter().sendMail({
-    from: mail.extra?.from ?? process.env.SMTP_FROM,
+  // A vault outage must not break an existing SMTP configuration.\n  const vault = await resolveIntegration("email").catch((error) => {\n    console.error("[mail] integration vault unavailable; falling back to environment SMTP", error instanceof Error ? error.message : error);\n    return {};\n  });
+  const hasVault = Boolean(vault.host && vault.port && vault.user && vault.password && vault.from);
+  const sender = hasVault ? nodemailer.createTransport({
+    host: vault.host, port: Number(vault.port), secure: Number(vault.port) === 465,
+    requireTLS: Number(vault.port) === 587,
+    auth: { user: vault.user, pass: vault.password },
+    connectionTimeout: 10_000, greetingTimeout: 10_000, socketTimeout: 20_000,
+  }) : transporter();
+  await sender.sendMail({
+    from: mail.extra?.from ?? (hasVault ? vault.from : process.env.SMTP_FROM),
     ...((mail.extra?.replyTo ?? process.env.SMTP_REPLY_TO) ? { replyTo: mail.extra?.replyTo ?? process.env.SMTP_REPLY_TO } : {}),
     to: mail.to,
     subject: mail.subject,

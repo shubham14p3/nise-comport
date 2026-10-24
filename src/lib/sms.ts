@@ -10,6 +10,7 @@
  *   Fast2SMS: FAST2SMS_API_KEY, FAST2SMS_WHATSAPP_MESSAGE_ID
  */
 import { PublicError } from "@/lib/errors";
+import { getIntegration } from "@/lib/integration-vault";
 import { env, orderChannels, otpChannels, smsConfigured, whatsappConfigured, type OtpChannel } from "@/lib/sms-core";
 
 export { orderChannels, otpChannels, smsConfigured, whatsappConfigured };
@@ -92,6 +93,23 @@ async function whatsappViaFast2sms(mobile: string, code: string) {
 export async function sendOtpSms(e164: string, code: string, preferred?: string | null): Promise<OtpChannel | null> {
   const mobile = indianMobile(e164);
   if (!mobile) throw new PublicError("SMS codes can be sent to Indian mobile numbers only.", 400, { fields: { phone: "Enter an Indian mobile number, e.g. 98765 43210." } });
+  // Vault-configured WhatsApp OTP takes precedence when explicitly selected.
+  if (preferred === "whatsapp") {
+    const vault = await getIntegration("whatsapp").catch(() => null);
+    if (vault?.token && vault.phoneId && vault.template) {
+      const components: unknown[] = [{ type: "body", parameters: [{ type: "text", text: code }] }];
+      if (vault.button !== "off") components.push({ type: "button", sub_type: "url", index: "0", parameters: [{ type: "text", text: code }] });
+      const response = await post(`https://graph.facebook.com/v23.0/${encodeURIComponent(vault.phoneId)}/messages`, {
+        method: "POST",
+        headers: { authorization: `Bearer ${vault.token}`, "content-type": "application/json" },
+        body: JSON.stringify({ messaging_product: "whatsapp", to: `91${mobile}`, type: "template",
+          template: { name: vault.template, language: { code: vault.language || "en" }, components } }),
+      });
+      const result = await response.json().catch(() => ({})) as { messages?: unknown[] };
+      if (!response.ok || !result.messages?.length) throw new PublicError("WhatsApp OTP could not be sent. Please use email or SMS.", 503);
+      return "whatsapp";
+    }
+  }
   const channels = orderChannels(preferred);
   if (!channels.length) {
     if (process.env.NODE_ENV !== "production") { console.warn(`[sms] DEV ONLY: no SMS/WhatsApp provider set. Code for ${e164} is ${code}`); return null; }
