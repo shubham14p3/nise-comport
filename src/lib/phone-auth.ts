@@ -1,14 +1,17 @@
 import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
-import { and, desc, eq, gt, isNull, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNotNull, isNull, ne, sql } from "drizzle-orm";
+import { hash } from "@node-rs/argon2";
 import { phoneOtps, users } from "@/db/schema";
 import { createSession } from "@/lib/auth";
+import { endSessions } from "@/lib/claims";
+import { checkMobile, generatePin } from "@/lib/mobile-login-core";
 import { approveClaimsForVerifiedPhone } from "@/lib/claims";
 import { grantVerifyReward } from "@/lib/verify-rewards";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { clearRate, enforceRate, hitRate, identity, RATE_RULES } from "@/lib/rate-limit";
 import { indianMobile, otpChannels, sendOtpSms } from "@/lib/sms";
-import { isSixDigitCode, normalizePhone } from "@/lib/validation";
+import { isSixDigitCode, normalizePhone, passwordProblem } from "@/lib/validation";
 
 const OTP_MINUTES = 10;
 const MAX_ATTEMPTS = 5;
@@ -28,7 +31,7 @@ export function indianPhoneOrThrow(input: string) {
   return phone;
 }
 
-async function issue(userId: string, phone: string, purpose: "verify" | "signin", ip: string, channel?: string | null) {
+async function issue(userId: string, phone: string, purpose: "verify" | "signin" | "reset-pin" | "reset-password", ip: string, channel?: string | null) {
   const phoneId = identity("phone", phone);
   await enforceRate(RATE_RULES.smsSendPerIpHour, identity("ip", ip), "Too many codes were requested from this network.");
   await enforceRate(RATE_RULES.smsSendPerPhoneMinute, phoneId, "A code was sent moments ago. Please wait a minute.");
@@ -40,7 +43,7 @@ async function issue(userId: string, phone: string, purpose: "verify" | "signin"
   catch (error) { await db.delete(phoneOtps).where(eq(phoneOtps.id, row.id)); throw error; }
 }
 
-async function consume(userId: string, phone: string, purpose: "verify" | "signin", code: string, ip: string) {
+async function consume(userId: string, phone: string, purpose: "verify" | "signin" | "reset-pin" | "reset-password", code: string, ip: string) {
   await enforceRate(RATE_RULES.smsVerifyPerIpHour, identity("ip", ip), "Too many attempts from this network.");
   if (!isSixDigitCode(code)) throw new PublicError("Enter the 6-digit code from the SMS.", 400, { fields: { code: "Enter the 6-digit code from the SMS." } });
   const [challenge] = await db.select().from(phoneOtps).where(and(eq(phoneOtps.userId, userId), eq(phoneOtps.purpose, purpose), eq(phoneOtps.phone, phone), isNull(phoneOtps.consumedAt), gt(phoneOtps.expiresAt, new Date()))).orderBy(desc(phoneOtps.createdAt)).limit(1);
@@ -105,4 +108,58 @@ export async function signInWithSms(phoneInput: string, code: string, ip: string
   await createSession(owner);
   const [user] = await db.select({ id: users.id, name: users.name, email: users.email }).from(users).where(eq(users.id, owner)).limit(1);
   return { user };
+}
+
+/**
+ * Password/PIN recovery never trusts a profile phone on its own: the phone
+ * must already be verified, belong to exactly one active account, and pass an
+ * actual 6-digit OTP delivery challenge. No SMS keys => no self-service reset.
+ */
+export type MobileResetKind = "pin" | "password";
+
+async function recoveryOwner(phone: string, kind: MobileResetKind) {
+  const rows = await db.select().from(users).where(and(
+    eq(users.phone, phone), isNotNull(users.phoneVerifiedAt),
+    isNull(users.deletedAt), isNull(users.disabledAt),
+    kind === "pin" ? isNotNull(users.loginPinHash) : undefined,
+  )).limit(2);
+  return rows.length === 1 ? rows[0] : null;
+}
+
+export async function requestMobileCredentialReset(phoneInput: string, kind: MobileResetKind, ip: string, channel?: string) {
+  if (!otpChannels().length) throw new PublicError("Mobile recovery is not available yet. Please contact our team after verifying your identity.", 503, { code: "sms_not_configured" });
+  const phone = indianPhoneOrThrow(phoneInput);
+  const owner = await recoveryOwner(phone, kind);
+  if (owner) {
+    await issue(owner.id, phone, kind === "pin" ? "reset-pin" : "reset-password", ip, channel);
+  } else {
+    // Keep the public response the same for unknown or unverified numbers.
+    await enforceRate(RATE_RULES.smsSendPerIpHour, identity("ip", ip), "Too many codes were requested from this network.");
+    await enforceRate(RATE_RULES.smsSendPerPhoneMinute, identity("phone", phone), "A code was sent moments ago. Please wait a minute.");
+  }
+}
+
+export async function confirmMobileCredentialReset(phoneInput: string, kind: MobileResetKind, code: string, newPassword: string | undefined, ip: string) {
+  if (!otpChannels().length) throw new PublicError("Mobile recovery is not available.", 503, { code: "sms_not_configured" });
+  const phone = indianPhoneOrThrow(phoneInput);
+  const owner = await recoveryOwner(phone, kind);
+  if (!owner) throw new PublicError("The code is invalid or expired.", 400, { code: "otp_mismatch" });
+  if (kind === "password") {
+    const problem = passwordProblem(newPassword ?? "", { email: owner.email, name: owner.name });
+    if (problem) throw new PublicError(problem, 400, { fields: { password: problem } });
+  }
+  await consume(owner.id, phone, kind === "pin" ? "reset-pin" : "reset-password", code, ip);
+  if (kind === "pin") {
+    const pin = generatePin((below) => randomInt(0, below));
+    await db.update(users).set({ loginPinHash: await hash(pin), updatedAt: new Date() }).where(eq(users.id, owner.id));
+    await endSessions(owner.id);
+    await clearRate(RATE_RULES.pinFailuresPerPhone15m, identity("pin-phone", checkMobile(phone).ok ? phone.slice(-10) : phone));
+    return { pin };
+  }
+  await db.update(users).set({
+    passwordHash: await hash(newPassword!), passwordChangedAt: new Date(),
+    mustChangePassword: false, updatedAt: new Date(),
+  }).where(eq(users.id, owner.id));
+  await endSessions(owner.id);
+  return { message: "Password updated. Sign in using your registered mobile number and new password." };
 }
