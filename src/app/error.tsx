@@ -19,7 +19,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
   const staleBuild = /ChunkLoadError|Loading chunk|Failed to fetch dynamically imported module/i.test(`${error.name} ${error.message}`);
   useEffect(() => { console.error("[page error]", error.digest ?? error.message); }, [error]);
   useEffect(() => {
-    setOnline(navigator.onLine);
+    queueMicrotask(() => setOnline(navigator.onLine));
     const up = () => { setOnline(true); reset(); };
     const down = () => setOnline(false);
     window.addEventListener("online", up); window.addEventListener("offline", down);
