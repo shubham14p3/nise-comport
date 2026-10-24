@@ -9,7 +9,7 @@ import { PublicError } from "@/lib/errors";
 import {
   addDays, collapseRenewals, rollRenewal, birthdayEmail, birthdayLabel, birthdayWhatsApp, birthFromFields, DEFAULT_SETTINGS, daysBetween, daysUntilBirthday, instagramCaption, istToday, lastBirthday, markRefreshed, mayMessage, refreshStatus,
   pickBirthdayTemplate, pickRenewalTemplate, renewalEmail, renewalWhatsApp, sanitizeBirthdayTemplates, sanitizeRenewalTemplates, sanitizeSettings, vehicleFrom,
-  type BirthdayCouponInfo, type BirthdayTemplate, type Lang, type OutreachSettings, type RefreshState, type RenewalTemplate, type Vehicle,
+  type BirthdayCouponInfo, type BirthdayTemplate, type Lang, type RefreshState, type Vehicle,
 } from "@/lib/outreach-core";
 import { addContacts, CONTACT_SERVICE, type Person } from "@/lib/records";
 import { ensureBirthdayCoupon } from "@/lib/birthday-coupon";
