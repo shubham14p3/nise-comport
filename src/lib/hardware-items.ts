@@ -33,7 +33,7 @@ const refresh = () => revalidateTag("hardware-items", { expire: 0 });
 
 export async function saveHardwareItem(input: Record<string, unknown>, actor: Actor) {
   const clean = cleanHardwareInput(input, hardwareCatalogue);
-  if ("error" in clean) throw new PublicError(clean.error, 400, { fields: { name: clean.error } });
+  if (typeof clean.error === "string") throw new PublicError(clean.error, 400, { fields: { name: clean.error } });
   const id = typeof input.id === "string" ? input.id : null;
   const values = { kind: "item", ...clean, published: input.published !== false, sortOrder: Math.max(0, Math.min(999, Number(input.sortOrder) || 0)), updatedAt: new Date() };
   try {
