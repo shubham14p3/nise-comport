@@ -26,7 +26,7 @@ export async function GET() {
     ]);
     return NextResponse.json({
       user: {
-        name: user.name, email: isPlaceholderEmail(user.email) ? "" : user.email, phone: user.phone, whatsapp: user.whatsapp ?? null, emailVerified: Boolean(user.emailVerifiedAt), phoneVerified: Boolean(user.phone && user.phoneVerifiedAt), smsEnabled: otpChannels().length > 0, whatsappEnabled: otpChannels().includes("whatsapp"),
+        name: user.name, email: isPlaceholderEmail(user.email) ? "" : user.email, phone: user.phone, whatsapp: user.whatsapp ?? null, emailVerified: Boolean(user.emailVerifiedAt), phoneVerified: Boolean(user.phone && user.phoneVerifiedAt), smsEnabled: otpChannels().includes("sms"), whatsappEnabled: otpChannels().includes("whatsapp"),
         city: user.city ?? "", state: user.state ?? "", postalCode: user.postalCode ?? "", profileSummary: user.profileSummary ?? "",
         preferredContact: user.preferredContact === "phone" || user.preferredContact === "whatsapp" ? user.preferredContact : "email",
         updatedAt: user.updatedAt.toISOString(),
