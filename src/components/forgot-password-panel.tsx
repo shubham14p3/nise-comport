@@ -10,6 +10,7 @@ import { dict, fill } from "@/lib/i18n";
 import { useLocale } from "@/lib/use-locale";
 import { passwordProblem, PASSWORD_MIN } from "@/lib/validation";
 import { secureResult } from "@/lib/secure-api-client";
+import { invalidateSessionCache } from "@/lib/session-client";
 
 type ApiResult = { error?: string; fields?: Record<string, string>; retryAfter?: number; message?: string; resendAfter?: number };
 const DEV = process.env.NODE_ENV !== "production";
@@ -66,6 +67,7 @@ export default function ForgotPasswordPanel() {
       const { ok, result } = await post("L8t1B5rX9mQ4", { email, code: code.trim(), password });
       if (!ok) { setError(result.error ?? "We couldn’t reset your password."); return; }
       try { sessionStorage.removeItem(RESET_EMAIL_KEY); } catch { /* storage unavailable */ }
+      invalidateSessionCache();
       router.push("/profile"); router.refresh();
     } finally { setBusy(false); }
   }
