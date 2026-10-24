@@ -19,6 +19,8 @@ declare global { interface Window { Razorpay?: new (options: Record<string, unkn
 
 const PAY = "Y3d7N5qV1mP8";
 type Reveal = { svg: string; link: string; vpa: string; label: string; expiresAt: number };
+// Request-time UPI expiry, created only in an async user action.
+function expiryFromSeconds(seconds: number) { return Date.now() + seconds * 1000; }
 const clock = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}`;
 
 export default function PayPanel(p: Props) {
@@ -46,7 +48,7 @@ export default function PayPanel(p: Props) {
   async function showQr(chosen: number) {
     setSlot(chosen);
     const result = await run("qr", () => secureApi<Reveal & { seconds: number }>(PAY, { action: "qr", reference: p.reference, slot: chosen }));
-    if (result) setReveal({ svg: result.svg, link: result.link, vpa: result.vpa, label: result.label, expiresAt: Date.now() + result.seconds * 1000 });
+    if (result) setReveal({ svg: result.svg, link: result.link, vpa: result.vpa, label: result.label, expiresAt: expiryFromSeconds(result.seconds) });
   }
   const total = p.amountPaise + p.feePaise;
 
