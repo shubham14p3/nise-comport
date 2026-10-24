@@ -55,6 +55,21 @@ if ((mode === "prod" && ["localhost", "127.0.0.1", "0.0.0.0"].includes(parsedSit
   process.exit(1);
 }
 
+// Prevent multi-minute green builds that silently fall back because PostgreSQL
+// is missing a column/table introduced by an unreviewed merged PR.
+if (mode === "prod") {
+  console.log("Checking live PostgreSQL schema before production build...");
+  const schemaCheck = spawnSync(process.execPath, [
+    "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+    "--experimental-strip-types",
+    join("scripts", "schema-compat.mjs"),
+  ], { stdio: "inherit", env });
+  if (schemaCheck.status !== 0) {
+    console.error("Production build blocked: database schema is not compatible. Run npm run db:schema:check, then back up and apply the reviewed additive sync.");
+    process.exit(schemaCheck.status ?? 1);
+  }
+}
+
 console.log(`Building APP_ENV=${mode} for ${SITE} ...\n`);
 const run = spawnSync(process.execPath, [join("node_modules", "next", "dist", "bin", "next"), "build", "--webpack"], { stdio: "inherit", env });
 if (run.status !== 0) { console.error("\nBuild failed. Nothing to push."); process.exit(run.status ?? 1); }
@@ -71,7 +86,9 @@ writeFileSync(join(".next", "DEPLOY_INFO.json"), JSON.stringify({
 }, null, 2) + "\n");
 
 
-console.log(`\nBuild ready (${commit}). Deploy .next over SSH without committing it:\n`);
-console.log("  tar -czf nise-next.tar.gz --exclude=\'.next/cache\' --exclude=\'.next/dev\' .next");
-console.log("  scp -P 22 nise-next.tar.gz YOUR_SSH_USER@YOUR_SERVER:~/nisecomport.aitapri.com/\n");
-console.log("Stop the server app, extract the tarball at the app root, verify with node scripts/check-build.mjs, and restart.");
+console.log(`\nBuild ready (${commit}). To deploy with your ZIP/cPanel workflow:\n`);
+console.log("1. ZIP .next and the required scripts from this project on Windows.");
+console.log("2. Stop the MilesWeb Node.js application from the panel.");
+console.log("3. Upload/extract the ZIP using cPanel File Manager, replacing only .next and included scripts.");
+console.log("4. Verify .next/BUILD_ID and run scripts/check-build.mjs if Terminal is available; restart via the panel.");
+console.log("Never upload .env.local or Windows node_modules. PostgreSQL is external and not included in the ZIP.");
