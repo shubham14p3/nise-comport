@@ -29,5 +29,22 @@ Limits: 40 messages per customer per hour. Replies are free-form text, which Wha
 
 Costs: Meta charges per conversation category (service replies inside 24 hours are free; marketing/utility templates are charged). Check current rates in Meta's pricing page.
 
+## QR-scanned brochure (two messages)
+The landing page at `/welcome?src=poster` displays both the service catalogue and
+business contact card immediately. Tapping WhatsApp pre-fills an enquiry from the
+customer (it never sends by itself). Once the visitor taps **Send**, a configured
+Meta Cloud API webhook at `/api/whatsapp/webhook` invokes the existing bot,
+which responds with two separate NISE COMPORT messages. No automatic business
+messages can be delivered without the Cloud API credentials, verified webhook,
+and an active business phone number. Website previews work even without Meta.
+
+To include Instagram: set `NEXT_PUBLIC_INSTAGRAM_URL` and optionally
+`NEXT_PUBLIC_INSTAGRAM_HANDLE` (for example, `@youractualhandle`) in the
+build environment, or include the Instagram URL in `NEXT_PUBLIC_SAME_AS`.
+The contact email is `NEXT_PUBLIC_CONTACT_EMAIL`; the current website comes
+from `NEXT_PUBLIC_SITE_URL`. Rebuild/redeploy after changing `NEXT_PUBLIC_*`
+values, and regenerate any QR poster that points directly to a WhatsApp URL
+instead of the `/welcome` landing page.
+
 ## Test
 Send "menu" from a personal phone to the business number. You should get the menu and see the chat in Admin → WhatsApp chats.
