@@ -146,7 +146,7 @@ const pan: IntakeSection[] = [
   address("residence", "Residential address (Form 49A layout)"),
   { title: "Office and supporting documents", fields: [
     select("officeAddress", "Do you need to provide an office address?", yesNo),
-    ...address("office","Office").fields.map(f => ({...f,required:false,show:showIf("officeAddress","Yes")})),
+    ...address("office","Office").fields.map(f => ({...f,show:showIf("officeAddress","Yes")})),
     select("identityProof", "Identity proof you can provide", ["Aadhaar","Passport","Voter ID","Driving licence","Other"]),
     select("addressProof", "Address proof you can provide", ["Aadhaar","Passport","Voter ID","Driving licence","Other"]),
     select("birthProof", "Date-of-birth proof you can provide", ["Birth certificate","Passport","Matric certificate","Aadhaar","Other"]),
@@ -166,12 +166,12 @@ export const detailedIntakeSchema = z.object({
   documents: z.array(z.string().max(100)).max(18),
   photoFileId: z.uuid().optional(),
 });
-function validDate(raw: string) {
+function validDate(raw: string, allowFuture = false) {
   if(!/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) return false;
   const [d,m,y]=raw.split("/").map(Number);
   const iso=`${y.toString().padStart(4,"0")}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
   const parsed=new Date(iso+"T00:00:00Z");
-  return y>=1900&&!Number.isNaN(parsed.getTime())&&parsed.toISOString().slice(0,10)===iso&&parsed<=new Date();
+  return y>=1900&&!Number.isNaN(parsed.getTime())&&parsed.toISOString().slice(0,10)===iso&&(allowFuture||parsed<=new Date());
 }
 export function validateDetailedIntake(intake: DetailedIntake): Record<string,string> {
   const errors: Record<string,string>={};
@@ -183,7 +183,7 @@ export function validateDetailedIntake(intake: DetailedIntake): Record<string,st
     if(f.required&&!value){errors[f.id]=`${f.label} is required.`;continue}
     if(!value)continue;
     if(f.type==="select"&&!f.options?.includes(value))errors[f.id]="Choose one of the provided options.";
-    else if(f.type==="date"&&!validDate(value))errors[f.id]="Enter a real past date as DD/MM/YYYY (for example 19/08/1995).";
+    else if(f.type==="date"&&!validDate(value, f.id==="passportExpiryDate"))errors[f.id]="Enter a real past date as DD/MM/YYYY (for example 19/08/1995).";
     else if(f.type==="email"&&!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value))errors[f.id]="Enter a valid email address.";
     else if(f.type==="tel"&&!/^\+?[0-9\s()-]{8,18}$/.test(value))errors[f.id]="Enter a valid phone number.";
     else if(/Pin$/.test(f.id)&&!/^\d{6}$/.test(value))errors[f.id]="Enter a 6-digit PIN code.";
