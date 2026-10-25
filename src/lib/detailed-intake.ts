@@ -3,7 +3,7 @@ import { z } from "zod";
 /** Customer intake questionnaire based on the sample Passport Seva, ECI Form 8 and PAN Form 49A.
  * These are assistance questionnaires, not government submissions.
  * Requirements/document lists should be checked against the current authority before filing. */
-export type IntakeKind = "passport" | "voter" | "pan";
+export type IntakeKind = "passport" | "voter" | "pan" | "pan49a";
 export type IntakeValue = Record<string, string>;
 export type IntakeField = {
   id: string; label: string; required?: boolean; type?: "text" | "date" | "email" | "tel" | "textarea" | "select";
@@ -152,7 +152,80 @@ const pan: IntakeSection[] = [
   ]},
 ];
 
-const formSections: Record<IntakeKind, IntakeSection[]> = { passport, voter, pan };
+
+/** Legacy Form 49A (2018 user-supplied specimen), preserved as an assistance worksheet.
+ * From 1 Apr 2026, official NEW PAN applicants must use Form 93/94/95/96. */
+const pan49a: IntakeSection[] = [
+  { title: "1. Applicant and Assessing Officer", fields: [
+    field("aoArea","AO area code"), field("aoType","AO type"),field("aoRange","AO range code"),field("aoNumber","AO number"),
+    select("personTitle","Title",["Shri","Smt.","Kumari","M/s"],true),
+    ...basicName("person"),
+    field("printedName","Name to be printed on PAN card",true),
+    select("previousName","Have you ever been known by another name?",yesNo),
+    select("formerTitle","Former title",["Shri","Smt.","Kumari","M/s"],true,{show:showIf("previousName","Yes")}),
+    ...basicName("former").map(f=>({...f,show:showIf("previousName","Yes")})),
+    select("gender","Gender",["Male","Female","Transgender"]),
+    field("dob","Date of birth / incorporation (DD/MM/YYYY)",true,"date"),
+  ] },
+  { title: "6. Parent details", fields: [
+    select("singleMother","Is the mother a single parent and you want her name alone?",yesNo),
+    ...basicName("father").map(f=>({...f,required:f.id!=="fatherMiddle",show:(a:IntakeValue)=>a.singleMother!=="Yes"})),
+    ...basicName("mother").map(f=>({...f,required:auditParentRequired(f.id),show:()=>true})),
+    select("printedParent","Whose name should be printed on the card?",["Father","Mother"],true,{show:(a)=>a.singleMother!=="Yes"}),
+  ] },
+  address("residence","7. Residential address"),
+  { title: "7. Office address", fields: [
+    select("officeAddress","Do you have an office address to provide?",yesNo),
+    ...address("office","Office address").fields.map(f=>({...f,show:showIf("officeAddress","Yes")})),
+  ] },
+  { title: "8–9. Communication and contact", fields: [
+    select("communicationAddress","Address for communication",["Residence","Office"],true),
+    field("phoneCountryCode","Telephone country code"),
+    field("phoneAreaCode","Area / STD code"),
+    field("mobile","Mobile / telephone number",true,"tel"),
+    field("email","Email ID",true,"email"),
+  ] },
+  { title: "10–11. Applicant status", fields: [
+    select("status","Status of applicant",["Individual","Hindu undivided family","Company","Partnership Firm","Association of Persons","Trusts","Body of Individuals","Local Authority","Artificial Juridical Persons","Limited Liability Partnership","Government"]),
+    field("registrationNumber","Registration number for entity, company, firm or LLP",false),
+  ] },
+  { title: "12. Aadhaar information (confidential)", fields: [
+    select("aadhaarAllotted","Has Aadhaar been allotted?",yesNo),
+    field("aadhaarNumber","Aadhaar number (12 digits)",true,"text",{show:showIf("aadhaarAllotted","Yes"),hint:"Stored only as encrypted application data; never shown in email or WhatsApp notifications."}),
+    field("aadhaarEnrolmentId","Legacy enrolment ID (reference field only; not accepted for new PAN in 2026)",false,"text",{show:showIf("aadhaarAllotted","No")}),
+    field("aadhaarName","Name as printed on Aadhaar",true,"text",{show:showIf("aadhaarAllotted","Yes")}),
+  ] },
+  { title: "13. Sources of income", fields: [
+    select("incomeSalary","Income from salary?",yesNo),
+    select("incomeBusiness","Business or professional income?",yesNo),
+    field("professionCode","Business / profession code",false,"text",{show:showIf("incomeBusiness","Yes")}),
+    select("incomeHouse","Income from house property?",yesNo),
+    select("incomeCapital","Capital gains?",yesNo),
+    select("incomeOther","Income from other sources?",yesNo),
+    select("incomeNone","No income?",yesNo),
+  ] },
+  { title: "14. Representative Assessee", fields: [
+    select("raApplicable","Is a representative assessee involved?",yesNo),
+    select("raTitle","Representative title",["Shri","Smt.","Kumari","M/s"],true,{show:showIf("raApplicable","Yes")}),
+    ...basicName("ra").map(f=>({...f,required:f.id!=="raMiddle",show:showIf("raApplicable","Yes")})),
+    ...address("ra","Representative address").fields.map(f=>({...f,show:showIf("raApplicable","Yes")})),
+  ] },
+  { title: "15. Enclosed supporting documents", fields: [
+    select("identityProof","Proof of identity",["Aadhaar","Passport","Voter ID","Driving licence","Other"],true),
+    select("addressProof","Proof of address",["Aadhaar","Passport","Voter ID","Driving licence","Other"],true),
+    select("birthProof","Proof of date of birth",["Birth certificate","Passport","Matric certificate","Aadhaar","Other"],true),
+  ] },
+  { title: "16. Applicant declaration", fields: [
+    field("declarationName","Name of applicant / declarant",true),
+    field("declarationCapacity","Capacity (self, guardian, director etc.)",true),
+    field("declarationPlace","Place of declaration",true),
+    field("declarationDate","Date (DD/MM/YYYY)",true,"date"),
+    select("declaration","I confirm the entered information is true",["Yes"]),
+  ] },
+];
+function auditParentRequired(id:string){ return id==="motherSurname" || id==="motherFirst" ? false : false; }
+
+const formSections: Record<IntakeKind, IntakeSection[]> = { passport, voter, pan, pan49a };
 export function intakeSections(kind: IntakeKind): IntakeSection[] { return formSections[kind]; }
 export function intakeFields(kind: IntakeKind, answers: IntakeValue): IntakeField[] {
   return formSections[kind].flatMap(s=>s.fields).filter(f=>!f.show||f.show(answers));
@@ -160,7 +233,7 @@ export function intakeFields(kind: IntakeKind, answers: IntakeValue): IntakeFiel
 const protectedKeys = new Set(["aadhaarNumber","panNumber","epicNumber","passportNumber"]);
 export function protectedIntakeField(key: string) { return protectedKeys.has(key); }
 export const detailedIntakeSchema = z.object({
-  kind: z.enum(["passport","voter","pan"]),
+  kind: z.enum(["passport","voter","pan","pan49a"]),
   answers: z.record(z.string().min(1).max(45),z.string().max(400)).refine(v=>Object.keys(v).length<=110),
   documents: z.array(z.string().max(100)).max(18),
   photoFileId: z.uuid().optional(),
@@ -191,7 +264,7 @@ export function validateDetailedIntake(intake: DetailedIntake): Record<string,st
     else if(f.id==="disabilityPercent"&&(!/^\d{1,3}(\.\d{1,2})?$/.test(value)||Number(value)>100))errors[f.id]="Enter a percentage between 0 and 100.";
     else if(f.id==="applicantName"&&value.length<2)errors[f.id]="Enter the applicant name.";
   }
-  if(intake.kind==="voter"&&intake.answers.requestType==="Correction"&&intake.answers.correctionTarget==="Photograph"&&!intake.photoFileId)errors.photoFileId="Upload a photograph for photo correction.";
+  if(intake.kind==="pan49a") {\n    const a=intake.answers;\n    if(a.communicationAddress==="Office"&&a.officeAddress!=="Yes")errors.communicationAddress="Fill in the office address or select Residence.";\n    if(a.incomeNone==="Yes"&&["incomeSalary","incomeBusiness","incomeHouse","incomeCapital","incomeOther"].some(k=>a[k]==="Yes"))errors.incomeNone="No income cannot be combined with income sources.";\n    if(a.aadhaarNumber&&!/^\\d{12}$/.test(a.aadhaarNumber))errors.aadhaarNumber="Enter 12 digits.";\n    if(a.aoArea&&!/^[A-Za-z]{3,4}$/.test(a.aoArea))errors.aoArea="Enter a 3–4 letter AO area code.";\n    if(a.aoType&&!/^[A-Za-z]{1,2}$/.test(a.aoType))errors.aoType="Enter a 1–2 letter AO type.";\n    if(a.aoRange&&!/^\\d{1,3}$/.test(a.aoRange))errors.aoRange="Enter a numeric AO range.";\n    if(a.aoNumber&&!/^\\d{1,3}$/.test(a.aoNumber))errors.aoNumber="Enter a numeric AO number.";\n  }\n  if(intake.kind==="voter"&&intake.answers.requestType==="Correction"&&intake.answers.correctionTarget==="Photograph"&&!intake.photoFileId)errors.photoFileId="Upload a photograph for photo correction.";
   return errors;
 }
 
@@ -210,6 +283,7 @@ export const intakeDocumentGuide: Record<IntakeKind, string[]> = {
     "Disability certificate if applicable",
     "Replacement declaration / supporting evidence if needed",
   ],
+  pan49a: ["Proof of identity","Proof of address","Proof of birth / incorporation","Recent photographs for individuals","Signature or thumb impression arranged separately"],
   pan: [
     "Proof of identity",
     "Proof of address",
