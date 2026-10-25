@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { internalApiHeaders, internalApiOrigin, isCrossSiteApiRequest } from "../src/lib/api-routing.ts";
+import { internalApiHeaders, internalApiOrigin, isCrossSiteApiRequest, isSiteAlias } from "../src/lib/api-routing.ts";
 
 test("production uses MilesWeb loopback, independent of public domain", () => {
   assert.equal(internalApiOrigin({ APP_ENV: "prod", NODE_ENV: "production" }), "http://127.0.0.1:3020");
@@ -45,4 +45,31 @@ test("local browser and loopback headers share the same origin", () => {
   const headers = internalApiHeaders("b".repeat(40), target);
   assert.equal(headers.get("origin"), target.origin);
   assert.equal(isCrossSiteApiRequest("127.0.0.1:3000", "localhost:3000", headers.get("origin"), null), false);
+});
+
+test("current, requested and future domain variants redirect to the configured canonical host", () => {
+  for (const domain of ["nisecomport.aitapri.com", "nicecompote.aitapri.com", "nicecompote.com", "nisecomport.com"]) {
+    for (const host of [domain, `www.${domain}`]) {
+      assert.equal(isSiteAlias(host, "nisecomport.aitapri.com"), true, host);
+    }
+  }
+  assert.equal(isSiteAlias("custom.example", "nisecomport.aitapri.com", "custom.example"), true);
+  assert.equal(isSiteAlias("www.custom.example", "nisecomport.aitapri.com", "custom.example"), true);
+  for (const host of [
+    "nicecompote.com.evil.test", "notnicecompote.com", "evil-nisecomport.aitapri.com",
+    "www.nicecompote.com:3020", "https://nicecompote.com", "",
+  ]) assert.equal(isSiteAlias(host, "nisecomport.aitapri.com"), false, host);
+});
+
+test("login API permits either address only when Origin matches the actual Host", () => {
+  for (const domain of ["nisecomport.aitapri.com", "nicecompote.aitapri.com", "nicecompote.com"]) {
+    for (const host of [domain, `www.${domain}`]) {
+      assert.equal(isCrossSiteApiRequest(host, "nisecomport.aitapri.com", `https://${host}`, "same-origin"), false, host);
+    }
+  }
+  assert.equal(isCrossSiteApiRequest("www.nicecompote.com", "nicecompote.com", "https://nicecompote.com", "same-site"), true);
+  assert.equal(isCrossSiteApiRequest("nicecompote.com", "nisecomport.aitapri.com", "https://nisecomport.aitapri.com", "same-site"), true);
+  assert.equal(isCrossSiteApiRequest("untrusted.example", "nicecompote.com", "https://nicecompote.com", "same-site"), true);
+  assert.equal(isCrossSiteApiRequest("nicecompote.com", "nicecompote.com", "file://local", "same-origin"), true);
+  assert.equal(isCrossSiteApiRequest("nicecompote.com", "nicecompote.com", "https://nicecompote.com", "cross-site"), true);
 });
