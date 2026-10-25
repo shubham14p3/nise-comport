@@ -42,7 +42,13 @@ export default function WalletCreditForm({ canCorrect = false }: { canCorrect?: 
     try { setHistory(await secureApi<HistoryData>(QUERY, { userId: id, page: nextPage, size })); setError(""); }
     catch (e) { setError(e instanceof Error ? e.message : "Could not open wallet."); }
   }, [pageSize]);
-  useEffect(() => { void Promise.resolve().then(() => load("", 0, 20)); }, []); // only mounts after opening Wallet tab
+  useEffect(() => {
+    let live = true;
+    void Promise.resolve().then(() => secureApi<Ledger>(QUERY, { q: "", page: 0, size: 20 }))
+      .then((result) => { if (live) setData(result); })
+      .catch((e) => { if (live) setError(e instanceof Error ? e.message : "Could not load wallet customers."); });
+    return () => { live = false; };
+  }, []); // wallet mounts only after opening its tab
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setMessage(""); setError("");
