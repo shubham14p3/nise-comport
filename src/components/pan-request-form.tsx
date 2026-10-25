@@ -15,6 +15,7 @@ import { panIntakeSchema, panServiceLabels, panServices, type PanIntake } from "
 import { secureApi } from "@/lib/secure-api-client";
 import { useLocale } from "@/lib/use-locale";
 import { rememberReturn } from "@/lib/after-login";
+import Pan49APreview from "@/components/pan-49a-preview";
 
 const STEPS = ["PAN service", "Applicant", "Documents", "Review"];
 const STEP_FIELDS: (keyof PanIntake)[][] = [
@@ -33,11 +34,11 @@ const LABELS: Partial<Record<keyof PanIntake, string>> = {
 const pretty = (value: string) => value.replaceAll("-", " ").replace(/^./, (letter) => letter.toUpperCase());
 
 /** PAN assistance request in four steps, validated against the same schema the server uses. */
-export default function PanRequestForm({ service, demo = false, signedIn = true }: { service: PanIntake["service"]; demo?: boolean; signedIn?: boolean }) {
+export default function PanRequestForm({ service, demo = false, signedIn = true, legacy49a = false }: { service: PanIntake["service"]; demo?: boolean; signedIn?: boolean; legacy49a?: boolean }) {
   const router = useRouter();
   const locale = useLocale();
   const [step, setStep] = useState(0);
-  const [data, setData] = useState<PanIntake>({ service, citizenship: "indian", applicant: service === "business" ? "entity" : "individual", residency: "india", existingPan: ["new", "minor", "business"].includes(service) ? "no" : "yes", fullName: "", birthDate: "", contactName: "", email: "", phone: "", address: "", city: "", state: "", country: "India", postalCode: "", representative: "", entityType: "", corrections: [], documentPlan: [], notes: "", consent: false, detailedIntake: {kind:"pan",answers:{},documents:[]} });
+  const [data, setData] = useState<PanIntake>({ service, citizenship: "indian", applicant: service === "business" ? "entity" : "individual", residency: "india", existingPan: ["new", "minor", "business"].includes(service) ? "no" : "yes", fullName: "", birthDate: "", contactName: "", email: "", phone: "", address: "", city: "", state: "", country: "India", postalCode: "", representative: "", entityType: "", corrections: [], documentPlan: [], notes: "", consent: false, detailedIntake: {kind:legacy49a?"pan49a":"pan",answers:{},documents:[]} });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -58,6 +59,8 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
     setData((current) => {
       const next = { ...current, [key]: value };
       if (key === "service") {
+        if (legacy49a && !["new","minor","business"].includes(value as string)) return current;
+        if (legacy49a && next.detailedIntake) next.detailedIntake = {...next.detailedIntake,kind:"pan49a"};
         const fresh = ["new", "minor", "business"].includes(value as string);
         next.existingPan = fresh ? "no" : "yes";
         if (value === "business") next.applicant = "entity";
@@ -119,9 +122,9 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
   </fieldset>;
 
   const frame = (content: React.ReactNode) => <WizardFrame
-    kicker="PAN assistance · 4 steps"
-    title={<>Let’s prepare your <span className="grad-text">PAN request.</span></>}
-    lead="One guided form for every PAN service. This sends a request to NISE COMPORT; it does not submit a government application or take payment."
+    kicker={legacy49a ? "PAN Form 49A reference · 4 steps" : "PAN assistance · 4 steps"}
+    title={<>Let’s prepare your <span className="grad-text">{legacy49a ? "Form 49A worksheet." : "PAN request."}</span></>}
+    lead={legacy49a ? "Capture all fields from the supplied two-page 49A reference, preview and verify them, then send an encrypted assistance request. Since 1 April 2026, new official PAN applications use Forms 93–96 instead." : "One guided form for every PAN service. This sends a request to NISE COMPORT; it does not submit a government application or take payment."}
     steps={STEPS} current={step} onJump={go} locale={locale}
     strip={<OfferStrip category="government-services" locale={locale}/>}
     rail={<OfferRail category="government-services" locale={locale} whatsappText="Hi NISE COMPORT, I have a question about PAN."/>}
@@ -133,12 +136,12 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
     {demo && <p className="alert alert--info">Local preview: entered information is not saved or sent.</p>}
     {step === 0 && <section>
       <h2>Which PAN service do you need?</h2><p className="wizard-form__sub">Pick one. We’ll adapt the next questions.</p>
-      <div className="choice-grid choice-grid--2" role="radiogroup" aria-label="PAN service">{panServices.map((item) => <button key={item} type="button" role="radio" aria-checked={data.service === item} className={data.service === item ? "choice is-selected" : "choice"} onClick={() => update("service", item)}><span className="choice__text"><b>{panServiceLabels[item]}</b></span><span className="choice__check" aria-hidden="true">{data.service === item && <Check size={16}/>}</span></button>)}</div>
+      <div className="choice-grid choice-grid--2" role="radiogroup" aria-label="PAN service">{(legacy49a ? panServices.filter(item => ["new","minor","business"].includes(item)) : panServices).map((item) => <button key={item} type="button" role="radio" aria-checked={data.service === item} className={data.service === item ? "choice is-selected" : "choice"} onClick={() => update("service", item)}><span className="choice__text"><b>{panServiceLabels[item]}</b></span><span className="choice__check" aria-hidden="true">{data.service === item && <Check size={16}/>}</span></button>)}</div>
       {err("service")}
       <div className="form-grid">
         {seg("existingPan", "Has a PAN already been allotted?", [["no", "No"], ["yes", "Yes"], ["unsure", "Not sure"]])}
         {seg("applicant", "Applicant", [["individual", "Individual"], ["entity", "Business / entity"]])}
-        {seg("citizenship", "Citizenship / origin", [["indian", "Indian"], ["foreign", "Foreign"]])}
+        {legacy49a ? <p className="field"><span className="field__label">Citizenship / origin</span><strong>Indian (Form 49A reference)</strong></p> : seg("citizenship", "Citizenship / origin", [["indian", "Indian"], ["foreign", "Foreign"]])}
         {seg("residency", "Communication address", [["india", "In India"], ["overseas", "Outside India"]])}
       </div>
       {data.applicant === "entity" && seg("entityType", "Entity type", ["huf", "firm", "llp", "company", "trust", "society", "association", "other"].map((value) => [value, value.toUpperCase()] as [string, string]))}
@@ -166,7 +169,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
         <label className="field" key="city"><span className="field__label">City</span><CitySelect country={data.country} state={data.state} value={data.city} onChange={(next) => update("city", next as never)}/>{err("city")}</label>
         {input("postalCode", "PIN / postal code", "text", { inputMode: "numeric", autoComplete: "postal-code" })}
       </div>
-      {data.applicant==="individual" && data.detailedIntake && <DetailedIntakeFields
+      {(data.applicant==="individual" || legacy49a) && data.detailedIntake && <DetailedIntakeFields
         intake={data.detailedIntake} onChange={(next)=>update("detailedIntake",next)}
         errors={errors.detailedIntake?validateDetailedIntake(data.detailedIntake):{}}/>}
       {["correction", "marriage", "minor-to-major"].includes(data.service) && <fieldset className="field"><legend className="field__label">Which details need updating?</legend>
@@ -185,6 +188,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
 
     {step === 3 && <section>
       <h2>Review before sending</h2><p className="wizard-form__sub">Check everything once. You can edit any step.</p>
+      {legacy49a && data.detailedIntake?.kind==="pan49a" && <Pan49APreview pan={data} answers={data.detailedIntake.answers} onEdit={() => go(1)}/>}
       <dl className="summary">{(Object.keys(LABELS) as (keyof PanIntake)[]).map((key) => {
         const value = data[key];
         const text = key === "service" ? panServiceLabels[data.service] : Array.isArray(value) ? value.map(pretty).join(", ") || "None selected" : String(value || "Not provided");
