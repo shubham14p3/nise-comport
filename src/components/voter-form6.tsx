@@ -213,6 +213,9 @@ export default function VoterForm6({signedIn,demo,maxDate}:Props){
           {step<4&&<div className="f8-inline-preview"><span><Eye size={17}/> Live filled three-page document</span>
             <button type="button" onClick={()=>setShowPreview(true)}>Open preview</button></div>}
           {step<4&&<div className="f6-input-grid">{sections[step].fields.map(renderField)}
+            {step===3&&<div className="f6-wide f6-sir-guidance"><h3>Supplementary SIR declaration</h3>
+              <p>The uploaded Form 6 examples include a third-page SIR declaration. Choose whether this supplementary declaration applies; if yes, complete its available historical electoral-roll and family details.</p></div>}
+            {step===3&&sections[4].fields.map(renderField)}
             {step===0&&<div className="f6-photo-field f6-wide">
               <label htmlFor="f6-photo">Recent passport-size colour photograph (JPG/PNG/WebP up to 5 MB) *</label>
               <input id="f6-photo" type="file" accept="image/jpeg,image/png,image/webp"
