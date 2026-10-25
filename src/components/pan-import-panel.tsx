@@ -2,15 +2,17 @@
 import { FormEvent, useState } from "react";
 import { Database, Search, Upload } from "lucide-react";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
+import { AdminPager, useAdminPagination } from "@/components/admin-pager";
 type ImportRow = { id: string; rowCount: number; acceptedRows: number; rejectedRows: number; createdAt: string };
 type RecordRow = { id: string; holderName: string; recordStatus: string; createdAt: string };
 export default function PanImportPanel() {
   const [file, setFile] = useState<File | null>(null); const [query, setQuery] = useState("");
   const [imports, setImports] = useState<ImportRow[]>([]); const [records, setRecords] = useState<RecordRow[]>([]);
   const [busy, setBusy] = useState(false); const [message, setMessage] = useState(""); const [error, setError] = useState("");
+  const paging = useAdminPagination(records);
   async function search(event?: FormEvent) {
     event?.preventDefault(); setError("");
-    try { const result = await secureApi<{ imports: ImportRow[]; records: RecordRow[] }>("C9p2W6mH4xB8", { q: query }); setImports(result.imports); setRecords(result.records); } catch (reason) { setError(reason instanceof Error ? reason.message : "Search failed."); }
+    try { const result = await secureApi<{ imports: ImportRow[]; records: RecordRow[] }>("C9p2W6mH4xB8", { q: query }); setImports(result.imports); setRecords(result.records); paging.reset(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Search failed."); }
   }
   async function importFile(event: FormEvent) {
     event.preventDefault(); if (!file) return; setBusy(true); setError(""); setMessage("");
@@ -25,7 +27,9 @@ export default function PanImportPanel() {
     <form className="pan-import-form" onSubmit={importFile}><label><Upload size={15}/><input type="file" accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={event => setFile(event.target.files?.[0] ?? null)}/><span>{file?.name ?? "Choose CSV or XLSX (up to 20 MB)"}</span></label><button className="button button-green" disabled={busy || !file}>{busy ? "Importing…" : "Import data"}</button></form>
     <form className="pan-search" onSubmit={search}><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search name or exact PAN"/><button type="submit" aria-label="Search"><Search size={16}/></button></form>
     {error && <div className="form-alert error-alert">{error}</div>}{message && <div className="form-alert success-alert">{message}</div>}
-    {records.length > 0 && <div className="pan-records">{records.map(row => <article key={row.id}><b>{row.holderName}</b><span>{row.recordStatus}</span><small>{new Date(row.createdAt).toLocaleDateString("en-IN")}</small></article>)}</div>}
-    <div className="pan-import-history"><b>Recent imports</b>{imports.length ? imports.map(row => <span key={row.id}>{new Date(row.createdAt).toLocaleDateString("en-IN")} · {row.acceptedRows} added · {row.rejectedRows} skipped</span>) : <small>No import history yet.</small>}</div>
+    {records.length > 0 && <AdminPager {...paging} label="PAN records"/>}
+    {records.length > 0 && <div className="pan-records">{paging.items.map(row => <article key={row.id}><b>{row.holderName}</b><span>{row.recordStatus}</span><small>{new Date(row.createdAt).toLocaleDateString("en-IN")}</small></article>)}</div>}
+    {records.length > paging.pageSize && <AdminPager {...paging} label="PAN records"/>}
+    <details className="pan-import-history admin-accordion"><summary>Recent PAN imports ({imports.length})</summary>{imports.length ? imports.map(row => <span key={row.id}>{new Date(row.createdAt).toLocaleDateString("en-IN")} · {row.acceptedRows} added · {row.rejectedRows} skipped</span>) : <small>No import history yet.</small>}</details>
   </section>;
 }
