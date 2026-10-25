@@ -43,6 +43,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [showConsent, setShowConsent] = useState(false);
+  const [previewConfirmed, setPreviewConfirmed] = useState(false);
   const idempotencyKey = useRef<string | null>(null);
 
   useEffect(() => {
@@ -56,6 +57,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
   }, [demo, signedIn]);
 
   function update<K extends keyof PanIntake>(key: K, value: PanIntake[K]) {
+    if (legacy49a) setPreviewConfirmed(false);
     setData((current) => {
       const next = { ...current, [key]: value };
       if (key === "service") {
@@ -88,6 +90,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
   }
 
   async function submit() {
+    if (legacy49a && !previewConfirmed) { setMessage("Please confirm you have checked the two-page 49A preview against the applicant documents."); return; }
     const parsed = panIntakeSchema.safeParse(data);
     if (!parsed.success) {
       const found = Object.fromEntries(parsed.error.issues.map((issue) => [String(issue.path[0]), issue.message]));
@@ -132,7 +135,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
 
   if (!signedIn) return frame(<div className="callout callout--center"><LockKeyhole size={28}/><b>Sign in to keep your PAN request private</b><span>Your contact details prefill from your profile. You can review everything before sending.</span><div className="callout__actions"><Link className="btn btn--primary" href="/login" onClick={() => rememberReturn(legacy49a ? "/pan/49a" : "/pan/request")}>Sign in to continue</Link><Link className="btn btn--ghost" href="/signup" onClick={() => rememberReturn("/pan/request")}>Create a free account</Link></div></div>);
 
-  return <>{frame(<form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (step === 3) { if (demo) void submit(); else setShowConsent(true); } else next(); }}>
+  return <>{frame(<form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (step === 3) { if (legacy49a && !previewConfirmed) { setMessage("Review both pages and tick the verification confirmation."); return; } if (demo) void submit(); else setShowConsent(true); } else next(); }}>
     {demo && <p className="alert alert--info">Local preview: entered information is not saved or sent.</p>}
     {step === 0 && <section>
       <h2>Which PAN service do you need?</h2><p className="wizard-form__sub">Pick one. We’ll adapt the next questions.</p>
@@ -189,6 +192,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
     {step === 3 && <section>
       <h2>Review before sending</h2><p className="wizard-form__sub">Check everything once. You can edit any step.</p>
       {legacy49a && data.detailedIntake?.kind==="pan49a" && <Pan49APreview pan={data} answers={data.detailedIntake.answers} onEdit={() => go(1)}/>}
+      {legacy49a && <label className="check"><input type="checkbox" checked={previewConfirmed} onChange={event => setPreviewConfirmed(event.target.checked)}/><span>I have compared both preview pages with the supporting documents and confirmed the entered information is correct.</span></label>}
       <dl className="summary">{(Object.keys(LABELS) as (keyof PanIntake)[]).map((key) => {
         const value = data[key];
         const text = key === "service" ? panServiceLabels[data.service] : Array.isArray(value) ? value.map(pretty).join(", ") || "None selected" : String(value || "Not provided");
