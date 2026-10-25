@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Check, ChevronLeft, ChevronRight, FileDown, FileText, ShieldCheck } from "lucide-react";
 import {
@@ -85,7 +86,7 @@ function Form8Print({ answers: a, photoUrl }: { answers: IntakeValue; photoUrl: 
         <h3>2. Application for Correction of Entries in Existing Electoral Roll</h3>
         <p>Maximum of four entries/particulars can be corrected. Self-attested documentary proof should support each claim.</p>
         <div className="f8-choices f8-corrections">{FORM8_CORRECTIONS.map(([name])=><p key={name}>{tick(a.requestType==="Correction" && selected.includes(name))} {name}</p>)}</div>
-        <div className="f8-photo">{photoUrl ? <img src={photoUrl} alt="Applicant photograph preview"/> : <p>SPACE FOR ONE RECENT PASSPORT SIZE UNSIGNED COLOR PHOTOGRAPH (4.5 × 3.5 CM), WHITE BACKGROUND. ONLY IF PHOTO IS CHANGED.</p>}</div>
+        <div className="f8-photo">{photoUrl ? <Image src={photoUrl} alt="Applicant photograph preview" width={150} height={190} unoptimized/> : <p>SPACE FOR ONE RECENT PASSPORT SIZE UNSIGNED COLOR PHOTOGRAPH (4.5 × 3.5 CM), WHITE BACKGROUND. ONLY IF PHOTO IS CHANGED.</p>}</div>
         <p><b>The correct particulars in the entry to be corrected:</b></p>
         <table className="f8-table"><tbody>{[0,1,2,3].map(index => <tr key={index}><th>{String.fromCharCode(97+index)}.</th><td>{proofRows[index] ? proofRows[index].name+": "+dash(proofRows[index].value || (proofRows[index].name==="Photo"?"New photograph attached":"")) : ""}</td></tr>)}</tbody></table>
         <p><b>Name of document in support of above claim attached:</b></p>
@@ -199,7 +200,7 @@ export default function VoterForm8({ signedIn, demo }: Props) {
     return [];
   }
   function advance(){
-    const found=validateDetailedIntake(intake);
+    const found=validateDetailedIntake(photo ? {...intake,photoFileId:"selected-local-photo"} : intake);
     const sectionIds=new Set(currentFields().filter(f=>visible.has(f.id)).map(f=>f.id));
     if(step===2 && answers.requestType==="Correction" && form8CorrectionNames(answers).includes("Photo"))sectionIds.add("photoFileId");
     const local=Object.fromEntries(Object.entries(found).filter(([id])=>sectionIds.has(id)));
