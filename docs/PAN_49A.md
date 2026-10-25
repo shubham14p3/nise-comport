@@ -32,7 +32,7 @@ For automatic pixel-aligned overlay on the **original** form: use the GitHub web
 
 `public/forms/pan-49a.pdf`
 
-Create the `public/forms` folder if absent. The preview auto-loads that URL when present. The source-viewer verifies its SHA-256 fingerprint to prevent applying a coordinate mapping to an incompatible PDF:
+Create the `public/forms` folder if absent. By default the preview **does not fetch** this URL, preventing recurring 404s when the binary is absent. Once the PDF is uploaded to `public/forms/pan-49a.pdf`, set `NEXT_PUBLIC_PAN49A_TEMPLATE_READY=true` in the site environment and rebuild/restart. The preview will then load the exact PDF automatically. Without that flag, the recreated print-ready preview remains available and users can select the exact PDF manually in the browser. The source-viewer verifies its SHA-256 fingerprint to prevent applying a coordinate mapping to an incompatible PDF:
 
 `f0692dd49744e62ce2cfe3c1da4a6a07dea1e4a885d7e746ed7d7563d3bbf2fd`
 
@@ -65,3 +65,11 @@ The original sample is 2 pages, each 594 × 846 PDF points. A different layout o
 - Guest demos show a fictional filled sample; no demo submissions are saved.
 
 **Before merging:** Run `npm test`, `npm run lint` and `npm run build`. Verify mobile dropdowns, native date picker behavior, modal 2-page printing, field alignment, and successful edited-request round trips with PostgreSQL. This code has not been verified through CI or a live authenticated browser session.
+
+## October 25 runtime warning fixes
+
+- `instrumentation.ts` executes in Node.js and Edge. Node-only `process.on(...)` event handlers now live in `instrumentation-node.ts`, loaded only when `NEXT_RUNTIME === "nodejs"`; removes unsupported Edge API warnings.
+- Footer opening-hour strings come from the server component `site-footer.tsx` and are passed as serialized props into `footer-body.tsx`. This avoids rendering fallback hours in the browser when `NEXT_PUBLIC_OPENING_HOURS` was only available to the Node.js process.
+- Missing `public/forms/pan-49a.pdf` no longer generates automatic 404 requests; explicitly enable it only after committing the PDF and rebuilding.
+
+After pulling the branch, stop the development server and restart `npm run dev -- -p 3020`. Confirm `/pan/49a` and `/` have no Edge instrumentation warnings or footer hydration mismatches, and verify that both pages still preview and print. `npm run lint`, `npm test`, `npm run build` and browser testing are required before merging.
