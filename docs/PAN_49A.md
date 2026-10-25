@@ -15,6 +15,15 @@ All work is isolated to branch `pan-49a`, forked from `dev`; existing PAN, passp
 
 The wizard collects key details plus the original's sixteen sections; data is validated client-side and server-side, stored using the existing `RECORDS_ENCRYPTION_KEY` AES-GCM vault in PostgreSQL-backed request details. Do not remove the encryption requirement, send Aadhaar in notifications, or log sensitive answers.
 
+## Browser testing / preview modal
+
+1. In GitHub select the `pan-49a` branch (all changes are in this single branch).
+2. Locally: `git fetch origin && git switch pan-49a && npm run dev -- -p 3020`. A remote-tracking branch may be created automatically on the first switch.
+3. Open `http://localhost:3020/pan/49a`. Guests can use **Show filled sample in modal**, which loads fictional values and never submits data.
+4. The modal provides two page tabs, Next page, Edit details, Print / Save PDF, and Escape/close support. On an authenticated request, data is validated and stored through the existing secured PAN API.
+5. While editing, **Preview filled Form 49A** opens the modal without waiting for form submission; the Review step includes **Open final preview**.
+6. Verify keyboard focus trapping, mobile sizing, page navigation and print-preview showing both pages before merging.
+
 ## One-time step to enable **original PDF background for all users**
 
 The user-supplied PDF cannot be committed as a binary through the available GitHub connector. Until committed, the branch displays a built-in printable reference recreation. Users can also choose the exact source PDF through the local browser upload picker, which stays on their device.
