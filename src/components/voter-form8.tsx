@@ -277,22 +277,35 @@ export default function VoterForm8({ signedIn, demo }: Props) {
     return [];
   }
   function advance(){
-    const found=validateDetailedIntake(photo ? {...intake,photoFileId:"selected-local-photo"} : intake);
+    const found=liveProblems;
     const sectionIds=new Set(currentFields().filter(f=>visible.has(f.id)).map(f=>f.id));
     if(step===2 && answers.requestType==="Correction" && form8CorrectionNames(answers).includes("Photo"))sectionIds.add("photoFileId");
     const local=Object.fromEntries(Object.entries(found).filter(([id])=>sectionIds.has(id)));
-    if(Object.keys(local).length){setErrors(local);setProblem("Please correct the highlighted information.");return;}
+    if(Object.keys(local).length){
+      setErrors(local);setTouched(t=>[...new Set([...t,...Object.keys(local)])]);
+      setProblem("Please correct the highlighted information.");
+      focusError(Object.keys(local)[0]);
+      return;
+    }
     if(step===0 && !answers.requestType){setErrors({requestType:"Select what you need to do."});return;}
     setErrors({});setProblem("");setStep(n=>Math.min(3,n+1));
+    if(step===2)setShowPreview(true);
     window.scrollTo({top:0,behavior:"smooth"});
   }
   function validFile(file:File,limit:number){
     if(!proofTypes.includes(file.type)||file.size>limit||!file.size)throw new Error("Upload a PDF, JPG, PNG or WebP file within the size limit.");
   }
   async function submit(){
-    const found=validateDetailedIntake(intake);
-    if(Object.keys(found).length){setErrors(found);setProblem("Please review the form. Some details are incomplete or invalid.");return;}
+    const found=liveProblems;
+    if(Object.keys(found).length){
+      setErrors(found);setTouched(t=>[...new Set([...t,...Object.keys(found)])]);
+      setProblem("Please review the form. Some details are incomplete or invalid.");
+      focusError(Object.keys(found)[0]);
+      return;
+    }
+    if(!reviewed){setProblem("Please inspect both preview pages and select Done reviewing.");setShowPreview(true);return;}
     if(!confirmed){setProblem("Please confirm that the applicant has verified the details.");return;}
+    if(sampleMode){setProblem("This is fictional sample data. Clear the sample before saving a real request.");return;}
     if(!signedIn){rememberReturn("/voter/form-8");router.push("/login");return;}
     if(demo){setProblem("The demo account cannot submit actual requests.");return;}
     setBusy(true);setProblem("");
@@ -314,9 +327,14 @@ export default function VoterForm8({ signedIn, demo }: Props) {
         idempotencyKey:requestKey.current,
       });
       setReference(response.request.reference);
+      setRevisionOf("");
       window.scrollTo({top:0,behavior:"smooth"});
     }catch(error){
       if(error instanceof SecureApiError && error.status===401){rememberReturn("/voter/form-8");router.push("/login");return;}
+      if(error instanceof SecureApiError && error.body && typeof error.body==="object" && "fields" in error.body){
+        const serverFields=(error.body as {fields?:Record<string,string>}).fields;
+        if(serverFields){setErrors(serverFields);focusError(Object.keys(serverFields)[0]??"applicantName");}
+      }
       setProblem(error instanceof Error?error.message:"Could not save the Form 8 assistance request.");
     }finally{setBusy(false);}
   }
