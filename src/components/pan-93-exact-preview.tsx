@@ -110,6 +110,9 @@ export default function Pan93ExactPreview({answers,pan,onEdit}:Props){
   const [pages,setPages]=useState<"loading"|"available"|"missing"|"error">("loading");
   const canvases=useRef<(HTMLCanvasElement|null)[]>([]);
   const [file,setFile]=useState<File|null>(null);
+  // SHA-256 of the sanitized, blank 2-page background extracted from the supplied Form 93 samples.
+  // Never render overlays on arbitrary filled customer PDFs or incompatible editions.
+  const TEMPLATE_SHA256="9b15457e9334ab3dbd0a47c29b9b43b8144df80609d1229dc2d042a799a7e8e6";
   useEffect(()=>{
     if(file)return;
     let active=true;
@@ -130,7 +133,10 @@ export default function Pan93ExactPreview({answers,pan,onEdit}:Props){
       try{
         const pdfjs=await import("pdfjs-dist");
         pdfjs.GlobalWorkerOptions.workerSrc=new URL("pdfjs-dist/build/pdf.worker.min.mjs",import.meta.url).toString();
-        document=await pdfjs.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;
+        const bytes=await file.arrayBuffer();
+        const fingerprint=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes)),b=>b.toString(16).padStart(2,"0")).join("");
+        if(fingerprint!==TEMPLATE_SHA256) throw new Error("Incorrect background PDF");
+        document=await pdfjs.getDocument({data:new Uint8Array(bytes)}).promise;
         if(document.numPages!==2)throw Error("Two-page source required");
         for(let i=0;i<2;i++){
           const canvas=canvases.current[i];
