@@ -6,8 +6,10 @@ import { privateMetadata } from "@/lib/seo";
 
 export const metadata = privateMetadata("Form 49A reference worksheet", "Collect and review the 16 fields of the archived Form 49A in a printable two-page preview.");
 
-export default async function Pan49AReferencePage() {
+export default async function Pan49AReferencePage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
   const user = await getCurrentUser().catch(() => null);
+  const query = await searchParams;
+  const editReference = user && user.role !== "demo" && typeof query.edit==="string" && /^PAN-[A-Z0-9-]{4,70}$/i.test(query.edit) ? query.edit : undefined;
   return <main className="page page--app"><SiteHeader/>
     <div className="container" style={{paddingTop:22}}>
       <div className="alert alert--info" role="note">
@@ -15,6 +17,6 @@ export default async function Pan49AReferencePage() {
       </div>
     </div>
     {!user && <div className="container"><p className="alert alert--info">Demo mode: you can enter details and preview both pages without signing in. Your entries are not saved or submitted. <Link href="/login">Sign in</Link> to save a real assistance request.</p></div>}
-    <PanRequestForm service="new" demo={!user || user.role==="demo"} signedIn legacy49a/>
+    <PanRequestForm service="new" demo={!user || user.role==="demo"} signedIn legacy49a editReference={editReference}/>
   </main>;
 }
