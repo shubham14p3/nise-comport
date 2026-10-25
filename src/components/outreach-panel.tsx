@@ -117,8 +117,6 @@ function Birthdays({ config }: { config: Config | null }) {
   const [q, setQ] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
-  const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
   const [template, setTemplate] = useState("");
   const [data, setData] = useState<BirthdayList | null>(null);
   const [doneKey, setDoneKey] = useState("");
@@ -260,6 +258,8 @@ function Renewals({ config }: { config: Config | null }) {
   const [overdue, setOverdue] = useState(false);
   const [vehicle, setVehicle] = useState("");
   const [q, setQ] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [template, setTemplate] = useState("");
   const [data, setData] = useState<RenewalList | null>(null);
   const [doneKey, setDoneKey] = useState("");
