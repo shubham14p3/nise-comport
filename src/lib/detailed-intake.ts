@@ -164,18 +164,19 @@ const pan49a: IntakeSection[] = [
     select("previousName","Have you ever been known by another name?",yesNo),
     select("formerTitle","Former title",["Shri","Smt.","Kumari","M/s"],true,{show:showIf("previousName","Yes")}),
     ...basicName("former").map(f=>({...f,show:showIf("previousName","Yes")})),
-    select("gender","Gender",["Male","Female","Transgender"]),
+    select("gender","Gender",["Male","Female","Transgender"],true,{show:(a)=>!a.status||a.status==="Individual"}),
     field("dob","Date of birth / incorporation (DD/MM/YYYY)",true,"date"),
   ] },
   { title: "6. Parent details", fields: [
-    select("singleMother","Is the mother a single parent and you want her name alone?",yesNo),
-    ...basicName("father").map(f=>({...f,required:f.id!=="fatherMiddle",show:(a:IntakeValue)=>a.singleMother!=="Yes"})),
-    ...basicName("mother").map(f=>({...f,required:false,show:()=>true})),
-    select("printedParent","Whose name should be printed on the card?",["Father","Mother"],true,{show:(a)=>a.singleMother!=="Yes"}),
+    select("singleMother","Is the mother a single parent and you want her name alone?",yesNo,true,{show:(a)=>!a.status||a.status==="Individual"}),
+    ...basicName("father").map(f=>({...f,required:f.id!=="fatherMiddle",show:(a:IntakeValue)=>(!a.status||a.status==="Individual")&&a.singleMother!=="Yes"})),
+    ...basicName("mother").map(f=>({...f,required:false,show:(a:IntakeValue)=>!a.status||a.status==="Individual"})),
+    select("printedParent","Whose name should be printed on the card?",["Father","Mother"],true,{show:(a)=>(!a.status||a.status==="Individual")&&a.singleMother!=="Yes"}),
   ] },
   address("residence","7. Residential address"),
   { title: "7. Office address", fields: [
     select("officeAddress","Do you have an office address to provide?",yesNo),
+    field("officeName","Name of office",false,"text",{show:showIf("officeAddress","Yes")}),
     ...address("office","Office address").fields.map(f=>({...f,show:showIf("officeAddress","Yes")})),
   ] },
   { title: "8–9. Communication and contact", fields: [
@@ -190,9 +191,9 @@ const pan49a: IntakeSection[] = [
     field("registrationNumber","Registration number for entity, company, firm or LLP",false),
   ] },
   { title: "12. Aadhaar information (confidential)", fields: [
-    select("aadhaarAllotted","Has Aadhaar been allotted?",yesNo),
-    field("aadhaarNumber","Aadhaar number (12 digits)",true,"text",{show:showIf("aadhaarAllotted","Yes"),hint:"Stored only as encrypted application data; never shown in email or WhatsApp notifications."}),
-    field("aadhaarEnrolmentId","Legacy enrolment ID (reference field only; not accepted for new PAN in 2026)",false,"text",{show:showIf("aadhaarAllotted","No")}),
+    select("aadhaarAllotted","Has Aadhaar been allotted?",yesNo,true,{show:(a)=>!a.status||a.status==="Individual"}),
+    field("aadhaarNumber","Aadhaar number (12 digits)",true,"text",{show:(a)=>(!a.status||a.status==="Individual")&&a.aadhaarAllotted==="Yes",hint:"Stored only as encrypted application data; never shown in email or WhatsApp notifications."}),
+    field("aadhaarEnrolmentId","Legacy enrolment ID (reference field only; not accepted for new PAN in 2026)",false,"text",{show:(a)=>(!a.status||a.status==="Individual")&&a.aadhaarAllotted==="No"}),
     field("aadhaarName","Name as printed on Aadhaar",true,"text",{show:showIf("aadhaarAllotted","Yes")}),
   ] },
   { title: "13. Sources of income", fields: [
