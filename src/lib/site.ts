@@ -103,13 +103,13 @@ export function absoluteUrl(path = "/") {
 
 /** The QR-scan welcome brochure. External WhatsApp opens a prefilled message;
  * an automatic business-side reply is possible only with Cloud API enabled. */
-export function qrWelcomeMessage() {
+export function qrWelcomeMessages(): [string, string] {
   const social = [
     ...site.sameAs.filter((link) => /(?:instagram|facebook)\.com\//i.test(link)),
     ...(process.env.NEXT_PUBLIC_INSTAGRAM_URL ? [process.env.NEXT_PUBLIC_INSTAGRAM_URL] : []),
     ...(process.env.NEXT_PUBLIC_FACEBOOK_URL ? [process.env.NEXT_PUBLIC_FACEBOOK_URL] : []),
   ].filter((value, index, all) => all.indexOf(value) === index);
-  return [
+  const services = [
     "आपके इस प्रेम के लिए धन्यवाद",
     "",
     "*🙏Nise-Comport🙏*",
@@ -127,7 +127,11 @@ export function qrWelcomeMessage() {
     "- Ayushman (Golden) Card",
     "- Food License",
     "- Land Rent / Mutation",
-    "",
+  ].join("\n");
+  const contact = [
+    "*🙏Nise-Comport🙏*",
+    "*CSC & प्रज्ञा केंद्र*",
+    "*With Bank of BARODA CSP*",
     "*Visit us:*",
     "Shop no. 3, V P Singh Building, Hanuman Mandir Road, Kharangajhar, Telco, Jamshedpur",
     "*9:00 AM–2:30 PM • 4:30 PM–9:00 PM*",
@@ -140,6 +144,11 @@ export function qrWelcomeMessage() {
     "",
     "Please reply with the service you need. Never share OTPs, passwords, or unmasked identity documents in chat.",
   ].join("\n");
+  return [services, contact];
+}
+
+export function qrWelcomeMessage() {
+  return qrWelcomeMessages().join("\n\n");
 }
 
 export function whatsappLink(message?: string, number: string = site.whatsapp.primary) {
