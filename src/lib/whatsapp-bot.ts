@@ -7,7 +7,7 @@ import { summarizeHours } from "@/lib/hours";
 import { hitRate, identity } from "@/lib/rate-limit";
 import { publicPrices } from "@/lib/service-prices";
 import { publishedServiceDetails } from "@/lib/services";
-import { site } from "@/lib/site";
+import { qrWelcomeMessage, site } from "@/lib/site";
 import { normalizePhone } from "@/lib/validation";
 import { sendText } from "@/lib/whatsapp";
 import {
@@ -41,6 +41,7 @@ export async function handleBotMessage(event: { from: string; text: string; name
   const userId = account?.id ?? null;
   const text = event.text.slice(0, 500);
   let intent: BotIntent = detectIntent(text);
+  const fromWelcomeQr = /\bscanned\b.*\bqr\b|\bqr\b.*\bscanned\b/i.test(text);
   let service = null as ReturnType<typeof matchService>;
   const catalogue = publishedServiceDetails.map((item) => ({ slug: item.slug, title: item.title, keywords: item.keywords, documents: item.documents }));
   if (intent === "unknown") { service = matchService(text, catalogue); if (service) intent = "price"; }
@@ -56,7 +57,7 @@ export async function handleBotMessage(event: { from: string; text: string; name
 
   let reply: string;
   switch (intent) {
-    case "menu": reply = MENU; break;
+    case "menu": reply = fromWelcomeQr ? qrWelcomeMessage() + "\n\n" + MENU : MENU; break;
     case "price": {
       service = service ?? matchService(text, catalogue);
       if (!service) { reply = "Which service? For example “PAN card price”, “voter ID charge” or “bike insurance fee”."; break; }
