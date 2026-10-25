@@ -8,7 +8,10 @@ import { categoryMetaFor } from "@/lib/categories";
 import { serviceName } from "@/lib/i18n-forms";
 import { publishedServiceDetails, serviceCatalog, shortServiceName } from "@/lib/services";
 import { lp, tr } from "@/lib/tr";
-import { useLocalconst MAX_PER_GROUP = 4;
+import { useLocale } from "@/lib/use-locale";
+import { usePathname } from "next/navigation";
+
+const MAX_PER_GROUP = 4;
 
 // One source for the desktop preview and the full mobile category list.
 const groups = serviceCatalog
