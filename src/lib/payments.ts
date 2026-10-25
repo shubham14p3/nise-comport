@@ -136,6 +136,10 @@ export async function markPaid(id: string, details: { method: PayMethod; provide
     await logActivity({ kind: "request", permission: "requests", title: `Payment received: ${rupees(row.amountPaise + row.feePaise)} (${details.method})`, detail: row.reference, refType: "payment", refId: row.id, actorId: details.verifiedBy ?? null });
     await db.update(serviceRequests).set({ status: "payment_received", updatedAt: new Date() }).where(and(eq(serviceRequests.id, row.requestId), eq(serviceRequests.status, "awaiting_payment")));
     await notifyPaid(row);
+    const [customer]=await db.select({name:users.name,phone:users.phone,whatsapp:users.whatsapp,service:serviceRequests.serviceName})
+      .from(users).innerJoin(serviceRequests,eq(serviceRequests.id,row.requestId)).where(eq(users.id,row.userId)).limit(1);
+    if(customer)sendStatusWhatsApp({name:customer.name,phone:customer.whatsapp??customer.phone,reference:row.reference,
+      service:customer.service,status:"Payment verified. Official filing is next."});
   }
   return row ?? null;
 }
