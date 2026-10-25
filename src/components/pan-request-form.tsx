@@ -34,11 +34,15 @@ const LABELS: Partial<Record<keyof PanIntake, string>> = {
 const pretty = (value: string) => value.replaceAll("-", " ").replace(/^./, (letter) => letter.toUpperCase());
 
 /** PAN assistance request in four steps, validated against the same schema the server uses. */
-export default function PanRequestForm({ service, demo = false, signedIn = true, legacy49a = false }: { service: PanIntake["service"]; demo?: boolean; signedIn?: boolean; legacy49a?: boolean }) {
+export default function PanRequestForm({ service, demo = false, signedIn = true, legacy49a = false, editReference }: { service: PanIntake["service"]; demo?: boolean; signedIn?: boolean; legacy49a?: boolean; editReference?: string }) {
   const router = useRouter();
   const locale = useLocale();
   const [step, setStep] = useState(0);
-  const [data, setData] = useState<PanIntake>({ service, citizenship: "indian", applicant: service === "business" ? "entity" : "individual", residency: "india", existingPan: ["new", "minor", "business"].includes(service) ? "no" : "yes", fullName: "", birthDate: "", contactName: "", email: "", phone: "", address: "", city: "", state: "", country: "India", postalCode: "", representative: "", entityType: "", corrections: [], documentPlan: [], notes: "", consent: false, detailedIntake: {kind:legacy49a?"pan49a":"pan",answers:{},documents:[]} });
+  const [editLoading, setEditLoading] = useState(Boolean(editReference));
+  const [data, setData] = useState<PanIntake>({ service, citizenship: "indian", applicant: service === "business" ? "entity" : "individual", residency: "india", existingPan: ["new", "minor", "business"].includes(service) ? "no" : "yes", fullName: "", birthDate: "", contactName: "", email: "", phone: "", address: "", city: "", state: "", country: "India", postalCode: "", representative: "", entityType: "", corrections: [], documentPlan: [], notes: "", consent: false, detailedIntake: {kind:legacy49a?"pan49a":"pan",answers:legacy49a?{
+    status:"Individual",previousName:"No",singleMother:"No",officeAddress:"No",raApplicable:"No",
+    communicationSameAsResidence:"Yes",communicationAddress:"Residence",residenceCountry:"India",phoneCountryCode:"91",
+  }:{},documents:[]} });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -48,14 +52,41 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
   const idempotencyKey = useRef<string | null>(null);
 
   useEffect(() => {
-    if (demo || !signedIn) return;
+    if (!editReference || !signedIn || demo) return;
+    let alive=true;
+    secureApi<{request:{status:string;officialReference?:string|null;details:Record<string,unknown>}}>(
+      "F4m9C1xT6qH3",{reference:editReference}
+    ).then(result=>{
+      if(!alive)return;
+      const oldPan=result.request.details.pan;
+      const rawIntake=result.request.details.intake;
+      if(!["submitted","reviewing","waiting_for_customer"].includes(result.request.status) || result.request.officialReference) {
+        setMessage("This request is now being processed. It is read-only; contact the service desk for changes.");
+        return;
+      }
+      if(!rawIntake||typeof rawIntake!=="object"||(rawIntake as {kind?:string}).kind!=="pan49a") {
+        setMessage("The saved request does not contain a Form 49A worksheet.");
+        return;
+      }
+      const parsed=panIntakeSchema.safeParse({...oldPan,detailedIntake:rawIntake});
+      if(!parsed.success){setMessage("Saved form could not be validated. Please contact the service desk.");return;}
+      setData(parsed.data);
+      setStep(1);
+      setPreviewConfirmed(false);
+    }).catch(error=>{if(alive)setMessage(error instanceof Error?error.message:"Unable to load the saved application.");})
+      .finally(()=>{if(alive)setEditLoading(false);});
+    return ()=>{alive=false;};
+  },[editReference,signedIn,demo]);
+
+  useEffect(() => {
+    if (demo || !signedIn || editReference) return;
     let active = true;
     secureApi<{ user: { name: string; email: string; phone: string | null; city: string; state: string; postalCode: string } }>("P8a2N5dK1vR7").then(({ user }) => {
       if (!active) return;
       setData((current) => ({ ...current, contactName: current.contactName || user.name, email: current.email || user.email, phone: current.phone || user.phone || "", city: current.city || user.city, state: current.state || user.state, postalCode: current.postalCode || user.postalCode }));
     }).catch(() => undefined);
     return () => { active = false; };
-  }, [demo, signedIn]);
+  }, [demo, signedIn, editReference]);
 
   function update<K extends keyof PanIntake>(key: K, value: PanIntake[K]) {
     if (legacy49a) setPreviewConfirmed(false);
@@ -140,7 +171,8 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
     setBusy(true); setMessage("");
     idempotencyKey.current ??= newIdempotencyKey();
     try {
-      await secureApi("Z6m2C9pT4hQ7", { ...parsed.data, idempotencyKey: idempotencyKey.current });
+      if (editReference) await secureApi("J4p9N2vC7mQ6",{ ...parsed.data, reference:editReference });
+      else await secureApi("Z6m2C9pT4hQ7", { ...parsed.data, idempotencyKey: idempotencyKey.current });
       router.push("/profile#requests"); router.refresh();
     } catch (error) {
       const body = error && typeof error === "object" && "body" in error ? (error as { body?: { fields?: Record<string, string> } }).body : undefined;
@@ -202,12 +234,14 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
 
   const frame = (content: React.ReactNode) => <WizardFrame
     kicker={legacy49a ? "PAN Form 49A reference · 4 steps" : "PAN assistance · 4 steps"}
-    title={<>Let’s prepare your <span className="grad-text">{legacy49a ? "Form 49A worksheet." : "PAN request."}</span></>}
+    title={<>Let’s prepare your <span className="grad-text">{editReference ? "saved Form 49A." : legacy49a ? "Form 49A worksheet." : "PAN request."}</span></>}
     lead={legacy49a ? "Capture all fields from the supplied two-page 49A reference, preview and verify them, then send an encrypted assistance request. Since 1 April 2026, new official PAN applications use Forms 93–96 instead." : "One guided form for every PAN service. This sends a request to NISE COMPORT; it does not submit a government application or take payment."}
     steps={STEPS} current={step} onJump={go} locale={locale}
     strip={<OfferStrip category="government-services" locale={locale}/>}
     rail={<OfferRail category="government-services" locale={locale} whatsappText="Hi NISE COMPORT, I have a question about PAN."/>}
   >{content}</WizardFrame>;
+
+  if (editLoading) return frame(<p className="alert alert--info" role="status">Loading your securely saved Form 49A…</p>);
 
   if (!signedIn) return frame(<div className="callout callout--center"><LockKeyhole size={28}/><b>Sign in to keep your PAN request private</b><span>Your contact details prefill from your profile. You can review everything before sending.</span><div className="callout__actions"><Link className="btn btn--primary" href="/login" onClick={() => rememberReturn(legacy49a ? "/pan/49a" : "/pan/request")}>Sign in to continue</Link><Link className="btn btn--ghost" href="/signup" onClick={() => rememberReturn(legacy49a ? "/pan/49a" : "/pan/request")}>Create a free account</Link></div></div>);
 
@@ -288,7 +322,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
 
     {Object.keys(errors).length > 0 && step !== 3 && <div className="alert alert--error" role="alert">Please check the highlighted details.</div>}
     {message && <p className="alert alert--info" role="status">{message}</p>}
-    <WizardActions locale={locale} onBack={step > 0 ? () => go(step - 1) : undefined} nextLabel={step === 3 ? demo ? "Validate preview" : "Send PAN request" : undefined} busy={busy}/>
+    <WizardActions locale={locale} onBack={step > 0 ? () => go(step - 1) : undefined} nextLabel={step === 3 ? demo ? "Validate preview" : editReference ? "Save corrected Form 49A" : "Send PAN request" : undefined} busy={busy}/>
   </form>)}
   {legacy49a && data.detailedIntake?.kind==="pan49a" && <Pan49AModal
     open={showPreview}
