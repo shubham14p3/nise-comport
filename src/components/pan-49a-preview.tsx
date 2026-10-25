@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import Pan49ASourceViewer from "@/components/pan-49a-source-viewer";
 import type { PanIntake } from "@/lib/pan-validation";
 import "./pan-49a-preview.css";
 
@@ -53,6 +55,8 @@ function TextBox({ value, minHeight = 16 }: { value?: string; minHeight?: number
 }
 
 export default function Pan49APreview({ answers: a, pan, onEdit }: Props) {
+  const [sourcePdf, setSourcePdf] = useState<File|null>(null);
+  const [sourceError, setSourceError] = useState("");
   const fullName = pick(a,"printedName",pan.fullName);
   const dt = pick(a,"dob",printDate(pan.birthDate));
   const income: [string,string][] = [
@@ -62,10 +66,10 @@ export default function Pan49APreview({ answers: a, pan, onEdit }: Props) {
   ];
   return <section className="pan49-workspace" aria-label="Form 49A two-page verification preview">
     <div className="pan49-preview-actions">
-      <div><b>Form 49A — two-page verification</b><p>Legacy reference (not valid for new official PAN filings after 31 March 2026). Compare each box with your source documents before confirming.</p></div>
+      <div><b>Form 49A — two-page verification</b><p>Legacy reference (not valid for new official PAN filings after 31 March 2026). Compare each box with your source documents before confirming.</p><label className="pan49-template-upload">Use the exact supplied Form 49A PDF as the preview background <input type="file" accept="application/pdf,.pdf" onChange={e=>{const file=e.target.files?.[0];if(!file)return;if(file.size>12*1024*1024){setSourceError("PDF exceeds 12 MB.");return;}setSourceError("");setSourcePdf(file);}}/></label>{sourceError&&<span role="alert">{sourceError}</span>}{sourcePdf&&<button type="button" className="link-btn" onClick={()=>setSourcePdf(null)}>Use built-in preview instead</button>}</div>
       <div>{onEdit && <button type="button" className="btn btn--ghost btn--sm" onClick={onEdit}>Edit entries</button>}<button type="button" className="btn btn--primary btn--sm" onClick={() => window.print()}>Print / Save PDF</button></div>
     </div>
-    <div className="pan49-paper-wrap">
+    {sourcePdf ? <Pan49ASourceViewer file={sourcePdf} answers={a} pan={pan}/> : <div className="pan49-paper-wrap">
       <article className="pan49-sheet">
         <div className="pan49-top">
           <div className="pan49-photo">Only 'Individuals'<br/> to affix recent photograph<br/>(3.5 × 2.5 cm)<small>Signature/Left thumb impression across photo</small></div>
@@ -128,6 +132,6 @@ export default function Pan49APreview({ answers: a, pan, onEdit }: Props) {
         <div className="pan49-declare-bottom"><div>Place: <TextBox value={pick(a,"declarationPlace")}/><div>Date: <Cells count={8} value={pick(a,"declarationDate",dt).replace(/\D/g,"")}/></div></div><div className="pan49-sign">Signature / Left Thumb Impression of Applicant<br/><small>To be signed or provided separately after verification</small></div></div>
         <footer className="pan49-page-number">Page 2 of 2 · Reference worksheet only; not submitted to Income Tax Department</footer>
       </article>
-    </div>
+    </div>}
   </section>;
 }
