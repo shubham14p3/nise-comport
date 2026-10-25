@@ -140,3 +140,8 @@
 .f8-fix-card .f8-input-grid{align-items:start}
 .f8-fix-card .f8-input{min-width:0}
 .f8-fix-card:has(.f8-input--invalid){border-color:#d96060;background:#fffafa}
+
+.f8-preview-locked{min-height:245px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;border:1px dashed #b4c9df;border-radius:14px;padding:22px;text-align:center;background:#f4f8ff;color:#235684}
+.f8-preview-locked b{font-size:.95rem;color:#173d66}
+.f8-preview-locked p{margin:0;max-width:330px;line-height:1.7;font-size:.83rem;color:#64748b}
+.f8-preview-rail .form8-preview{overflow-wrap:anywhere}
