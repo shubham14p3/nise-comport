@@ -55,6 +55,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ ok: true, status: current.status, unchanged: true });
     }
 
+    // On the new Form 93 workflow, an official provider number may be recorded
+    // only after staff have marked the NISE request as paid. It is NEVER minted by us.
+    if (input.kind==="service" && officialChanged && input.officialReference) {
+      const [panRecord]=await db.select({details:serviceRequests.details}).from(serviceRequests).where(eq(serviceRequests.id,id)).limit(1);
+      const details=panRecord?.details;
+      const safeDetails=details&&typeof details==="object"&&!Array.isArray(details) ? details as Record<string,unknown> : null;
+      const storedIntake=safeDetails?.intake;
+      const kind=storedIntake&&typeof storedIntake==="object"&&!Array.isArray(storedIntake) ?
+        (storedIntake as {kind?:string}).kind : undefined;
+      if(kind==="pan93"&&!["payment_received","ready_for_pickup","out_for_delivery","completed"].includes(current.status)&&input.status!=="payment_received") {
+        throw new PublicError("Confirm payment received on the NISE request before adding the official Form 93 application number.",409);
+      }
+    }
     const now = new Date();
     const [updated] = input.kind === "print"
       ? await db.update(printJobs).set({ status: input.status, updatedAt: now }).where(and(eq(printJobs.id, id), eq(printJobs.status, current.status))).returning({ id: printJobs.id })
