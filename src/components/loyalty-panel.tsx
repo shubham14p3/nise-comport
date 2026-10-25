@@ -48,10 +48,11 @@ export default function LoyaltyPanel() {
 
   if (!settings) return <section className="admin-card"><h2>Loyalty credit</h2>{error ? <p role="alert" className="form-error">{error}</p> : <p>Loading…</p>}</section>;
   return <section className="admin-card">
-    <h2>Loyalty credit</h2>
+    <h2>Loyalty rewards</h2>
     <p className="muted">A thank-you credit goes to the customer&rsquo;s wallet when you mark their order <b>Completed</b>. The first rule whose words match the service is used. Credit given so far: <b>₹{history.total.toFixed(2)}</b> in {history.count} credits.</p>
     {message && <p role="status">{message}</p>}{error && <p role="alert" className="form-error">{error}</p>}
     <label className="loyalty-switch"><input type="checkbox" checked={settings.enabled} onChange={(e) => setSettings({ ...settings, enabled: e.target.checked })}/> Give credit for completed orders</label>
+    <details className="admin-accordion"><summary>Reward rules ({settings.rules.length}) — edit amounts and matching services</summary>
     <div className="loyalty-rules">{settings.rules.map((rule, index) => <fieldset key={rule.id} className="loyalty-rule" disabled={Boolean(busy)}>
       <label className="loyalty-switch"><input type="checkbox" checked={rule.enabled} onChange={(e) => change(index, { enabled: e.target.checked })}/> <input aria-label="Rule name" value={rule.label} maxLength={80} onChange={(e) => change(index, { label: e.target.value })}/></label>
       <label>Words that match the service <small>(comma separated)</small><input value={rule.keywords.join(", ")} onChange={(e) => change(index, { keywordText: e.target.value })}/></label>
@@ -67,6 +68,8 @@ export default function LoyaltyPanel() {
       <button type="button" className="btn btn--ghost" onClick={() => setSettings({ ...settings, rules: [...settings.rules, { id: `rule-${settings.rules.length + 1}`, label: "New rule", enabled: true, keywords: ["keyword"], type: "flat", value: 10, cap: null, minOrder: 0 }] })}>Add a rule</button>
       <button type="button" className="btn btn--primary" disabled={Boolean(busy)} onClick={() => void run("save")}>{busy === "save" ? "Saving…" : "Save rules"}</button>
     </div>
+    </details>
+    <details className="admin-accordion"><summary>Apply rewards to previously completed orders</summary>
     <h3>Sync up: credit for orders finished earlier</h3>
     <p className="muted">Looks through all completed orders and credits the ones that were never rewarded. Safe to run again: nothing is paid twice. Preview first.</p>
     <div className="loyalty-actions">
@@ -75,5 +78,6 @@ export default function LoyaltyPanel() {
     </div>
     {sync && <div className="loyalty-result"><p><b>{sync.credits}</b> credits · <b>₹{sync.total.toFixed(2)}</b> · {sync.customers} customers{sync.alreadyRewarded ? ` · ${sync.alreadyRewarded} already rewarded` : ""}{!sync.enabled ? " · credit is switched off" : ""}</p>
       {sync.sample.length > 0 && <div className="table-scroll"><table className="price-table"><tbody>{sync.sample.map((row) => <tr key={row.reference}><th scope="row">{row.who}</th><td>{row.reference}</td><td>{row.label}</td><td>₹{row.amount.toFixed(2)}</td></tr>)}</tbody></table></div>}</div>}
+    </details>
   </section>;
 }
