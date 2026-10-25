@@ -24,7 +24,12 @@ export default function RequestExtras({ details, fallback }: { details: Record<s
       {intakeSections(intake.kind).map(section => {
         const provided = section.fields.filter(f => intake.answers?.[f.id]);
         return provided.length ? <details key={section.title} className="detailed-intake__section" open><summary>{section.title}</summary>
-          <dl className="pan-review">{provided.map(f => <div key={f.id}><dt>{f.label}</dt><dd>{intake.answers?.[f.id]}</dd></div>)}</dl>
+          <dl className="pan-review">{provided.map(f => {
+            const raw=String(intake.answers?.[f.id]||"");
+            const masked=intake.kind==="pan49a"&&["aadhaarNumber","aadhaarEnrolmentId"].includes(f.id);
+            const value=masked ? "•••• •••• "+raw.slice(-4) : raw;
+            return <div key={f.id}><dt>{f.label}</dt><dd>{value}</dd></div>;
+          })}</dl>
         </details> : null;
       })}
       {intake.photoFileId && <p>Photograph uploaded (available through authorized request file access).</p>}
