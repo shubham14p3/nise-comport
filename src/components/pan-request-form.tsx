@@ -196,6 +196,12 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
   }
 
   async function submit() {
+    // Guests must sign in before any final preview; confirmation is checked after authentication.
+    if(!authenticated){
+      const ok=await saveApplicationDraft(draftKey,{data,step:3});
+      if(!ok){setMessage("Unable to preserve your draft. Enable browser site storage.");return;}
+      rememberReturn(returnPath);router.push("/login");return;
+    }
     if (referenceMode && !previewConfirmed) { setMessage("Please confirm that both preview pages match the applicant documents."); return; }
     const parsed = panIntakeSchema.safeParse(data);
     if (!parsed.success) {
@@ -204,11 +210,6 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
       const firstStep = STEP_FIELDS.findIndex((fields) => fields.some((field) => found[field as string]));
       if (firstStep >= 0) go(firstStep);
       return;
-    }
-    if(!authenticated){
-      const ok=await saveApplicationDraft(draftKey,{data,step:3});
-      if(!ok){setMessage("Unable to preserve your draft. Enable browser site storage.");return;}
-      rememberReturn(returnPath);router.push("/login");return;
     }
     setBusy(true); setMessage("");
     idempotencyKey.current ??= newIdempotencyKey();
@@ -384,7 +385,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
     <WizardActions locale={locale} onBack={step > 0 ? () => go(step - 1) : undefined} nextLabel={step===2 && !authenticated ? "Sign in to preview" : step===3 && !authenticated ? "Sign in to preview" : step===3 ? editReference ? "Save corrected PAN form" : "Send PAN request" : undefined}
       nextDisabled={!tabDraftReady} busy={busy}/>
   </form>)}
-  {referenceMode && authenticated && ["pan49a","pan93"].includes(data.detailedIntake?.kind??"") && <Pan49AModal
+  {referenceMode && (authenticated || (demo && signedIn)) && ["pan49a","pan93"].includes(data.detailedIntake?.kind??"") && <Pan49AModal
     form93={form93}
     open={showPreview}
     pan={data}
