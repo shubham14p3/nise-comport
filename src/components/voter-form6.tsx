@@ -41,6 +41,7 @@ export default function VoterForm6({signedIn,demo,maxDate}:Props){
   const [reference,setReference]=useState("");
   const [revisionOf,setRevisionOf]=useState("");
   const requestKey=useRef<string|null>(null);
+  const previewPending=useRef(false);
   useEffect(()=>{
     if(!signedIn || demo)return;
     let cancelled=false;
@@ -151,6 +152,8 @@ export default function VoterForm6({signedIn,demo,maxDate}:Props){
     }
     if(signedIn&&!demo){setMessage("");setShowPreview(true);return;}
     if(demo){setMessage("Sign in with a regular account to preview your completed Form 6.");return;}
+    if(previewPending.current)return;
+    previewPending.current=true;
     setBusy(true);setMessage("Saving your completed Form 6 securely for sign-in…");
     try{
       await saveTemporaryVoterDraft("voter-form6",{intake,photo,proof});
@@ -158,7 +161,7 @@ export default function VoterForm6({signedIn,demo,maxDate}:Props){
       router.push("/login");
     }catch(error){
       setMessage(error instanceof Error?error.message:"Your temporary form could not be saved. No data was discarded.");
-    }finally{setBusy(false);}
+    }finally{previewPending.current=false;setBusy(false);}
   }
   async function submit(){
     if(Object.keys(problems).length){
@@ -230,7 +233,7 @@ export default function VoterForm6({signedIn,demo,maxDate}:Props){
       <div className="f8-layout">
         <section className="f8-editor"><h2>{step===4?"Check the complete application":sections[step].title}</h2>
           {step<4&&<div className="f8-inline-preview"><span><Eye size={17}/> Live filled three-page document</span>
-            <button type="button" onClick={()=>void requestPreview()}>Open preview</button></div>}
+            <button type="button" onClick={()=>void requestPreview()}>{signedIn&&!demo?"Open preview":"Sign in to preview"}</button></div>}
           {step<4&&<div className="f6-input-grid">{sections[step].fields.map(renderField)}
             {step===3&&<div className="f6-wide f6-sir-guidance"><h3>Supplementary SIR declaration</h3>
               <p>The uploaded Form 6 examples include a third-page SIR declaration. Choose whether this supplementary declaration applies; if yes, complete its available historical electoral-roll and family details.</p></div>}
@@ -251,7 +254,7 @@ export default function VoterForm6({signedIn,demo,maxDate}:Props){
           {step===4&&<div className="f8-review">
             <div className="f8-final-preview"><div><b>Ready for a three-page Form 6 preview</b>
               <p>{reviewed?"All three pages reviewed.":"Open, check both application pages and the supplementary declaration, then select Done reviewing."}</p></div>
-              <button type="button" onClick={()=>void requestPreview()}><Eye size={17}/> {reviewed?"Reopen":"Open final preview"}</button>
+              <button type="button" onClick={()=>void requestPreview()}><Eye size={17}/> {reviewed?"Reopen":signedIn&&!demo?"Open final preview":"Sign in to preview"}</button>
             </div>
             {summary.map((section,i)=><details key={section.title} className="f6-review-section" open={i===0?true:undefined}>
               <summary>{section.title}</summary><dl>{section.fields.filter(f=>visible.has(f.id)&&answers[f.id]).map(f=><div key={f.id}><dt>{f.label}</dt><dd>{f.id==="aadhaarNumber"?"••••••••"+answers[f.id].slice(-4):answers[f.id]}</dd></div>)}</dl>
