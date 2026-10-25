@@ -15,8 +15,8 @@ export default async function Form93Page({searchParams}:{searchParams:Promise<{e
       <div className="alert alert--info" role="note">
         <span><b>Form No. 93 · preparation only.</b> Verify your applicant information before payment. Your official application number, payment reference, barcode, photograph, and signature are supplied through separate staff/authority workflows. <Link href="/track">Track your NISE request</Link>.</span>
       </div>
-      {!user&&<p className="alert alert--info">You can preview a sample without signing in. Sign in to securely submit or edit a NISE assistance request.</p>}
+      {!user&&<p className="alert alert--info">You can fill the PAN form without an account. Sign in to unlock the filled preview, then verify and submit your NISE request.</p>}
     </div>
-    <PanRequestForm service="new" demo={!user||user.role==="demo"} signedIn form93 editReference={editReference}/>
+    <PanRequestForm service="new" demo={user?.role==="demo"} signedIn={Boolean(user)} form93 editReference={editReference}/>
   </main>;
 }
