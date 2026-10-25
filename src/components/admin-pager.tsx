@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 type Props = {
   page: number; total: number; pageSize: number; onPage: (page: number) => void;
   onPageSize?: (size: number) => void; label?: string;
@@ -29,4 +31,17 @@ export function AdminPager({ page, total, pageSize, onPage, onPageSize, label = 
 export function paged<T>(items: readonly T[], page: number, size: number): T[] {
   const safePage = Math.max(0, Math.min(page, Math.max(0, Math.ceil(items.length / size) - 1)));
   return items.slice(safePage * size, (safePage + 1) * size);
+}
+
+/** Client-only pagination for small lists already loaded by a panel. */
+export function useAdminPagination<T>(items: readonly T[]) {
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const current = Math.min(page, Math.max(0, Math.ceil(items.length / pageSize) - 1));
+  return {
+    page: current, pageSize, total: items.length, items: paged(items, current, pageSize),
+    onPage: setPage,
+    onPageSize: (size: number) => { setPageSize(size); setPage(0); },
+    reset: () => setPage(0),
+  };
 }
