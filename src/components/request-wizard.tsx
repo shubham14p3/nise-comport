@@ -7,19 +7,17 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Check, FileText, Headphones, House, Laptop, MapPin, PartyPopper, Search, Store, Upload, X } from "lucide-react";
 import AddressPicker, { addressProblem, EMPTY_ADDRESS, formatAddress, type AddressValue } from "@/components/address-picker";
 import { CategoryIcon, WhatsAppIcon } from "@/components/icons";
-import { useLiveCodes } from "@/components/offers-provider";
-import { scopeAllows } from "@/lib/promo-scope";
-import PromoCodeField, { type AppliedCode, type CodeSuggestion } from "@/components/promo-code-field";
 import { OfferRail, OfferStrip, WizardActions, WizardFrame } from "@/components/wizard";
 import ConsentModal from "@/components/consent-modal";
 import DetailedIntakeFields from "@/components/detailed-intake-fields";
+import DetailedIntakePreview from "@/components/detailed-intake-preview";
+import { saveApplicationDraft, readApplicationDraft, clearApplicationDraft } from "@/lib/tab-application-draft";
 import { validateDetailedIntake, type DetailedIntake, type IntakeKind } from "@/lib/detailed-intake";
 import { categoryMeta, categoryMetaFor } from "@/lib/categories";
 import { newIdempotencyKey } from "@/lib/client-id";
 import type { OpeningHoursRule } from "@/lib/hours";
-import { dict, fill, type Locale } from "@/lib/i18n";
+import { dict, type Locale } from "@/lib/i18n";
 import { findOffer, isOfferLive, offerAppliesTo, offersFor } from "@/lib/offers";
-import { promoDict } from "@/lib/promo-i18n";
 import { secureApi, secureUpload, SecureApiError } from "@/lib/secure-api-client";
 import { useLocale } from "@/lib/use-locale";
 import { whatsappHref } from "@/lib/public-contact";
@@ -38,7 +36,6 @@ type Draft = {
   offerId: string; consent: boolean; coupon: string;
   serviceTask: "passport" | "driving"; intake: DetailedIntake | null;
 };
-type Voucher = { code: string; emoji: string; names: Record<Locale, string>; used: boolean; live: boolean; personal: boolean; appliesTo?: { categories: string[]; services: string[] } | null };
 type SessionUser = { name: string; role: string } | null;
 
 const DRAFT_KEY = "nise-request-wizard";
@@ -62,9 +59,9 @@ function readDraft(): Partial<Draft> | null {
 function saveDraft(draft: Draft) {
   try {
     // Do not persist full applicant information in browser storage.
-    const { intake: _intake, ...safe } = draft;
-    void _intake;
-    window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify(safe));
+    // Full applicant data is stored separately as a short-lived sealed tab draft.
+    const { step, serviceSlug, category, query, mode, serviceTask, offerId } = draft;
+    window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify({step,serviceSlug,category,query,mode,serviceTask,offerId}));
   } catch { /* storage unavailable */ }
 }
 function clearDraft() {
@@ -103,7 +100,7 @@ export default function RequestWizard(props: { services: WizardService[]; initia
 }
 
 function initialDraft(services: WizardService[], initial: Initial): Draft {
-  const blank: Draft = { step: 0, serviceSlug: "", category: "all", query: "", name: "", phone: "", contact: "whatsapp", description: "", mode: "", day: "", slot: "", addressId: "", address: EMPTY_ADDRESS, offerId: "", consent: false, coupon: "", serviceTask: "passport", intake: null };
+  const blank: Draft = { step: 0, serviceSlug: "", category: "all", query: "", name: "", phone: "", contact: "whatsapp", description: "", mode: "online", day: "", slot: "", addressId: "", address: EMPTY_ADDRESS, offerId: "", consent: false, coupon: "", serviceTask: "passport", intake: null };
   const saved = readDraft();
   const coupon = (initial.coupon ?? "").toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 40);
   const hasUrlChoice = Boolean(initial.service || initial.category || initial.offer || initial.note);
@@ -123,10 +120,6 @@ function initialDraft(services: WizardService[], initial: Initial): Draft {
 function Wizard({ services, initial, hours, locale }: { services: WizardService[]; initial: Initial; hours: OpeningHoursRule[]; locale: Locale }) {
   const router = useRouter();
   const t = dict(locale).wizard;
-  const p = promoDict(locale);
-  const liveCodes = useLiveCodes();
-  const [applied, setApplied] = useState<AppliedCode | null>(null);
-  const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [draft, setDraft] = useState<Draft>(() => initialDraft(services, initial));
   const [days] = useState(() => upcomingDays(hours));
   const [user, setUser] = useState<SessionUser | undefined>(undefined);
@@ -141,6 +134,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const leadSent = useRef<string | null>(null);
   const draftRef = useRef<Draft | null>(null);
   const [restored, setRestored] = useState(false);
+  const [tabDraftReady, setTabDraftReady] = useState(false);
   const idempotencyKey = useRef<string | null>(null);
   const cardTop = useRef<HTMLDivElement>(null);
 
@@ -159,7 +153,32 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     ? chosenOffer
     : activeCategory ? offersFor(activeCategory).find((item) => item.categories !== "all") : undefined;
 
-  useEffect(() => { saveDraft(draft); draftRef.current = draft; }, [draft]);
+  useEffect(() => {
+    let active=true;
+    void readApplicationDraft<{draft:Draft}>("service-request").then(saved=>{
+      if(!active)return;
+      const hasUrlChoice=Boolean(initial.service||initial.category||initial.offer||initial.note);
+      if(saved?.draft&&(initial.resume||!hasUrlChoice)){
+        setDraft(current=>({...current,...saved.draft,address:{...EMPTY_ADDRESS,...saved.draft.address},consent:false}));
+        setRestored(true);
+      } else if(initial.resume) {
+        // A non-sensitive navigation marker may outlive the expiring sealed
+        // answers. Never show a misleading empty preview.
+        setDraft(current=>({...current,step:current.serviceSlug?1:0,consent:false}));
+        setError("Your temporary application draft expired or could not be restored. Please review and refill your details.");
+      }
+      setTabDraftReady(true);
+    });
+    return()=>{active=false;};
+  }, [initial.service,initial.category,initial.offer,initial.note,initial.resume]);
+
+  useEffect(() => {
+    draftRef.current=draft;
+    if(!tabDraftReady)return;
+    saveDraft(draft);
+    const timer=window.setTimeout(()=>{void saveApplicationDraft("service-request",{draft:{...draft,consent:false}});},350);
+    return()=>window.clearTimeout(timer);
+  }, [draft,tabDraftReady]);
 
   // Signed in: keep the half-filled request on the server too, so it's there next time.
   useEffect(() => {
@@ -180,7 +199,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       setUser(session.user);
       if (!session.user || session.user.role === "demo") return;
       const [profile, saved, server] = await Promise.all([
-        secureApi<{ user: { name: string; phone: string | null; preferredContact: Contact }; coupons?: Voucher[] }>("P8a2N5dK1vR7").catch(() => null),
+        secureApi<{ user: { name: string; phone: string | null; preferredContact: Contact } }>("P8a2N5dK1vR7").catch(() => null),
         secureApi<{ addresses: SavedAddress[] }>("P3v8F1qL6sM4").catch(() => null),
         secureApi<{ draft: Partial<Draft> | null }>("D9k3W7pR2xN5").catch(() => null),
       ]);
@@ -193,7 +212,6 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         setDraft((current) => ({ ...current, ...back, consent: false, address: { ...EMPTY_ADDRESS, ...(back.address ?? {}) } }));
         setRestored(true);
       }
-      if (profile?.coupons) setVouchers(profile.coupons);
       if (profile) setDraft((current) => ({ ...current, name: current.name || profile.user.name, phone: current.phone || (profile.user.phone ?? "").replace(/^\+91/, ""), contact: current.contact || profile.user.preferredContact }));
       if (saved) {
         setAddresses(saved.addresses);
@@ -240,11 +258,28 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     }).catch(() => undefined);
   }
 
-  function next() {
-    if (draft.step === 1) captureLead();
-    const problem = validate(draft.step);
-    if (problem) { setError(problem); setShowErrors(true); return; }
-    goTo(Math.min(3, draft.step + 1));
+  async function next() {
+    if(!tabDraftReady){setError("Restoring saved answers. Please try again.");return;}
+    if(draft.step===1)captureLead();
+    const problem=validate(draft.step);
+    const photoOnly=activeIntake?.kind==="voter" && Boolean(intakeErrors.photoFileId) &&
+      Object.keys(intakeErrors).length===1;
+    if(problem && !(draft.step===1 && user===null && photoOnly)){
+      setError(problem);setShowErrors(true);return;
+    }
+    if(draft.step===2 && user===null){
+      const ok=await saveApplicationDraft("service-request",{draft:{...draft,step:3,consent:false}});
+      if(!ok){setError("Browser storage is unavailable. Enable site storage before signing in so your answers are not lost.");return;}
+      saveDraft({...draft,step:3});
+      rememberReturn("/request?resume=1");router.push("/login");return;
+    }
+    if(draft.step===2 && user?.role==="demo"){
+      setError("Sign in with a real account to preview this application.");return;
+    }
+    if(draft.step===2 && activeIntake && Object.keys(intakeErrors).length){
+      setError(Object.values(intakeErrors)[0]);setShowErrors(true);goTo(1);return;
+    }
+    goTo(Math.min(3,draft.step+1));
   }
 
   async function submit(consentConfirmed = false) {
@@ -282,20 +317,18 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         },
         ...(draft.serviceSlug === "other" && draft.category !== "all" ? { category: draft.category } : {}),
         ...(offer ? { offerId: offer.id } : {}),
-        ...(draft.coupon ? { couponCode: draft.coupon } : {}),
         fileId,
         idempotencyKey: idempotencyKey.current,
       });
       clearDraft();
+      clearApplicationDraft("service-request");
       void secureApi("D4r8F2kW6nQ1", { action: "clear" }).catch(() => undefined);
       setDone({
         whatsappSent: Boolean(result.whatsappSent),
         // Always English: this text goes to the shop on WhatsApp.
         summary: [`Service: ${service?.name ?? "Not sure"}`, `Name: ${draft.name.trim()}`, `Mobile: +91 ${draft.phone.trim()}`, `Need: ${draft.description.trim()}`, `Visit: ${[{ walkin: "Walk-in", callback: "Call me back", doorstep: "Doorstep", online: "Online" }[draft.mode as Mode] ?? "", draft.day, draft.slot].filter(Boolean).join(" · ")}`].join("\n"),
         reference: result.request.reference, offerNote: result.offer && !result.offer.applied ? result.offer.reason : undefined,
-        couponOk: Boolean(result.coupon?.applied), couponNote: result.coupon ? result.coupon.applied ? fill(p.promoAppliedDone, { code: result.coupon.code ?? draft.coupon }) : `${p.promoNotApplied} ${result.coupon.reason ?? ""}` : undefined,
       });
-      setApplied(null);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (reason) {
       if (reason instanceof SecureApiError && reason.status === 401) { saveDraft({ ...draft, step: 3 }); rememberReturn("/request?resume=1"); router.push("/login"); return; }
@@ -334,22 +367,14 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   });
   const savedAddress = addresses.find((item) => item.id === draft.addressId);
   const modeCards: { id: Mode; icon: typeof Store; title: string; sub: string; soon?: boolean }[] = [
+    { id: "online", icon: Laptop, title: t.online, sub: t.onlineSub },
     { id: "walkin", icon: Store, title: t.walkin, sub: t.walkinSub },
     { id: "callback", icon: Headphones, title: t.callback, sub: t.callbackSub },
     { id: "doorstep", icon: House, title: t.doorstep, sub: t.doorstepSub, soon: true },
-    { id: "online", icon: Laptop, title: t.online, sub: t.onlineSub },
   ];
   const slotLabel = (slot: Slot | "") => slot ? t[slot] : "";
   const dayLabel = (iso: string) => { const day = days.find((item) => item.iso === iso); return day ? day.offset === 0 ? t.today : day.offset === 1 ? t.tomorrow : `${day.weekday}, ${day.date}` : iso; };
   const visitSummary = draft.mode === "walkin" ? `${t.walkin} · ${dayLabel(draft.day)}${draft.slot ? ` · ${slotLabel(draft.slot)}` : ""}` : draft.mode === "doorstep" ? `${t.doorstep} · ${savedAddress ? `${savedAddress.line1}, ${savedAddress.city}` : formatAddress(draft.address)}` : draft.mode === "callback" ? t.callback : draft.mode === "online" ? t.online : "";
-  // Only suggest codes that work on the chosen service.
-  const fitsService = (scope?: { categories: string[]; services: string[] } | null) => !draft.serviceSlug || scopeAllows(scope, { service: draft.serviceSlug, category: service?.category ?? null });
-  const suggestions: CodeSuggestion[] = [
-    ...vouchers.filter((item) => item.personal && item.live && !item.used && fitsService(item.appliesTo)).map((item) => ({ code: item.code, emoji: item.emoji, label: item.names[locale] ?? item.code, personal: true })),
-    ...[...liveCodes].sort((a, b) => Number(Boolean(activeCategory && b.categories !== "all" && b.categories.includes(activeCategory))) - Number(Boolean(activeCategory && a.categories !== "all" && a.categories.includes(activeCategory))))
-      .filter((item) => item.code && !item.masked && fitsService(item.appliesTo) && !vouchers.some((voucher) => voucher.code === item.code && voucher.used))
-      .map((item) => ({ code: item.code!, emoji: item.emoji, label: item.title[locale] })),
-  ];
   const nameBad = showErrors && draft.step === 1 && draft.name.trim().length < 2;
   const phoneBad = showErrors && draft.step === 1 && !validPhone(draft.phone);
   const describeBad = showErrors && draft.step === 1 && draft.description.trim().length < 8;
@@ -361,11 +386,11 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     lead={WX.lead[locale]}
     steps={t.steps} current={draft.step} onJump={goTo} locale={locale}
     strip={<OfferStrip category={activeCategory} locale={locale}/>}
-    rail={<OfferRail category={activeCategory} locale={locale} whatsappText={whatsappText} appliedOfferId={offer?.id} appliedCode={applied?.code ?? (draft.coupon || null)}/>}
+    rail={<OfferRail category={activeCategory} locale={locale} whatsappText={whatsappText} appliedOfferId={undefined} appliedCode={null}/>}
   >
     <div ref={cardTop} className="wizard__anchor"/>
     {restored && <p className="alert alert--info wizard-restored">{WX.restored[locale]} <button type="button" className="text-link" onClick={() => { setRestored(false); clearDraft(); void secureApi("D4r8F2kW6nQ1", { action: "clear" }).catch(() => undefined); setDraft(initialDraft(services, {})); }}>{WX.startFresh[locale]}</button></p>}
-    <form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (draft.step === 3) void submit(); else next(); }}>
+    <form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (draft.step === 3) void submit(); else void next(); }}>
       {draft.step === 0 && <section>
         <h2>{t.s1Title}</h2><p className="wizard-form__sub">{t.s1Sub}</p>
         <label className="input-wrap input-wrap--lg"><Search size={20} aria-hidden="true"/><span className="sr-only">{t.search}</span><input type="search" value={draft.query} onChange={(event) => update({ query: event.target.value })} placeholder={t.search}/></label>
@@ -387,7 +412,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
             <span className="choice__icon"><FileText size={20}/></span><span className="choice__text"><b>{t.somethingElse}</b><small>{t.somethingElseSub}</small></span><span className="choice__check" aria-hidden="true">{draft.serviceSlug === "other" && <Check size={16}/>}</span>
           </button>
         </div>
-        {draft.serviceSlug === "voter-id" && <div className="callout"><b>Need to correct a voter card, change address, replace EPIC or mark disability?</b><span>Use the dedicated Form 8 guide for field validation and a matching two-page PDF draft. For new voter registration, continue with the general enquiry here.</span><Link className="btn btn--sm btn--primary" href="/voter">Choose voter form <ArrowRight size={16}/></Link></div>}
+        {draft.serviceSlug === "voter-id" && <div className="callout"><b>Voter ID has dedicated Form 6 and Form 8 applications.</b><span>Choose Form 6 for new voter registration, or Form 8 for corrections, residence shifting, replacement EPIC and disability marking. Complete the form, sign in, and verify the PDF preview.</span><Link className="btn btn--sm btn--primary" href="/voter">Choose voter form <ArrowRight size={16}/></Link></div>}
         {draft.serviceSlug === "pan-card" && <div className="callout"><b>PAN has a dedicated guided form.</b><span>It collects exactly what the PAN process needs.</span><Link className="btn btn--sm btn--primary" href="/pan/request">Open PAN form <ArrowRight size={16}/></Link></div>}
         {draft.serviceSlug === "printing-scanning" && FEATURES.printUploads && <div className="callout"><b>Printing has its own flow.</b><span>Upload your file, pick pages and see the estimate.</span><Link className="btn btn--sm btn--primary" href="/print">Open print flow <ArrowRight size={16}/></Link></div>}
       </section>}
@@ -408,7 +433,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         </div></fieldset>
         <label className="field"><span className="field__label">{t.describe}{activeIntake ? " (optional, extra notes)" : ""}</span><textarea value={draft.description} onChange={(event) => update({ description: event.target.value.slice(0, 1500) })} rows={4} maxLength={1500} required={!activeIntake} aria-invalid={describeBad&&!activeIntake}/>{describeBad && <span className="field__error">{t.errDescribe}</span>}<span className="field__hint">{t.describeHint} · {draft.description.length}/1500</span></label>
         {activeIntake && <DetailedIntakeFields intake={activeIntake} onChange={value=>update({intake:value})}
-          errors={showErrors?intakeErrors:{}} photo={photo} onPhotoChange={setPhoto}/>}
+          errors={showErrors?intakeErrors:{}} photo={photo} onPhotoChange={user && user.role!=="demo"?setPhoto:undefined}/>}
         <div className="quick-picks"><span>{t.quickPicks}</span>{picks.map((pick) => <button key={pick} type="button" className="chip-btn chip-btn--sm" onClick={() => update({ description: draft.description.includes(pick) ? draft.description : `${draft.description ? `${draft.description.trim()} ` : ""}${pick}.`.slice(0, 1500) })}>+ {pick}</button>)}</div>
         {!uploadsAllowed(activeCategory) && <p className="field__hint">{WX.noFile[locale]}</p>}
         {uploadsAllowed(activeCategory) && <div className="field"><span className="field__label">{t.attach}</span>
@@ -434,25 +459,41 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         </div>}
       </section>}
 
-      {draft.step === 3 && <section>
+      {draft.step===3 && (!user || user.role==="demo") && <section className="preview-signin-gate">
+        <h2>Sign in to preview your application</h2>
+        <p>Your answers are temporarily saved in this browser tab. After a successful sign-in you will return to this page and review the complete information before sending.</p>
+        <button type="button" className="btn btn--primary" onClick={async()=>{
+          const ok=await saveApplicationDraft("service-request",{draft:{...draft,step:3,consent:false}});
+          if(!ok){setError("Browser storage is blocked; enable it before leaving this form.");return;}
+          saveDraft({...draft,step:3});rememberReturn("/request?resume=1");router.push("/login");
+        }}>Sign in to preview</button>
+      </section>}
+      {draft.step===3 && user && user.role!=="demo" && intakeErrors.photoFileId && <section className="preview-signin-gate">
+        <h2>One document is still required</h2>
+        <p>Sign-in is complete. Please attach the Voter ID correction photograph before opening your final preview.</p>
+        <button type="button" className="btn btn--primary" onClick={()=>goTo(1)}>Upload photograph</button>
+      </section>}
+      {draft.step===3 && user && user.role!=="demo" && !intakeErrors.photoFileId && <section>
         <h2>{t.s4Title}</h2><p className="wizard-form__sub">{t.s4Sub}</p>
         <dl className="summary">
           <div><dt>{t.summaryService}</dt><dd>{service ? serviceName(service.slug, service.name, locale) : t.somethingElse}</dd><button type="button" onClick={() => goTo(0)}>{t.edit}</button></div>
           <div><dt>{t.summaryContact}</dt><dd>{draft.name} · +91 {draft.phone} · {draft.contact === "whatsapp" ? t.viaWhatsapp : draft.contact === "phone" ? t.viaPhone : t.viaEmail}</dd><button type="button" onClick={() => goTo(1)}>{t.edit}</button></div>
           <div><dt>{t.summaryNote}</dt><dd>{draft.description}</dd><button type="button" onClick={() => goTo(1)}>{t.edit}</button></div>
-          {activeIntake && <div><dt>Application details</dt><dd>{activeIntake.kind.toUpperCase()}: {Object.keys(activeIntake.answers).length} fields completed · {activeIntake.documents.length} document types ready</dd><button type="button" onClick={() => goTo(1)}>Edit</button></div>}
+          {activeIntake && <div><dt>Application details</dt><dd>{activeIntake.kind.toUpperCase()}: {Object.keys(activeIntake.answers).length} fields completed</dd><button type="button" onClick={() => goTo(1)}>Edit</button></div>}
           {file && <div><dt>{t.summaryFile}</dt><dd>{file.name}</dd><button type="button" onClick={() => goTo(1)}>{t.edit}</button></div>}
           <div><dt>{t.summaryVisit}</dt><dd>{visitSummary}</dd><button type="button" onClick={() => goTo(2)}>{t.edit}</button></div>
         </dl>
+        {activeIntake && <DetailedIntakePreview intake={activeIntake}/>}
         {offer && <div className={`applied-offer tone-${offer.tone}`}><span className="badge badge--live"><i/>{dict(locale).ticker.live}</span><div><b>{offer.highlight[locale]} · {offer.title[locale]}</b><small>{t.offerApplied}. {offer.firstTimeOnly ? t.offerCheck : ""}</small></div></div>}
-        <PromoCodeField locale={locale} value={draft.coupon} applied={applied} signedIn={Boolean(user && user.role !== "demo")} suggestions={suggestions} service={draft.serviceSlug || undefined}
-          onChange={(coupon) => update({ coupon })} onApplied={setApplied}/>
+        <p className="field__hint">Have an offer or coupon? Apply it after our team reviews your application and sends the quotation. The final discount is shown before you pay.</p>
         <label className="check check--agree"><input type="checkbox" checked={draft.consent} onChange={(event) => update({ consent: event.target.checked })}/><span>{t.consent} <Link href="/terms" target="_blank">{WX.terms[locale]}</Link> · <Link href="/privacy" target="_blank">{WX.privacy[locale]}</Link></span></label>
         {user === null && <p className="alert alert--info">{t.signInNote}</p>}
       </section>}
 
       {error && <div className="alert alert--error" role="alert">{error}</div>}
-      <WizardActions locale={locale} onBack={draft.step > 0 ? () => goTo(draft.step - 1) : undefined} nextLabel={draft.step === 3 ? user === null ? t.signInToSend : t.submit : t.next} busy={busy}/>
+      <WizardActions locale={locale} onBack={draft.step > 0 ? () => goTo(draft.step - 1) : undefined}
+        nextLabel={draft.step===2 && user===null?"Sign in to preview":draft.step===3 && !user?"Sign in to preview":draft.step===3?t.submit:t.next}
+        nextDisabled={!tabDraftReady || user===undefined || (draft.step===3 && user?.role==="demo")} busy={busy}/>
     </form>
     <ConsentModal open={showConsent} onClose={() => setShowConsent(false)} busy={busy} serviceLabel={service?.name} onConfirm={() => { setShowConsent(false); void submit(true); }}/>
   </WizardFrame>;

@@ -1,8 +1,8 @@
 import { awardLoyalty } from "@/lib/loyalty";
 import { NextRequest, NextResponse, after } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { printJobs, serviceRequests, users } from "@/db/schema";
+import { printJobs, serviceRequests, users, payments } from "@/db/schema";
 import { requirePermission } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
@@ -45,6 +45,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (!current) throw new PublicError(input.kind === "print" ? "Print order not found." : "Service request not found.", 404);
     if (input.expectedStatus && input.expectedStatus !== current.status) {
       throw new PublicError(`Someone else changed this to “${statusLabel(current.status)}”. Refresh the queue before updating.`, 409, { code: "stale_status" });
+    }
+    if(input.kind==="service" && input.status!==current.status && ["awaiting_payment","payment_received"].includes(input.status)){
+      const [payment]=await db.select({status:payments.status}).from(payments).where(eq(payments.requestId,id)).orderBy(desc(payments.createdAt)).limit(1);
+      if(input.status==="awaiting_payment" && !payment)
+        throw new PublicError("First approve the review and issue a payment quote.",409);
+      if(input.status==="payment_received" && payment?.status!=="paid")
+        throw new PublicError("Do not mark payment received manually. Verify it through the payment gateway or the bank-confirmed UPI/desk payment.",409);
     }
     // Official reference numbers (ServicePlus application no., EPIC no., policy no., ...) only apply
     // to service requests filed with a real government portal or insurer — never to print orders.

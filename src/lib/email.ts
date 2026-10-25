@@ -306,7 +306,7 @@ export async function sendPaymentAlertEmail(info: { customer: string; phone: str
 export async function sendPaymentReceiptEmail(to: string, name: string, info: { reference: string; service: string; amount: string }) {
   await sendMail({
     to, subject: `Payment received for ${info.reference}`, heading: "Payment received",
-    paragraphs: [`Hello ${name},`, "Thank you. We have received your payment. Keep this email as your receipt."],
+    paragraphs: [`Hello ${name},`, "Thank you. We have received your payment. Keep this email as your receipt.", "Our staff will now process your request. We usually aim to share the first official application reference within 1–2 working days, subject to the issuing portal or provider. This is an estimate, not a guarantee.", "We will add the verified official reference in your account. Check that your email and WhatsApp number are up to date so you can receive updates."],
     details: [{ label: "Service", value: info.service }, { label: "Our reference", value: info.reference }, { label: "Amount paid", value: info.amount, emphasis: true }],
     action: { label: "Open my account", href: `${site.url}/profile` },
   });
