@@ -127,8 +127,7 @@ export default function Pan93ExactPreview({answers,pan,onEdit}:Props){
   useEffect(()=>{
     if(!file)return;
     let cancelled=false;
-    type PDFPage={getViewport:(options:{scale:number})=>{width:number;height:number};render:(options:{canvas:HTMLCanvasElement;canvasContext:CanvasRenderingContext2D;viewport:{width:number;height:number}})=>{promise:Promise<unknown>}};
-    let document:{numPages:number;getPage:(n:number)=>Promise<PDFPage>;destroy:()=>Promise<unknown>}|undefined;
+    let cleanupDocument:{destroy:()=>Promise<void>}|undefined;
     (async()=>{
       try{
         const pdfjs=await import("pdfjs-dist");
@@ -136,12 +135,13 @@ export default function Pan93ExactPreview({answers,pan,onEdit}:Props){
         const bytes=await file.arrayBuffer();
         const fingerprint=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes)),b=>b.toString(16).padStart(2,"0")).join("");
         if(fingerprint!==TEMPLATE_SHA256) throw new Error("Incorrect background PDF");
-        document=await pdfjs.getDocument({data:new Uint8Array(bytes)}).promise;
-        if(document.numPages!==2)throw Error("Two-page source required");
+        const pdfDocument=await pdfjs.getDocument({data:new Uint8Array(bytes)}).promise;
+        cleanupDocument=pdfDocument;
+        if(pdfDocument.numPages!==2)throw Error("Two-page source required");
         for(let i=0;i<2;i++){
           const canvas=canvases.current[i];
           if(!canvas)continue;
-          const page=await document.getPage(i+1);
+          const page=await pdfDocument.getPage(i+1);
           const viewport=page.getViewport({scale:2});
           canvas.width=Math.round(viewport.width);canvas.height=Math.round(viewport.height);
           const context=canvas.getContext("2d");
@@ -151,7 +151,7 @@ export default function Pan93ExactPreview({answers,pan,onEdit}:Props){
         if(!cancelled)setPages("available");
       }catch{if(!cancelled)setPages("error")}
     })();
-    return()=>{cancelled=true;void document?.destroy()};
+    return()=>{cancelled=true;void cleanupDocument?.destroy()};
   },[file]);
   return <section className="pan93-preview">
     <div className="pan93-preview__tools">
