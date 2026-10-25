@@ -4,7 +4,9 @@ import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Check, ChevronLeft, ChevronRight, FileDown, FileText, ShieldCheck } from "lucide-react";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, Eye, EyeOff, FileDown, FileText, ShieldCheck } from "lucide-react";
+import VoterForm8Modal from "@/components/voter-form8-modal";
+import { INDIA_STATES } from "@/lib/india-geo";
 import {
   FORM8_CORRECTIONS, form8CorrectionNames, intakeFields, intakeSections,
   validateDetailedIntake, type DetailedIntake, type IntakeField, type IntakeValue,
@@ -133,11 +135,35 @@ export default function VoterForm8({ signedIn, demo }: Props) {
   const [busy,setBusy] = useState(false);
   const [problem,setProblem] = useState("");
   const [reference,setReference] = useState("");
+  const [revisionOf,setRevisionOf] = useState("");
+  const [sampleMode,setSampleMode] = useState(false);
+  const [showPreview,setShowPreview] = useState(false);
+  const [reviewed,setReviewed] = useState(false);
+  const [showAadhaar,setShowAadhaar] = useState(false);
+  const [touched,setTouched] = useState<string[]>([]);
   const requestKey=useRef<string|null>(null);
   const sections=useMemo(()=>intakeSections("voter-form8"),[]);
   const answers=intake.answers;
   const requestSection=sections[requestSections[answers.requestType] ?? 2];
   const visible=new Set(intakeFields("voter-form8",answers).map(f=>f.id));
+  const liveProblems=validateDetailedIntake(photo ? {...intake,photoFileId:"selected-local-photo"} : intake);
+  const errorFor=(key:string) => errors[key] || (touched.includes(key) ? liveProblems[key] : "");
+  const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,10);
+  function dateAsIso(raw:string) {
+    const m=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(raw);
+    return m ? m[3]+"-"+m[2]+"-"+m[1] : "";
+  }
+  function markTouched(key:string){setTouched(current=>current.includes(key)?current:[...current,key]);}
+  function focusError(key:string){
+    const errorStep=key==="photoFileId" ? 1 : sections[0].fields.some(f=>f.id===key) ? 0
+      : sections[5].fields.some(f=>f.id===key) ? 2 : 1;
+    setStep(errorStep);
+    requestAnimationFrame(()=>{
+      const control=document.getElementById("form8-"+(key==="photoFileId"?"photo":key));
+      control?.scrollIntoView({behavior:"smooth",block:"center"});
+      control?.focus({preventScroll:true});
+    });
+  }
 
   const photoVersion=useRef(0);
   function choosePhoto(file:File|null) {
@@ -156,16 +182,43 @@ export default function VoterForm8({ signedIn, demo }: Props) {
     const allowed=new Set(intakeFields("voter-form8",next).map(f=>f.id));
     for(const key of Object.keys(next)) if(!allowed.has(key)) delete next[key];
     setIntake(old=>({...old,answers:next}));
-    setErrors({}); setProblem(""); requestKey.current=null;
+    setErrors({}); setProblem(""); setConfirmed(false); setReviewed(false); requestKey.current=null;
   }
   function setAnswer(field: IntakeField,value:string) {
-    setAnswers({...answers,[field.id]:field.id==="epicNumber"?value.toUpperCase():value});
+    let next=value;
+    if(field.id==="epicNumber") next=value.toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,10);
+    else if(["aadhaarNumber","mobile","relativeMobile","correctMobile","addressPin","constituencyNumber"].includes(field.id)) {
+      const max=field.id==="aadhaarNumber"?12:field.id==="addressPin"?6:field.id==="constituencyNumber"?4:10;
+      next=value.replace(/\D/g,"").slice(0,max);
+    }
+    if(next)markTouched(field.id);
+    setAnswers({...answers,[field.id]:next});
+  }
+  function showSampleCorrection() {
+    setIntake({kind:"voter-form8",documents:[],answers:{
+      applicantName:"EXAMPLE VOTER",epicNumber:"ABC1234567",constituencyType:"Assembly",constituencyNumber:"67",
+      constituencyName:"EXAMPLE CONSTITUENCY",aadhaarStatus:"Do not have Aadhaar",
+      mobile:"9000000000",email:"example@example.com",requestType:"Correction",
+      corrections:"Relation Type|Relation Name|Mobile Number",
+      correctRelationType:"Husband",correctRelationName:"EXAMPLE RELATIVE",correctMobile:"9123456789",
+      proofRelationType:"Aadhaar",proofRelationName:"Aadhaar",
+      declarationDate:"25/10/2026",declarationPlace:"Jamshedpur",declaration:"Yes",
+    }});
+    setReference("");setRevisionOf("");requestKey.current=null;
+    setPhoto(null);setPhotoUrl("");setProof(null);setStep(1);setSampleMode(true);
+    setConfirmed(false);setReviewed(false);setTouched([]);setErrors({});setProblem("");setShowPreview(true);
+  }
+  function clearSample(){
+    setIntake(blank);setStep(0);setPhoto(null);setPhotoUrl("");setProof(null);
+    setSampleMode(false);setConfirmed(false);setReviewed(false);setTouched([]);setErrors({});
+    setShowPreview(false);setProblem("");requestKey.current=null;
   }
   function setCorrection(name: (typeof FORM8_CORRECTIONS)[number][0],checked:boolean){
     const current=form8CorrectionNames(answers);
     if(checked && current.length===4){setErrors({corrections:"Form 8 permits at most four correction particulars."});return;}
     const next=checked?[...current,name]:current.filter(x=>x!==name);
     const updated: IntakeValue = {...answers,corrections:next.join("|")};
+    markTouched("corrections");
     if(checked && name==="Photo")updated.correctPhoto="Yes";
     if(!checked){
       const row=FORM8_CORRECTIONS.find(([label])=>label===name);
