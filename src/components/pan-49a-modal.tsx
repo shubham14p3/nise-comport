@@ -4,9 +4,11 @@ import { useEffect, useId, useRef, useState } from "react";
 import { CheckCircle2, ChevronLeft, ChevronRight, Eye, FileText, LockKeyhole, Pencil, X } from "lucide-react";
 import type { PanIntake } from "@/lib/pan-validation";
 import Pan49APreview from "@/components/pan-49a-preview";
+import Pan93ExactPreview from "@/components/pan-93-exact-preview";
 import "./pan-49a-modal.css";
 
 type Props = {
+  form93?: boolean;
   open: boolean;
   pan: PanIntake;
   answers: Record<string, string>;
@@ -16,7 +18,7 @@ type Props = {
 
 const PAGE_TITLES = ["Applicant details & addresses", "Contact, proofs & declaration"];
 
-export default function Pan49AModal({ open, pan, answers, onClose, onEdit }: Props) {
+export default function Pan49AModal({ open, pan, answers, onClose, onEdit, form93 = false }: Props) {
   const [page, setPage] = useState<1 | 2>(1);
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -86,11 +88,11 @@ export default function Pan49AModal({ open, pan, answers, onClose, onEdit }: Pro
             <span className="pan49-modal__icon" aria-hidden="true"><FileText size={22}/></span>
             <div>
               <span className="pan49-modal__eyebrow"><Eye size={13}/> DOCUMENT VERIFICATION</span>
-              <h2 id={titleId}>PAN Form 49A preview</h2>
+              <h2 id={titleId}>PAN Form {form93 ? "93" : "49A"} preview</h2>
               <p>Check how the entered information appears on the two-page form.</p>
             </div>
           </div>
-          <button ref={closeRef} className="pan49-modal__close" type="button" onClick={onClose} aria-label="Close Form 49A preview" title="Close preview"><X size={23}/></button>
+          <button ref={closeRef} className="pan49-modal__close" type="button" onClick={onClose} aria-label="Close PAN form preview" title="Close preview"><X size={23}/></button>
         </div>
         <div className="pan49-modal__toolbar" aria-label="Form page navigation">
           <div className="pan49-modal__tabs" role="group" aria-label="Choose a form page">
@@ -108,13 +110,13 @@ export default function Pan49AModal({ open, pan, answers, onClose, onEdit }: Pro
           </div>
           <span className="pan49-modal__page-count">Page {page} of 2</span>
         </div>
-        <div className="pan49-modal__viewport" ref={viewportRef} tabIndex={0} aria-label={"Preview of Form 49A page " + page}>
+        <div className="pan49-modal__viewport" ref={viewportRef} tabIndex={0} aria-label={"Preview of PAN form page " + page}>
           <div className="pan49-modal__paper">
-            <Pan49APreview answers={answers} pan={pan} onEdit={onEdit}/>
+            {form93 ? <Pan93ExactPreview answers={answers} pan={pan} onEdit={onEdit}/> : <Pan49APreview answers={answers} pan={pan} onEdit={onEdit}/>}
           </div>
         </div>
         <div className="pan49-modal__footer">
-          <div className="pan49-modal__security"><LockKeyhole size={15} aria-hidden="true"/><span>Private review · legacy form reference, not a government submission</span></div>
+          <div className="pan49-modal__security"><LockKeyhole size={15} aria-hidden="true"/><span>Private verification · staff-only attachments and references are excluded</span></div>
           <div className="pan49-modal__footer-actions">
             {onEdit && <button type="button" className="pan49-modal__secondary" onClick={onEdit}><Pencil size={15}/> Edit details</button>}
             {page === 2
