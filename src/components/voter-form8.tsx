@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -113,7 +113,7 @@ function Form8Print({ answers: a, photoUrl }: { answers: IntakeValue; photoUrl: 
       </section>
       <section className="f8-part f8-receipt">
         <h3>Acknowledgement / Receipt for application</h3>
-        <p>Official acknowledgement number, digitally signed application and ERO/AERO/BLO receipt are issued only through the Election Commission of India's authorised process.</p>
+        <p>Official acknowledgement number, digitally signed application and ERO/AERO/BLO receipt are issued only through the Election Commission of India&apos;s authorised process.</p>
         {item("Name on preparation draft",a.applicantName)}
       </section>
       <footer className="f8-page-number">Preparation copy · Page 2 of 2 · NISE COMPORT is an independent assistance provider</footer>
@@ -139,12 +139,18 @@ export default function VoterForm8({ signedIn, demo }: Props) {
   const requestSection=sections[requestSections[answers.requestType] ?? 2];
   const visible=new Set(intakeFields("voter-form8",answers).map(f=>f.id));
 
-  useEffect(()=>{
-    if(!photo){return;}
-    const url=URL.createObjectURL(photo);
-    setPhotoUrl(url);
-    return ()=>{URL.revokeObjectURL(url);setPhotoUrl("");};
-  },[photo]);
+  const photoVersion=useRef(0);
+  function choosePhoto(file:File|null) {
+    setPhoto(file);
+    setPhotoUrl("");
+    const version=++photoVersion.current;
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      if(version===photoVersion.current && typeof reader.result==="string")setPhotoUrl(reader.result);
+    };
+    reader.readAsDataURL(file);
+  }
 
   function setAnswers(next: IntakeValue) {
     const allowed=new Set(intakeFields("voter-form8",next).map(f=>f.id));
@@ -164,7 +170,7 @@ export default function VoterForm8({ signedIn, demo }: Props) {
     if(!checked){
       const row=FORM8_CORRECTIONS.find(([label])=>label===name);
       if(row){delete updated[row[1]];delete updated[row[2]];}
-      if(name==="Photo")setPhoto(null);
+      if(name==="Photo")choosePhoto(null);
     }
     setAnswers(updated);
   }
@@ -260,7 +266,7 @@ export default function VoterForm8({ signedIn, demo }: Props) {
       <div className="f8-layout">
         <div className="f8-editor">
           <h2>{heading}</h2>
-          {step===0&&<p className="f8-hint">Enter the elector's current details from their existing voter record. Do not use the sample applicant's details.</p>}
+          {step===0&&<p className="f8-hint">Enter the elector&apos;s current details from their existing voter record. Do not use the sample applicant&apos;s details.</p>}
           {(step===0||step===1||step===2)&&<div className="f8-input-grid">
             {currentFields().map(renderField)}
             {step===2&&<div className="f8-file f8-wide">
@@ -271,7 +277,7 @@ export default function VoterForm8({ signedIn, demo }: Props) {
             </div>}
             {((step===1&&answers.requestType==="Correction"&&form8CorrectionNames(answers).includes("Photo"))||step===2&&answers.requestType==="Correction"&&form8CorrectionNames(answers).includes("Photo"))&&<div className="f8-file f8-wide">
               <label htmlFor="form8-photo">New photograph (JPG, PNG, WebP; up to 5 MB) *</label>
-              <input id="form8-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{setPhoto(e.target.files?.[0]??null);requestKey.current=null;}}/>
+              <input id="form8-photo" type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{choosePhoto(e.target.files?.[0]??null);requestKey.current=null;}}/>
               {photo&&<small>{photo.name}</small>}{errors.photoFileId&&<small className="f8-error">{errors.photoFileId}</small>}
             </div>}
           </div>}
