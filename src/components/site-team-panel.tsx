@@ -69,7 +69,7 @@ export default function SiteTeamPanel() {
   }
 
   const paging = useAdminPagination(people ?? []);
-  const staffNotListed = (staff ?? []).filter((account) => !(people ?? []).some((person) => person.name.toLowerCase() === account.name.toLowerCase()));
+  const staffNotListed = (staff ?? []).filter((account) => !(people ?? []).some((person) => person.email?.trim().toLowerCase() === account.email.toLowerCase()));
 
 
   async function provisionLogin(person: Person) {
