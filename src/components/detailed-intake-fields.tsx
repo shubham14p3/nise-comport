@@ -34,6 +34,7 @@ export default function DetailedIntakeFields({ intake, onChange, errors = {}, ph
   const is49a = intake.kind === "pan49a";
   const [expanded,setExpanded]=useState<Record<string,boolean>>({});
   const [touched,setTouched]=useState<Record<string,boolean>>({});
+  const [attempted,setAttempted]=useState(false);
   const [showAadhaar,setShowAadhaar]=useState(false);
   const formRef=useRef<HTMLDivElement>(null);
   const visibleFields=intakeFields(intake.kind,intake.answers);
@@ -47,6 +48,7 @@ export default function DetailedIntakeFields({ intake, onChange, errors = {}, ph
 
   useEffect(()=>{
     if(!Object.keys(errors).length) return;
+    setAttempted(true);
     const toOpen:Record<string,boolean>={};
     const first=intakeSections(intake.kind).find(section=>section.fields.some(f=>errors[f.id]));
     if(first) {
@@ -101,7 +103,7 @@ export default function DetailedIntakeFields({ intake, onChange, errors = {}, ph
   function fieldControl(f:IntakeField) {
     const value=intake.answers[f.id]||"";
     const fid=id+"-"+f.id;
-    const shownError=(is49a ? Boolean(touched[f.id] || errors[f.id]) : Boolean(errors[f.id])) ? allErrors[f.id] : "";
+    const shownError=(is49a ? Boolean(touched[f.id] || attempted || errors[f.id]) : Boolean(errors[f.id])) ? allErrors[f.id] : "";
     const common={id:fid,"aria-invalid":Boolean(shownError) as boolean,"aria-describedby":shownError?fid+"-error":undefined};
     const selectedOptions=is49a?geoOptions(f.id):[];
     const isGeo=is49a&&/(Country|State|City)$/.test(f.id);
@@ -159,7 +161,7 @@ export default function DetailedIntakeFields({ intake, onChange, errors = {}, ph
     {intakeSections(intake.kind).map((section,index)=>{
       const fields=section.fields.filter(f=>visible.has(f.id));
       if(!fields.length)return null;
-      const invalid=fields.some(f=>Boolean(errors[f.id]||(touched[f.id]&&liveErrors[f.id])));
+      const invalid=fields.some(f=>Boolean(errors[f.id]||((touched[f.id]||attempted)&&liveErrors[f.id])));
       const complete=fields.filter(f=>f.required&&Boolean(intake.answers[f.id]?.trim())).length;
       const required=fields.filter(f=>f.required).length;
       return <details className={invalid?"detailed-intake__section detailed-intake__section--error":"detailed-intake__section"}
