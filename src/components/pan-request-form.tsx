@@ -198,6 +198,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
 
     {step === 1 && <section>
       <h2>Applicant &amp; contact details</h2><p className="wizard-form__sub">{legacy49a ? "Enter the 49A details exactly as on your documents. Aadhaar, if included, is encrypted when submitted; never enter OTPs." : "As they should appear on the application. Don’t enter PAN, Aadhaar numbers or OTPs."}</p>
+      {legacy49a && data.detailedIntake?.kind === "pan49a" && previewCard()}
       <div className="form-grid">
         {input("fullName", data.applicant === "entity" ? "Entity full name" : "Applicant full name", "text", { autoComplete: "name" })}
         {input("birthDate", data.applicant === "entity" ? "Date of incorporation / formation" : "Date of birth", "date")}
@@ -221,7 +222,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
       {(data.applicant==="individual" || legacy49a) && data.detailedIntake && <DetailedIntakeFields
         intake={data.detailedIntake} onChange={(next)=>update("detailedIntake",next)}
         errors={errors.detailedIntake?validateDetailedIntake(data.detailedIntake):{}}/>}
-      {legacy49a && data.detailedIntake?.kind === "pan49a" && previewCard()}
+
       {["correction", "marriage", "minor-to-major"].includes(data.service) && <fieldset className="field"><legend className="field__label">Which details need updating?</legend>
         <div className="check-grid">{CORRECTIONS.map((value) => <label className="check" key={value}><input type="checkbox" checked={data.corrections.includes(value)} onChange={(event) => update("corrections", event.target.checked ? [...data.corrections, value] : data.corrections.filter((item) => item !== value))}/><span>{pretty(value)}</span></label>)}</div>
         {err("corrections")}
