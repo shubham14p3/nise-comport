@@ -3213,14 +3213,12 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
   .admin-desk .admin-nav-icons {
     display: grid;
     gap: 5px;
-    max-height: calc(100dvh - var(--header-h) - 108px);
-    overflow-y: auto;
-    overflow-x: visible;
-    scrollbar-width: none;
+    max-height: none;
+    overflow: visible; /* let actual hover tooltips escape the narrow rail */
   }
   .admin-desk .admin-nav-icons button {
     position: relative;
-    min-height: 44px;
+    min-height: 35px;
     border-radius: 10px;
     justify-content: center;
     overflow: visible;
