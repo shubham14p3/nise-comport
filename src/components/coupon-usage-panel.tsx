@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Ban, Search, ShieldCheck } from "lucide-react";
 import { secureApi } from "@/lib/secure-api-client";
+import { AdminPager, useAdminPagination } from "@/components/admin-pager";
 
 type Use = { id: string; couponId: string; code: string; userId: string; name: string; phone: string | null; email: string; what: string; reference: string | null; amount: number; usedAt: string; timesByCustomer: number };
 type Block = { id: string; userId: string; couponId: string | null; code: string | null; reason: string | null; createdAt: string; name: string; phone: string | null };
@@ -37,6 +38,7 @@ export default function CouponUsagePanel() {
     if (reason === null) return;
     void act({ action: "block", userId: use.userId, couponId: everything ? null : use.couponId, reason: reason || null }, use.id, "Blocked.");
   }
+  const paging = useAdminPagination(data?.uses ?? []);
   const blocked = (use: Use) => data?.blocks.some((item) => item.userId === use.userId && (item.couponId === null || item.couponId === use.couponId));
 
   return <section className="admin-card cu">
@@ -50,11 +52,11 @@ export default function CouponUsagePanel() {
     </div>
     {notice && <p role="status">{notice}</p>}{error && <p role="alert" className="form-error">{error}</p>}
     {!data ? <p>Loading…</p> : <>
-      {data.blocks.length > 0 && <div className="cu__blocks"><h3><Ban size={16}/> Blocked customers</h3>
+      {data.blocks.length > 0 && <details className="cu__blocks admin-accordion"><summary><Ban size={16}/> Blocked customers ({data.blocks.length})</summary>
         <ul>{data.blocks.map((item) => <li key={item.id}><span><b>{item.name}</b>{item.phone ? ` · ${item.phone}` : ""} · {item.code ?? "all coupons"}{item.reason ? ` · ${item.reason}` : ""}<small> · {when(item.createdAt)}</small></span>
-          <button className="btn btn--ghost btn--sm" disabled={busy === item.id} onClick={() => void act({ action: "unblock", id: item.id }, item.id, "Allowed again.")}><ShieldCheck size={14}/> Allow again</button></li>)}</ul></div>}
-      {data.uses.length === 0 ? <p className="muted">No coupon uses found.</p> : <ul className="cu__list">
-        {data.uses.map((use) => <li key={use.id} className="cu__row">
+          <button className="btn btn--ghost btn--sm" disabled={busy === item.id} onClick={() => void act({ action: "unblock", id: item.id }, item.id, "Allowed again.")}><ShieldCheck size={14}/> Allow again</button></li>)}</ul></details>}
+      {data.uses.length === 0 ? <p className="muted">No coupon uses found.</p> : <><AdminPager {...paging} label="coupon redemptions"/><ul className="cu__list">
+        {paging.items.map((use) => <li key={use.id} className="cu__row">
           <div className="cu__who"><b>{use.name}</b><span>{use.phone ?? ""}{shownEmail(use.email) ? ` · ${shownEmail(use.email)}` : ""}</span></div>
           <div className="cu__code"><b>{use.code}</b><span>used {use.timesByCustomer}× by this customer</span></div>
           <div className="cu__what"><span>{use.what}{use.reference ? ` · ${use.reference}` : ""}</span><span>saved ₹{use.amount} · {when(use.usedAt)}</span></div>
@@ -62,7 +64,7 @@ export default function CouponUsagePanel() {
             <button className="btn btn--ghost btn--sm" disabled={busy === use.id} onClick={() => block(use, false)}>Block this code</button>
             <button className="btn btn--ghost btn--sm" disabled={busy === use.id} onClick={() => block(use, true)}>Block all codes</button></>}</div>
         </li>)}
-      </ul>}
+      </ul>{data.uses.length > paging.pageSize && <AdminPager {...paging} label="coupon redemptions"/>}</>}
     </>}
   </section>;
 }
