@@ -48,3 +48,20 @@ The original sample is 2 pages, each 594 × 846 PDF points. A different layout o
 6. Re-test existing new PAN, correction/reprint, voter and passport flows for regressions.
 
 **Not yet implemented as official-document features:** source photo upload, actual signature capture, field-position calibration for other PAN templates, real Form 93/94 generation, official API submission. Source-template PDF upload in the wizard is browser-local, not an attachment to submitted request.
+
+
+## October 2026 field-validation and saved-request update
+
+- AO codes are optional. When entered, they are format-checked.
+- The applicant's full name is derived from first + middle + surname and becomes the name to print. The duplicate PAN contact section in the legacy page is removed.
+- Date fields accept DD/MM/YYYY and include a native calendar with today's date as the maximum. Manually typed dates are validated for true calendar dates and future dates.
+- Parent details are shown in two separately titled sections. The open/collapsed state is preserved while entering the following fields.
+- PIN fields and the Aadhaar number filter out non-digits; Aadhaar hides by default, with a deliberate Show/Hide control.
+- Aadhaar name mismatches are flagged for manual document comparison. This is not government authentication, and the UI must not claim that a UIDAI match was verified.
+- Country/state/city are searchable using input suggestions and use the application's existing geographic data.
+- Choosing to use the residential address for communication automatically copies the residential details into the request summary. The status is individual-only; corporate fields are not shown.
+- Form fields validate as users interact; Next and final submission bring the user to the first invalid part with highlighted inputs.
+- Submitted forms can be reopened in the same two-page verification modal from Profile > Requests. Customers can change their own requests while statuses are submitted/reviewing/waiting_for_customer and before any official reference is recorded. Server enforces ownership, status, revalidation and encrypted storage. Completed or processing-locked requests remain read-only.
+- Guest demos show a fictional filled sample; no demo submissions are saved.
+
+**Before merging:** Run `npm test`, `npm run lint` and `npm run build`. Verify mobile dropdowns, native date picker behavior, modal 2-page printing, field alignment, and successful edited-request round trips with PostgreSQL. This code has not been verified through CI or a live authenticated browser session.
