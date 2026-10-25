@@ -130,7 +130,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
     rail={<OfferRail category="government-services" locale={locale} whatsappText="Hi NISE COMPORT, I have a question about PAN."/>}
   >{content}</WizardFrame>;
 
-  if (!signedIn) return frame(<div className="callout callout--center"><LockKeyhole size={28}/><b>Sign in to keep your PAN request private</b><span>Your contact details prefill from your profile. You can review everything before sending.</span><div className="callout__actions"><Link className="btn btn--primary" href="/login" onClick={() => rememberReturn("/pan/request")}>Sign in to continue</Link><Link className="btn btn--ghost" href="/signup" onClick={() => rememberReturn("/pan/request")}>Create a free account</Link></div></div>);
+  if (!signedIn) return frame(<div className="callout callout--center"><LockKeyhole size={28}/><b>Sign in to keep your PAN request private</b><span>Your contact details prefill from your profile. You can review everything before sending.</span><div className="callout__actions"><Link className="btn btn--primary" href="/login" onClick={() => rememberReturn(legacy49a ? "/pan/49a" : "/pan/request")}>Sign in to continue</Link><Link className="btn btn--ghost" href="/signup" onClick={() => rememberReturn("/pan/request")}>Create a free account</Link></div></div>);
 
   return <>{frame(<form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (step === 3) { if (demo) void submit(); else setShowConsent(true); } else next(); }}>
     {demo && <p className="alert alert--info">Local preview: entered information is not saved or sent.</p>}
@@ -148,7 +148,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
     </section>}
 
     {step === 1 && <section>
-      <h2>Applicant &amp; contact details</h2><p className="wizard-form__sub">As they should appear on the application. Don’t enter PAN, Aadhaar numbers or OTPs.</p>
+      <h2>Applicant &amp; contact details</h2><p className="wizard-form__sub">{legacy49a ? "Enter the 49A details exactly as on your documents. Aadhaar, if included, is encrypted when submitted; never enter OTPs." : "As they should appear on the application. Don’t enter PAN, Aadhaar numbers or OTPs."}</p>
       <div className="form-grid">
         {input("fullName", data.applicant === "entity" ? "Entity full name" : "Applicant full name", "text", { autoComplete: "name" })}
         {input("birthDate", data.applicant === "entity" ? "Date of incorporation / formation" : "Date of birth", "date")}
