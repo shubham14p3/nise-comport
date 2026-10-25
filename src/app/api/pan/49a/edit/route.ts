@@ -32,7 +32,7 @@ export async function PATCH(request: NextRequest) {
     }
     const pan = parsed.data;
     if (pan.applicant!=="individual" || pan.citizenship!=="indian" || !["new","minor"].includes(pan.service)
-        || pan.detailedIntake?.kind!=="pan49a") throw new PublicError("Only individual Form 49A worksheets can be edited here.",400);
+        || !["pan49a","pan93"].includes(pan.detailedIntake?.kind??"")) throw new PublicError("Only individual Form 49A worksheets can be edited here.",400);
     if (pan.fileId) throw new PublicError("Please attach documents through the service desk.",400);
 
     const [row] = await db.select().from(serviceRequests).where(and(
@@ -41,7 +41,7 @@ export async function PATCH(request: NextRequest) {
     if (!row || row.serviceSlug!=="pan-card") throw new PublicError("Request not found.",404);
     const saved = row.details && typeof row.details==="object" && !Array.isArray(row.details) ? row.details as Record<string,unknown> : {};
     const intake = saved.intake;
-    if (!intake || typeof intake!=="object" || (intake as {kind?:string}).kind!=="pan49a") {
+    if (!intake || typeof intake!=="object" || !["pan49a","pan93"].includes((intake as {kind?:string}).kind??"")) {
       throw new PublicError("This request is not a Form 49A worksheet.",400);
     }
     if (!["submitted","reviewing","waiting_for_customer"].includes(row.status) || row.officialReference) {
