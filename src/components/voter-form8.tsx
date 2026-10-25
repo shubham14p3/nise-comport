@@ -15,7 +15,7 @@ import { newIdempotencyKey } from "@/lib/client-id";
 import { rememberReturn } from "@/lib/after-login";
 import { secureApi, secureUpload, SecureApiError } from "@/lib/secure-api-client";
 
-type Props = { signedIn: boolean; demo: boolean };
+type Props = { signedIn: boolean; demo: boolean; maxDate: string };
 type RequestResult = { request: { reference: string } };
 const blank: DetailedIntake = { kind: "voter-form8", answers: { constituencyType: "Assembly" }, documents: [] };
 const requestSections: Record<string, number> = {
@@ -123,7 +123,7 @@ function Form8Print({ answers: a, photoUrl }: { answers: IntakeValue; photoUrl: 
   </div>;
 }
 
-export default function VoterForm8({ signedIn, demo }: Props) {
+export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
   const router = useRouter();
   const [intake,setIntake] = useState<DetailedIntake>(blank);
   const [step,setStep] = useState(0);
@@ -148,7 +148,6 @@ export default function VoterForm8({ signedIn, demo }: Props) {
   const visible=new Set(intakeFields("voter-form8",answers).map(f=>f.id));
   const liveProblems=validateDetailedIntake(photo ? {...intake,photoFileId:"selected-local-photo"} : intake);
   const errorFor=(key:string) => errors[key] || (touched.includes(key) ? liveProblems[key] : "");
-  const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,10);
   function dateAsIso(raw:string) {
     const m=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(raw);
     return m ? m[3]+"-"+m[2]+"-"+m[1] : "";
@@ -258,7 +257,7 @@ export default function VoterForm8({ signedIn, demo }: Props) {
           {f.id==="aadhaarNumber"&&<button type="button" className="f8-inline-button" onClick={()=>setShowAadhaar(v=>!v)}
             aria-label={showAadhaar?"Hide Aadhaar number":"Show Aadhaar number"}>{showAadhaar?<EyeOff size={17}/>:<Eye size={17}/>}</button>}
           {isDate&&<div className="f8-calendar"><CalendarDays size={16} aria-hidden="true"/>
-            <input type="date" aria-label={"Pick date for "+f.label} min="1900-01-01" max={today}
+            <input type="date" aria-label={"Pick date for "+f.label} min="1900-01-01" max={maxDate}
               value={dateAsIso(answers[f.id]??"")} onChange={e=>{
                 const next=e.target.value;
                 if(next){setAnswer(f,next.split("-").reverse().join("/"));markTouched(f.id);}
