@@ -1,3 +1,4 @@
+import { intakeSections, type DetailedIntake } from "@/lib/detailed-intake";
 /** Contact, visit, offer and coupon details added by the step-by-step request flow. */
 export default function RequestExtras({ details, fallback }: { details: Record<string, unknown>; fallback: string }) {
   const visit = details.visit && typeof details.visit === "object" ? details.visit as Record<string, unknown> : null;
@@ -14,5 +15,21 @@ export default function RequestExtras({ details, fallback }: { details: Record<s
   }
   if (offer?.title) rows.push(["Offer", offer.title]);
   if (coupon?.code) rows.push(["Coupon", `${coupon.code}${coupon.title ? ` · ${coupon.title}` : ""} · ₹${coupon.value ?? 0} off the service charge${coupon.minimum ? ` (when it is ₹${coupon.minimum} or more)` : ""}`]);
-  return <dl className="summary summary--plain">{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>;
+  const intake = details.intake && typeof details.intake === "object" ? details.intake as Partial<DetailedIntake> & {error?:string} : null;
+  return <>
+    <dl className="summary summary--plain">{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>
+    {intake?.error && <p role="alert">{intake.error}</p>}
+    {intake?.kind && intake.answers && <section className="detailed-intake__summary">
+      <h3>{intake.kind.toUpperCase()} applicant details (staff assistance)</h3>
+      {intakeSections(intake.kind).map(section => {
+        const provided = section.fields.filter(f => intake.answers?.[f.id]);
+        return provided.length ? <details key={section.title} className="detailed-intake__section" open><summary>{section.title}</summary>
+          <dl className="pan-review">{provided.map(f => <div key={f.id}><dt>{f.label}</dt><dd>{intake.answers?.[f.id]}</dd></div>)}</dl>
+        </details> : null;
+      })}
+      {intake.photoFileId && <p>Photograph uploaded (available through authorized request file access).</p>}
+      {intake.documents?.length ? <details className="detailed-intake__section" open><summary>Supporting documents available</summary><ul>{intake.documents.map(item=> <li key={item}>{item}</li>)}</ul></details> : null}
+      <p className="field__hint">Collected for NISE COMPORT staff review only. Official portal submission and acknowledgement are separate.</p>
+    </section>}
+  </>;
 }
