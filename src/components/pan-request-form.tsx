@@ -34,12 +34,13 @@ const LABELS: Partial<Record<keyof PanIntake, string>> = {
 const pretty = (value: string) => value.replaceAll("-", " ").replace(/^./, (letter) => letter.toUpperCase());
 
 /** PAN assistance request in four steps, validated against the same schema the server uses. */
-export default function PanRequestForm({ service, demo = false, signedIn = true, legacy49a = false, editReference }: { service: PanIntake["service"]; demo?: boolean; signedIn?: boolean; legacy49a?: boolean; editReference?: string }) {
+export default function PanRequestForm({ service, demo = false, signedIn = true, legacy49a = false, form93 = false, editReference }: { service: PanIntake["service"]; demo?: boolean; signedIn?: boolean; legacy49a?: boolean; form93?: boolean; editReference?: string }) {
+  const referenceMode = legacy49a || form93;
   const router = useRouter();
   const locale = useLocale();
   const [step, setStep] = useState(0);
   const [editLoading, setEditLoading] = useState(Boolean(editReference));
-  const [data, setData] = useState<PanIntake>({ service, citizenship: "indian", applicant: service === "business" ? "entity" : "individual", residency: "india", existingPan: ["new", "minor", "business"].includes(service) ? "no" : "yes", fullName: "", birthDate: "", contactName: "", email: "", phone: "", address: "", city: "", state: "", country: "India", postalCode: "", representative: "", entityType: "", corrections: [], documentPlan: [], notes: "", consent: false, detailedIntake: {kind:legacy49a?"pan49a":"pan",answers:legacy49a?{
+  const [data, setData] = useState<PanIntake>({ service, citizenship: "indian", applicant: service === "business" ? "entity" : "individual", residency: "india", existingPan: ["new", "minor", "business"].includes(service) ? "no" : "yes", fullName: "", birthDate: "", contactName: "", email: "", phone: "", address: "", city: "", state: "", country: "India", postalCode: "", representative: "", entityType: "", corrections: [], documentPlan: [], notes: "", consent: false, detailedIntake: {kind:form93?"pan93":referenceMode?"pan49a":"pan",answers:referenceMode?{
     status:"Individual",previousName:"No",singleMother:"No",officeAddress:"No",raApplicable:"No",
     communicationSameAsResidence:"Yes",communicationAddress:"Residence",residenceCountry:"India",phoneCountryCode:"91",
   }:{},documents:[]} });
@@ -93,10 +94,10 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
   }, [demo, signedIn, editReference]);
 
   function update<K extends keyof PanIntake>(key: K, value: PanIntake[K]) {
-    if (legacy49a) setPreviewConfirmed(false);
+    if (referenceMode) setPreviewConfirmed(false);
     setData((current) => {
       const next = { ...current, [key]: value };
-      if (legacy49a && key === "detailedIntake" && value && typeof value === "object" && "answers" in value) {
+      if (referenceMode && key === "detailedIntake" && value && typeof value === "object" && "answers" in value) {
         const a = value.answers as Record<string,string>;
         const name = [a.personFirst,a.personMiddle,a.personSurname].filter(Boolean).join(" ").replace(/\s+/g," ").trim();
         if (name) { next.fullName = name; next.contactName = name; }
@@ -126,8 +127,8 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
         if (current.service === "minor") next.representative = [a.fatherFirst,a.fatherMiddle,a.fatherSurname].filter(Boolean).join(" ") || [a.motherFirst,a.motherMiddle,a.motherSurname].filter(Boolean).join(" ");
       }
       if (key === "service") {
-        if (legacy49a && !["new","minor","business"].includes(value as string)) return current;
-        if (legacy49a && next.detailedIntake) next.detailedIntake = {...next.detailedIntake,kind:"pan49a"};
+        if (referenceMode && !["new","minor"].includes(value as string)) return current;
+        if (referenceMode && next.detailedIntake) next.detailedIntake = {...next.detailedIntake,kind:form93?"pan93":"pan49a"};
         const fresh = ["new", "minor", "business"].includes(value as string);
         next.existingPan = fresh ? "no" : "yes";
         if (value === "business") next.applicant = "entity";
@@ -162,7 +163,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
   }
 
   async function submit() {
-    if (legacy49a && !previewConfirmed) { setMessage("Please confirm you have checked the two-page 49A preview against the applicant documents."); return; }
+    if (referenceMode && !previewConfirmed) { setMessage("Please confirm that both preview pages match the applicant documents."); return; }
     const parsed = panIntakeSchema.safeParse(data);
     if (!parsed.success) {
       const found = Object.fromEntries(parsed.error.issues.map((issue) => [String(issue.path[0]), issue.message]));
@@ -241,9 +242,9 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
   </div>;
 
   const frame = (content: React.ReactNode) => <WizardFrame
-    kicker={legacy49a ? "PAN Form 49A reference · 4 steps" : "PAN assistance · 4 steps"}
-    title={<>Let’s prepare your <span className="grad-text">{editReference ? "saved Form 49A." : legacy49a ? "Form 49A worksheet." : "PAN request."}</span></>}
-    lead={legacy49a ? "Capture all fields from the supplied two-page 49A reference, preview and verify them, then send an encrypted assistance request. Since 1 April 2026, new official PAN applications use Forms 93–96 instead." : "One guided form for every PAN service. This sends a request to NISE COMPORT; it does not submit a government application or take payment."}
+    kicker={form93 ? "Form 93 · 4 steps" : referenceMode ? "PAN Form 49A reference · 4 steps" : "PAN assistance · 4 steps"}
+    title={<>Let’s prepare your <span className="grad-text">{editReference ? "saved PAN form." : form93 ? "Form 93 worksheet." : referenceMode ? "Form 49A worksheet." : "PAN request."}</span></>}
+    lead={form93 ? "Complete the Form 93 applicant details and verify them against the exact two-page specimen. Barcode, official number, receipt, photo, signature and staff-only processing follow later." : referenceMode ? "Archived Form 49A reference, not an official application." : "One guided form for every PAN service. This sends a request to NISE COMPORT; it does not submit a government application or take payment."}
     steps={STEPS} current={step} onJump={go} locale={locale}
     strip={<OfferStrip category="government-services" locale={locale}/>}
     rail={<OfferRail category="government-services" locale={locale} whatsappText="Hi NISE COMPORT, I have a question about PAN."/>}
@@ -251,11 +252,11 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
 
   if (editLoading) return frame(<p className="alert alert--info" role="status">Loading your securely saved Form 49A…</p>);
 
-  if (!signedIn) return frame(<div className="callout callout--center"><LockKeyhole size={28}/><b>Sign in to keep your PAN request private</b><span>Your contact details prefill from your profile. You can review everything before sending.</span><div className="callout__actions"><Link className="btn btn--primary" href="/login" onClick={() => rememberReturn(legacy49a ? "/pan/49a" : "/pan/request")}>Sign in to continue</Link><Link className="btn btn--ghost" href="/signup" onClick={() => rememberReturn(legacy49a ? "/pan/49a" : "/pan/request")}>Create a free account</Link></div></div>);
+  if (!signedIn) return frame(<div className="callout callout--center"><LockKeyhole size={28}/><b>Sign in to keep your PAN request private</b><span>Your contact details prefill from your profile. You can review everything before sending.</span><div className="callout__actions"><Link className="btn btn--primary" href="/login" onClick={() => rememberReturn(form93 ? "/pan/93" : referenceMode ? "/pan/49a" : "/pan/request")}>Sign in to continue</Link><Link className="btn btn--ghost" href="/signup" onClick={() => rememberReturn(referenceMode ? "/pan/49a" : "/pan/request")}>Create a free account</Link></div></div>);
 
-  return <>{frame(<form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (step === 3) { if (legacy49a && !previewConfirmed) { setMessage("Review both pages and tick the verification confirmation."); return; } if (demo) void submit(); else setShowConsent(true); } else next(); }}>
+  return <>{frame(<form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (step === 3) { if (referenceMode && !previewConfirmed) { setMessage("Review both pages of the applicant-only preview and tick the verification confirmation."); return; } if (demo) void submit(); else setShowConsent(true); } else next(); }}>
     {demo && <p className="alert alert--info">Local preview: entered information is not saved or sent.</p>}
-    {legacy49a && demo && <div className="pan49-open-card">
+    {referenceMode && demo && <div className="pan49-open-card">
       <div className="pan49-open-card__info"><span className="pan49-open-card__icon"><FileText size={23} aria-hidden="true"/></span>
         <div><strong>Test the completed PDF layout instantly</strong><p>Load entirely fictional sample data and open the two-page preview. No account or submission required.</p></div>
       </div>
@@ -263,22 +264,22 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
     </div>}
     {step === 0 && <section>
       <h2>Which PAN service do you need?</h2><p className="wizard-form__sub">Pick one. We’ll adapt the next questions.</p>
-      <div className="choice-grid choice-grid--2" role="radiogroup" aria-label="PAN service">{(legacy49a ? panServices.filter(item => ["new","minor"].includes(item)) : panServices).map((item) => <button key={item} type="button" role="radio" aria-checked={data.service === item} className={data.service === item ? "choice is-selected" : "choice"} onClick={() => update("service", item)}><span className="choice__text"><b>{panServiceLabels[item]}</b></span><span className="choice__check" aria-hidden="true">{data.service === item && <Check size={16}/>}</span></button>)}</div>
+      <div className="choice-grid choice-grid--2" role="radiogroup" aria-label="PAN service">{(referenceMode ? panServices.filter(item => ["new","minor"].includes(item)) : panServices).map((item) => <button key={item} type="button" role="radio" aria-checked={data.service === item} className={data.service === item ? "choice is-selected" : "choice"} onClick={() => update("service", item)}><span className="choice__text"><b>{panServiceLabels[item]}</b></span><span className="choice__check" aria-hidden="true">{data.service === item && <Check size={16}/>}</span></button>)}</div>
       {err("service")}
       <div className="form-grid">
-        {legacy49a ? <p className="field"><span className="field__label">Existing PAN</span><strong>No PAN allotted (new individual application)</strong></p> : seg("existingPan", "Has a PAN already been allotted?", [["no", "No"], ["yes", "Yes"], ["unsure", "Not sure"]])}
-        {legacy49a ? <p className="field"><span className="field__label">Applicant status</span><strong>Individual</strong></p> : seg("applicant", "Applicant", [["individual", "Individual"], ["entity", "Business / entity"]])}
-        {legacy49a ? <p className="field"><span className="field__label">Citizenship / origin</span><strong>Indian (Form 49A reference)</strong></p> : seg("citizenship", "Citizenship / origin", [["indian", "Indian"], ["foreign", "Foreign"]])}
-        {!legacy49a && seg("residency", "Communication address", [["india", "In India"], ["overseas", "Outside India"]])}
+        {referenceMode ? <p className="field"><span className="field__label">Existing PAN</span><strong>No PAN allotted (new individual application)</strong></p> : seg("existingPan", "Has a PAN already been allotted?", [["no", "No"], ["yes", "Yes"], ["unsure", "Not sure"]])}
+        {referenceMode ? <p className="field"><span className="field__label">Applicant status</span><strong>Individual</strong></p> : seg("applicant", "Applicant", [["individual", "Individual"], ["entity", "Business / entity"]])}
+        {referenceMode ? <p className="field"><span className="field__label">Citizenship / origin</span><strong>Indian individual</strong></p> : seg("citizenship", "Citizenship / origin", [["indian", "Indian"], ["foreign", "Foreign"]])}
+        {!referenceMode && seg("residency", "Communication address", [["india", "In India"], ["overseas", "Outside India"]])}
       </div>
       {data.applicant === "entity" && seg("entityType", "Entity type", ["huf", "firm", "llp", "company", "trust", "society", "association", "other"].map((value) => [value, value.toUpperCase()] as [string, string]))}
     </section>}
 
     {step === 1 && <section>
-      <h2>Applicant &amp; contact details</h2><p className="wizard-form__sub">{legacy49a ? "Enter the 49A details exactly as on your documents. Aadhaar, if included, is encrypted when submitted; never enter OTPs." : "As they should appear on the application. Don’t enter PAN, Aadhaar numbers or OTPs."}</p>
-      {legacy49a && <p className="field__hint">Name, DOB, email and residence/contact details below also populate the main application automatically. You do not need to type them twice.</p>}
-      {legacy49a && data.detailedIntake?.kind === "pan49a" && previewCard()}
-      {!legacy49a && <><div className="form-grid">
+      <h2>Applicant &amp; contact details</h2><p className="wizard-form__sub">{referenceMode ? "Enter the applicant details exactly as on your documents. Sensitive identity numbers are encrypted; never enter OTPs." : "As they should appear on the application. Don’t enter PAN, Aadhaar numbers or OTPs."}</p>
+      {referenceMode && <p className="field__hint">Name, DOB, email and residence/contact details below also populate the main application automatically. You do not need to type them twice.</p>}
+      {referenceMode && ["pan49a","pan93"].includes(data.detailedIntake?.kind??"") && previewCard()}
+      {!referenceMode && <><div className="form-grid">
         {input("fullName", data.applicant === "entity" ? "Entity full name" : "Applicant full name", "text", { autoComplete: "name" })}
         {input("birthDate", data.applicant === "entity" ? "Date of incorporation / formation" : "Date of birth", "date")}
         {input("representative", "Parent, guardian or authorised representative")}
@@ -298,7 +299,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
         <label className="field" key="city"><span className="field__label">City</span><CitySelect country={data.country} state={data.state} value={data.city} onChange={(next) => update("city", next as never)}/>{err("city")}</label>
         {input("postalCode", "PIN / postal code", "text", { inputMode: "numeric", autoComplete: "postal-code" })}
       </div></>}
-      {(data.applicant==="individual" || legacy49a) && data.detailedIntake && <DetailedIntakeFields
+      {(data.applicant==="individual" || referenceMode) && data.detailedIntake && <DetailedIntakeFields
         intake={data.detailedIntake} onChange={(next)=>update("detailedIntake",next)}
         errors={errors.detailedIntake?validateDetailedIntake(data.detailedIntake):{}}/>}
 
@@ -318,8 +319,8 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
 
     {step === 3 && <section>
       <h2>Review before sending</h2><p className="wizard-form__sub">Check everything once. You can edit any step.</p>
-      {legacy49a && data.detailedIntake?.kind==="pan49a" && previewCard(true)}
-      {legacy49a && <label className="check"><input type="checkbox" checked={previewConfirmed} onChange={event => setPreviewConfirmed(event.target.checked)}/><span>I have compared both preview pages with the supporting documents and confirmed the entered information is correct.</span></label>}
+      {referenceMode && ["pan49a","pan93"].includes(data.detailedIntake?.kind??"") && previewCard(true)}
+      {referenceMode && <label className="check"><input type="checkbox" checked={previewConfirmed} onChange={event => setPreviewConfirmed(event.target.checked)}/><span>I have compared both preview pages with the supporting documents and confirmed the entered information is correct.</span></label>}
       <dl className="summary">{(Object.keys(LABELS) as (keyof PanIntake)[]).map((key) => {
         const value = data[key];
         const text = key === "service" ? panServiceLabels[data.service] : Array.isArray(value) ? value.map(pretty).join(", ") || "None selected" : String(value || "Not provided");
@@ -332,7 +333,8 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
     {message && <p className="alert alert--info" role="status">{message}</p>}
     <WizardActions locale={locale} onBack={step > 0 ? () => go(step - 1) : undefined} nextLabel={step === 3 ? demo ? "Validate preview" : editReference ? "Save corrected Form 49A" : "Send PAN request" : undefined} busy={busy}/>
   </form>)}
-  {legacy49a && data.detailedIntake?.kind==="pan49a" && <Pan49AModal
+  {referenceMode && ["pan49a","pan93"].includes(data.detailedIntake?.kind??"") && <Pan49AModal
+    form93={form93}
     open={showPreview}
     pan={data}
     answers={data.detailedIntake.answers}
