@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { CalendarDays, Eye, EyeOff, Search, ShieldCheck } from "lucide-react";
+import "./pan-49a-fields.css";
 import { COUNTRIES, citiesFor, statesFor } from "@/lib/india-geo";
 import { intakeDocumentGuide, intakeFields, intakeSections, validateDetailedIntake, type DetailedIntake, type IntakeField } from "@/lib/detailed-intake";
 
@@ -50,7 +51,7 @@ export default function DetailedIntakeFields({ intake, onChange, errors = {}, ph
     const first=intakeSections(intake.kind).find(section=>section.fields.some(f=>errors[f.id]));
     if(first) {
       toOpen[first.title]=true;
-      setExpanded(old=>({...old,...toOpen}));
+      setExpanded(old=>Object.entries(toOpen).every(([key,v])=>old[key]===v)?old:{...old,...toOpen});
       const frame=requestAnimationFrame(()=>{
         const target=Array.from(formRef.current?.querySelectorAll<HTMLElement>("[data-intake-id]")||[])
           .find(element=>Object.keys(errors).includes(element.dataset.intakeId||""));
