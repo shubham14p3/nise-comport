@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -13,6 +13,7 @@ import {
 } from "@/lib/detailed-intake";
 import { newIdempotencyKey } from "@/lib/client-id";
 import { rememberReturn } from "@/lib/after-login";
+import { clearTemporaryVoterDraft, readTemporaryVoterDraft, saveTemporaryVoterDraft } from "@/lib/voter-browser-draft";
 import { secureApi, secureUpload, SecureApiError } from "@/lib/secure-api-client";
 
 type Props = { signedIn: boolean; demo: boolean; maxDate: string };
@@ -136,7 +137,6 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
   const [problem,setProblem] = useState("");
   const [reference,setReference] = useState("");
   const [revisionOf,setRevisionOf] = useState("");
-  const [sampleMode,setSampleMode] = useState(false);
   const [showPreview,setShowPreview] = useState(false);
   const [reviewed,setReviewed] = useState(false);
   const [showAadhaar,setShowAadhaar] = useState(false);
@@ -165,16 +165,38 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
   }
 
   const photoVersion=useRef(0);
-  function choosePhoto(file:File|null) {
-    setPhoto(file);
-    setPhotoUrl("");
+  useEffect(() => {
+    if (!signedIn || demo) return;
+    let cancelled=false;
+    void readTemporaryVoterDraft("voter-form8").then(draft=>{
+      if(cancelled || !draft)return;
+      const issues=validateDetailedIntake(draft.photo?{...draft.intake,photoFileId:"restored-photo"}:draft.intake);
+      if(Object.keys(issues).length)return;
+      setIntake(draft.intake);
+      setProof(draft.proof);
+      chooseRestoredPhoto(draft.photo);
+      setStep(3);
+      setConfirmed(false);
+      setReviewed(false);
+      setErrors({});
+      setProblem("Signed in successfully. Your completed form has been restored. Review both preview pages.");
+      setShowPreview(true);
+    }).catch(()=>{if(!cancelled)setProblem("Your temporary form could not be restored. Please review your details.");});
+    return ()=>{cancelled=true;};
+  // Restore once on authenticated page mount, not after every field change.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[signedIn,demo]);
+  function chooseRestoredPhoto(file:File|null){
+    setPhoto(file);setPhotoUrl("");
     const version=++photoVersion.current;
     if(!file)return;
     const reader=new FileReader();
-    reader.onload=()=>{
-      if(version===photoVersion.current && typeof reader.result==="string")setPhotoUrl(reader.result);
-    };
+    reader.onload=()=>{if(version===photoVersion.current && typeof reader.result==="string")setPhotoUrl(reader.result);};
     reader.readAsDataURL(file);
+  }
+  function choosePhoto(file:File|null) {
+    chooseRestoredPhoto(file);
+    setReviewed(false);setConfirmed(false);requestKey.current=null;
   }
 
   function setAnswers(next: IntakeValue) {
@@ -192,25 +214,6 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
     }
     if(next)markTouched(field.id);
     setAnswers({...answers,[field.id]:next});
-  }
-  function showSampleCorrection() {
-    setIntake({kind:"voter-form8",documents:[],answers:{
-      applicantName:"EXAMPLE VOTER",epicNumber:"ABC1234567",constituencyType:"Assembly",constituencyNumber:"67",
-      constituencyName:"EXAMPLE CONSTITUENCY",aadhaarStatus:"Do not have Aadhaar",
-      mobile:"9000000000",email:"example@example.com",requestType:"Correction",
-      corrections:"Relation Type|Relation Name|Mobile Number",
-      correctRelationType:"Husband",correctRelationName:"EXAMPLE RELATIVE",correctMobile:"9123456789",
-      proofRelationType:"Aadhaar",proofRelationName:"Aadhaar",
-      declarationDate:"25/10/2026",declarationPlace:"Jamshedpur",declaration:"Yes",
-    }});
-    setReference("");setRevisionOf("");requestKey.current=null;
-    setPhoto(null);setPhotoUrl("");setProof(null);setStep(1);setSampleMode(true);
-    setConfirmed(false);setReviewed(false);setTouched([]);setErrors({});setProblem("");setShowPreview(true);
-  }
-  function clearSample(){
-    setIntake(blank);setStep(0);setPhoto(null);setPhotoUrl("");setProof(null);
-    setSampleMode(false);setConfirmed(false);setReviewed(false);setTouched([]);setErrors({});
-    setShowPreview(false);setProblem("");requestKey.current=null;
   }
   function setCorrection(name: (typeof FORM8_CORRECTIONS)[number][0],checked:boolean){
     const current=form8CorrectionNames(answers);
@@ -275,7 +278,7 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
     if(step===2)return sections[5].fields;
     return [];
   }
-  function advance(){
+  async function advance(){
     const found=liveProblems;
     const sectionIds=new Set(currentFields().filter(f=>visible.has(f.id)).map(f=>f.id));
     if(step===2 && answers.requestType==="Correction" && form8CorrectionNames(answers).includes("Photo"))sectionIds.add("photoFileId");
@@ -288,8 +291,28 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
     }
     if(step===0 && !answers.requestType){setErrors({requestType:"Select what you need to do."});return;}
     setErrors({});setProblem("");setStep(n=>Math.min(3,n+1));
-    if(step===2)setShowPreview(true);
+    if(step===2)await requestPreview();
     window.scrollTo({top:0,behavior:"smooth"});
+  }
+  async function requestPreview(){
+    const issues=validateDetailedIntake(photo?{...intake,photoFileId:"selected-local-photo"}:intake);
+    if(Object.keys(issues).length){
+      setErrors(issues);setTouched(t=>[...new Set([...t,...Object.keys(issues)])]);
+      setProblem("Complete the highlighted fields before previewing.");
+      focusError(Object.keys(issues)[0]);
+      return;
+    }
+    if(signedIn && !demo){setProblem("");setShowPreview(true);return;}
+    if(demo){setProblem("Sign in with a regular account to preview a completed application.");return;}
+    setBusy(true);
+    setProblem("Saving your completed form securely in this browser before sign-in…");
+    try{
+      await saveTemporaryVoterDraft("voter-form8",{intake,photo,proof});
+      rememberReturn("/voter/form-8");
+      router.push("/login");
+    }catch(error){
+      setProblem(error instanceof Error?error.message:"Your temporary form could not be saved. No data was discarded.");
+    }finally{setBusy(false);}
   }
   function validFile(file:File,limit:number){
     if(!proofTypes.includes(file.type)||file.size>limit||!file.size)throw new Error("Upload a PDF, JPG, PNG or WebP file within the size limit.");
@@ -304,7 +327,6 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
     }
     if(!reviewed){setProblem("Please inspect both preview pages and select Done reviewing.");setShowPreview(true);return;}
     if(!confirmed){setProblem("Please confirm that the applicant has verified the details.");return;}
-    if(sampleMode){setProblem("This is fictional sample data. Clear the sample before saving a real request.");return;}
     if(!signedIn){rememberReturn("/voter/form-8");router.push("/login");return;}
     if(demo){setProblem("The demo account cannot submit actual requests.");return;}
     setBusy(true);setProblem("");
@@ -327,6 +349,7 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
       });
       setReference(response.request.reference);
       setRevisionOf("");
+      void clearTemporaryVoterDraft("voter-form8").catch(()=>undefined);
       window.scrollTo({top:0,behavior:"smooth"});
     }catch(error){
       if(error instanceof SecureApiError && error.status===401){rememberReturn("/voter/form-8");router.push("/login");return;}
@@ -343,10 +366,6 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
       <h1>Voter Form 8 — prepare, verify & preview</h1>
       <p>Fill details once and review them in a two-page document based on the uploaded Form 8 sample. Corrections, address shifting, replacement EPIC and disability marking are handled separately.</p>
       <div className="f8-warning"><ShieldCheck size={18}/> This is an assisted preparation form, not the Election Commission of India portal. No official acknowledgement or submission date is created here.</div>
-      {!reference&&<div className="f8-sample-bar"><div><strong>Inspect a completed correction form</strong><p>Use fictional details to test the same two-page verification modal as PAN 49A.</p></div>
-        <button type="button" onClick={showSampleCorrection}><Eye size={17}/> Show filled correction sample</button></div>}
-      {sampleMode&&<div className="f8-sample-alert" role="status"><b>Example data only — cannot be submitted.</b>
-        <button type="button" onClick={clearSample}>Clear sample and start a real request</button></div>}
       {revisionOf&&<div className="f8-warning">Editing a new copy of request {revisionOf}. The original saved request is unchanged. Save to create a separate corrected assistance request.</div>}
     </div>
     {reference ? <section className="f8-success">
@@ -370,7 +389,7 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
           <h2>{heading}</h2>
           {step===1&&answers.requestType==="Correction"&&<p className="f8-hint">Select up to four particulars. Each selected item opens its own value and proof fields. For example, choose Relation Type = Husband, enter the correct relation name, and update the mobile number.</p>}
           {step<3&&<div className="f8-inline-preview"><span><Eye size={18}/> See your form as a two-page document</span>
-            <button type="button" onClick={()=>setShowPreview(true)}>Preview filled Form 8</button></div>}
+            <button type="button" onClick={()=>void requestPreview()}>Preview filled Form 8</button></div>}
           {step===0&&<p className="f8-hint">Enter the elector&apos;s current details from their existing voter record. Do not use the sample applicant&apos;s details.</p>}
           {(step===0||step===1||step===2)&&<div className="f8-input-grid">
             {step===1 && answers.requestType==="Correction" ? <>
@@ -401,7 +420,7 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
           {step===3&&<div className="f8-review">
             <p>Review the two-page Form 8 preview, including the checked correction types, new values, document proof names and declaration.</p>
             <div className="f8-final-preview"><div><b>Your filled Form 8 is ready to verify</b><p>{reviewed?"Both preview pages reviewed. Edit any fields to review again.":"Open the preview, inspect Page 1 and Page 2, then select Done reviewing."}</p></div>
-              <button type="button" onClick={()=>setShowPreview(true)}><Eye size={17}/> {reviewed?"Reopen preview":"Open final preview"}</button></div>
+              <button type="button" onClick={()=>void requestPreview()}><Eye size={17}/> {reviewed?"Reopen preview":"Open final preview"}</button></div>
             <div className="f8-review-grid">{sections.filter((section,index)=>index===0||index===5||index===requestSections[answers.requestType]).map(section=><div key={section.title}><h3>{section.title}</h3>
               {section.fields.filter(f=>visible.has(f.id)&&f.id!=="corrections"&&f.id!=="correctPhoto").map(f=><p key={f.id}><span>{f.label}</span><b>{dash(answers[f.id])}</b></p>)}
             </div>)}</div>
@@ -412,19 +431,24 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
           <div className="f8-actions">
             {step>0&&<button type="button" className="f8-secondary" onClick={()=>{setStep(n=>n-1);setProblem("");setErrors({});}}><ChevronLeft size={17}/> Back</button>}
             {step<3?<button type="button" onClick={advance}>Continue <ChevronRight size={17}/></button>:<>
-              <button type="button" className="f8-secondary" onClick={()=>setShowPreview(true)}><Eye size={17}/> Preview again</button>
-              <button type="button" disabled={busy||sampleMode} onClick={submit}><FileText size={17}/>{busy?"Saving securely…":"Save assistance request"}</button>
+              <button type="button" className="f8-secondary" onClick={()=>void requestPreview()}><Eye size={17}/> Preview again</button>
+              <button type="button" disabled={busy} onClick={submit}><FileText size={17}/>{busy?"Saving securely…":"Save assistance request"}</button>
             </>}
           </div>
-          {step===3&&!signedIn&&<p className="f8-hint">You can preview and print without signing in. Sign-in is required to save data to your account. Unsaved form data is not stored in the browser.</p>}
+          {step===3&&!signedIn&&<p className="f8-hint">Preview is available after completing all fields and signing in. Your completed form and attachments are saved temporarily in encrypted browser storage for the login redirect (30-minute expiry).</p>}
         </div>
         <aside className="f8-preview-rail">
-          <div className="f8-preview-heading"><h2>Live two-page preview</h2><button type="button" onClick={()=>setShowPreview(true)}><Eye size={15}/> Open modal</button></div>
-          <Form8Print answers={answers} photoUrl={photoUrl}/>
+          <div className="f8-preview-heading"><h2>Live two-page preview</h2><button type="button" onClick={()=>void requestPreview()}><Eye size={15}/> Open modal</button></div>
+          {signedIn&&!demo&&!Object.keys(liveProblems).length&&reviewed ?
+            <Form8Print answers={answers} photoUrl={photoUrl}/> :
+            <div className="f8-preview-locked"><ShieldCheck size={31}/>
+              <b>Preview locked until completion and sign-in</b>
+              <p>Complete all required sections first. Click Preview to sign in and return automatically to your completed draft.</p>
+            </div>}
         </aside>
       </div>
     </>}
-    <VoterForm8Modal open={showPreview} onClose={()=>setShowPreview(false)}
+    <VoterForm8Modal open={showPreview&&signedIn&&!demo&&!Object.keys(liveProblems).length} onClose={()=>setShowPreview(false)}
       onReviewed={()=>{setReviewed(true);setProblem("");}}
       onEdit={reference ? undefined : ()=>{setShowPreview(false);setStep(1);setConfirmed(false);setReviewed(false);}}>
       <Form8Print answers={answers} photoUrl={photoUrl}/>
