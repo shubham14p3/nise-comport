@@ -184,7 +184,6 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
     }).catch(()=>{if(!cancelled)setProblem("Your temporary form could not be restored. Please review your details.");});
     return ()=>{cancelled=true;};
   // Restore once on authenticated page mount, not after every field change.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[signedIn,demo]);
   function chooseRestoredPhoto(file:File|null){
     setPhoto(file);setPhotoUrl("");
