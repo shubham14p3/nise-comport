@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Pan49ASourceViewer from "@/components/pan-49a-source-viewer";
 import type { PanIntake } from "@/lib/pan-validation";
 import "./pan-49a-preview.css";
@@ -57,6 +57,16 @@ function TextBox({ value, minHeight = 16 }: { value?: string; minHeight?: number
 export default function Pan49APreview({ answers: a, pan, onEdit }: Props) {
   const [sourcePdf, setSourcePdf] = useState<File|null>(null);
   const [sourceError, setSourceError] = useState("");
+  useEffect(() => {
+    let active = true;
+    // When the original uploaded template is placed in public/forms it loads for every customer.
+    fetch("/forms/pan-49a.pdf", { cache: "force-cache" }).then(async response => {
+      if (!response.ok) return;
+      const blob = await response.blob();
+      if (active && blob.size && blob.size <= 12 * 1024 * 1024) setSourcePdf(current => current ?? new File([blob], "49A_Form_Updated.pdf", {type:"application/pdf"}));
+    }).catch(() => undefined);
+    return () => {active = false;};
+  }, []);
   const fullName = pick(a,"printedName",pan.fullName);
   const dt = pick(a,"dob",printDate(pan.birthDate));
   const income: [string,string][] = [
