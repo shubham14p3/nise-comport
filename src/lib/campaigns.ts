@@ -55,7 +55,7 @@ export async function setConsent(id: string, consent: "unknown" | "opted_in" | "
   if (consent === "opted_out") await skipPendingFor({ contactId: id });
 }
 
-export async function listContacts(options: { q?: string; consent?: string; limit?: number }) {
+export async function listContacts(options: { q?: string; consent?: string; page?: number; pageSize?: number; limit?: number }) {
   const filters: SQL[] = [];
   const q = options.q?.trim().slice(0, 80);
   if (q) {
@@ -64,13 +64,17 @@ export async function listContacts(options: { q?: string; consent?: string; limi
   }
   if (options.consent && ["unknown", "opted_in", "opted_out"].includes(options.consent)) filters.push(eq(contacts.consent, options.consent));
   const where = filters.length ? and(...filters) : undefined;
-  const [rows, totals] = await Promise.all([
-    db.select().from(contacts).where(where).orderBy(desc(contacts.updatedAt)).limit(Math.min(options.limit ?? 100, 200)),
+  const pageSize = [10, 20, 50].includes(options.pageSize ?? 0) ? options.pageSize! : Math.min(options.limit ?? 100, 200);
+  const page = Math.max(0, Math.min(100000, options.page ?? 0));
+  const [rows, totals, [matched]] = await Promise.all([
+    db.select().from(contacts).where(where).orderBy(desc(contacts.updatedAt), desc(contacts.id)).limit(options.limit ? Math.min(options.limit, 200) : pageSize).offset(options.limit ? 0 : page * pageSize),
     db.select({ consent: contacts.consent, total: count() }).from(contacts).groupBy(contacts.consent),
+    db.select({ total: count() }).from(contacts).where(where),
   ]);
   return {
     contacts: rows.map((row) => ({ ...row, consentAt: row.consentAt?.toISOString() ?? null, lastMessagedAt: row.lastMessagedAt?.toISOString() ?? null, createdAt: row.createdAt.toISOString(), updatedAt: row.updatedAt.toISOString() })),
     totals: Object.fromEntries(totals.map((row) => [row.consent, Number(row.total)])) as Record<string, number>,
+    matched: Number(matched.total),
   };
 }
 

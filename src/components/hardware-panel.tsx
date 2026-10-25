@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { secureApi } from "@/lib/secure-api-client";
+import { AdminPager, paged } from "@/components/admin-pager";
+import { Boxes, EyeOff, Eye } from "lucide-react";
 
 type Data = {
   groups: { slug: string; title: string }[];
@@ -14,6 +16,8 @@ type Draft = { id?: string; groupSlug: string; name: string; note: string; image
 export default function HardwarePanel() {
   const [data, setData] = useState<Data | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [groupPages, setGroupPages] = useState<Record<string, number>>({});
+  const [groupSizes, setGroupSizes] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -34,7 +38,7 @@ export default function HardwarePanel() {
   const title = (slug: string) => data.groups.find((group) => group.slug === slug)?.title ?? slug;
 
   return <section className="admin-card">
-    <h2>Hardware parts</h2>
+    <h2><Boxes size={19}/> Hardware catalogue</h2>
     <p className="muted">The parts list on the Hardware page. Hide a built-in part, or add your own (new laptops, MacBooks, used parts, accessories). No prices here: customers are told the latest price on request.</p>
     {message && <p role="status">{message}</p>}{error && <p role="alert" className="form-error">{error}</p>}
 
@@ -49,23 +53,35 @@ export default function HardwarePanel() {
       <p><button className="btn btn--primary btn--sm" disabled={busy} onClick={() => void act({ action: "save", ...draft }, "Saved.")}>{busy ? "Saving…" : "Save part"}</button> <button className="btn btn--ghost btn--sm" onClick={() => setDraft(null)}>Cancel</button></p>
     </div>}
 
-    {data.groups.map((group) => {
-      const built = data.builtIn.filter((item) => item.groupSlug === group.slug);
+    <div className="admin-hardware__groups">{data.groups.map((group) => {
       const mine = data.added.filter((item) => item.groupSlug === group.slug);
-      return <div key={group.slug}><h3>{group.title}</h3><div className="table-scroll"><table className="price-table price-editor"><tbody>
-        {mine.map((item) => <tr key={item.id}>
-          <th scope="row">{item.name}<br/><small className="muted">{item.note}{item.published ? "" : " · hidden"}</small></th>
-          <td>Added by you</td>
-          <td><button className="btn btn--ghost btn--sm" onClick={() => setDraft({ id: item.id, groupSlug: item.groupSlug, name: item.name, note: item.note, image: item.image ?? "", published: item.published })}>Edit</button>{" "}
-            <button className="btn btn--ghost btn--sm" disabled={busy} onClick={() => { if (window.confirm(`Delete “${item.name}”?`)) void act({ action: "delete", id: item.id }, "Deleted."); }}>Delete</button></td>
-        </tr>)}
-        {built.map((item) => <tr key={item.name}>
-          <th scope="row">{item.name}<br/><small className="muted">{item.note}</small></th>
-          <td>{item.hidden ? "Hidden" : "Showing"}</td>
-          <td><button className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void act({ action: item.hidden ? "show" : "hide", groupSlug: item.groupSlug, name: item.name }, item.hidden ? "Showing again." : "Hidden.")}>{item.hidden ? "Show" : "Hide"}</button></td>
-        </tr>)}
-      </tbody></table></div></div>;
-    })}
+      const built = data.builtIn.filter((item) => item.groupSlug === group.slug);
+      const all = [...mine.map((item) => ({ type: "added" as const, item })), ...built.map((item) => ({ type: "built" as const, item }))];
+      const size = groupSizes[group.slug] ?? 20;
+      const page = Math.min(groupPages[group.slug] ?? 0, Math.max(0, Math.ceil(all.length / size) - 1));
+      const changePage = (next: number) => setGroupPages((v) => ({ ...v, [group.slug]: next }));
+      const changeSize = (next: number) => { setGroupSizes((v) => ({ ...v, [group.slug]: next })); changePage(0); };
+      return <details key={group.slug} className="admin-accordion admin-hardware__group">
+        <summary><span>{group.title}</span><span className="status-pill">{all.length} parts</span></summary>
+        <AdminPager page={page} total={all.length} pageSize={size} onPage={changePage} onPageSize={changeSize} label={group.title}/>
+        <div className="admin-hardware__items">{paged(all, page, size).map((record) => record.type === "added" ?
+          <article className="admin-hardware__item" key={record.item.id}>
+            <div><b>{record.item.name}</b><small>{record.item.note}</small></div>
+            <span className={record.item.published ? "status-pill status-pill--done" : "status-pill"}>{record.item.published ? "Published" : "Hidden"}</span>
+            <div className="admin-hardware__actions">
+              <button className="btn btn--ghost btn--sm" type="button" onClick={() => setDraft({ id: record.item.id, groupSlug: record.item.groupSlug, name: record.item.name, note: record.item.note, image: record.item.image ?? "", published: record.item.published })}>Edit</button>
+              <button className="btn btn--ghost btn--sm" type="button" disabled={busy} onClick={() => { if (window.confirm(`Delete “${record.item.name}”?`)) void act({ action: "delete", id: record.item.id }, "Deleted."); }}>Delete</button>
+            </div>
+          </article> :
+          <article className="admin-hardware__item" key={record.item.name}>
+            <div><b>{record.item.name}</b><small>{record.item.note}</small></div>
+            <span className={record.item.hidden ? "status-pill" : "status-pill status-pill--done"}>{record.item.hidden ? "Hidden" : "Published"}</span>
+            <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void act({ action: record.item.hidden ? "show" : "hide", groupSlug: record.item.groupSlug, name: record.item.name }, record.item.hidden ? "Showing again." : "Hidden.")}>{record.item.hidden ? <Eye size={14}/> : <EyeOff size={14}/>} {record.item.hidden ? "Show" : "Hide"}</button>
+          </article>
+        )}</div>
+        {all.length > size && <AdminPager page={page} total={all.length} pageSize={size} onPage={changePage} label={group.title}/>}
+      </details>;
+    })}</div>
     <p className="muted">Group names: {data.groups.map((group) => title(group.slug)).join(", ")}.</p>
   </section>;
 }

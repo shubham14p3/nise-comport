@@ -1,9 +1,10 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Database, Eye, Phone, Search, Upload, X } from "lucide-react";
+import { Database, Eye, Phone, Search, Upload, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
+import { AdminPager } from "@/components/admin-pager";
 
 type Person = { key: string; name: string; mobile: string | null; whatsapp: string | null; altMobiles: string[]; email: string | null; address: string | null; total: number; services: string[]; lastDate: string | null; nextRenewal: string | null };
 type Listing = { people: Person[]; totals: { people: number; records: number; repeat: number }; byService: { service: string; total: number }[]; services: Record<string, string> };
@@ -26,6 +27,8 @@ export default function RecordsPanel() {
   const [service, setService] = useState("");
   const [sort, setSort] = useState<"repeat" | "recent" | "renewal">("repeat");
   const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [importsOpen, setImportsOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [addContacts, setAddContacts] = useState(true);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -33,17 +36,16 @@ export default function RecordsPanel() {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
 
-  async function load(next: { q?: string; service?: string; sort?: string; page?: number } = {}) {
-    const params = { q, service, sort, page, ...next };
+  async function load(next: { q?: string; service?: string; sort?: string; page?: number; pageSize?: number } = {}) {
+    const params = { q, service, sort, page, pageSize, ...next };
     try { setData(await secureApi<Listing>("W8r2T5yN1cF6", params)); setError(""); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load records."); }
   }
 
   useEffect(() => {
     let active = true;
-    secureApi<Listing>("W8r2T5yN1cF6", { sort: "repeat", page: 0 }).then((value) => { if (active) setData(value); })
+    secureApi<Listing>("W8r2T5yN1cF6", { sort: "repeat", page: 0, pageSize: 20 }).then((value) => { if (active) setData(value); })
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load records."); });
-    secureApi<{ imports: ImportRow[] }>("W8r2T5yN1cF6", { imports: true }).then((value) => { if (active) setImports(value.imports); }).catch(() => undefined);
     return () => { active = false; };
   }, []);
 
@@ -55,7 +57,7 @@ export default function RecordsPanel() {
       const response = await secureApi<{ import: ImportResult }>("B4j9D6sX2mH7", { fileId: uploaded.file.id, addContacts });
       setResult(response.import); setFile(null);
       await load({ page: 0 }); setPage(0);
-      const history = await secureApi<{ imports: ImportRow[] }>("W8r2T5yN1cF6", { imports: true }); setImports(history.imports);
+      if (importsOpen) { const history = await secureApi<{ imports: ImportRow[] }>("W8r2T5yN1cF6", { imports: true }); setImports(history.imports); }
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Import failed."); }
     finally { setBusy(""); }
   }
@@ -105,6 +107,7 @@ export default function RecordsPanel() {
       <button className="btn btn--ghost btn--sm">Search</button>
     </form>
 
+    {data && <AdminPager page={page} total={data.totals.people} pageSize={pageSize} onPage={(next) => { setPage(next); void load({ page: next }); }} onPageSize={(size) => { setPageSize(size); setPage(0); void load({ page: 0, pageSize: size }); }} label="customer records"/>}
     <div className="people-list">{(data?.people ?? []).map((person) => <article key={person.key} className="person-row">
       <div className="person-row__main">
         <span><b>{person.name}</b>{person.total > 1 && <span className="repeat-badge" title="How many times this person appears across your registers">{person.total}×</span>}</span>
@@ -119,13 +122,9 @@ export default function RecordsPanel() {
       </div>
     </article>)}</div>
     {data && !data.people.length && <p className="admin-empty">{data.totals.records ? "Nobody matches." : "No registers imported yet. Upload your PAN, insurance or certificate Excel files above."}</p>}
-    {data && data.totals.people > 50 && <div className="pager">
-      <button type="button" className="btn btn--ghost btn--sm" disabled={page === 0} onClick={() => { setPage(page - 1); void load({ page: page - 1 }); }}><ChevronLeft size={15}/>Previous</button>
-      <span>Page {page + 1} of {Math.ceil(data.totals.people / 50)}</span>
-      <button type="button" className="btn btn--ghost btn--sm" disabled={(page + 1) * 50 >= data.totals.people} onClick={() => { setPage(page + 1); void load({ page: page + 1 }); }}>Next<ChevronRight size={15}/></button>
-    </div>}
+    {data && data.totals.people > pageSize && <AdminPager page={page} total={data.totals.people} pageSize={pageSize} onPage={(next) => { setPage(next); void load({ page: next }); }} label="customer records"/>}
 
-    {imports.length > 0 && <div className="pan-import-history"><b>Recent imports</b>{imports.map((row) => <span key={row.id}>{new Date(row.createdAt).toLocaleDateString("en-IN")} · {row.fileName} · {row.imported} added · {row.duplicates} already there · {row.contactsAdded} contacts</span>)}</div>}
+    <details className="pan-import-history admin-accordion" open={importsOpen} onToggle={(event) => { const open = event.currentTarget.open; setImportsOpen(open); if (open && !imports.length) void secureApi<{ imports: ImportRow[] }>("W8r2T5yN1cF6", { imports: true }).then((value) => setImports(value.imports)).catch(() => undefined); }}><summary>Recent imports {importsOpen && imports.length ? `(${imports.length})` : ""}</summary>{imports.length ? imports.map((row) => <span key={row.id}>{new Date(row.createdAt).toLocaleDateString("en-IN")} · {row.fileName} · {row.imported} added · {row.duplicates} already there · {row.contactsAdded} contacts</span>) : <small>No imports recorded.</small>}</details>
 
     {detail && <div className="record-sheet" role="dialog" aria-label={`Records of ${detail.name}`}>
       <div className="record-sheet__panel">

@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import { payments, serviceRequests, users, walletEntries } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import { db } from "@/lib/db";
@@ -47,12 +47,16 @@ export async function paymentForReference(reference: string, viewer: { id: strin
   return payment ? { request, payment } : null;
 }
 
-export async function listPayments(status?: string) {
+export async function listPayments(status?: string, page = 0, pageSize = 20) {
+  const size = [10, 20, 50].includes(pageSize) ? pageSize : 20;
+  const offset = Math.max(0, Math.min(page, 100000)) * size;
+  const where = status === "issues" ? sql`(${payments.issueRaisedAt} is not null and coalesce(${payments.refundStatus},'') <> 'done') or ${payments.refundStatus} = 'requested'` : status ? eq(payments.status, status) : undefined;
   const rows = await db.select({
     payment: payments, requestName: serviceRequests.serviceName, customer: users.name, phone: users.phone,
   }).from(payments).innerJoin(serviceRequests, eq(payments.requestId, serviceRequests.id)).innerJoin(users, eq(payments.userId, users.id))
-    .where(status === "issues" ? sql`(${payments.issueRaisedAt} is not null and coalesce(${payments.refundStatus},'') <> 'done') or ${payments.refundStatus} = 'requested'` : status ? eq(payments.status, status) : undefined).orderBy(desc(payments.createdAt)).limit(200);
-  return rows.map((row) => ({ ...row.payment, requestName: row.requestName, customer: row.customer, phone: row.phone }));
+    .where(where).orderBy(desc(payments.createdAt), desc(payments.id)).limit(size).offset(offset);
+  const [total] = await db.select({ value: count() }).from(payments).where(where);
+  return { rows: rows.map((row) => ({ ...row.payment, requestName: row.requestName, customer: row.customer, phone: row.phone })), total: total.value };
 }
 
 export async function createPaymentRequest(input: { reference: string; amountPaise: number; note?: string }, actor: { id: string }) {

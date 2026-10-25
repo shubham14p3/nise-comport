@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Cake, CarFront, Check, ChevronDown, Copy, Download, Mail, MessageCircle, Pencil, Phone, RefreshCw, Search, Send, ShieldCheck } from "lucide-react";
 import OutreachTemplates from "@/components/outreach-templates";
 import { secureApi } from "@/lib/secure-api-client";
+import { AdminPager } from "@/components/admin-pager";
 import type { BirthdayTemplate, Lang, RefreshStatus, RenewalTemplate } from "@/lib/outreach-core";
 
 type Tab = "birthdays" | "renewals" | "templates";
@@ -114,6 +115,8 @@ function Birthdays({ config }: { config: Config | null }) {
   const [range, setRange] = useState<"today" | "week" | "month" | "all">("today");
   const [month, setMonth] = useState(0);
   const [q, setQ] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [template, setTemplate] = useState("");
   const [data, setData] = useState<BirthdayList | null>(null);
   const [doneKey, setDoneKey] = useState("");
@@ -125,20 +128,20 @@ function Birthdays({ config }: { config: Config | null }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [copied, setCopied] = useState("");
   const chosen = template || config?.settings.birthday.template || "";
-  const requestKey = JSON.stringify([range, month, q, chosen]);
+  const requestKey = JSON.stringify([range, month, q, chosen, page, pageSize]);
 
   const load = useCallback(async () => {
     try {
-      const result = await secureApi<BirthdayList>("B5dY8rN2cV6w", { view: "birthdays", range, month: month ? String(month) : "", q, template: chosen });
+      const result = await secureApi<BirthdayList>("B5dY8rN2cV6w", { view: "birthdays", range, month: month ? String(month) : "", q, template: chosen, page, pageSize });
       setData(result); setError("");
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load birthdays."); }
-  }, [range, month, q, chosen]);
+  }, [range, month, q, chosen, page, pageSize]);
   useEffect(() => {
     let active = true;
-    secureApi<BirthdayList>("B5dY8rN2cV6w", { view: "birthdays", range, month: month ? String(month) : "", q, template: chosen })
-      .then((result) => { if (active) { setData(result); setDoneKey(JSON.stringify([range, month, q, chosen])); setError(""); } }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load birthdays."); });
+    secureApi<BirthdayList>("B5dY8rN2cV6w", { view: "birthdays", range, month: month ? String(month) : "", q, template: chosen, page, pageSize })
+      .then((result) => { if (active) { setData(result); setDoneKey(JSON.stringify([range, month, q, chosen, page, pageSize])); setError(""); } }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load birthdays."); });
     return () => { active = false; };
-  }, [range, month, q, chosen]);
+  }, [range, month, q, chosen, page, pageSize]);
   const loading = doneKey !== requestKey && !error;
 
   const people = useMemo(() => data?.people ?? [], [data]);
@@ -188,9 +191,9 @@ function Birthdays({ config }: { config: Config | null }) {
   return <div className="outreach-body">
     <p className="admin-lead">Everyone with a birthday on file. Wishes go <b>only to people who said YES</b> (WhatsApp YES or Email OK), each person once a year. Mark who agreed with the buttons on each row.</p>
     <div className="promo-admin__bar">
-      <div className="seg">{([["today", `Today${totals ? ` (${totals.today})` : ""}`], ["week", `7 days${totals ? ` (${totals.week})` : ""}`], ["month", `30 days${totals ? ` (${totals.month})` : ""}`], ["all", `All${totals ? ` (${totals.all})` : ""}`]] as const).map(([id, label]) => <button key={id} type="button" className={!month && range === id ? "is-active" : undefined} onClick={() => { setMonth(0); setRange(id); }}>{label}</button>)}</div>
-      <select aria-label="Month" value={month} onChange={(event) => setMonth(Number(event.target.value))}><option value={0}>Any month</option>{MONTHS.map((name, index) => <option key={name} value={index + 1}>{name}</option>)}</select>
-      <label className="input-wrap"><Search size={16}/><input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Name, mobile or area" aria-label="Search birthdays"/></label>
+      <div className="seg">{([["today", `Today${totals ? ` (${totals.today})` : ""}`], ["week", `7 days${totals ? ` (${totals.week})` : ""}`], ["month", `30 days${totals ? ` (${totals.month})` : ""}`], ["all", `All${totals ? ` (${totals.all})` : ""}`]] as const).map(([id, label]) => <button key={id} type="button" className={!month && range === id ? "is-active" : undefined} onClick={() => { setMonth(0); setRange(id); setPage(0); }}>{label}</button>)}</div>
+      <select aria-label="Month" value={month} onChange={(event) => { setMonth(Number(event.target.value)); setPage(0); }}><option value={0}>Any month</option>{MONTHS.map((name, index) => <option key={name} value={index + 1}>{name}</option>)}</select>
+      <label className="input-wrap"><Search size={16}/><input value={q} onChange={(event) => { setQ(event.target.value); setPage(0); }} placeholder="Name, mobile or area" aria-label="Search birthdays"/></label>
     </div>
     <div className="outreach-send">
       <label className="field"><span className="field__label">Card</span><select value={chosen} onChange={(event) => setTemplate(event.target.value)}>{(config?.birthdayTemplates ?? []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
@@ -202,6 +205,7 @@ function Birthdays({ config }: { config: Config | null }) {
     </div>
     {error && <div className="alert alert--error" role="alert">{error}</div>}
     {notice && <div className="alert alert--success" role="status">{notice}</div>}
+    {data && <AdminPager page={page} total={data.matched} pageSize={pageSize} onPage={setPage} onPageSize={(size) => { setPageSize(size); setPage(0); }} label="birthdays"/>}
     {people.length > 0 && <label className="check outreach-all"><input type="checkbox" checked={selected.length === people.length} onChange={(event) => setPicked(event.target.checked ? new Set(people.map((person) => person.id)) : new Set())}/> Select all {people.length} shown{data && data.matched > people.length ? ` (of ${data.matched})` : ""}</label>}
     {loading && <ListLoader label="Loading birthdays…" first={!data}/>}
     <div className={`contact-list${loading ? " is-loading" : ""}`} aria-busy={loading}>{people.map((person) => <article key={person.id} className="contact-row outreach-row">
@@ -254,6 +258,8 @@ function Renewals({ config }: { config: Config | null }) {
   const [overdue, setOverdue] = useState(false);
   const [vehicle, setVehicle] = useState("");
   const [q, setQ] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [template, setTemplate] = useState("");
   const [data, setData] = useState<RenewalList | null>(null);
   const [doneKey, setDoneKey] = useState("");
@@ -263,18 +269,18 @@ function Renewals({ config }: { config: Config | null }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const chosen = template || config?.settings.renewal.template || "";
-  const requestKey = JSON.stringify([days, overdue, vehicle, q, chosen]);
+  const requestKey = JSON.stringify([days, overdue, vehicle, q, chosen, page, pageSize]);
 
   const load = useCallback(async () => {
-    try { setData(await secureApi<RenewalList>("B5dY8rN2cV6w", { view: "renewals", days: String(days), overdue, vehicle, q, template: chosen })); setError(""); }
+    try { setData(await secureApi<RenewalList>("B5dY8rN2cV6w", { view: "renewals", days: String(days), overdue, vehicle, q, template: chosen, page, pageSize })); setError(""); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load renewals."); }
-  }, [days, overdue, vehicle, q, chosen]);
+  }, [days, overdue, vehicle, q, chosen, page, pageSize]);
   useEffect(() => {
     let active = true;
-    secureApi<RenewalList>("B5dY8rN2cV6w", { view: "renewals", days: String(days), overdue, vehicle, q, template: chosen })
-      .then((result) => { if (active) { setData(result); setDoneKey(JSON.stringify([days, overdue, vehicle, q, chosen])); setError(""); } }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load renewals."); });
+    secureApi<RenewalList>("B5dY8rN2cV6w", { view: "renewals", days: String(days), overdue, vehicle, q, template: chosen, page, pageSize })
+      .then((result) => { if (active) { setData(result); setDoneKey(JSON.stringify([days, overdue, vehicle, q, chosen, page, pageSize])); setError(""); } }).catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load renewals."); });
     return () => { active = false; };
-  }, [days, overdue, vehicle, q, chosen]);
+  }, [days, overdue, vehicle, q, chosen, page, pageSize]);
   const loading = doneKey !== requestKey && !error;
 
   const people = useMemo(() => data?.people ?? [], [data]);
@@ -300,10 +306,10 @@ function Renewals({ config }: { config: Config | null }) {
   return <div className="outreach-body">
     <p className="admin-lead">Bike and car policies that end soon, from your imported insurance registers. Where an Excel sheet had no end date, it is taken as one year after the policy date. Reminders go to everyone who has not said STOP.</p>
     <div className="promo-admin__bar">
-      <div className="seg">{[7, 14, 30].map((value) => <button key={value} type="button" className={days === value ? "is-active" : undefined} onClick={() => setDays(value)}>Next {value} days</button>)}</div>
-      <div className="seg">{([["", `All${data ? ` (${data.matched})` : ""}`], ["bike", `Bike${data ? ` (${data.totals.bike})` : ""}`], ["car", `Car${data ? ` (${data.totals.car})` : ""}`]] as const).map(([id, label]) => <button key={id} type="button" className={vehicle === id ? "is-active" : undefined} onClick={() => setVehicle(id)}>{label}</button>)}</div>
-      <label className="check"><input type="checkbox" checked={overdue} onChange={(event) => setOverdue(event.target.checked)}/> Also ended in the last 30 days</label>
-      <label className="input-wrap"><Search size={16}/><input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Name or mobile" aria-label="Search renewals"/></label>
+      <div className="seg">{[7, 14, 30].map((value) => <button key={value} type="button" className={days === value ? "is-active" : undefined} onClick={() => { setDays(value); setPage(0); }}>Next {value} days</button>)}</div>
+      <div className="seg">{([["", `All${data ? ` (${data.matched})` : ""}`], ["bike", `Bike${data ? ` (${data.totals.bike})` : ""}`], ["car", `Car${data ? ` (${data.totals.car})` : ""}`]] as const).map(([id, label]) => <button key={id} type="button" className={vehicle === id ? "is-active" : undefined} onClick={() => { setVehicle(id); setPage(0); }}>{label}</button>)}</div>
+      <label className="check"><input type="checkbox" checked={overdue} onChange={(event) => { setOverdue(event.target.checked); setPage(0); }}/> Also ended in the last 30 days</label>
+      <label className="input-wrap"><Search size={16}/><input value={q} onChange={(event) => { setQ(event.target.value); setPage(0); }} placeholder="Name or mobile" aria-label="Search renewals"/></label>
     </div>
     <div className="outreach-send">
       <label className="field"><span className="field__label">Reminder wording</span><select value={chosen} onChange={(event) => setTemplate(event.target.value)}>{(config?.renewalTemplates ?? []).map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
@@ -314,6 +320,7 @@ function Renewals({ config }: { config: Config | null }) {
     </div>
     {error && <div className="alert alert--error" role="alert">{error}</div>}
     {notice && <div className="alert alert--success" role="status">{notice}</div>}
+    {data && <AdminPager page={page} total={data.matched} pageSize={pageSize} onPage={setPage} onPageSize={(size) => { setPageSize(size); setPage(0); }} label="insurance renewals"/>}
     {people.length > 0 && <label className="check outreach-all"><input type="checkbox" checked={selected.length === people.length} onChange={(event) => setPicked(event.target.checked ? new Set(people.map((person) => person.key)) : new Set())}/> Select all {people.length} shown{data && data.matched > people.length ? ` (of ${data.matched})` : ""}</label>}
     {loading && <ListLoader label="Loading insurance renewals…" first={!data}/>}
     <div className={`contact-list${loading ? " is-loading" : ""}`} aria-busy={loading}>{people.map((person) => <article key={person.key} className="contact-row outreach-row">
@@ -329,6 +336,8 @@ function Renewals({ config }: { config: Config | null }) {
         {person.consent !== "opted_out" && <a className="profile-text-button" href={waLink(person.phone)} target="_blank" rel="noreferrer"><MessageCircle size={13}/> Chat</a>}
       </div>
     </article>)}</div>
+    {data && data.matched > pageSize && <AdminPager page={page} total={data.matched} pageSize={pageSize} onPage={setPage} label="insurance renewals"/>}
+    {data && data.matched > pageSize && <AdminPager page={page} total={data.matched} pageSize={pageSize} onPage={setPage} label="birthdays"/>}
     {data && !people.length && <p className="admin-empty"><CarFront size={16}/> No policies end in this period. Import an insurance register in Records, then press “Refresh the data” to mark bike and car.</p>}
     <p className="outreach-note"><ChevronDown size={14}/> To send these automatically {days} days before, open “Cards, wording &amp; automatic”.</p>
   </div>;

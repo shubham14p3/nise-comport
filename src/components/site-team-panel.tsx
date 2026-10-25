@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Eye, EyeOff, Pencil, Plus, Trash2, UsersRound } from "lucide-react";
+import { AdminPager, useAdminPagination } from "@/components/admin-pager";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
 
 type Person = { id: string; name: string; role: string; bio: string | null; image: string | null; active: boolean; sortOrder: number; phone?: string | null; email?: string | null };
@@ -64,6 +65,7 @@ export default function SiteTeamPanel() {
     finally { setBusy(""); if (fileInput.current) fileInput.current.value = ""; }
   }
 
+  const paging = useAdminPagination(people ?? []);
   const staffNotListed = staff.filter((account) => !(people ?? []).some((person) => person.name.toLowerCase() === account.name.toLowerCase()));
 
   return <section className="admin-queue site-team">
@@ -104,16 +106,18 @@ export default function SiteTeamPanel() {
     </form>}
 
     {!people && !error && <p className="admin-empty">Loading…</p>}
-    <div className="batch-list">{(people ?? []).map((person, index, list) => <article key={person.id} className={person.active ? "batch-row" : "batch-row is-off"}>
+    <AdminPager {...paging} label="public team members"/>
+    <div className="batch-list">{paging.items.map((person, index) => <article key={person.id} className={person.active ? "batch-row" : "batch-row is-off"}>
       <Photo src={person.image} name={person.name}/>
       <div><b>{person.name}</b><small>{person.role}{person.active ? "" : " · hidden"}</small>{(person.phone || person.email) && <small>{[person.phone, person.email].filter(Boolean).join(" · ")}</small>}</div>
       <div className="batch-row__actions">
-        <button type="button" className="icon-btn" disabled={index === 0 || Boolean(busy)} onClick={() => void act({ action: "move", id: person.id, direction: "up" }, "Moved up.")} aria-label={`Move ${person.name} up`}><ArrowUp size={16}/></button>
-        <button type="button" className="icon-btn" disabled={index === list.length - 1 || Boolean(busy)} onClick={() => void act({ action: "move", id: person.id, direction: "down" }, "Moved down.")} aria-label={`Move ${person.name} down`}><ArrowDown size={16}/></button>
+        <button type="button" className="icon-btn" disabled={paging.page * paging.pageSize + index === 0 || Boolean(busy)} onClick={() => void act({ action: "move", id: person.id, direction: "up" }, "Moved up.")} aria-label={`Move ${person.name} up`}><ArrowUp size={16}/></button>
+        <button type="button" className="icon-btn" disabled={paging.page * paging.pageSize + index === (people?.length ?? 0) - 1 || Boolean(busy)} onClick={() => void act({ action: "move", id: person.id, direction: "down" }, "Moved down.")} aria-label={`Move ${person.name} down`}><ArrowDown size={16}/></button>
         <button type="button" className="icon-btn" onClick={() => setDraft({ id: person.id, name: person.name, role: person.role, bio: person.bio ?? "", image: person.image ?? "", active: person.active, phone: person.phone ?? "", email: person.email ?? "" })} aria-label={`Edit ${person.name}`}><Pencil size={16}/></button>
         <button type="button" className="icon-btn" onClick={() => void act({ action: "save", member: { id: person.id, name: person.name, role: person.role, bio: person.bio, image: person.image, active: !person.active, phone: person.phone ?? null, email: person.email ?? null } }, person.active ? "Hidden from the website." : "Shown on the website.")} aria-label={person.active ? `Hide ${person.name}` : `Show ${person.name}`}>{person.active ? <EyeOff size={16}/> : <Eye size={16}/>}</button>
         <button type="button" className="icon-btn" onClick={() => { if (window.confirm(`Remove ${person.name} from the team page?`)) void act({ action: "delete", id: person.id }, "Removed."); }} aria-label={`Remove ${person.name}`}><Trash2 size={16}/></button>
       </div>
     </article>)}</div>
+    {(people?.length ?? 0) > paging.pageSize && <AdminPager {...paging} label="public team members"/>}
   </section>;
 }

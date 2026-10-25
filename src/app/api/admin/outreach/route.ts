@@ -20,13 +20,15 @@ export async function GET(request: NextRequest) {
     need();
     const params = request.nextUrl.searchParams;
     const view = params.get("view");
+    const page = Math.max(0, Number(params.get("page")) || 0);
+    const pageSize = [10,20,50].includes(Number(params.get("pageSize"))) ? Number(params.get("pageSize")) : 20;
     if (view === "config") return NextResponse.json(await configWithPreviews(), { headers: NO_STORE });
     if (view === "renewals") {
-      return NextResponse.json({ ...(await renewalsDue({ days: Number(params.get("days")) || 7, overdue: params.get("overdue") === "1", vehicle: params.get("vehicle") ?? "", q: params.get("q") ?? "", template: params.get("template") ?? undefined })), refresh: await refreshState() }, { headers: NO_STORE });
+      return NextResponse.json({ ...(await renewalsDue({ days: Number(params.get("days")) || 7, overdue: params.get("overdue") === "1", vehicle: params.get("vehicle") ?? "", q: params.get("q") ?? "", template: params.get("template") ?? undefined, page, pageSize })), refresh: await refreshState() }, { headers: NO_STORE });
     }
     const range = params.get("range");
     return NextResponse.json({
-      ...(await listBirthdays({ range: range === "week" || range === "month" || range === "all" ? range : "today", month: Number(params.get("month")) || undefined, q: params.get("q") ?? "", template: params.get("template") ?? undefined })),
+      ...(await listBirthdays({ range: range === "week" || range === "month" || range === "all" ? range : "today", month: Number(params.get("month")) || undefined, q: params.get("q") ?? "", template: params.get("template") ?? undefined, page, pageSize })),
       refresh: await refreshState(),
     }, { headers: NO_STORE });
   } catch (error) { return apiError(error); }

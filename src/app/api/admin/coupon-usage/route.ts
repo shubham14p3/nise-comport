@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const uuid = z.uuid();
     const couponId = uuid.safeParse(params.get("coupon")).data;
     const userId = uuid.safeParse(params.get("user")).data;
-    return NextResponse.json(await couponUsage({ couponId, userId, q: params.get("q") ?? undefined }), { headers: { "cache-control": "private, no-store" } });
+    return NextResponse.json(await couponUsage({ couponId, userId, q: params.get("q") ?? undefined, page: Number(params.get("page")) || 0, pageSize: Number(params.get("pageSize")) || 20 }), { headers: { "cache-control": "private, no-store" } });
   } catch (error) { return apiError(error); }
 }
 

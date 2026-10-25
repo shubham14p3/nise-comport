@@ -60,7 +60,7 @@ export function ServicesMegaDesktop({ label, active }: { label: string; active: 
               </h3>
               <ul>
                 {group.items.map((service) => (
-                  <li key={service.slug}><Link prefetch={false} href={lp(lc, `/services/${service.slug}`)} onClick={close}>{lc === "en" ? shortServiceName(service.title) : serviceName(service.slug, shortServiceName(service.title), lc)}</Link></li>
+                  <li key={service.slug}><Link prefetch={false} href={lp(lc, `/services/${service.slug}`)} onClick={close} title={lc === "en" ? service.title : serviceName(service.slug, service.title, lc)} aria-label={lc === "en" ? service.title : serviceName(service.slug, service.title, lc)}><span className="mega__service-name">{lc === "en" ? shortServiceName(service.title) : serviceName(service.slug, shortServiceName(service.title), lc)}</span></Link></li>
                 ))}
                 {group.more > 0 && <li><Link prefetch={false} className="mega__more" href={lp(lc, `/services/${group.slug}`)} onClick={close}>+{group.more} {t("more", "और", "আরও")}</Link></li>}
               </ul>

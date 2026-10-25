@@ -8,6 +8,7 @@ import { clampPacing, DEFAULT_PACING, MAX_BATCH, simulateCampaign, type Pacing }
 import { CAMPAIGN_KINDS, CAMPAIGN_SERVICES, DEFAULT_MESSAGES, renderMessage, SERVICE_NAMES, type CampaignKind, type Lang, serviceTitle } from "@/lib/campaign-text";
 import { addDays, todayIst } from "@/lib/festivals";
 import { secureApi } from "@/lib/secure-api-client";
+import { AdminPager, useAdminPagination } from "@/components/admin-pager";
 
 type Campaign = {
   id: string; name: string; kind: CampaignKind; service: string | null; status: string; message: Record<Lang, string>; posters: Partial<Record<Lang, string>> | null;
@@ -139,6 +140,7 @@ export default function CampaignsPanel() {
 
   const ready = queue.filter((item) => item.status === "ready");
   const upcoming = queue.filter((item) => item.status === "scheduled");
+  const paging = useAdminPagination(data?.campaigns ?? []);
   return <section className="admin-queue campaigns">
     <h2><Megaphone size={17}/> WhatsApp campaigns <span>{data?.campaigns.length ?? "…"}</span></h2>
     <div className="promo-admin__bar">
@@ -167,7 +169,8 @@ export default function CampaignsPanel() {
       {upcoming.length > 0 && <p className="field__hint"><Clock3 size={13}/> Coming up: {upcoming.slice(0, 5).map((item) => `${item.name} at ${time(item.scheduledAt)}`).join(" · ")}{upcoming.length > 5 ? ` and ${upcoming.length - 5} more` : ""}</p>}
     </div>}
 
-    <div className="campaign-list">{(data?.campaigns ?? []).map((row) => {
+    <AdminPager {...paging} label="campaigns"/>
+    <div className="campaign-list">{paging.items.map((row) => {
       const counts = row.counts ?? {};
       const pending = (counts.queued ?? 0) + (counts.scheduled ?? 0) + (counts.ready ?? 0);
       const sim = preview?.id === row.id ? preview.sends : [];
@@ -208,6 +211,7 @@ export default function CampaignsPanel() {
     })}</div>
     {data && !data.campaigns.length && <p className="admin-empty">No campaigns yet.</p>}
     <p className="admin-note">Renewal reminders go to customers who haven’t said STOP; offers only to people who replied YES. Every message ends with “Reply STOP”. Replies are recorded automatically when the WhatsApp Business API is connected; otherwise mark them in Contacts.</p>
+    {(data?.campaigns.length ?? 0) > paging.pageSize && <AdminPager {...paging} label="campaigns"/>}
   </section>;
 }
 

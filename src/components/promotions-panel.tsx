@@ -6,6 +6,7 @@ import PromotionEditor from "@/components/promotion-editor";
 import PersonalCodes from "@/components/personal-codes";
 import { todayIst } from "@/lib/festivals";
 import { secureApi } from "@/lib/secure-api-client";
+import { AdminPager, useAdminPagination } from "@/components/admin-pager";
 import type { PromoView } from "@/lib/promo-view";
 
 type Promotion = PromoView & { id: string; active: boolean; locked: boolean; source: string | null; uses: number; perUserLimit: number | null; maxRedemptions: number | null; customerName?: string | null };
@@ -49,6 +50,8 @@ export default function PromotionsPanel({ canEdit }: { canEdit: boolean }) {
     return !words || `${row.code} ${row.names.en} ${row.communities.join(" ")}`.toLowerCase().includes(words);
   }), [data, view, q, today]);
 
+  const paging = useAdminPagination(rows);
+
   async function patch(id: string, body: Record<string, unknown>, message: string) {
     setBusy(id); setError(""); setNotice("");
     try { await secureApi("M7x3Q9vB2kF5", { id, ...body }); setNotice(message); setEditing(null); await load(); }
@@ -87,7 +90,8 @@ export default function PromotionsPanel({ canEdit }: { canEdit: boolean }) {
     {editor && <PromotionEditor key={editor.promotion?.id ?? "new"} promotion={editor.promotion} onCancel={() => setEditor(null)} onDone={(message) => { setEditor(null); setNotice(message); void load(); }}/>}
     {!data && !error && <p>Loading promotions…</p>}
     {data && !rows.length && <p className="admin-empty">No promotions in this view.</p>}
-    <div className="promo-admin__list">{rows.map((row) => {
+    <AdminPager {...paging} label="promotions"/>
+    <div className="promo-admin__list">{paging.items.map((row) => {
       const live = row.startsOn <= today && today <= row.endsOn;
       const isEditing = editing?.id === row.id;
       return <article key={row.id} className={`promo-row theme-${row.theme}${row.active ? "" : " is-off"}`}>
@@ -127,6 +131,7 @@ export default function PromotionsPanel({ canEdit }: { canEdit: boolean }) {
         </div>}
       </article>;
     })}</div>
+    {rows.length > paging.pageSize && <AdminPager {...paging} label="promotions"/>}
     {canEdit && <PersonalCodes/>}
     <p className="admin-note"><Gift size={13}/> Codes are created daily up to December 2028 from Google’s Indian holiday calendar and the Team India fixtures list. Switching a code off takes effect immediately at checkout.</p>
   </section>;

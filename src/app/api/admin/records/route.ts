@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     await enforceRate(RATE_RULES.recordPagesPerUserHour, identity("user", user.id), "Too many record searches this hour.");
     if (params.get("imports")) return NextResponse.json({ imports: await recentImports() });
     const sort = params.get("sort");
-    return NextResponse.json(await listPeople({ q: params.get("q") ?? "", service: params.get("service") ?? "", sort: sort === "recent" || sort === "renewal" ? sort : "repeat", page: Number(params.get("page") ?? 0) || 0 }));
+    return NextResponse.json(await listPeople({ q: params.get("q") ?? "", service: params.get("service") ?? "", sort: sort === "recent" || sort === "renewal" ? sort : "repeat", page: Number(params.get("page") ?? 0) || 0, pageSize: Number(params.get("pageSize") ?? 20) }));
   } catch (error) { return apiError(error); }
 }
 

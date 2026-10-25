@@ -158,7 +158,7 @@ export async function scanRecords(actor: { id: string; name: string }) {
 
 export type BirthdayRange = "today" | "week" | "month" | "all";
 
-export async function listBirthdays(options: { range: BirthdayRange; month?: number; q?: string; template?: string }) {
+export async function listBirthdays(options: { range: BirthdayRange; month?: number; q?: string; template?: string; page?: number; pageSize?: number }) {
   const config = await loadConfig();
   const template = pickBirthdayTemplate(config.birthdayTemplates, options.template ?? config.settings.birthday.template);
   const today = istToday();
@@ -173,7 +173,7 @@ export async function listBirthdays(options: { range: BirthdayRange; month?: num
   else if (options.range === "week") picked = picked.filter((item) => item.days <= 7);
   else if (options.range === "month") picked = picked.filter((item) => item.days <= 30);
   if (q) picked = picked.filter(({ row }) => `${row.name} ${row.phone} ${row.email ?? ""} ${row.area ?? ""}`.toLowerCase().includes(q));
-  const shown = picked.slice(0, 600);
+  const shown = picked.slice(Math.max(0, options.page ?? 0) * (options.pageSize ?? 600), (Math.max(0, options.page ?? 0) + 1) * (options.pageSize ?? 600));
   const wished = shown.length ? await db.select({ contactId: outreachLog.contactId, channel: outreachLog.channel }).from(outreachLog)
     .where(and(eq(outreachLog.kind, "birthday"), eq(outreachLog.year, year), inArray(outreachLog.contactId, shown.map((item) => item.row.id)))) : [];
   const sent = (id: string, channel: string) => wished.some((entry) => entry.contactId === id && entry.channel === channel);
@@ -272,7 +272,7 @@ export async function sendBirthdays(input: { ids: string[]; channels: ("email" |
 /** Log reference for a reminder: the date, plus the vehicle type so two vehicles ending the same day are both sent. */
 function renewalRef(date: string, vehicle: string | null) { return vehicle ? `${date}|${vehicle}` : date; }
 
-export async function renewalsDue(options: { days: number; overdue?: boolean; vehicle?: string; q?: string; template?: string }) {
+export async function renewalsDue(options: { days: number; overdue?: boolean; vehicle?: string; q?: string; template?: string; page?: number; pageSize?: number }) {
   const config = await loadConfig();
   const template = pickRenewalTemplate(config.renewalTemplates, options.template ?? config.settings.renewal.template);
   const today = istToday();
@@ -328,7 +328,9 @@ export async function renewalsDue(options: { days: number; overdue?: boolean; ve
       };
     })
     .sort((a, b) => a.daysLeft - b.daysLeft || a.name.localeCompare(b.name));
-  return { people: people.slice(0, 600), matched: people.length, totals: { bike: people.filter((p) => p.vehicle === "bike").length, car: people.filter((p) => p.vehicle === "car").length, unknown: people.filter((p) => !p.vehicle).length }, template: template.id, from, to };
+  const size = options.pageSize && [10, 20, 50].includes(options.pageSize) ? options.pageSize : 600;
+  const page = Math.max(0, Math.min(options.page ?? 0, 100000));
+  return { people: people.slice(page * size, (page + 1) * size), matched: people.length, totals: { bike: people.filter((p) => p.vehicle === "bike").length, car: people.filter((p) => p.vehicle === "car").length, unknown: people.filter((p) => !p.vehicle).length }, template: template.id, from, to };
 }
 
 export async function sendRenewals(input: { keys: string[]; channels: ("email" | "whatsapp")[]; template: string; days?: number; budgetMs?: number }, actor: { id: string; name: string } | null) {

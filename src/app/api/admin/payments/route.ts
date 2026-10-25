@@ -24,7 +24,10 @@ export async function GET(request: NextRequest) {
     await requirePermission("requests");
     const status = request.nextUrl.searchParams.get("status") ?? "";
     const options = paymentOptions();
-    return NextResponse.json({ payments: await listPayments(status || undefined), summary: await paymentSummary(), options: { upi: options.upi?.length ?? 0, razorpay: options.razorpay, cashfree: options.cashfree, feePercent: options.feePercent } }, { headers: { "cache-control": "private, no-store" } });
+    const page = Math.max(0, Number(request.nextUrl.searchParams.get("page")) || 0);
+    const pageSize = Number(request.nextUrl.searchParams.get("pageSize")) || 20;
+    const [result, summary] = await Promise.all([listPayments(status || undefined, page, pageSize), paymentSummary()]);
+    return NextResponse.json({ payments: result.rows, total: result.total, summary, options: { upi: options.upi?.length ?? 0, razorpay: options.razorpay, cashfree: options.cashfree, feePercent: options.feePercent } }, { headers: { "cache-control": "private, no-store" } });
   } catch (error) { return apiError(error); }
 }
 
