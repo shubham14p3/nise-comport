@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { detailedIntakeSchema, validateDetailedIntake } from "@/lib/detailed-intake";
 
 export const panServices = ["new", "correction", "reprint", "minor", "minor-to-major", "marriage", "business", "surrender"] as const;
 export const panServiceLabels: Record<typeof panServices[number], string> = {
@@ -34,8 +35,13 @@ export const panIntakeSchema = z.object({
   notes: z.string().trim().max(1500).default(""),
   consent: z.boolean().refine(Boolean, "Confirm the information and consent before submitting."),
   fileId: z.uuid().optional(),
+  detailedIntake: detailedIntakeSchema.optional(),
 }).superRefine((input, ctx) => {
   const fail = (path: string, message: string) => ctx.addIssue({ code: "custom", path: [path], message });
+  if(input.detailedIntake && input.applicant==="individual"){
+    if(input.detailedIntake.kind!=="pan") fail("detailedIntake","PAN questionnaire required.");
+    else { const problems=validateDetailedIntake(input.detailedIntake); for(const message of Object.values(problems)) { fail("detailedIntake",message); break; } }
+  }
   if (["new", "minor", "business"].includes(input.service) && input.existingPan !== "no") fail("existingPan", "Confirm no PAN is already allotted. If unsure, check your records before requesting a new PAN.");
   if (!["new", "minor", "business"].includes(input.service) && input.existingPan !== "yes") fail("existingPan", "This route is for an existing PAN. Choose a new-PAN route only when none is allotted.");
   if (input.residency === "india" && !/^[1-9][0-9]{5}$/.test(input.postalCode)) fail("postalCode", "Enter a valid 6-digit Indian PIN code.");
