@@ -9,7 +9,7 @@ import { PublicError } from "@/lib/errors";
 import { hasPermission } from "@/lib/permissions";
 import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
 import { privateStoragePath, privateStorageRoot } from "@/lib/storage";
-import { sendMail, sendTicketMail, smtpConfigured } from "@/lib/email";
+import { sendMail, sendTicketMail } from "@/lib/email";
 import { resolveIntegration } from "@/lib/integration-vault";
 import { chooseImapConnection, type ImapConnection } from "@/lib/mail-config";
 import { absoluteUrl, site } from "@/lib/site";
@@ -302,7 +302,8 @@ async function priorMessageIds(ticketId: string) {
 /** Sends one staff message by email and records whether it worked. Never throws. */
 async function deliverStaffMessage(ticket: typeof mailTickets.$inferSelect, message: typeof mailMessages.$inferSelect, kind: "reply" | "new" = "reply") {
   try {
-    if (!smtpConfigured() && process.env.NODE_ENV === "production") throw new Error("smtp not configured");
+    // sendMail resolves complete environment SMTP first, then the encrypted UI profile.
+    // Do not reject a valid vault-only setup before sendMail can select it.
     const attachments = await emailAttachmentsFor(message.id);
     const prior = (await priorMessageIds(ticket.id)).filter((id) => id !== message.rfcMessageId);
     await sendTicketMail({
