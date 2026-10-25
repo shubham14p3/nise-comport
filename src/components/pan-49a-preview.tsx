@@ -54,7 +54,9 @@ function TextBox({ value, minHeight = 16 }: { value?: string; minHeight?: number
   return <span className="pan49-textbox" style={{ minHeight }} title={value || ""}>{value?.toUpperCase()}</span>;
 }
 
-export default function Pan49APreview({ answers: a, pan, onEdit }: Props) {
+export default function Pan49APreview({ answers: rawAnswers, pan, onEdit }: Props) {
+  const [aadhaarVisible, setAadhaarVisible] = useState(false);
+  const a = { ...rawAnswers, aadhaarNumber: aadhaarVisible ? rawAnswers.aadhaarNumber : (rawAnswers.aadhaarNumber ? "************" : "") };
   const [sourcePdf, setSourcePdf] = useState<File|null>(null);
   const [sourceError, setSourceError] = useState("");
   useEffect(() => {
@@ -77,7 +79,7 @@ export default function Pan49APreview({ answers: a, pan, onEdit }: Props) {
   return <section className="pan49-workspace" aria-label="Form 49A two-page verification preview">
     <div className="pan49-preview-actions">
       <div><b>Form 49A — two-page verification</b><p>Legacy reference (not valid for new official PAN filings after 31 March 2026). Compare each box with your source documents before confirming.</p><label className="pan49-template-upload">Use the exact supplied Form 49A PDF as the preview background <input type="file" accept="application/pdf,.pdf" onChange={e=>{const file=e.target.files?.[0];if(!file)return;if(file.size>12*1024*1024){setSourceError("PDF exceeds 12 MB.");return;}setSourceError("");setSourcePdf(file);}}/></label>{sourceError&&<span role="alert">{sourceError}</span>}{sourcePdf&&<button type="button" className="link-btn" onClick={()=>setSourcePdf(null)}>Use built-in preview instead</button>}</div>
-      <div>{onEdit && <button type="button" className="btn btn--ghost btn--sm" onClick={onEdit}>Edit entries</button>}<button type="button" className="btn btn--primary btn--sm" onClick={() => window.print()}>Print / Save PDF</button></div>
+      <div><button type="button" className="btn btn--ghost btn--sm" onClick={()=>setAadhaarVisible(v=>!v)} aria-pressed={aadhaarVisible}>{aadhaarVisible?"Hide Aadhaar":"Reveal Aadhaar"}</button>{onEdit && <button type="button" className="btn btn--ghost btn--sm" onClick={onEdit}>Edit entries</button>}<button type="button" className="btn btn--primary btn--sm" onClick={() => window.print()}>Print / Save PDF</button></div>
     </div>
     {sourcePdf ? <Pan49ASourceViewer file={sourcePdf} answers={a} pan={pan}/> : <div className="pan49-paper-wrap">
       <article className="pan49-sheet">
