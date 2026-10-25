@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { isCrossSiteApiRequest } from "@/lib/api-routing";
+import { isCrossSiteApiRequest, isSiteAlias } from "@/lib/api-routing";
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 const OPAQUE_API = "/api/x7q9m2";
@@ -34,8 +34,10 @@ export function proxy(request: NextRequest) {
   const canonical = canonicalHost();
   const { pathname } = request.nextUrl;
 
-  const sameSiteAlias = host.replace(/^www\./, "") === canonical.replace(/^www\./, "");
-  if (process.env.NODE_ENV === "production" && process.env.CANONICAL_HOST_REDIRECT !== "false" && host && host !== canonical && sameSiteAlias && !isLocal(host) && !pathname.startsWith("/api/")) {
+  // All approved addresses land on one canonical host, so a session cookie
+  // stays host-only and login works consistently from www and non-www links.
+  const configuredAlias = isSiteAlias(host, canonical, process.env.SITE_DOMAIN_ALIASES);
+  if (process.env.NODE_ENV === "production" && process.env.CANONICAL_HOST_REDIRECT !== "false" && host && host.toLowerCase() !== canonical.toLowerCase() && configuredAlias && !isLocal(host) && !pathname.startsWith("/api/")) {
     const target = new URL(request.nextUrl.pathname + request.nextUrl.search, `https://${canonical}`);
     return NextResponse.redirect(target, 308);
   }
