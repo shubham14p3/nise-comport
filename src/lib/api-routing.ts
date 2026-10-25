@@ -28,20 +28,41 @@ export function internalApiHeaders(secret: string, targetUrl: URL): Headers {
   return headers;
 }
 
-/** Reject cross-site mutations without relaxing checks for ordinary browsers. */
+/** Exact public site hostnames, with optional www on each. No wildcard suffix matching. */
+const PUBLIC_SITE_DOMAINS = [
+  "nisecomport.aitapri.com", // Current deployed site.
+  "nicecompote.aitapri.com", // Requested alternate subdomain.
+  "nicecompote.com", // Planned custom domain.
+  "nisecomport.com", // Existing branded domain in site documentation.
+] as const;
+
+function hostWithoutWww(host: string) {
+  return host.trim().toLowerCase().replace(/^www\./, "").replace(/\.$/, "");
+}
+
+/** Used for canonical page redirects, not for granting cross-origin API access. */
+export function isSiteAlias(host: string, canonicalHost: string, extraHosts = ""): boolean {
+  const candidate = hostWithoutWww(host);
+  if (!candidate || /[\\/@\s*]/.test(candidate)) return false;
+  const allowed = [canonicalHost, ...PUBLIC_SITE_DOMAINS, ...extraHosts.split(",")];
+  return allowed.some((entry) => candidate === hostWithoutWww(entry));
+}
+
+/** Same-origin API mutations only. A configured alias is never a CSRF bypass for another host. */
 export function isCrossSiteApiRequest(
   host: string,
-  canonicalHost: string,
+  _canonicalHost: string,
   origin: string | null,
   fetchSite: string | null,
 ): boolean {
+  if (fetchSite === "cross-site") return true;
   if (origin) {
     try {
-      const originHost = new URL(origin).host;
-      return originHost !== host && originHost !== canonicalHost;
+      const parsed = new URL(origin);
+      return !["http:", "https:"].includes(parsed.protocol) || parsed.host.toLowerCase() !== host.toLowerCase();
     } catch {
       return true;
     }
   }
-  return fetchSite === "cross-site";
+  return false;
 }
