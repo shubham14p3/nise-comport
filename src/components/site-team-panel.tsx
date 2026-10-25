@@ -33,8 +33,8 @@ export default function SiteTeamPanel() {
   async function load() {
     const result = await secureApi<{ members: Person[] }>("T9q4M2xV7bL3");
     setPeople(result.members);
-    const accounts = await secureApi<{ staff: StaffAccount[] }>("K8d3N6wQ1zT4");
-    setStaff(accounts.staff);
+    const accounts = await secureApi<{ staff: StaffAccount[] }>("K8d3N6wQ1zT4").catch(() => null);
+    setStaff(accounts?.staff ?? null);
   }
   useEffect(() => {
     let active = true;
