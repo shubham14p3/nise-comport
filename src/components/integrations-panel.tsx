@@ -22,6 +22,11 @@ const fields: Record<Provider, { name: string; keys: { id: string; label: string
     { id: "host", label: "SMTP host" }, { id: "port", label: "SMTP port (465 or 587)" },
     { id: "user", label: "SMTP username" }, { id: "password", label: "SMTP password", secret: true },
     { id: "from", label: "From email address" },
+    { id: "imapHost", label: "Incoming IMAP server (optional; for receiving)" },
+    { id: "imapPort", label: "Incoming IMAP port (normally 993)" },
+    { id: "imapUser", label: "Incoming mailbox email / username" },
+    { id: "imapPassword", label: "Incoming IMAP password", secret: true },
+    { id: "imapFolder", label: "Incoming folder (default INBOX)" },
   ] },
 };
 export default function IntegrationsPanel() {
