@@ -299,41 +299,42 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
   const isOwner = me.role === "admin" && !viewAsStaff;
   const effectivePermissions = viewAsStaff ? [...STAFF_PERMISSIONS] : me.permissions;
   const tabs = TABS.filter((tab) => tab.needs === "staff" ? true : tab.needs === "admin" ? isOwner : isOwner || effectivePermissions.includes(tab.needs));
-  const [summary, setSummary] = useState<{ unread: number; waiting: number; callbacks: number } | null>(null);
-  const unread = summary?.unread ?? 0;
-  useEffect(() => {
-    let active = true;
-    const check = () => secureApi<{ unread: number; waiting: number; callbacks: number }>("I5x2N8kQ3wT6", { count: true }).then((result) => { if (active) setSummary(result); }).catch(() => undefined);
-    void check();
-    const poll = () => { if (document.visibilityState === "visible") void check(); };
-    const timer = window.setInterval(poll, 60_000);
-    document.addEventListener("visibilitychange", poll);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", poll);
-    };
-  }, []);
-  const canMail = isOwner || effectivePermissions.includes("mail");
-  const [mailUnread, setMailUnread] = useState(0);
-  useEffect(() => {
-    if (!canMail) return;
-    let active = true;
-    const check = () => secureApi<{ unread: number }>("Q3x8M5wT2kB7", { view: "meta" }).then((result) => { if (active) setMailUnread(result.unread); }).catch(() => undefined);
-    void check();
-    const poll = () => { if (document.visibilityState === "visible") void check(); };
-    const timer = window.setInterval(poll, 60_000);
-    document.addEventListener("visibilitychange", poll);
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", poll);
-    };
-  }, [canMail]);
   const hash = useSyncExternalStore(subscribeHash, readHash, () => "");
   const [picked, setPicked] = useState<Tab | null>(null);
   const fromHash = tabs.find((tab) => tab.id === hash)?.id;
   const active = picked ?? fromHash ?? tabs[0]?.id;
+  const [summary, setSummary] = useState<{ unread: number; waiting: number; callbacks: number } | null>(null);
+  const unread = summary?.unread ?? 0;
+  useEffect(() => {
+    if (active !== "inbox") return;
+    let alive = true;
+    const check = () => secureApi<{ unread: number; waiting: number; callbacks: number }>("I5x2N8kQ3wT6", { count: true }).then((result) => { if (alive) setSummary(result); }).catch(() => undefined);
+    void check();
+    const poll = () => { if (document.visibilityState === "visible") void check(); };
+    const timer = window.setInterval(poll, 60_000);
+    document.addEventListener("visibilitychange", poll);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", poll);
+    };
+  }, [active]);
+  const canMail = isOwner || effectivePermissions.includes("mail");
+  const [mailUnread, setMailUnread] = useState(0);
+  useEffect(() => {
+    if (!canMail || active !== "mail") return;
+    let alive = true;
+    const check = () => secureApi<{ unread: number }>("Q3x8M5wT2kB7", { view: "meta" }).then((result) => { if (alive) setMailUnread(result.unread); }).catch(() => undefined);
+    void check();
+    const poll = () => { if (document.visibilityState === "visible") void check(); };
+    const timer = window.setInterval(poll, 60_000);
+    document.addEventListener("visibilitychange", poll);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", poll);
+    };
+  }, [canMail, active]);
   const clearUnread = useCallback(() => setSummary((value) => value ? { ...value, unread: 0 } : value), []);
   const [railOpen, setRailOpen] = useState(true);
   useEffect(() => { try { if (window.localStorage.getItem("nc-desk-rail") === "0") queueMicrotask(() => setRailOpen(false)); } catch { /* ignore */ } }, []);
@@ -362,7 +363,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
     <div className={railOpen ? "container profile__layout" : "container profile__layout profile__layout--rail"}>
       <aside className="profile__nav" aria-label="Admin sections">
         <button type="button" className="profile__nav-toggle" onClick={toggleRail} aria-expanded={railOpen} title={railOpen ? "Hide the menu" : "Show the menu"}>{railOpen ? <PanelLeftClose size={19}/> : <PanelLeftOpen size={19}/>}<span>Hide menu</span></button>
-        <nav className="admin-nav-groups">{NAV_SECTIONS.map((section) => { const visible = tabs.filter((tab) => (section.tabs as readonly string[]).includes(tab.id)); return visible.length > 0 && <details key={section.id} className="admin-nav-group" open={undefined}>
+        <nav className="admin-nav-groups">{NAV_SECTIONS.map((section) => { const visible = tabs.filter((tab) => (section.tabs as readonly string[]).includes(tab.id)); return visible.length > 0 && <details key={section.id} className="admin-nav-group" defaultOpen={(section.tabs as readonly string[]).includes(active)}>
           <summary>{section.title}<span>{visible.length}</span></summary>
           <div>{visible.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={active === id ? "is-active" : undefined} aria-current={active === id ? "page" : undefined} onClick={() => choose(id)} title={label}>
             <Icon size={18}/><span>{label}</span>{id === "inbox" && unread > 0 && <small aria-label={`${unread} new`}>{unread > 99 ? "99+" : unread}</small>}{id === "mail" && mailUnread > 0 && <small aria-label={`${mailUnread} unread`}>{mailUnread > 99 ? "99+" : mailUnread}</small>}
