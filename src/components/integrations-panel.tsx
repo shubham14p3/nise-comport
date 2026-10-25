@@ -18,7 +18,7 @@ const fields: Record<Provider, { name: string; keys: { id: string; label: string
     { id: "token", label: "System-user access token", secret: true }, { id: "phoneId", label: "WhatsApp phone number ID" },
     { id: "template", label: "Approved OTP template name" }, { id: "language", label: "Template language (e.g. en)" }, { id: "button", label: "Copy-code button (off to disable; default enabled)" },
   ] },
-  email: { name: "Email OTP", help: "Use cPanel → Email Accounts → Connect Devices for SMTP details.", keys: [
+  email: { name: "Email and inbox", help: "SMTP sends messages. IMAP reads incoming support messages. Complete cPanel environment credentials take priority; otherwise saved encrypted fields are used. Test incoming mail using Messages → Check now.", keys: [
     { id: "host", label: "SMTP host" }, { id: "port", label: "SMTP port (465 or 587)" },
     { id: "user", label: "SMTP username" }, { id: "password", label: "SMTP password", secret: true },
     { id: "from", label: "From email address" },
@@ -79,7 +79,7 @@ export default function IntegrationsPanel() {
             setNotice(result.message);
           } catch (error) { setNotice(error instanceof Error ? error.message : "Connection test failed."); }
           finally { setBusy(false); }
-        }}>Test connection</button>}
+        }}>{provider === "email" ? "Test SMTP connection" : "Test connection"}</button>}
         {statuses.find(item => item.provider === provider)?.configured && <button className="btn btn--ghost" disabled={busy} type="button" onClick={() => void submit("delete")}>Remove credentials</button>}
       </div>
     </form>
