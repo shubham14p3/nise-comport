@@ -165,7 +165,7 @@ export default function VoterForm8({ signedIn, demo }: Props) {
     const current=form8CorrectionNames(answers);
     if(checked && current.length===4){setErrors({corrections:"Form 8 permits at most four correction particulars."});return;}
     const next=checked?[...current,name]:current.filter(x=>x!==name);
-    const updated={...answers,corrections:next.join("|")};
+    const updated: IntakeValue = {...answers,corrections:next.join("|")};
     if(checked && name==="Photo")updated.correctPhoto="Yes";
     if(!checked){
       const row=FORM8_CORRECTIONS.find(([label])=>label===name);
