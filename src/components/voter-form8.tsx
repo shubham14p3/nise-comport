@@ -231,7 +231,7 @@ export default function VoterForm8({ signedIn, demo }: Props) {
     if(!visible.has(f.id))return null;
     if(f.id==="corrections"){
       const selected=form8CorrectionNames(answers);
-      return <fieldset className="f8-correction-input" key="corrections"><legend>Choose up to four particulars to correct *</legend>
+      return <fieldset id="form8-corrections" tabIndex={-1} className="f8-correction-input" key="corrections"><legend>Choose up to four particulars to correct *</legend>
         <div className="f8-options">{FORM8_CORRECTIONS.map(([name])=><label key={name}><input type="checkbox" checked={selected.includes(name)} onChange={event=>setCorrection(name,event.target.checked)}/>{name}</label>)}</div>
         <p className="f8-hint">{selected.length} of 4 selected</p>{errorFor("corrections")&&<small role="alert" className="f8-error">{errorFor("corrections")}</small>}
       </fieldset>;
@@ -344,17 +344,34 @@ export default function VoterForm8({ signedIn, demo }: Props) {
       <h1>Voter Form 8 — prepare, verify & preview</h1>
       <p>Fill details once and review them in a two-page document based on the uploaded Form 8 sample. Corrections, address shifting, replacement EPIC and disability marking are handled separately.</p>
       <div className="f8-warning"><ShieldCheck size={18}/> This is an assisted preparation form, not the Election Commission of India portal. No official acknowledgement or submission date is created here.</div>
+      {!reference&&<div className="f8-sample-bar"><div><strong>Inspect a completed correction form</strong><p>Use fictional details to test the same two-page verification modal as PAN 49A.</p></div>
+        <button type="button" onClick={showSampleCorrection}><Eye size={17}/> Show filled correction sample</button></div>}
+      {sampleMode&&<div className="f8-sample-alert" role="status"><b>Example data only — cannot be submitted.</b>
+        <button type="button" onClick={clearSample}>Clear sample and start a real request</button></div>}
+      {revisionOf&&<div className="f8-warning">Editing a new copy of request {revisionOf}. The original saved request is unchanged. Save to create a separate corrected assistance request.</div>}
     </div>
     {reference ? <section className="f8-success">
       <Check size={32}/><h2>Assistance request saved</h2>
       <p>NISE COMPORT reference: <b>{reference}</b>. This is not an ECI acknowledgement number.</p>
-      <div className="f8-actions"><button type="button" onClick={()=>window.print()}><FileDown size={16}/> Print / Save draft as PDF</button><Link href="/account">View account</Link></div>
+      <div className="f8-actions">
+        <button type="button" onClick={()=>setShowPreview(true)}><Eye size={16}/> Reopen filled Form 8 preview</button>
+        <button type="button" className="f8-secondary" onClick={()=>window.print()}><FileDown size={16}/> Print / Save PDF</button>
+        <button type="button" className="f8-secondary" onClick={()=>{
+          setRevisionOf(reference);setReference("");setStep(1);setShowPreview(false);
+          setConfirmed(false);setReviewed(false);requestKey.current=null;
+        }}>Edit a new copy</button>
+        <Link href="/profile#requests">View saved requests</Link>
+      </div>
+      <p className="f8-hint">Edits after saving create a new request; they do not silently change the already submitted assistance record.</p>
       <Form8Print answers={answers} photoUrl={photoUrl}/>
     </section> : <>
       <nav className="f8-progress" aria-label="Application steps">{labels.map((label,index)=><button type="button" key={label} className={index===step?"active":index<step?"complete":""} onClick={()=>{if(index<step){setStep(index);setErrors({});}}} disabled={index>step}>{index+1}. {label}</button>)}</nav>
       <div className="f8-layout">
         <div className="f8-editor">
           <h2>{heading}</h2>
+          {step===1&&answers.requestType==="Correction"&&<p className="f8-hint">Select up to four particulars. Each selected item opens its own value and proof fields. For example, choose Relation Type = Husband, enter the correct relation name, and update the mobile number.</p>}
+          {step<3&&<div className="f8-inline-preview"><span><Eye size={18}/> See your form as a two-page document</span>
+            <button type="button" onClick={()=>setShowPreview(true)}>Preview filled Form 8</button></div>}
           {step===0&&<p className="f8-hint">Enter the elector&apos;s current details from their existing voter record. Do not use the sample applicant&apos;s details.</p>}
           {(step===0||step===1||step===2)&&<div className="f8-input-grid">
             {currentFields().map(renderField)}
@@ -371,27 +388,35 @@ export default function VoterForm8({ signedIn, demo }: Props) {
             </div>}
           </div>}
           {step===3&&<div className="f8-review">
-            <p>Read both pages of the preview, including the selected Form 8 section and all proof references. Fix any incorrect values before saving.</p>
+            <p>Review the two-page Form 8 preview, including the checked correction types, new values, document proof names and declaration.</p>
+            <div className="f8-final-preview"><div><b>Your filled Form 8 is ready to verify</b><p>{reviewed?"Both preview pages reviewed. Edit any fields to review again.":"Open the preview, inspect Page 1 and Page 2, then select Done reviewing."}</p></div>
+              <button type="button" onClick={()=>setShowPreview(true)}><Eye size={17}/> {reviewed?"Reopen preview":"Open final preview"}</button></div>
             <div className="f8-review-grid">{sections.filter((section,index)=>index===0||index===5||index===requestSections[answers.requestType]).map(section=><div key={section.title}><h3>{section.title}</h3>
               {section.fields.filter(f=>visible.has(f.id)&&f.id!=="corrections"&&f.id!=="correctPhoto").map(f=><p key={f.id}><span>{f.label}</span><b>{dash(answers[f.id])}</b></p>)}
             </div>)}</div>
-            <label className="f8-confirm"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/> The applicant has reviewed the details and understands that only the official ECI process can submit the application and issue an acknowledgement.</label>
+            <label className="f8-confirm"><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)}/> The applicant has reviewed the details against supporting documents and understands that only the official ECI process can issue an acknowledgement.</label>
+            <p className="f8-hint">{reviewed?"✓ Both form pages reviewed.":"Both preview pages must be reviewed before saving."}</p>
           </div>}
           {problem&&<p className="f8-alert" role="alert">{problem}</p>}
           <div className="f8-actions">
             {step>0&&<button type="button" className="f8-secondary" onClick={()=>{setStep(n=>n-1);setProblem("");setErrors({});}}><ChevronLeft size={17}/> Back</button>}
             {step<3?<button type="button" onClick={advance}>Continue <ChevronRight size={17}/></button>:<>
-              <button type="button" className="f8-secondary" onClick={()=>window.print()}><FileDown size={17}/> Print / Save as PDF</button>
-              <button type="button" disabled={busy||!confirmed} onClick={submit}><FileText size={17}/>{busy?"Saving securely…":"Save assistance request"}</button>
+              <button type="button" className="f8-secondary" onClick={()=>setShowPreview(true)}><Eye size={17}/> Preview again</button>
+              <button type="button" disabled={busy||sampleMode} onClick={submit}><FileText size={17}/>{busy?"Saving securely…":"Save assistance request"}</button>
             </>}
           </div>
           {step===3&&!signedIn&&<p className="f8-hint">You can preview and print without signing in. Sign-in is required to save data to your account. Unsaved form data is not stored in the browser.</p>}
         </div>
         <aside className="f8-preview-rail">
-          <div className="f8-preview-heading"><h2>Live two-page preview</h2><button type="button" onClick={()=>window.print()}><FileDown size={15}/> Save PDF</button></div>
+          <div className="f8-preview-heading"><h2>Live two-page preview</h2><button type="button" onClick={()=>setShowPreview(true)}><Eye size={15}/> Open modal</button></div>
           <Form8Print answers={answers} photoUrl={photoUrl}/>
         </aside>
       </div>
     </>}
+    <VoterForm8Modal open={showPreview} onClose={()=>setShowPreview(false)}
+      onReviewed={()=>{setReviewed(true);setProblem("");}}
+      onEdit={reference ? undefined : ()=>{setShowPreview(false);setStep(1);setConfirmed(false);setReviewed(false);}}>
+      <Form8Print answers={answers} photoUrl={photoUrl}/>
+    </VoterForm8Modal>
   </div>;
 }
