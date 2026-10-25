@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Eye, EyeOff, ImagePlus, LoaderCircle, Trash2 } from "lucide-react";
-import ShowMore, { useShowMore } from "@/components/show-more";
+import { AdminPager, useAdminPagination } from "@/components/admin-pager";
 import { FESTIVAL_TAGS, SERVICE_TAGS, SHOP_TAGS, tagGroup, tagLabel } from "@/lib/gallery-tags";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
 
@@ -71,7 +71,7 @@ export default function GalleryPanel() {
 
   const visible = photos.filter((photo) => (hiddenToo || !photo.hidden)
     && (!show || (show.startsWith("grp:") ? tagGroup(photo.tag) === show.slice(4) : photo.tag === show)));
-  const paging = useShowMore(24, `${show}|${hiddenToo}`);
+  const paging = useAdminPagination(visible);
   const hiddenCount = photos.filter((photo) => photo.hidden).length;
 
   return <section className="panel gallery-admin">
@@ -95,8 +95,9 @@ export default function GalleryPanel() {
       <span className="muted">{visible.length} photo{visible.length === 1 ? "" : "s"}</span>
     </div>
 
+    {loaded && <AdminPager {...paging} label="gallery photos"/>}
     {!loaded ? <p className="muted">Loading photos…</p> : <div className="gallery-admin__grid">
-      {visible.slice(0, paging.count).map((photo) => <article key={photo.src} className={photo.hidden ? "gallery-admin__card is-hidden" : "gallery-admin__card"}>
+      {paging.items.map((photo) => <article key={photo.src} className={photo.hidden ? "gallery-admin__card is-hidden" : "gallery-admin__card"}>
         <a href={photo.src} target="_blank" rel="noopener noreferrer" className="gallery-admin__thumb"><Thumb src={photo.src} alt={photo.alt}/></a>
         <TagSelect value={photo.tag} label={`Category of ${photo.title}`} onChange={(tag) => void act({ action: "update", src: photo.src, tag }, `Moved to “${tagLabel(tag)}”.`)}/>
         <input aria-label="Title" defaultValue={photo.title} maxLength={140} onBlur={(event) => { const title = event.target.value.trim(); if (title && title !== photo.title) void act({ action: "update", src: photo.src, title }, "Title saved."); }}/>
@@ -107,6 +108,6 @@ export default function GalleryPanel() {
         </div>
       </article>)}
     </div>}
-    <ShowMore shown={Math.min(paging.count, visible.length)} total={visible.length} onMore={paging.more} label="photos"/>
+    {visible.length > paging.pageSize && <AdminPager {...paging} label="gallery photos"/>}
   </section>;
 }
