@@ -339,7 +339,7 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
   }
   const heading=step===0?sections[0].title:step===1?requestSection.title:step===2?"Proof & declaration":"Verify each detail";
   return <div className="form8-workspace">
-    <div className="form8-intro"><Link href="/services/voter-id">Voter ID services</Link><span> / Form 8</span>
+    <div className="form8-intro"><Link href="/voter">Voter services</Link><span> / Form 8</span>
       <h1>Voter Form 8 — prepare, verify & preview</h1>
       <p>Fill details once and review them in a two-page document based on the uploaded Form 8 sample. Corrections, address shifting, replacement EPIC and disability marking are handled separately.</p>
       <div className="f8-warning"><ShieldCheck size={18}/> This is an assisted preparation form, not the Election Commission of India portal. No official acknowledgement or submission date is created here.</div>
