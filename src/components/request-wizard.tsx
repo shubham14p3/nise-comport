@@ -427,7 +427,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         </div></fieldset>
         <label className="field"><span className="field__label">{t.describe}{activeIntake ? " (optional, extra notes)" : ""}</span><textarea value={draft.description} onChange={(event) => update({ description: event.target.value.slice(0, 1500) })} rows={4} maxLength={1500} required={!activeIntake} aria-invalid={describeBad&&!activeIntake}/>{describeBad && <span className="field__error">{t.errDescribe}</span>}<span className="field__hint">{t.describeHint} · {draft.description.length}/1500</span></label>
         {activeIntake && <DetailedIntakeFields intake={activeIntake} onChange={value=>update({intake:value})}
-          errors={showErrors?intakeErrors:{}} photo={photo} onPhotoChange={setPhoto}/>}
+          errors={showErrors?intakeErrors:{}} photo={photo} onPhotoChange={user && user.role!=="demo"?setPhoto:undefined}/>}
         <div className="quick-picks"><span>{t.quickPicks}</span>{picks.map((pick) => <button key={pick} type="button" className="chip-btn chip-btn--sm" onClick={() => update({ description: draft.description.includes(pick) ? draft.description : `${draft.description ? `${draft.description.trim()} ` : ""}${pick}.`.slice(0, 1500) })}>+ {pick}</button>)}</div>
         {!uploadsAllowed(activeCategory) && <p className="field__hint">{WX.noFile[locale]}</p>}
         {uploadsAllowed(activeCategory) && <div className="field"><span className="field__label">{t.attach}</span>
@@ -462,7 +462,12 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
           saveDraft({...draft,step:3});rememberReturn("/request?resume=1");router.push("/login");
         }}>Sign in to preview</button>
       </section>}
-      {draft.step===3 && user && user.role!=="demo" && <section>
+      {draft.step===3 && user && user.role!=="demo" && intakeErrors.photoFileId && <section className="preview-signin-gate">
+        <h2>One document is still required</h2>
+        <p>Sign-in is complete. Please attach the Voter ID correction photograph before opening your final preview.</p>
+        <button type="button" className="btn btn--primary" onClick={()=>goTo(1)}>Upload photograph</button>
+      </section>}
+      {draft.step===3 && user && user.role!=="demo" && !intakeErrors.photoFileId && <section>
         <h2>{t.s4Title}</h2><p className="wizard-form__sub">{t.s4Sub}</p>
         <dl className="summary">
           <div><dt>{t.summaryService}</dt><dd>{service ? serviceName(service.slug, service.name, locale) : t.somethingElse}</dd><button type="button" onClick={() => goTo(0)}>{t.edit}</button></div>
