@@ -1,6 +1,6 @@
 "use client";
 
-import ShowMore, { useShowMore } from "@/components/show-more";
+import { AdminPager } from "@/components/admin-pager";
 import { FormEvent, useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import SiteHeader from "@/components/site-header";
 import IntegrationsPanel from "@/components/integrations-panel";
@@ -37,7 +37,7 @@ import Link from "next/link";
 type Row = { id: string; reference: string; name: string; email: string; phone: string | null; whatsapp?: string | null; status: string; createdAt: string };
 type Job = Row & { fileName: string; pageCount: number; total: string; fulfillment: string; scheduledAt: string | null };
 type RequestRow = Row & { serviceName: string; fileName: string | null; officialReference: string | null; officialReferenceLabel: string | null };
-type Snapshot = { jobs: Job[]; requests: RequestRow[]; filters: { status: string; q: string } };
+type Snapshot = { jobs: Job[]; requests: RequestRow[]; counts: { jobs: number; requests: number }; filters: { status: string; q: string } };
 type RequestDetail = {
   request: { id: string; reference: string; serviceName: string; status: string; statusLabel: string; details: Record<string, unknown>; createdAt: string; officialReference: string | null; officialReferenceLabel: string | null; officialReferenceSetAt: string | null };
   customer: { name: string; email: string; phone: string | null; whatsapp?: string | null; preferredContact: string };
@@ -63,14 +63,16 @@ function RequestQueue() {
   const [officialRef, setOfficialRef] = useState("");
   const [officialRefLabel, setOfficialRefLabel] = useState("");
   const [officialRefSaving, setOfficialRefSaving] = useState(false);
-  const jobPages = useShowMore(20, `${q}|${status}|${jobs.length}`);
-  const requestPages = useShowMore(20, `${q}|${status}|${requests.length}`);
+  const [jobPage, setJobPage] = useState(0);
+  const [requestPage, setRequestPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [counts, setCounts] = useState({ jobs: 0, requests: 0 });
 
-  async function load(nextStatus = status, nextQ = q) {
+  async function load(nextStatus = status, nextQ = q, jp = jobPage, rp = requestPage, size = pageSize) {
     setError("");
     try {
-      const result = await secureApi<Snapshot>("J2w7L5pD9nV4", { status: nextStatus, q: nextQ });
-      setJobs(result.jobs); setRequests(result.requests);
+      const result = await secureApi<Snapshot>("J2w7L5pD9nV4", { status: nextStatus, q: nextQ, jobPage: jp, requestPage: rp, pageSize: size });
+      setJobs(result.jobs); setRequests(result.requests); setCounts(result.counts);
       setStatus(result.filters.status); setQ(result.filters.q); setLoaded(true);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not load the staff queue.");
@@ -80,10 +82,10 @@ function RequestQueue() {
 
   useEffect(() => {
     let active = true;
-    secureApi<Snapshot>("J2w7L5pD9nV4", { status: "", q: "" })
+    secureApi<Snapshot>("J2w7L5pD9nV4", { status: "", q: "", jobPage: 0, requestPage: 0, pageSize: 20 })
       .then((result) => {
         if (!active) return;
-        setJobs(result.jobs); setRequests(result.requests);
+        setJobs(result.jobs); setRequests(result.requests); setCounts(result.counts);
         setStatus(result.filters.status); setQ(result.filters.q); setLoaded(true);
       })
       .catch((reason) => {
@@ -94,7 +96,7 @@ function RequestQueue() {
   }, []);
 
   async function filter(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setDetail(null); await load(status, q);
+    event.preventDefault(); setDetail(null); setJobPage(0); setRequestPage(0); await load(status, q, 0, 0);
   }
 
   async function update(kind: "print" | "service", id: string, current: string, nextStatus: string) {
@@ -106,6 +108,7 @@ function RequestQueue() {
       if (kind === "print") setJobs(rows => rows.map(row => row.id === id ? { ...row, status: nextStatus } : row));
       else setRequests(rows => rows.map(row => row.id === id ? { ...row, status: nextStatus } : row));
       setNotice("Status updated. The customer will receive an email.");
+      await load();
       if (detail?.request.id === id) await openDetail(id);
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not update this status."); }
     finally { setSaving(""); }
@@ -153,35 +156,37 @@ function RequestQueue() {
 
   return <>
     <form className="admin-filters" role="search" onSubmit={filter}>
-      <label>Status<select value={status} onChange={event => setStatus(event.target.value)}><option value="">All statuses</option>{options.map(item => <option key={item} value={item}>{label(item)}</option>)}</select></label>
+      <label>Status<select value={status} onChange={event => setStatus(event.target.value)}><option value="">Active only (default)</option><option value="history">History: cancelled &amp; completed</option>{options.map(item => <option key={item} value={item}>{label(item)}</option>)}</select></label>
       <label>Search<input value={q} onChange={event => setQ(event.target.value)} placeholder="Reference, name, email or phone" maxLength={80}/></label>
       <button className="btn btn--primary btn--sm"><Search size={14}/> Filter</button>
-      {(status || q) && <button type="button" className="profile-text-button" onClick={() => { setStatus(""); setQ(""); setDetail(null); void load("", ""); }}>Clear</button>}
+      {(status || q) && <button type="button" className="profile-text-button" onClick={() => { setStatus(""); setQ(""); setDetail(null); setJobPage(0); setRequestPage(0); void load("", "", 0, 0); }}>Clear</button>}
     </form>
 
     {error && <div className="form-alert error-alert" role="alert">{error}</div>}
     {notice && <div className="form-alert success-alert" role="status">{notice}</div>}
     {!loaded && <p>Opening encrypted staff queue…</p>}
 
-    <section className="admin-queue"><h2><FileText size={17}/> Print orders <span>{jobs.length}</span></h2>
-      {jobs.length ? jobs.slice(0, jobPages.count).map(job => <article className="admin-row" key={job.id}><div>
+    <section className="admin-queue"><h2><FileText size={17}/> Print orders <span>{counts.jobs}</span></h2>
+      <AdminPager page={jobPage} pageSize={pageSize} total={counts.jobs} onPage={(next) => { setJobPage(next); void load(status, q, next, requestPage); }} onPageSize={(size) => { setPageSize(size); setJobPage(0); setRequestPage(0); void load(status, q, 0, 0, size); }} label="print orders"/>
+      {jobs.length ? jobs.map(job => <article className="admin-row" key={job.id}><div>
         <b>{job.reference} · {job.fileName}</b>
         <small>{job.name} · {job.pageCount} printed pages · ₹{Number(job.total).toFixed(2)} · {job.fulfillment}{job.scheduledAt ? ` · for ${when(job.scheduledAt)}` : ""} · {when(job.createdAt)}</small>
         <ContactLinks name={job.name} phone={job.phone} whatsapp={job.whatsapp} email={job.email} reference={job.reference}/>
         <button type="button" className="profile-text-button" onClick={() => void openPrivateFile("H3q7M0xP6cL2", job.id)}>Open private print file</button>
       </div><select className={`status-select status-select--${job.status}`} aria-label={`Update ${job.reference} status`} value={job.status} disabled={saving === job.id} onChange={event => void update("print", job.id, job.status, event.target.value)}>{options.map(item => <option key={item} value={item}>{label(item)}</option>)}</select></article>) : loaded ? <p className="admin-empty">No print orders match.</p> : null}
-      <ShowMore shown={Math.min(jobPages.count, jobs.length)} total={jobs.length} onMore={jobPages.more} label="print orders"/>
+      {counts.jobs > pageSize && <AdminPager page={jobPage} pageSize={pageSize} total={counts.jobs} onPage={(next) => { setJobPage(next); void load(status, q, next, requestPage); }} label="print orders"/>}
     </section>
 
-    <section className="admin-queue"><h2><ClipboardList size={17}/> Service requests <span>{requests.length}</span></h2>
-      {requests.length ? requests.slice(0, requestPages.count).map(item => <article className="admin-row" key={item.id}><div>
+    <section className="admin-queue"><h2><ClipboardList size={17}/> Service requests <span>{counts.requests}</span></h2>
+      <AdminPager page={requestPage} pageSize={pageSize} total={counts.requests} onPage={(next) => { setRequestPage(next); void load(status, q, jobPage, next); }} onPageSize={(size) => { setPageSize(size); setJobPage(0); setRequestPage(0); void load(status, q, 0, 0, size); }} label="service requests"/>
+      {requests.length ? requests.map(item => <article className="admin-row" key={item.id}><div>
         <b>{item.reference} · {item.serviceName}</b>
         <small>{item.name} · {when(item.createdAt)}{item.officialReference ? ` · ${item.officialReferenceLabel || "Official ref"}: ${item.officialReference}` : " · Official ref: not yet submitted"}</small>
         <ContactLinks name={item.name} phone={item.phone} whatsapp={item.whatsapp} email={item.email} reference={item.reference}/>
         <button type="button" className="profile-text-button" onClick={() => void openDetail(item.id)}>Read submitted request details</button>
         {item.fileName && <button type="button" className="profile-text-button" onClick={() => void openPrivateFile("V8d4K1rF7nT5", item.id)}>Open supporting file · {item.fileName}</button>}
       </div><select className={`status-select status-select--${item.status}`} aria-label={`Update ${item.reference} status`} value={item.status} disabled={saving === item.id} onChange={event => void update("service", item.id, item.status, event.target.value)}>{options.map(option => <option key={option} value={option}>{label(option)}</option>)}</select></article>) : loaded ? <p className="admin-empty">No service requests match.</p> : null}
-      <ShowMore shown={Math.min(requestPages.count, requests.length)} total={requests.length} onMore={requestPages.more} label="requests"/>
+      {counts.requests > pageSize && <AdminPager page={requestPage} pageSize={pageSize} total={counts.requests} onPage={(next) => { setRequestPage(next); void load(status, q, jobPage, next); }} label="service requests"/>}
     </section>
 
     {(detailBusy || detail) && <section className="admin-queue">
