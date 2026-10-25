@@ -170,7 +170,7 @@ const pan49a: IntakeSection[] = [
   { title: "6. Parent details", fields: [
     select("singleMother","Is the mother a single parent and you want her name alone?",yesNo),
     ...basicName("father").map(f=>({...f,required:f.id!=="fatherMiddle",show:(a:IntakeValue)=>a.singleMother!=="Yes"})),
-    ...basicName("mother").map(f=>({...f,required:auditParentRequired(f.id),show:()=>true})),
+    ...basicName("mother").map(f=>({...f,required:false,show:()=>true})),
     select("printedParent","Whose name should be printed on the card?",["Father","Mother"],true,{show:(a)=>a.singleMother!=="Yes"}),
   ] },
   address("residence","7. Residential address"),
@@ -223,7 +223,6 @@ const pan49a: IntakeSection[] = [
     select("declaration","I confirm the entered information is true",["Yes"]),
   ] },
 ];
-function auditParentRequired(id:string){ return id==="motherSurname" || id==="motherFirst" ? false : false; }
 
 const formSections: Record<IntakeKind, IntakeSection[]> = { passport, voter, pan, pan49a };
 export function intakeSections(kind: IntakeKind): IntakeSection[] { return formSections[kind]; }
@@ -264,7 +263,7 @@ export function validateDetailedIntake(intake: DetailedIntake): Record<string,st
     else if(f.id==="disabilityPercent"&&(!/^\d{1,3}(\.\d{1,2})?$/.test(value)||Number(value)>100))errors[f.id]="Enter a percentage between 0 and 100.";
     else if(f.id==="applicantName"&&value.length<2)errors[f.id]="Enter the applicant name.";
   }
-  if(intake.kind==="pan49a") {\n    const a=intake.answers;\n    if(a.communicationAddress==="Office"&&a.officeAddress!=="Yes")errors.communicationAddress="Fill in the office address or select Residence.";\n    if(a.incomeNone==="Yes"&&["incomeSalary","incomeBusiness","incomeHouse","incomeCapital","incomeOther"].some(k=>a[k]==="Yes"))errors.incomeNone="No income cannot be combined with income sources.";\n    if(a.aadhaarNumber&&!/^\\d{12}$/.test(a.aadhaarNumber))errors.aadhaarNumber="Enter 12 digits.";\n    if(a.aoArea&&!/^[A-Za-z]{3,4}$/.test(a.aoArea))errors.aoArea="Enter a 3–4 letter AO area code.";\n    if(a.aoType&&!/^[A-Za-z]{1,2}$/.test(a.aoType))errors.aoType="Enter a 1–2 letter AO type.";\n    if(a.aoRange&&!/^\\d{1,3}$/.test(a.aoRange))errors.aoRange="Enter a numeric AO range.";\n    if(a.aoNumber&&!/^\\d{1,3}$/.test(a.aoNumber))errors.aoNumber="Enter a numeric AO number.";\n  }\n  if(intake.kind==="voter"&&intake.answers.requestType==="Correction"&&intake.answers.correctionTarget==="Photograph"&&!intake.photoFileId)errors.photoFileId="Upload a photograph for photo correction.";
+  if(intake.kind==="pan49a") {\n    const a=intake.answers;\n    if(a.singleMother==="Yes"&&(!a.motherSurname||!a.motherFirst))errors.motherFirst="Enter the mother’s full name for a single-parent application.";\n    if(a.communicationAddress==="Office"&&a.officeAddress!=="Yes")errors.communicationAddress="Fill in the office address or select Residence.";\n    if(a.incomeNone==="Yes"&&["incomeSalary","incomeBusiness","incomeHouse","incomeCapital","incomeOther"].some(k=>a[k]==="Yes"))errors.incomeNone="No income cannot be combined with income sources.";\n    if(a.aadhaarNumber&&!/^\\d{12}$/.test(a.aadhaarNumber))errors.aadhaarNumber="Enter 12 digits.";\n    if(a.aoArea&&!/^[A-Za-z]{3,4}$/.test(a.aoArea))errors.aoArea="Enter a 3–4 letter AO area code.";\n    if(a.aoType&&!/^[A-Za-z]{1,2}$/.test(a.aoType))errors.aoType="Enter a 1–2 letter AO type.";\n    if(a.aoRange&&!/^\\d{1,3}$/.test(a.aoRange))errors.aoRange="Enter a numeric AO range.";\n    if(a.aoNumber&&!/^\\d{1,3}$/.test(a.aoNumber))errors.aoNumber="Enter a numeric AO number.";\n  }\n  if(intake.kind==="voter"&&intake.answers.requestType==="Correction"&&intake.answers.correctionTarget==="Photograph"&&!intake.photoFileId)errors.photoFileId="Upload a photograph for photo correction.";
   return errors;
 }
 
