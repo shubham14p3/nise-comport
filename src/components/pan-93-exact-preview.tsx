@@ -124,7 +124,8 @@ export default function Pan93ExactPreview({answers,pan,onEdit}:Props){
   useEffect(()=>{
     if(!file)return;
     let cancelled=false;
-    let document:{numPages:number;getPage:(n:number)=>Promise<any>;destroy:()=>Promise<unknown>}|undefined;
+    type PDFPage={getViewport:(options:{scale:number})=>{width:number;height:number};render:(options:{canvas:HTMLCanvasElement;canvasContext:CanvasRenderingContext2D;viewport:{width:number;height:number}})=>{promise:Promise<unknown>}};
+    let document:{numPages:number;getPage:(n:number)=>Promise<PDFPage>;destroy:()=>Promise<unknown>}|undefined;
     (async()=>{
       try{
         const pdfjs=await import("pdfjs-dist");
