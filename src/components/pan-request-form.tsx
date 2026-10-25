@@ -125,6 +125,37 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
     {err(key)}
   </fieldset>;
 
+  const showSample49A = () => {
+    const sample: Record<string,string> = {
+      personTitle:"Shri",personSurname:"APPLICANT",personFirst:"DEMO",personMiddle:"",
+      printedName:"DEMO APPLICANT",previousName:"No",gender:"Male",dob:"15/06/1994",
+      singleMother:"No",fatherSurname:"APPLICANT",fatherFirst:"EXAMPLE",fatherMiddle:"",
+      motherSurname:"APPLICANT",motherFirst:"SAMPLE",motherMiddle:"",printedParent:"Father",
+      residenceHouse:"12",residenceBuilding:"DEMO BUILDING",residenceStreet:"SAMPLE ROAD",
+      residenceLocality:"TEST LOCALITY",residenceCity:"JAMSHEDPUR",residenceState:"JHARKHAND",
+      residencePin:"831004",residenceCountry:"INDIA",officeAddress:"No",
+      communicationAddress:"Residence",phoneCountryCode:"91",mobile:"9000000000",
+      email:"demo@example.com",status:"Individual",aadhaarAllotted:"No",
+      incomeSalary:"Yes",incomeBusiness:"No",incomeHouse:"No",incomeCapital:"No",
+      incomeOther:"No",incomeNone:"No",raApplicable:"No",
+      identityProof:"Voter ID",addressProof:"Voter ID",birthProof:"Birth certificate",
+      declarationName:"DEMO APPLICANT",declarationCapacity:"SELF",declarationPlace:"JAMSHEDPUR",
+      declarationDate:"25/10/2026",declaration:"Yes",
+    };
+    setData(current => ({
+      ...current, service:"new", applicant:"individual", citizenship:"indian", existingPan:"no",
+      residency:"india", entityType:"", fullName:"DEMO APPLICANT", birthDate:"1994-06-15",
+      representative:"",contactName:"DEMO APPLICANT", email:"demo@example.com",phone:"+919000000000",
+      address:"12, Sample Road, Test Locality",city:"Jamshedpur",state:"Jharkhand",
+      country:"India",postalCode:"831004",consent:false,documentPlan:[],
+      detailedIntake:{kind:"pan49a",answers:sample,documents:[]},
+    }));
+    setErrors({});
+    setPreviewConfirmed(false);
+    setMessage("");
+    setShowPreview(true);
+  };
+
   const previewCard = (review = false) => <div className="pan49-open-card">
     <div className="pan49-open-card__info"><span className="pan49-open-card__icon"><FileText size={23} aria-hidden="true"/></span><div>
       <strong>{review ? "Your completed Form 49A is ready for review" : "See your form as a real two-page document"}</strong>
@@ -146,6 +177,12 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
 
   return <>{frame(<form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (step === 3) { if (legacy49a && !previewConfirmed) { setMessage("Review both pages and tick the verification confirmation."); return; } if (demo) void submit(); else setShowConsent(true); } else next(); }}>
     {demo && <p className="alert alert--info">Local preview: entered information is not saved or sent.</p>}
+    {legacy49a && demo && <div className="pan49-open-card">
+      <div className="pan49-open-card__info"><span className="pan49-open-card__icon"><FileText size={23} aria-hidden="true"/></span>
+        <div><strong>Test the completed PDF layout instantly</strong><p>Load entirely fictional sample data and open the two-page preview. No account or submission required.</p></div>
+      </div>
+      <button className="pan49-open-card__button" type="button" onClick={showSample49A}><Eye size={18} aria-hidden="true"/>Show filled sample in modal</button>
+    </div>}
     {step === 0 && <section>
       <h2>Which PAN service do you need?</h2><p className="wizard-form__sub">Pick one. We’ll adapt the next questions.</p>
       <div className="choice-grid choice-grid--2" role="radiogroup" aria-label="PAN service">{(legacy49a ? panServices.filter(item => ["new","minor","business"].includes(item)) : panServices).map((item) => <button key={item} type="button" role="radio" aria-checked={data.service === item} className={data.service === item ? "choice is-selected" : "choice"} onClick={() => update("service", item)}><span className="choice__text"><b>{panServiceLabels[item]}</b></span><span className="choice__check" aria-hidden="true">{data.service === item && <Check size={16}/>}</span></button>)}</div>
