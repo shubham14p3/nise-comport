@@ -156,20 +156,22 @@ const pan: IntakeSection[] = [
 /** Legacy Form 49A (2018 user-supplied specimen), preserved as an assistance worksheet.
  * From 1 Apr 2026, official NEW PAN applicants must use Form 93/94/95/96. */
 const pan49a: IntakeSection[] = [
-  { title: "1. Applicant and Assessing Officer", fields: [
+  { title: "1–5. Applicant identity and date of birth", fields: [
     field("aoArea","AO area code"), field("aoType","AO type"),field("aoRange","AO range code"),field("aoNumber","AO number"),
     select("personTitle","Title",["Shri","Smt.","Kumari","M/s"],true),
     ...basicName("person"),
-    field("printedName","Name to be printed on PAN card",true),
+    field("printedName","Name to be printed on PAN card (automatically generated)",true),
     select("previousName","Have you ever been known by another name?",yesNo),
     select("formerTitle","Former title",["Shri","Smt.","Kumari","M/s"],true,{show:showIf("previousName","Yes")}),
     ...basicName("former").map(f=>({...f,show:showIf("previousName","Yes")})),
     select("gender","Gender",["Male","Female","Transgender"],true,{show:(a)=>!a.status||a.status==="Individual"}),
     field("dob","Date of birth / incorporation (DD/MM/YYYY)",true,"date"),
   ] },
-  { title: "6. Parent details", fields: [
+  { title: "6. Father details", fields: [
     select("singleMother","Is the mother a single parent and you want her name alone?",yesNo,true,{show:(a)=>!a.status||a.status==="Individual"}),
     ...basicName("father").map(f=>({...f,required:f.id!=="fatherMiddle",show:(a:IntakeValue)=>(!a.status||a.status==="Individual")&&a.singleMother!=="Yes"})),
+  ] },
+  { title: "6. Mother details and printed parent", fields: [
     ...basicName("mother").map(f=>({...f,required:false,show:(a:IntakeValue)=>!a.status||a.status==="Individual"})),
     select("printedParent","Whose name should be printed on the card?",["Father","Mother"],true,{show:(a)=>(!a.status||a.status==="Individual")&&a.singleMother!=="Yes"}),
   ] },
@@ -180,15 +182,15 @@ const pan49a: IntakeSection[] = [
     ...address("office","Office address").fields.map(f=>({...f,show:showIf("officeAddress","Yes")})),
   ] },
   { title: "8–9. Communication and contact", fields: [
-    select("communicationAddress","Address for communication",["Residence","Office"],true),
+    select("communicationSameAsResidence","Use residential address for communication?",yesNo,true),
+    select("communicationAddress","Address for communication",["Residence","Office"],true,{show:(a)=>a.communicationSameAsResidence==="No"}),
     field("phoneCountryCode","Telephone country code"),
     field("phoneAreaCode","Area / STD code"),
     field("mobile","Mobile / telephone number",true,"tel"),
     field("email","Email ID",true,"email"),
   ] },
   { title: "10–11. Applicant status", fields: [
-    select("status","Status of applicant",["Individual","Hindu undivided family","Company","Partnership Firm","Association of Persons","Trusts","Body of Individuals","Local Authority","Artificial Juridical Persons","Limited Liability Partnership","Government"]),
-    field("registrationNumber","Registration number for entity, company, firm or LLP",false),
+    select("status","Status of applicant",["Individual"],true),
   ] },
   { title: "12. Aadhaar information (confidential)", fields: [
     select("aadhaarAllotted","Has Aadhaar been allotted?",yesNo,true,{show:(a)=>!a.status||a.status==="Individual"}),
@@ -267,9 +269,15 @@ export function validateDetailedIntake(intake: DetailedIntake): Record<string,st
   if(intake.kind==="pan49a") {
     const a=intake.answers;
     if(a.singleMother==="Yes"&&(!a.motherSurname||!a.motherFirst))errors.motherFirst="Enter the mother’s full name for a single-parent application.";
-    if(a.communicationAddress==="Office"&&a.officeAddress!=="Yes")errors.communicationAddress="Fill in the office address or select Residence.";
+    if(a.communicationSameAsResidence==="No"&&a.communicationAddress==="Office"&&a.officeAddress!=="Yes")errors.communicationAddress="Fill in the office address or select Residence.";
     if(a.incomeNone==="Yes"&&["incomeSalary","incomeBusiness","incomeHouse","incomeCapital","incomeOther"].some(k=>a[k]==="Yes"))errors.incomeNone="No income cannot be combined with income sources.";
-    if(a.aadhaarNumber&&!/^\d{12}$/.test(a.aadhaarNumber))errors.aadhaarNumber="Enter 12 digits.";
+    if(a.aadhaarNumber&&!/^\d{12}$/.test(a.aadhaarNumber))errors.aadhaarNumber="Enter exactly 12 digits.";
+    if(a.status && a.status!=="Individual") errors.status="This worksheet supports individual applicants only.";
+    if(a.communicationSameAsResidence==="Yes"&&a.communicationAddress==="Office") errors.communicationAddress="Residential communication address selected; choose Residence.";
+    if(a.printedName&&a.personFirst&&a.personSurname){
+      const canonical=[a.personFirst,a.personMiddle,a.personSurname].filter(Boolean).join(" ").replace(/\s+/g," ").trim();
+      if(a.printedName.trim().toLowerCase()!==canonical.toLowerCase()) errors.printedName="The printed name must match first, middle and last name.";
+    }
     if(a.aoArea&&!/^[A-Za-z]{3,4}$/.test(a.aoArea))errors.aoArea="Enter a 3–4 letter AO area code.";
     if(a.aoType&&!/^[A-Za-z]{1,2}$/.test(a.aoType))errors.aoType="Enter a 1–2 letter AO type.";
     if(a.aoRange&&!/^\d{1,3}$/.test(a.aoRange))errors.aoRange="Enter a numeric AO range.";
