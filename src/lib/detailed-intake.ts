@@ -196,13 +196,13 @@ const voterForm8: IntakeSection[] = [
     field("corrections", "Particulars selected for correction", true, "text", { show: form8Show("Correction") }),
     field("correctName", "Correct name", true, "text", { show: fixShown("Name") }),
     select("correctGender", "Correct gender", ["Male", "Female", "Transgender"], true, { show: fixShown("Gender") }),
-    field("correctDob", "Correct date of birth (DD/MM/YYYY)", true, "date", { show: fixShown("DoB/Age") }),
+    field("correctDob", "Correct date of birth (DD/MM/YYYY) or age in completed years", true, "text", { show: fixShown("DoB/Age") }),
     select("correctRelationType", "Correct relation type", ["Father", "Mother", "Husband", "Wife", "Guardian", "Other"], true, { show: fixShown("Relation Type") }),
     field("correctRelationName", "Correct relation name", true, "text", { show: fixShown("Relation Name") }),
     field("correctAddress", "Correct address", true, "textarea", { show: fixShown("Address") }),
     field("correctMobile", "Correct mobile number", true, "tel", { show: fixShown("Mobile Number") }),
     field("correctPhoto", "New photo requested", true, "text", { show: fixShown("Photo") }),
-    ...FORM8_CORRECTIONS.map(([name, , proof]) => field(proof, "Proof document for " + name, true, "text", { show: fixShown(name) })),
+    ...FORM8_CORRECTIONS.map(([name, , proof]) => field(proof, "Proof document for " + name, name !== "Mobile Number" && name !== "Photo", "text", { show: fixShown(name) })),
   ] },
   { title: "3. Replacement EPIC (without correction)", fields: [
     select("replacementReason", "Original EPIC is", ["Lost", "Destroyed due to flood, fire or natural disaster", "Mutilated"], true, { show: form8Show("Replacement EPIC") }),
@@ -297,6 +297,8 @@ export function validateDetailedIntake(intake: DetailedIntake): Record<string,st
     }
     if (v.requestType === "Correction") {
       const selected = form8CorrectionNames(v);
+      if (selected.includes("DoB/Age") && v.correctDob && !validDate(v.correctDob) && !/^(?:[1-9]|[1-9][0-9]|1[01][0-9]|120)$/.test(v.correctDob)) errors.correctDob = "Enter DD/MM/YYYY or age between 1 and 120.";
+
       if (!selected.length || selected.length > 4 || v.corrections.split("|").filter(Boolean).length !== selected.length) {
         errors.corrections = "Choose between one and four different correction particulars.";
       }
