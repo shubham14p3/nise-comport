@@ -28,6 +28,9 @@ in the visible template, so a coupon/token must remain separate staff metadata.
   The runtime intentionally allows only its exact SHA-256:
   `9b15457e9334ab3dbd0a47c29b9b43b8144df80609d1229dc2d042a799a7e8e6`.
   Raw/filled customer samples MUST NOT be uploaded to public/.
+  After upload, set `NEXT_PUBLIC_PAN93_TEMPLATE_READY=true` and restart/rebuild Next.js.
+  When the flag is off, the site does **not** request a missing PDF (avoids 404 logs).
+  Customers can still select the scrubbed PDF locally in the preview selector.
 - Until that file is installed, the UI warns that the exact preview template is missing;
   staff or testers can select the sanitized blank PDF in their browser (locally).
 - A fictional, already-populated two-page PDF named
