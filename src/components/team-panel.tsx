@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { BadgeCheck, Copy, Crown, KeyRound, Mail, Pencil, Phone, ShieldCheck, Trash2, UserMinus, UserPlus, UsersRound } from "lucide-react";
+import { BadgeCheck, Copy, Crown, KeyRound, Mail, Pencil, Phone, Search, ShieldCheck, Trash2, UserMinus, UserPlus, UsersRound } from "lucide-react";
 import { PERMISSION_INFO, STAFF_PERMISSIONS, type Permission } from "@/lib/permissions";
 import { secureApi } from "@/lib/secure-api-client";
 import { AdminPager, useAdminPagination } from "@/components/admin-pager";
@@ -28,6 +28,7 @@ function RolePick({ value, onChange, disabled }: { value: Role; onChange: (role:
 /** Owner only: add staff or owners, edit them, reset passwords, remove or delete. */
 export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: string }) {
   const [members, setMembers] = useState<Member[] | null>(null);
+  const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
   const [edit, setEdit] = useState<Edit | null>(null);
   const [email, setEmail] = useState("");
@@ -93,7 +94,11 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
   const destroy = (member: Member) => window.confirm(`Delete ${member.name}'s account for good? Their details are erased and they can’t sign in. This cannot be undone.`)
     && patch(member, { delete: true }, `${member.name}’s account was deleted.`);
 
-  const paging = useAdminPagination(members ?? []);
+  const needle = search.trim().toLocaleLowerCase();
+  const filteredMembers = (members ?? []).filter((member) => !needle ||
+    [member.name, member.email, member.phone ?? "", member.role, ...member.permissions]
+      .some((value) => value.toLocaleLowerCase().includes(needle)));
+  const paging = useAdminPagination(filteredMembers);
   if (meRole !== "admin") return <p className="alert alert--info">Only the owner can manage the team.</p>;
   return <section className="admin-queue team-panel">
     <h2><UsersRound size={17}/> Team <span>{members?.length ?? "…"}</span></h2>
@@ -105,6 +110,9 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
       <button type="button" className="btn btn--ghost btn--sm" onClick={() => void navigator.clipboard?.writeText(secret.password)}><Copy size={14}/> Copy</button>
       <br/><small>Shown only now. It was also emailed to them.</small>
     </div>}
+    <label className="admin-team__search"><Search size={17} aria-hidden="true"/><input
+      type="search" aria-label="Search staff and owners" placeholder="Find existing or new staff by name, email, mobile or permission…"
+      value={search} onChange={(event) => setSearch(event.target.value)}/></label>
     <AdminPager {...paging} label="team members"/>
     <div className="team-list">{paging.items.map((member) => {
       const isMe = member.id === meId;
@@ -145,7 +153,8 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
         </>}
       </article>;
     })}</div>
-    {(members?.length ?? 0) > paging.pageSize && <AdminPager {...paging} label="team members"/>}
+    {filteredMembers.length === 0 && members && <p className="admin-empty">No team accounts match this search. You can add a new member below.</p>}
+    {filteredMembers.length > paging.pageSize && <AdminPager {...paging} label="team members"/>}
     <details className="admin-accordion"><summary><UserPlus size={15}/> Add a person</summary>
     <form className="team-add" onSubmit={add}>
       <h3><UserPlus size={17}/> Add a person</h3>
