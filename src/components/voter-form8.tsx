@@ -233,23 +233,41 @@ export default function VoterForm8({ signedIn, demo }: Props) {
       const selected=form8CorrectionNames(answers);
       return <fieldset className="f8-correction-input" key="corrections"><legend>Choose up to four particulars to correct *</legend>
         <div className="f8-options">{FORM8_CORRECTIONS.map(([name])=><label key={name}><input type="checkbox" checked={selected.includes(name)} onChange={event=>setCorrection(name,event.target.checked)}/>{name}</label>)}</div>
-        <p className="f8-hint">{selected.length} of 4 selected</p>{errors.corrections&&<small role="alert" className="f8-error">{errors.corrections}</small>}
+        <p className="f8-hint">{selected.length} of 4 selected</p>{errorFor("corrections")&&<small role="alert" className="f8-error">{errorFor("corrections")}</small>}
       </fieldset>;
     }
     if(f.id==="correctPhoto")return null;
     const id="form8-"+f.id;
-    return <label key={f.id} className={"f8-input"+(f.type==="textarea"?" f8-wide":"")}>
+    const error=errorFor(f.id);
+    const isDate=f.type==="date" || f.id==="correctDob";
+    return <label key={f.id} className={"f8-input"+(f.type==="textarea"?" f8-wide":"")+(error?" f8-input--invalid":"")}>
       <span>{f.label}{f.required?" *":""}</span>
       {f.type==="select"?
-        <select id={id} value={answers[f.id]??""} onChange={e=>setAnswer(f,e.target.value)} aria-invalid={Boolean(errors[f.id])}>
+        <select id={id} value={answers[f.id]??""} onChange={e=>setAnswer(f,e.target.value)} onBlur={()=>markTouched(f.id)} aria-invalid={Boolean(error)}>
           <option value="">Select an option</option>{f.options?.map(option=><option key={option} value={option}>{option}</option>)}
         </select>:
-        f.type==="textarea"?<textarea id={id} value={answers[f.id]??""} onChange={e=>setAnswer(f,e.target.value)} rows={3} maxLength={400}/>:
-        <input id={id} type={f.type==="date"?"text":f.type||"text"} inputMode={f.type==="date" || /Pin$|aadhaarNumber|constituencyNumber|disabilityPercent/.test(f.id)?"numeric":undefined}
-          maxLength={f.type==="date"?10:f.id==="aadhaarNumber"?12:400}
-          placeholder={f.type==="date"?"DD/MM/YYYY":undefined}
-          autoComplete="off" value={answers[f.id]??""} onChange={e=>setAnswer(f,e.target.value)} aria-invalid={Boolean(errors[f.id])}/>}
-      {errors[f.id]&&<small className="f8-error" role="alert">{errors[f.id]}</small>}
+        f.type==="textarea"?<textarea id={id} value={answers[f.id]??""} onChange={e=>setAnswer(f,e.target.value)} onBlur={()=>markTouched(f.id)} rows={3} maxLength={400}/>:
+        <div className={isDate?"f8-date-input":f.id==="aadhaarNumber"?"f8-secret-input":"f8-input-control"}>
+          <input id={id} type={f.id==="aadhaarNumber"&&!showAadhaar?"password":f.type==="date"?"text":f.type||"text"}
+            list={f.id==="addressState"?"form8-india-states":undefined}
+            inputMode={isDate || /Pin$|aadhaarNumber|constituencyNumber|disabilityPercent|Mobile|mobile/.test(f.id)?"numeric":undefined}
+            maxLength={isDate?10:f.id==="aadhaarNumber"?12:400}
+            placeholder={isDate?f.id==="correctDob"?"DD/MM/YYYY or age":"DD/MM/YYYY":undefined}
+            autoComplete="off" value={answers[f.id]??""} onChange={e=>setAnswer(f,e.target.value)}
+            onBlur={()=>markTouched(f.id)} aria-invalid={Boolean(error)} aria-describedby={error?id+"-error":undefined}/>
+          {f.id==="aadhaarNumber"&&<button type="button" className="f8-inline-button" onClick={()=>setShowAadhaar(v=>!v)}
+            aria-label={showAadhaar?"Hide Aadhaar number":"Show Aadhaar number"}>{showAadhaar?<EyeOff size={17}/>:<Eye size={17}/>}</button>}
+          {isDate&&<div className="f8-calendar"><CalendarDays size={16} aria-hidden="true"/>
+            <input type="date" aria-label={"Pick date for "+f.label} min="1900-01-01" max={today}
+              value={dateAsIso(answers[f.id]??"")} onChange={e=>{
+                const next=e.target.value;
+                if(next){setAnswer(f,next.split("-").reverse().join("/"));markTouched(f.id);}
+              }}/></div>}
+          {f.id==="addressState"&&<datalist id="form8-india-states">{INDIA_STATES.map(state=><option key={state} value={state}/>)}</datalist>}
+        </div>}
+      {f.id==="aadhaarNumber"&&<small className="f8-hint">12 digits. Hidden on screen and stored encrypted with the request.</small>}
+      {isDate&&<small className="f8-hint">{f.id==="correctDob"?"Enter DOB or age in completed years.":"Future dates are not allowed."}</small>}
+      {error&&<small id={id+"-error"} className="f8-error" role="alert">{error}</small>}
     </label>;
   }
   function currentFields(){
