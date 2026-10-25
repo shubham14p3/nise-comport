@@ -373,7 +373,19 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
             <button type="button" onClick={()=>setShowPreview(true)}>Preview filled Form 8</button></div>}
           {step===0&&<p className="f8-hint">Enter the elector&apos;s current details from their existing voter record. Do not use the sample applicant&apos;s details.</p>}
           {(step===0||step===1||step===2)&&<div className="f8-input-grid">
-            {currentFields().map(renderField)}
+            {step===1 && answers.requestType==="Correction" ? <>
+              {renderField(sections[2].fields[0])}
+              {FORM8_CORRECTIONS.filter(([name])=>form8CorrectionNames(answers).includes(name)).map(([name,valueField,proofField],index)=><section className="f8-fix-card f8-wide" key={name}>
+                <header><span className="f8-fix-number">{index+1}</span><div><h3>{name}</h3><p>{name==="Relation Type"?"Choose whether the correction is for father, mother, husband, wife or another relation.":
+                  name==="Relation Name"?"Enter the full corrected relative name exactly as it should appear.":
+                  name==="Mobile Number"?"Enter the corrected 10-digit mobile number.":
+                  name==="DoB/Age"?"Provide the date of birth or age; the calendar does not allow future dates.":
+                  name==="Photo"?"Upload a recent passport-size colour photo with a plain white background.":
+                  "Provide the corrected entry with documentary proof where applicable."}</p></div></header>
+                <div className="f8-input-grid">{renderField(sections[2].fields.find(f=>f.id===valueField) ?? sections[2].fields[0])}
+                  {renderField(sections[2].fields.find(f=>f.id===proofField) ?? sections[2].fields[0])}</div>
+              </section>)}
+            </> : currentFields().map(renderField)}
             {step===2&&<div className="f8-file f8-wide">
               <label htmlFor="form8-proof">Supporting proof (one PDF or image, up to 20 MB)</label>
               <input id="form8-proof" type="file" accept=".pdf,image/jpeg,image/png,image/webp" onChange={e=>{setProof(e.target.files?.[0]??null);requestKey.current=null;}}/>
