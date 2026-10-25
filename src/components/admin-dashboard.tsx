@@ -1,16 +1,17 @@
 "use client";
 
 import { AdminPager } from "@/components/admin-pager";
-import { FormEvent, useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import SiteHeader from "@/components/site-header";
+import Portal from "@/components/portal";
 
 import { WhatsAppIcon } from "@/components/icons";
 
 
 import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
-import { ArrowRight, Bell, Cake, ClipboardList, Contact, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ArrowRight, Bell, Cake, ClipboardList, Contact, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
 
 
@@ -85,6 +86,8 @@ function RequestQueue() {
   const [saving, setSaving] = useState("");
   const [detail, setDetail] = useState<RequestDetail | null>(null);
   const [detailBusy, setDetailBusy] = useState(false);
+  const detailCloseRef = useRef<HTMLButtonElement>(null);
+  const [historyPage, setHistoryPage] = useState(0);
   const [officialRef, setOfficialRef] = useState("");
   const [officialRefLabel, setOfficialRefLabel] = useState("");
   const [officialRefSaving, setOfficialRefSaving] = useState(false);
@@ -104,6 +107,16 @@ function RequestQueue() {
       setLoaded(true);
     }
   }
+
+  useEffect(() => {
+    if (!detail) return;
+    const savedOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    detailCloseRef.current?.focus();
+    const onEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setDetail(null); };
+    window.addEventListener("keydown", onEscape);
+    return () => { document.body.style.overflow = savedOverflow; window.removeEventListener("keydown", onEscape); };
+  }, [detail]);
 
   useEffect(() => {
     let active = true;
@@ -144,6 +157,7 @@ function RequestQueue() {
     try {
       const result = await secureApi<RequestDetail>("B6r1K8mQ3cT9", { id });
       setDetail(result);
+      setHistoryPage(0);
       setOfficialRef(result.request.officialReference ?? "");
       setOfficialRefLabel(result.request.officialReferenceLabel ?? "");
     }
@@ -204,7 +218,11 @@ function RequestQueue() {
 
     <section className="admin-queue"><h2><ClipboardList size={17}/> Service requests <span>{counts.requests}</span></h2>
       <AdminPager page={requestPage} pageSize={pageSize} total={counts.requests} onPage={(next) => { setRequestPage(next); void load(status, q, jobPage, next); }} onPageSize={(size) => { setPageSize(size); setJobPage(0); setRequestPage(0); void load(status, q, 0, 0, size); }} label="service requests"/>
-      {requests.length ? requests.map(item => <article className="admin-row" key={item.id}><div>
+      {requests.length ? requests.map(item => <article className="admin-row admin-row--openable" key={item.id}
+        role="button" tabIndex={0} aria-label={`Open details for ${item.reference}, ${item.serviceName}`}
+        onClick={(event) => { if (!(event.target as HTMLElement).closest("a, button, select, input, textarea, label")) void openDetail(item.id); }}
+        onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); void openDetail(item.id); } }}>
+        <div>
         <b>{item.reference} · {item.serviceName}</b>
         <small>{item.name} · {when(item.createdAt)}{item.officialReference ? ` · ${item.officialReferenceLabel || "Official ref"}: ${item.officialReference}` : " · Official ref: not yet submitted"}</small>
         <ContactLinks name={item.name} phone={item.phone} whatsapp={item.whatsapp} email={item.email} reference={item.reference}/>
@@ -214,10 +232,14 @@ function RequestQueue() {
       {counts.requests > pageSize && <AdminPager page={requestPage} pageSize={pageSize} total={counts.requests} onPage={(next) => { setRequestPage(next); void load(status, q, jobPage, next); }} label="service requests"/>}
     </section>
 
-    {(detailBusy || detail) && <section className="admin-queue">
-      <h2>Private request details</h2>
-      {detailBusy && <p>Opening encrypted request details…</p>}
-      {detail && <div>
+    {detailBusy && !detail && <p role="status">Opening encrypted request details…</p>}
+    {detail && <Portal><div className="record-modal" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetail(null); }}>
+      <div className="record-modal__panel request-modal__panel" role="dialog" aria-modal="true" aria-labelledby="request-dialog-title">
+        <header className="record-modal__header">
+          <div><h3 id="request-dialog-title">{detail.request.serviceName}</h3><small>{detail.request.reference} · {detail.request.statusLabel}</small></div>
+          <button type="button" ref={detailCloseRef} className="btn btn--ghost btn--sm record-modal__close" onClick={() => setDetail(null)} aria-label="Close request details"><X size={17}/> Close</button>
+        </header>
+        <div className="record-modal__body request-modal__body">
         <p><b>{detail.request.serviceName}</b> · {detail.request.reference} · {detail.request.statusLabel} · {when(detail.request.createdAt)}</p>
         <p><b>{detail.customer.name}</b></p>
         <ContactLinks name={detail.customer.name} phone={detail.customer.phone} whatsapp={detail.customer.whatsapp} email={detail.customer.email} reference={detail.request.reference}/>
@@ -241,10 +263,19 @@ function RequestQueue() {
         </article>}
         <PanSavedDetails details={detail.request.details}/>
         <article className="pan-card"><h3>Customer request</h3><RequestExtras details={detail.request.details} fallback="No note provided."/></article>
-        <article className="pan-card"><h3>History</h3>{detail.events.length ? <ol className="request-timeline">{detail.events.map((event, index) => <li key={`${event.createdAt}-${index}`}><b>{event.fromLabel ? `${event.fromLabel} → ` : ""}{event.toLabel}</b> <small>{when(event.createdAt)}{event.actor ? ` · ${event.actor}` : ""}</small>{event.note ? <p>{event.note}</p> : null}</li>)}</ol> : <p>No history recorded yet.</p>}</article>
-        <button type="button" className="profile-text-button" onClick={() => setDetail(null)}>Close details</button>
-      </div>}
-    </section>}
+        <article className="pan-card"><h3>History ({detail.events.length})</h3>
+          {detail.events.length ? <ol className="request-timeline">{detail.events.slice(historyPage * 5, (historyPage + 1) * 5).map((event, index) => <li key={`${event.createdAt}-${index}`}><b>{event.fromLabel ? `${event.fromLabel} → ` : ""}{event.toLabel}</b> <small>{when(event.createdAt)}{event.actor ? ` · ${event.actor}` : ""}</small>{event.note ? <p>{event.note}</p> : null}</li>)}</ol> : <p>No history recorded yet.</p>}
+          {detail.events.length > 5 && <div className="request-modal__pagination">
+            <button type="button" className="btn btn--ghost btn--sm" disabled={historyPage === 0} onClick={() => setHistoryPage(n => Math.max(0, n - 1))}>Previous</button>
+            <span>History page {historyPage + 1} of {Math.ceil(detail.events.length / 5)}</span>
+            <button type="button" className="btn btn--ghost btn--sm" disabled={(historyPage + 1) * 5 >= detail.events.length} onClick={() => setHistoryPage(n => n + 1)}>Next</button>
+          </div>}
+        </article>
+        </div>
+        <footer className="record-modal__footer"><button type="button" className="btn btn--ghost btn--sm" onClick={() => setDetail(null)}>Close details</button></footer>
+      </div>
+    </div></Portal>}
+
 
     <p className="admin-note"><RefreshCw size={13}/> Status changes are recorded with your name and email the customer. If someone else changed an item first, refresh the encrypted queue.</p>
   </>;
@@ -363,12 +394,19 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
     <div className={railOpen ? "container profile__layout" : "container profile__layout profile__layout--rail"}>
       <aside className="profile__nav" aria-label="Admin sections">
         <button type="button" className="profile__nav-toggle" onClick={toggleRail} aria-expanded={railOpen} title={railOpen ? "Hide the menu" : "Show the menu"}>{railOpen ? <PanelLeftClose size={19}/> : <PanelLeftOpen size={19}/>}<span>Hide menu</span></button>
-        <nav className="admin-nav-groups">{NAV_SECTIONS.map((section) => { const visible = tabs.filter((tab) => (section.tabs as readonly string[]).includes(tab.id)); return visible.length > 0 && <details key={section.id} className="admin-nav-group" open={(section.tabs as readonly string[]).includes(active)}>
+        {railOpen ? <nav className="admin-nav-groups">{NAV_SECTIONS.map((section) => { const visible = tabs.filter((tab) => (section.tabs as readonly string[]).includes(tab.id)); return visible.length > 0 && <details key={section.id} className="admin-nav-group" open={(section.tabs as readonly string[]).includes(active)}>
           <summary>{section.title}<span>{visible.length}</span></summary>
           <div>{visible.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={active === id ? "is-active" : undefined} aria-current={active === id ? "page" : undefined} onClick={() => choose(id)} title={label}>
             <Icon size={18}/><span>{label}</span>{id === "inbox" && unread > 0 && <small aria-label={`${unread} new`}>{unread > 99 ? "99+" : unread}</small>}{id === "mail" && mailUnread > 0 && <small aria-label={`${mailUnread} unread`}>{mailUnread > 99 ? "99+" : mailUnread}</small>}
           </button>)}</div>
-        </details>; })}</nav>
+        </details>; })}</nav> : <nav className="admin-nav-icons" aria-label="Collapsed admin sections">
+          {tabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={active === id ? "is-active" : undefined}
+            aria-label={label} aria-current={active === id ? "page" : undefined}
+            data-tooltip={label} title={label} onClick={() => choose(id)}>
+            <Icon size={20}/>{id === "inbox" && unread > 0 && <small>{unread > 99 ? "99+" : unread}</small>}
+            {id === "mail" && mailUnread > 0 && <small>{mailUnread > 99 ? "99+" : mailUnread}</small>}
+          </button>)}
+        </nav>}
       </aside>
       <section className="profile__main admin-page" aria-live="polite" aria-label={current?.label}>
         {!tabs.length && <p className="alert alert--info">Your account doesn’t have access to any admin area yet. Ask the owner to add it in Team.</p>}
@@ -398,7 +436,10 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
         {active === "loyalty" && <LoyaltyPanel/>}
         {active === "payments" && <PaymentsPanel/>}
         {active === "integrations" && <SystemConnectionsPanel/>}
-        {active === "team" && <><TeamPanel meRole={me.role} meId={me.id}/><SiteTeamPanel/></>}
+        {active === "team" && <div className="admin-team-groups">
+          <details className="admin-accordion"><summary><UsersRound size={17}/> Staff & owner login accounts</summary><TeamPanel meRole={me.role} meId={me.id}/></details>
+          <details className="admin-accordion"><summary><UsersRound size={17}/> Website team profiles & missing staff logins</summary><SiteTeamPanel/></details>
+        </div>}
         {active === "pan" && <PanImportPanel/>}
         {active === "wallet" && <WalletCreditForm canCorrect={isOwner}/>}
       </section>
