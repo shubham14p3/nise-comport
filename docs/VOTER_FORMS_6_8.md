@@ -38,3 +38,14 @@ The print renderings follow the structure and two/three-page organization of the
 - Form 8: correction preview opens two pages; 1–4 selected corrections and supporting proof names; residence/replacement/disability alternatives; photograph change; no official reference fabrication.
 - Both: check print to A4 PDF on Chrome desktop and mobile, verify no clipping or duplicated pages, confirm edit path and encrypted request save.
 - Verify Nise Comport tracking reference works independently from the official ECI acknowledgement.
+
+## Sign-in-gated filled-preview flow (Form 6 and Form 8)
+
+1. A guest fills the guided form. All required fields (including the Form 6 photo or Form 8 photo correction) must validate before any preview is available.
+2. **Sign in to preview** encrypts the completed questionnaire and selected photo/proof attachment bytes with a newly generated AES-256-GCM browser key. Encrypted data is kept in browser IndexedDB; the short-lived decryption key is kept **only in this tab's sessionStorage**. Nothing is placed in cookies, URLs or plaintext localStorage.
+3. The browser remembers only the same-origin return route through the existing `rememberReturn` / `takeReturn` login mechanism. On successful sign-in, the user returns to the same form automatically.
+4. After authentication, the form restores answers and file attachments and automatically opens the protected two/three-page verification modal. Users can edit and review again before saving a service request.
+5. Temporary drafts expire after 30 minutes, cannot be decrypted in another browser tab without that tab's secret key, and are deleted after successfully saving a request. If browser crypto or draft storage is unavailable, sign-in is offered first; the page does not silently discard the entered form.
+6. The printable preview is never rendered for guests or incomplete forms. Fictional sample-preview bypasses have been removed from the public form pages.
+
+**Privacy boundary:** Browser encryption protects the residual draft from someone without the tab key. It does not protect against malware or malicious scripts already executing in the same trusted website origin. The encrypted draft is temporary, not a permanent account record.
