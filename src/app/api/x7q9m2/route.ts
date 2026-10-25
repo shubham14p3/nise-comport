@@ -42,6 +42,8 @@ const OPS = {
   "Z6m2C9pT4hQ7": { method: "POST", path: "/api/pan/requests" },
   "L5v1N7qD9kR3": { method: "POST", path: "/api/admin/pan-imports" },
   "T7s3F8mP2cX6": { method: "POST", path: "/api/admin/wallet-credit" },
+  "L9w5A3sJ7qP2": { method: "GET", path: "/api/admin/wallet-credit" },
+  "D2f6C8mR4nX1": { method: "PATCH", path: "/api/admin/wallet-credit" },
   "P8a2N5dK1vR7": { method: "GET", path: "/api/internal/profile-snapshot" },
   "W3k8P1zN6qT2": { method: "POST", path: "/api/places/autocomplete" },
   "Q9v4H2mX7rB5": { method: "POST", path: "/api/places/details" },
