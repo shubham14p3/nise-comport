@@ -21,7 +21,7 @@ type SealedInput = { kind: DetailedIntake["kind"]; sealed: string; photoAttached
 export function revealDetailedIntake(value: unknown): DetailedIntake | null {
   if(!value||typeof value!=="object")return null;
   const v=value as Partial<SealedInput>;
-  if(!v.kind||!["passport","voter","pan","voter-form8"].includes(v.kind)||typeof v.sealed!=="string")return null;
+  if(!v.kind||!["passport","voter","pan","voter-form8","voter-form6"].includes(v.kind)||typeof v.sealed!=="string")return null;
   try{
     const data=open<{answers:Record<string,string>;documents:string[]}>(v.sealed);
     return {kind:v.kind,answers:data.answers,documents:data.documents, ...(v.photoAttached?{photoFileId:"attached"}:{})};
