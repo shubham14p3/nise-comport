@@ -14,7 +14,7 @@ import { validateDetailedIntake, type DetailedIntake, type IntakeKind } from "@/
 import { categoryMeta, categoryMetaFor } from "@/lib/categories";
 import { newIdempotencyKey } from "@/lib/client-id";
 import type { OpeningHoursRule } from "@/lib/hours";
-import { dict, fill, type Locale } from "@/lib/i18n";
+import { dict, type Locale } from "@/lib/i18n";
 import { findOffer, isOfferLive, offerAppliesTo, offersFor } from "@/lib/offers";
 import { secureApi, secureUpload, SecureApiError } from "@/lib/secure-api-client";
 import { useLocale } from "@/lib/use-locale";
