@@ -3275,3 +3275,23 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
   .record-modal__header { align-items: flex-start; }
   .record-modal__close { min-width: 44px; }
 }
+
+
+/* Detailed passport, Form 8 and PAN customer intake */
+.detailed-intake { display: grid; gap: 14px; min-width: 0; margin: 18px 0; }
+.detailed-intake__section { min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 0; overflow: hidden; }
+.detailed-intake__section > summary { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; cursor: pointer; padding: 14px 16px; background: var(--bg); }
+.detailed-intake__section > summary > strong { font-size: 1rem; }
+.detailed-intake__section > summary > span { font-size: .78rem; color: var(--muted); }
+.detailed-intake__section > .form-grid, .detailed-intake__section > .check-grid { padding: 14px 16px 18px; }
+.detailed-intake__section > p { padding: 12px 16px 0; }
+.detailed-intake__section > ul { padding: 12px 16px 14px 36px; }
+.detailed-intake__section .field { min-width: 0; }
+.detailed-intake__section .field input, .detailed-intake__section .field select, .detailed-intake__section .field textarea { width: 100%; min-width: 0; }
+.detailed-intake__summary { margin-top: 16px; display: grid; gap: 10px; }
+.detailed-intake__summary .pan-review { margin: 10px; }
+@media (max-width: 640px) {
+  .detailed-intake__section > .form-grid { grid-template-columns: minmax(0, 1fr); }
+  .detailed-intake__section > summary { padding: 12px; }
+  .detailed-intake__section > .form-grid, .detailed-intake__section > .check-grid { padding: 12px; }
+}

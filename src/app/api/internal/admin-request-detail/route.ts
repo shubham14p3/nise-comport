@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { requestEvents, serviceRequests, serviceReviews, users } from "@/db/schema";
 import { statusLabel } from "@/lib/requests";
 import { apiError } from "@/lib/http";
+import { revealRequestDetails } from "@/lib/detailed-intake-server";
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       request: {
         id: row.request.id, reference: row.request.reference, serviceName: row.request.serviceName, status: row.request.status,
-        statusLabel: statusLabel(row.request.status), details: row.request.details, createdAt: row.request.createdAt.toISOString(),
+        statusLabel: statusLabel(row.request.status), details: revealRequestDetails(row.request.details as Record<string, unknown>), createdAt: row.request.createdAt.toISOString(),
         officialReference: row.request.officialReference, officialReferenceLabel: row.request.officialReferenceLabel,
         officialReferenceSetAt: row.request.officialReferenceSetAt?.toISOString() ?? null,
       },

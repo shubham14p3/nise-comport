@@ -12,6 +12,8 @@ import { scopeAllows } from "@/lib/promo-scope";
 import PromoCodeField, { type AppliedCode, type CodeSuggestion } from "@/components/promo-code-field";
 import { OfferRail, OfferStrip, WizardActions, WizardFrame } from "@/components/wizard";
 import ConsentModal from "@/components/consent-modal";
+import DetailedIntakeFields from "@/components/detailed-intake-fields";
+import { validateDetailedIntake, type DetailedIntake, type IntakeKind } from "@/lib/detailed-intake";
 import { categoryMeta, categoryMetaFor } from "@/lib/categories";
 import { newIdempotencyKey } from "@/lib/client-id";
 import type { OpeningHoursRule } from "@/lib/hours";
@@ -34,6 +36,7 @@ type Draft = {
   name: string; phone: string; contact: Contact; description: string;
   mode: Mode | ""; day: string; slot: Slot | ""; addressId: string; address: AddressValue;
   offerId: string; consent: boolean; coupon: string;
+  serviceTask: "passport" | "driving"; intake: DetailedIntake | null;
 };
 type Voucher = { code: string; emoji: string; names: Record<Locale, string>; used: boolean; live: boolean; personal: boolean; appliesTo?: { categories: string[]; services: string[] } | null };
 type SessionUser = { name: string; role: string } | null;
@@ -57,7 +60,12 @@ function readDraft(): Partial<Draft> | null {
   try { const raw = window.sessionStorage.getItem(DRAFT_KEY); return raw ? JSON.parse(raw) as Partial<Draft> : null; } catch { return null; }
 }
 function saveDraft(draft: Draft) {
-  try { window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft)); } catch { /* storage unavailable */ }
+  try {
+    // Do not persist full applicant information in browser storage.
+    const { intake: _intake, ...safe } = draft;
+    void _intake;
+    window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify(safe));
+  } catch { /* storage unavailable */ }
 }
 function clearDraft() {
   try { window.sessionStorage.removeItem(DRAFT_KEY); } catch { /* storage unavailable */ }
@@ -95,7 +103,7 @@ export default function RequestWizard(props: { services: WizardService[]; initia
 }
 
 function initialDraft(services: WizardService[], initial: Initial): Draft {
-  const blank: Draft = { step: 0, serviceSlug: "", category: "all", query: "", name: "", phone: "", contact: "whatsapp", description: "", mode: "", day: "", slot: "", addressId: "", address: EMPTY_ADDRESS, offerId: "", consent: false, coupon: "" };
+  const blank: Draft = { step: 0, serviceSlug: "", category: "all", query: "", name: "", phone: "", contact: "whatsapp", description: "", mode: "", day: "", slot: "", addressId: "", address: EMPTY_ADDRESS, offerId: "", consent: false, coupon: "", serviceTask: "passport", intake: null };
   const saved = readDraft();
   const coupon = (initial.coupon ?? "").toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 40);
   const hasUrlChoice = Boolean(initial.service || initial.category || initial.offer || initial.note);
@@ -124,6 +132,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const [user, setUser] = useState<SessionUser | undefined>(undefined);
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [file, setFile] = useState<File | null>(null);
+  const [photo, setPhoto] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<{ reference: string; offerNote?: string; couponNote?: string; couponOk?: boolean; whatsappSent?: boolean; summary: string } | null>(null);
@@ -136,6 +145,14 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const cardTop = useRef<HTMLDivElement>(null);
 
   const service = services.find((item) => item.slug === draft.serviceSlug);
+  const detailedKind: IntakeKind | null =
+    draft.serviceSlug === "voter-id" ? "voter" :
+    draft.serviceSlug === "passport-driving-licence" && draft.serviceTask === "passport" ? "passport" : null;
+  const activeIntake: DetailedIntake | null = detailedKind
+    ? draft.intake?.kind === detailedKind ? draft.intake : { kind: detailedKind, answers: {}, documents: [] }
+    : null;
+  const intakeErrors = activeIntake ? validateDetailedIntake(activeIntake) : {};
+  if (photo && intakeErrors.photoFileId) delete intakeErrors.photoFileId;
   const activeCategory = service?.category ?? (draft.serviceSlug === "other" && draft.category !== "all" ? draft.category : null);
   const chosenOffer = findOffer(draft.offerId);
   const offer = chosenOffer && isOfferLive(chosenOffer) && (!activeCategory || offerAppliesTo(chosenOffer, activeCategory))
@@ -198,7 +215,8 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     if (step === 1) {
       if (draft.name.trim().length < 2) return t.errName;
       if (!validPhone(draft.phone)) return t.errPhone;
-      if (draft.description.trim().length < 8) return t.errDescribe;
+      if (!activeIntake && draft.description.trim().length < 8) return t.errDescribe;
+      if (activeIntake && Object.keys(intakeErrors).length) return Object.values(intakeErrors)[0];
       if (file && file.size > MAX_FILE_BYTES) return t.errFile;
     }
     if (step === 2) {
@@ -243,11 +261,17 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     idempotencyKey.current ??= newIdempotencyKey();
     try {
       let fileId: string | undefined;
+      let photoFileId: string | undefined;
+      if (activeIntake && photo) {
+        if (photo.size > 5 * 1024 * 1024 || !["image/png", "image/jpeg", "image/webp"].includes(photo.type)) throw new Error("Photograph must be a JPG, PNG or WebP under 5 MB.");
+        photoFileId = (await secureUpload<{ file: { id: string } }>("U7b3R8mQ4zL1", photo)).file.id;
+      }
       if (file) fileId = (await secureUpload<{ file: { id: string } }>("U7b3R8mQ4zL1", file)).file.id;
       const saved = addresses.find((item) => item.id === draft.addressId);
       const result = await secureApi<{ request: { reference: string }; whatsappSent?: boolean; offer?: { applied: boolean; reason?: string }; coupon?: { applied: boolean; code?: string; reason?: string } }>("S5w2J9nF3kL7", {
         serviceSlug: draft.serviceSlug,
-        description: draft.description.trim(),
+        description: draft.description.trim() || (detailedKind ? `${detailedKind} application assistance request` : ""),
+        ...(activeIntake ? { intake: { ...activeIntake, ...(photoFileId ? { photoFileId } : {}) } } : {}),
         preferredContact: draft.contact,
         contactName: draft.name.trim(),
         contactPhone: draft.phone.trim(),
@@ -370,6 +394,10 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       {draft.step === 1 && <section>
         <h2>{t.s2Title}</h2><p className="wizard-form__sub">{t.s2Sub}</p>
         {service && <div className="picked"><span>{serviceName(service.slug, service.name, locale)}</span><button type="button" onClick={() => goTo(0)}>{t.edit}</button></div>}
+        {draft.serviceSlug === "passport-driving-licence" && <label className="field"><span className="field__label">Which assistance do you need?</span>
+          <select value={draft.serviceTask} onChange={e=>update({serviceTask:e.target.value as "passport"|"driving",intake:null})}>
+            <option value="passport">Passport application / reissue</option><option value="driving">Driving licence / RTO help</option>
+          </select></label>}
         <div className="form-grid">
           <label className="field"><span className="field__label">{t.name}</span><input value={draft.name} onChange={(event) => update({ name: event.target.value.replace(/[^\p{L}\p{M}\s.'-]/gu, "") })} onBlur={captureLead} autoComplete="name" maxLength={100} required aria-invalid={nameBad}/>{nameBad && <span className="field__error">{t.errName}</span>}</label>
           <label className="field"><span className="field__label">{t.phone}</span><span className="input-wrap"><span className="input-prefix">+91</span><input value={draft.phone} onChange={(event) => update({ phone: event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16) })} inputMode="tel" autoComplete="tel-national" placeholder="98765 43210" required onBlur={captureLead} aria-invalid={phoneBad}/></span>{phoneBad ? <span className="field__error">{t.errPhone}</span> : <span className="field__hint">{t.phoneHint}</span>}</label>
@@ -377,7 +405,9 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         <fieldset className="field"><legend className="field__label">{t.contactVia}</legend><div className="seg">
           {(["whatsapp", "phone", "email"] as Contact[]).map((option) => <button key={option} type="button" className={draft.contact === option ? "is-active" : undefined} aria-pressed={draft.contact === option} onClick={() => update({ contact: option })}>{option === "whatsapp" ? <WhatsAppIcon size={16}/> : null}{option === "whatsapp" ? t.viaWhatsapp : option === "phone" ? t.viaPhone : t.viaEmail}</button>)}
         </div></fieldset>
-        <label className="field"><span className="field__label">{t.describe}</span><textarea value={draft.description} onChange={(event) => update({ description: event.target.value.slice(0, 1500) })} rows={4} maxLength={1500} required aria-invalid={describeBad}/>{describeBad && <span className="field__error">{t.errDescribe}</span>}<span className="field__hint">{t.describeHint} · {draft.description.length}/1500</span></label>
+        <label className="field"><span className="field__label">{t.describe}{activeIntake ? " (optional, extra notes)" : ""}</span><textarea value={draft.description} onChange={(event) => update({ description: event.target.value.slice(0, 1500) })} rows={4} maxLength={1500} required={!activeIntake} aria-invalid={describeBad&&!activeIntake}/>{describeBad && <span className="field__error">{t.errDescribe}</span>}<span className="field__hint">{t.describeHint} · {draft.description.length}/1500</span></label>
+        {activeIntake && <DetailedIntakeFields intake={activeIntake} onChange={value=>update({intake:value})}
+          errors={showErrors?intakeErrors:{}} photo={photo} onPhotoChange={setPhoto}/>}
         <div className="quick-picks"><span>{t.quickPicks}</span>{picks.map((pick) => <button key={pick} type="button" className="chip-btn chip-btn--sm" onClick={() => update({ description: draft.description.includes(pick) ? draft.description : `${draft.description ? `${draft.description.trim()} ` : ""}${pick}.`.slice(0, 1500) })}>+ {pick}</button>)}</div>
         {!uploadsAllowed(activeCategory) && <p className="field__hint">{WX.noFile[locale]}</p>}
         {uploadsAllowed(activeCategory) && <div className="field"><span className="field__label">{t.attach}</span>
@@ -409,6 +439,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
           <div><dt>{t.summaryService}</dt><dd>{service ? serviceName(service.slug, service.name, locale) : t.somethingElse}</dd><button type="button" onClick={() => goTo(0)}>{t.edit}</button></div>
           <div><dt>{t.summaryContact}</dt><dd>{draft.name} · +91 {draft.phone} · {draft.contact === "whatsapp" ? t.viaWhatsapp : draft.contact === "phone" ? t.viaPhone : t.viaEmail}</dd><button type="button" onClick={() => goTo(1)}>{t.edit}</button></div>
           <div><dt>{t.summaryNote}</dt><dd>{draft.description}</dd><button type="button" onClick={() => goTo(1)}>{t.edit}</button></div>
+          {activeIntake && <div><dt>Application details</dt><dd>{activeIntake.kind.toUpperCase()}: {Object.keys(activeIntake.answers).length} fields completed · {activeIntake.documents.length} document types ready</dd><button type="button" onClick={() => goTo(1)}>Edit</button></div>}
           {file && <div><dt>{t.summaryFile}</dt><dd>{file.name}</dd><button type="button" onClick={() => goTo(1)}>{t.edit}</button></div>}
           <div><dt>{t.summaryVisit}</dt><dd>{visitSummary}</dd><button type="button" onClick={() => goTo(2)}>{t.edit}</button></div>
         </dl>
