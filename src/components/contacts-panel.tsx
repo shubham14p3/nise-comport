@@ -4,9 +4,10 @@ import { FormEvent, useEffect, useState } from "react";
 import { Contact, Search, ThumbsDown, ThumbsUp, UserPlus } from "lucide-react";
 import { CAMPAIGN_SERVICES, serviceTitle } from "@/lib/campaign-text";
 import { secureApi } from "@/lib/secure-api-client";
+import { AdminPager } from "@/components/admin-pager";
 
 type Row = { id: string; name: string; phone: string; locale: string; area: string | null; services: { service: string; renewalOn?: string | null; note?: string | null }[]; consent: string; lastMessagedAt: string | null; source: string | null };
-type Listing = { contacts: Row[]; totals: Record<string, number> };
+type Listing = { contacts: Row[]; totals: Record<string, number>; matched: number };
 const CONSENT: Record<string, { label: string; className: string }> = {
   unknown: { label: "Not asked yet", className: "status-pill" },
   opted_in: { label: "Said YES", className: "status-pill status-pill--done" },
@@ -19,18 +20,21 @@ export default function ContactsPanel() {
   const [data, setData] = useState<Listing | null>(null);
   const [q, setQ] = useState("");
   const [consent, setConsent] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", locale: "en", service: "insurance", renewalOn: "", consent: "unknown" });
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
-  async function load(nextQ = q, nextConsent = consent) {
-    try { setData(await secureApi<Listing>("D4q8M2wS7kF1", { q: nextQ, consent: nextConsent })); }
+  async function load(nextQ = q, nextConsent = consent, nextPage = page, nextSize = pageSize) {
+    try { setData(await secureApi<Listing>("D4q8M2wS7kF1", { q: nextQ, consent: nextConsent, page: nextPage, pageSize: nextSize })); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load contacts."); }
   }
   useEffect(() => {
     let active = true;
-    secureApi<Listing>("D4q8M2wS7kF1", { q: "", consent: "" }).then((result) => { if (active) setData(result); })
+    secureApi<Listing>("D4q8M2wS7kF1", { q: "", consent: "", page: 0, pageSize: 20 }).then((result) => { if (active) setData(result); })
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load contacts."); });
     return () => { active = false; };
   }, []);
@@ -57,13 +61,14 @@ export default function ContactsPanel() {
   return <section className="admin-queue contacts">
     <h2><Contact size={17}/> Contacts <span>{Object.values(totals).reduce((sum, value) => sum + value, 0)}</span></h2>
     <p className="admin-lead">Everyone the shop may message on WhatsApp. People who say <b>STOP</b> are never messaged again, even if they appear in a later list. Excel lists (PAN, insurance, voter ID…) can be imported here next.</p>
-    <form className="promo-admin__bar" role="search" onSubmit={(event) => { event.preventDefault(); void load(); }}>
-      <div className="seg">{[["", "All"], ["unknown", "Not asked"], ["opted_in", "YES"], ["opted_out", "STOP"]].map(([id, label]) => <button key={id} type="button" className={consent === id ? "is-active" : undefined} onClick={() => { setConsent(id); void load(q, id); }}>{label}{id && totals[id] !== undefined ? ` · ${totals[id]}` : ""}</button>)}</div>
+    <form className="promo-admin__bar" role="search" onSubmit={(event) => { event.preventDefault(); setPage(0); void load(q, consent, 0); }}>
+      <div className="seg">{[["", "All"], ["unknown", "Not asked"], ["opted_in", "YES"], ["opted_out", "STOP"]].map(([id, label]) => <button key={id} type="button" className={consent === id ? "is-active" : undefined} onClick={() => { setConsent(id); setPage(0); void load(q, id, 0); }}>{label}{id && totals[id] !== undefined ? ` · ${totals[id]}` : ""}</button>)}</div>
       <label className="input-wrap"><Search size={16}/><input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Name, mobile or area" aria-label="Search contacts"/></label>
       <button className="btn btn--ghost btn--sm">Search</button>
     </form>
     {error && <div className="alert alert--error" role="alert">{error}</div>}
     {notice && <div className="alert alert--success" role="status">{notice}</div>}
+    {data && <AdminPager page={page} total={data.matched} pageSize={pageSize} onPage={(next) => { setPage(next); void load(q, consent, next); }} onPageSize={(size) => { setPageSize(size); setPage(0); void load(q, consent, 0, size); }} label="contacts"/>}
     <div className="contact-list">{(data?.contacts ?? []).map((row) => <article key={row.id} className="contact-row">
       <div><b>{row.name}</b><small>{row.phone} · {row.locale.toUpperCase()}{row.area ? ` · ${row.area}` : ""}{row.source ? ` · from ${row.source}` : ""}{row.lastMessagedAt ? ` · last messaged ${day(row.lastMessagedAt)}` : ""}</small>
         {row.services.length > 0 && <span className="contact-row__services">{row.services.map((item) => <em key={`${item.service}-${item.renewalOn ?? ""}`}>{serviceTitle(item.service)}{item.renewalOn ? ` · due ${day(item.renewalOn)}` : ""}</em>)}</span>}
@@ -75,7 +80,9 @@ export default function ContactsPanel() {
       </div>
     </article>)}</div>
     {data && !data.contacts.length && <p className="admin-empty">No contacts match.</p>}
-    <form className="team-add" onSubmit={add}>
+    {data && data.matched > pageSize && <AdminPager page={page} total={data.matched} pageSize={pageSize} onPage={(next) => { setPage(next); void load(q, consent, next); }} label="contacts"/>}
+    <button className="btn btn--ghost btn--sm" type="button" onClick={() => setAddOpen((value) => !value)} aria-expanded={addOpen}>{addOpen ? "Hide contact form" : "Add a contact"}</button>
+    {addOpen && <form className="team-add" onSubmit={add}>
       <h3><UserPlus size={17}/> Add a contact</h3>
       <div className="form-grid form-grid--3">
         <label className="field"><span className="field__label">Name</span><input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} maxLength={100}/></label>
@@ -86,6 +93,6 @@ export default function ContactsPanel() {
         <label className="field"><span className="field__label">WhatsApp permission</span><select value={form.consent} onChange={(event) => setForm({ ...form, consent: event.target.value })}><option value="unknown">Not asked yet</option><option value="opted_in">Said YES</option><option value="opted_out">Said STOP</option></select></label>
       </div>
       <button className="btn btn--primary" disabled={busy === "add"}>{busy === "add" ? "Saving…" : "Save contact"}<UserPlus size={16}/></button>
-    </form>
+    </form>}
   </section>;
 }
