@@ -4,7 +4,7 @@ import { intakeFields, intakeSections, validateDetailedIntake } from "../src/lib
 
 test("legacy PAN 49A preserves all sixteen numbered areas", () => {
   const headers=intakeSections("pan49a").map(x=>x.title).join("|");
-  for(const group of ["1.","6.","7.","8–9.","10–11.","12.","13.","14.","15.","16."])assert.ok(headers.includes(group),group);
+  for(const group of ["1–5.","6.","7.","8–9.","10–11.","12.","13.","14.","15.","16."])assert.ok(headers.includes(group),group);
   const ids=new Set(intakeSections("pan49a").flatMap(s=>s.fields.map(f=>f.id)));
   for(const key of ["aoArea","aoType","aoRange","aoNumber","printedName","previousName","dob","singleMother","fatherSurname","motherSurname","residencePin","officePin","communicationAddress","mobile","email","status","registrationNumber","aadhaarNumber","aadhaarEnrolmentId","incomeSalary","incomeNone","raApplicable","identityProof","addressProof","birthProof","declarationDate"])
     assert.ok(ids.has(key), "Missing "+key);
@@ -27,4 +27,24 @@ test("original PAN and voter questionnaires are not replaced",()=>{
   assert.ok(intakeSections("pan").length>0);
   assert.ok(intakeSections("voter").length>0);
   assert.ok(intakeSections("passport").length>0);
+});
+
+test("Form 49A requires matching generated name, rejects future birth dates and text PIN codes",()=>{
+  const errors=validateDetailedIntake({kind:"pan49a",answers:{
+    personTitle:"Shri",personFirst:"Demo",personSurname:"Applicant",printedName:"Wrong Name",
+    dob:"31/12/2099",residencePin:"83ABCD",status:"Individual",communicationSameAsResidence:"Yes",
+  },documents:[]});
+  assert.ok(errors.printedName);
+  assert.ok(errors.dob);
+  assert.ok(errors.residencePin);
+});
+test("Individual status is fixed and company registration questions are not shown",()=>{
+  const fields=intakeFields("pan49a",{status:"Individual",communicationSameAsResidence:"Yes",previousName:"No"}).map(f=>f.id);
+  assert.ok(fields.includes("status"));
+  assert.ok(!fields.includes("registrationNumber"));
+  assert.ok(!fields.includes("communicationAddress"));
+});
+test("AO codes are optional on a fresh worksheet",()=>{
+  const errors=validateDetailedIntake({kind:"pan49a",answers:{},documents:[]});
+  for(const id of ["aoArea","aoType","aoRange","aoNumber"])assert.equal(errors[id],undefined,id+" unexpectedly required");
 });
