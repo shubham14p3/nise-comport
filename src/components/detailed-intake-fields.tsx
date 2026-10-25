@@ -27,7 +27,7 @@ export default function DetailedIntakeFields({ intake, onChange, errors = {}, ph
       const fields=section.fields.filter(f=>visible.has(f.id));
       if(!fields.length) return null;
       const invalid = fields.some(f=>Boolean(errors[f.id]));
-      return <details className="detailed-intake__section" key={section.title} defaultOpen={index===0 || invalid}>
+      return <details className="detailed-intake__section" key={section.title} open={index===0 || invalid}>
         <summary><strong>{section.title}</strong><span>{fields.filter(f=>Boolean(intake.answers[f.id])).length}/{fields.filter(f=>f.required).length} required fields filled</span></summary>
         <div className="form-grid">
           {fields.map(f => {
