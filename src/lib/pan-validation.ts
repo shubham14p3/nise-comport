@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { detailedIntakeSchema, validateDetailedIntake } from "@/lib/detailed-intake";
+import { detailedIntakeSchema, validateDetailedIntake } from "./detailed-intake.ts";
 
 export const panServices = ["new", "correction", "reprint", "minor", "minor-to-major", "marriage", "business", "surrender"] as const;
 export const panServiceLabels: Record<typeof panServices[number], string> = {
