@@ -30,6 +30,28 @@ Both environments use a same-process loopback connection to the internal Node li
 
 The browser's `NEXT_PUBLIC_API_ENVELOPE_PUBLIC_JWK` is baked into the local build. It must match the server's `API_ENVELOPE_PRIVATE_JWK` or encrypted requests will fail. Do not put private keys or credentials in Git.
 
+## Multiple site addresses and login
+
+The browser uses relative API requests. Each supported hostname can serve sign-in
+without relaxing the encrypted API's same-origin security policy. With
+`CANONICAL_HOST_REDIRECT=true`, both the `www` and non-`www` forms of
+`nisecomport.aitapri.com`, `nicecompote.aitapri.com`, `nicecompote.com`,
+and the earlier documented `nisecomport.com` redirect to
+`NEXT_PUBLIC_SITE_URL`. The original path and query string are preserved.
+Host-only login cookies are **not** shared across unrelated domains; routing
+all browser visits to one canonical host prevents session inconsistencies.
+
+To activate another address, **before testing login**, configure its DNS
+(A/AAAA or CNAME as appropriate), cPanel/hosting domain binding and valid HTTPS
+certificate for the exact hostname, including the `www` version. Domain aliases
+alone do not provision DNS, SSL or a virtual host. Keep
+`NEXT_PUBLIC_SITE_URL=https://nisecomport.aitapri.com` while that is the
+live primary domain; for a custom-domain migration, switch the canonical URL,
+rebuild the Next.js frontend, deploy it and test sign-in and redirects. Add
+new exact hostnames (not wildcard patterns) via `SITE_DOMAIN_ALIASES` if
+needed. Never enable `Access-Control-Allow-Origin: *` or a cross-site
+credentialed login to implement these redirects.
+
 ## Build on Windows Git Bash
 
 Before any `git pull`, **make backups of local `.env.local` files**. Earlier versions of the repository incorrectly tracked `.env.local` despite the intent to ignore it. Do not lose your local secrets while updating the checkout; never transfer them via public Git.
