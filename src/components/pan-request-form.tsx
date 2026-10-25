@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, LockKeyhole } from "lucide-react";
+import { Check, Eye, FileText, LockKeyhole } from "lucide-react";
 import { OfferRail, OfferStrip, WizardActions, WizardFrame } from "@/components/wizard";
 import { CitySelect, StateSelect } from "@/components/state-city-fields";
 import { COUNTRIES, statesFor } from "@/lib/india-geo";
@@ -15,7 +15,7 @@ import { panIntakeSchema, panServiceLabels, panServices, type PanIntake } from "
 import { secureApi } from "@/lib/secure-api-client";
 import { useLocale } from "@/lib/use-locale";
 import { rememberReturn } from "@/lib/after-login";
-import Pan49APreview from "@/components/pan-49a-preview";
+import Pan49AModal from "@/components/pan-49a-modal";
 
 const STEPS = ["PAN service", "Applicant", "Documents", "Review"];
 const STEP_FIELDS: (keyof PanIntake)[][] = [
@@ -44,6 +44,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
   const [message, setMessage] = useState("");
   const [showConsent, setShowConsent] = useState(false);
   const [previewConfirmed, setPreviewConfirmed] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const idempotencyKey = useRef<string | null>(null);
 
   useEffect(() => {
@@ -124,6 +125,14 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
     {err(key)}
   </fieldset>;
 
+  const previewCard = (review = false) => <div className="pan49-open-card">
+    <div className="pan49-open-card__info"><span className="pan49-open-card__icon"><FileText size={23} aria-hidden="true"/></span><div>
+      <strong>{review ? "Your completed Form 49A is ready for review" : "See your form as a real two-page document"}</strong>
+      <p>{review ? "Open the document, check both pages and return here to confirm before sending." : "Preview your entered fields at any time. Blank fields remain empty until completed."}</p>
+    </div></div>
+    <button className="pan49-open-card__button" type="button" onClick={() => setShowPreview(true)}><Eye size={18} aria-hidden="true"/>{review ? "Open final preview" : "Preview filled Form 49A"}</button>
+  </div>;
+
   const frame = (content: React.ReactNode) => <WizardFrame
     kicker={legacy49a ? "PAN Form 49A reference · 4 steps" : "PAN assistance · 4 steps"}
     title={<>Let’s prepare your <span className="grad-text">{legacy49a ? "Form 49A worksheet." : "PAN request."}</span></>}
@@ -133,7 +142,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
     rail={<OfferRail category="government-services" locale={locale} whatsappText="Hi NISE COMPORT, I have a question about PAN."/>}
   >{content}</WizardFrame>;
 
-  if (!signedIn) return frame(<div className="callout callout--center"><LockKeyhole size={28}/><b>Sign in to keep your PAN request private</b><span>Your contact details prefill from your profile. You can review everything before sending.</span><div className="callout__actions"><Link className="btn btn--primary" href="/login" onClick={() => rememberReturn(legacy49a ? "/pan/49a" : "/pan/request")}>Sign in to continue</Link><Link className="btn btn--ghost" href="/signup" onClick={() => rememberReturn("/pan/request")}>Create a free account</Link></div></div>);
+  if (!signedIn) return frame(<div className="callout callout--center"><LockKeyhole size={28}/><b>Sign in to keep your PAN request private</b><span>Your contact details prefill from your profile. You can review everything before sending.</span><div className="callout__actions"><Link className="btn btn--primary" href="/login" onClick={() => rememberReturn(legacy49a ? "/pan/49a" : "/pan/request")}>Sign in to continue</Link><Link className="btn btn--ghost" href="/signup" onClick={() => rememberReturn(legacy49a ? "/pan/49a" : "/pan/request")}>Create a free account</Link></div></div>);
 
   return <>{frame(<form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (step === 3) { if (legacy49a && !previewConfirmed) { setMessage("Review both pages and tick the verification confirmation."); return; } if (demo) void submit(); else setShowConsent(true); } else next(); }}>
     {demo && <p className="alert alert--info">Local preview: entered information is not saved or sent.</p>}
@@ -175,6 +184,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
       {(data.applicant==="individual" || legacy49a) && data.detailedIntake && <DetailedIntakeFields
         intake={data.detailedIntake} onChange={(next)=>update("detailedIntake",next)}
         errors={errors.detailedIntake?validateDetailedIntake(data.detailedIntake):{}}/>}
+      {legacy49a && data.detailedIntake?.kind === "pan49a" && previewCard()}
       {["correction", "marriage", "minor-to-major"].includes(data.service) && <fieldset className="field"><legend className="field__label">Which details need updating?</legend>
         <div className="check-grid">{CORRECTIONS.map((value) => <label className="check" key={value}><input type="checkbox" checked={data.corrections.includes(value)} onChange={(event) => update("corrections", event.target.checked ? [...data.corrections, value] : data.corrections.filter((item) => item !== value))}/><span>{pretty(value)}</span></label>)}</div>
         {err("corrections")}
@@ -191,7 +201,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
 
     {step === 3 && <section>
       <h2>Review before sending</h2><p className="wizard-form__sub">Check everything once. You can edit any step.</p>
-      {legacy49a && data.detailedIntake?.kind==="pan49a" && <Pan49APreview pan={data} answers={data.detailedIntake.answers} onEdit={() => go(1)}/>}
+      {legacy49a && data.detailedIntake?.kind==="pan49a" && previewCard(true)}
       {legacy49a && <label className="check"><input type="checkbox" checked={previewConfirmed} onChange={event => setPreviewConfirmed(event.target.checked)}/><span>I have compared both preview pages with the supporting documents and confirmed the entered information is correct.</span></label>}
       <dl className="summary">{(Object.keys(LABELS) as (keyof PanIntake)[]).map((key) => {
         const value = data[key];
@@ -205,6 +215,13 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
     {message && <p className="alert alert--info" role="status">{message}</p>}
     <WizardActions locale={locale} onBack={step > 0 ? () => go(step - 1) : undefined} nextLabel={step === 3 ? demo ? "Validate preview" : "Send PAN request" : undefined} busy={busy}/>
   </form>)}
+  {legacy49a && data.detailedIntake?.kind==="pan49a" && <Pan49AModal
+    open={showPreview}
+    pan={data}
+    answers={data.detailedIntake.answers}
+    onClose={() => setShowPreview(false)}
+    onEdit={() => { setShowPreview(false); go(1); }}
+  />}
   <ConsentModal open={showConsent} onClose={() => setShowConsent(false)} busy={busy} serviceLabel={panServiceLabels[data.service]} onConfirm={() => { setShowConsent(false); void submit(); }}/>
   </>;
 }
