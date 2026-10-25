@@ -1,9 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { qrWelcomeMessage } from "../src/lib/site.ts";
+import { qrWelcomeMessage, qrWelcomeMessages } from "../src/lib/site.ts";
 
 test("QR welcome brochure shows all core services and confirmed shop details", () => {
   const message = qrWelcomeMessage();
+  const replies = qrWelcomeMessages();
+  assert.equal(replies.length, 2);
+  assert.match(replies[0], /Our Services Related/);
+  assert.match(replies[1], /Visit us/);
   for (const snippet of [
     "आपके इस प्रेम के लिए धन्यवाद", "Nise-Comport", "Bank of BARODA CSP",
     "PAN / Voter ID / Passport", "Aadhaar Correction", "Insurance", "Ayushman",
