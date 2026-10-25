@@ -3,7 +3,7 @@ import { z } from "zod";
 /** Customer intake questionnaire based on the sample Passport Seva, ECI Form 8 and PAN Form 49A.
  * These are assistance questionnaires, not government submissions.
  * Requirements/document lists should be checked against the current authority before filing. */
-export type IntakeKind = "passport" | "voter" | "pan";
+export type IntakeKind = "passport" | "voter" | "pan" | "voter-form8";
 export type IntakeValue = Record<string, string>;
 export type IntakeField = {
   id: string; label: string; required?: boolean; type?: "text" | "date" | "email" | "tel" | "textarea" | "select";
@@ -130,6 +130,102 @@ const voter: IntakeSection[] = [
   { title: "Declaration", fields: [select("declaration", "I confirm the information is correct", ["Yes"])] },
 ];
 
+
+/**
+ * The ECI Form 8 preparatory questionnaire. Kept separate from the older, shorter
+ * voter intake so existing applications and other services are not changed.
+ * The applicant must verify the current form and file through the ECI portal.
+ */
+export const FORM8_CORRECTIONS = [
+  ["Name", "correctName", "proofName"],
+  ["Gender", "correctGender", "proofGender"],
+  ["DoB/Age", "correctDob", "proofDob"],
+  ["Relation Type", "correctRelationType", "proofRelationType"],
+  ["Relation Name", "correctRelationName", "proofRelationName"],
+  ["Address", "correctAddress", "proofAddress"],
+  ["Mobile Number", "correctMobile", "proofMobile"],
+  ["Photo", "correctPhoto", "proofPhoto"],
+] as const;
+export type Form8Correction = (typeof FORM8_CORRECTIONS)[number][0];
+export function form8CorrectionNames(answers: IntakeValue): Form8Correction[] {
+  const raw = (answers.corrections ?? "").split("|").filter(Boolean);
+  return FORM8_CORRECTIONS.map(row => row[0]).filter(name => raw.includes(name));
+}
+const form8Show = (requestType: string) => (v: IntakeValue) => v.requestType === requestType;
+const fixShown = (name: Form8Correction) => (v: IntakeValue) =>
+  v.requestType === "Correction" && form8CorrectionNames(v).includes(name);
+const voterForm8: IntakeSection[] = [
+  { title: "Electoral roll and applicant details", fields: [
+    field("applicantName", "Name of the applicant", true),
+    field("epicNumber", "EPIC No.", true),
+    select("constituencyType", "Constituency", ["Assembly", "Parliamentary (UT without assembly)"]),
+    field("constituencyNumber", "Constituency number", true),
+    field("constituencyName", "Name of constituency", true),
+    select("aadhaarStatus", "Aadhaar details", ["Have Aadhaar", "Do not have Aadhaar"]),
+    field("aadhaarNumber", "Aadhaar number", true, "text", { show: showIf("aadhaarStatus", "Have Aadhaar") }),
+    field("mobile", "Mobile no. of self", false, "tel"),
+    field("relativeMobile", "Mobile no. of father/mother/relative", false, "tel"),
+    field("email", "Email ID of self", false, "email"),
+    field("relativeEmail", "Email ID of father/mother/relative", false, "email"),
+    select("requestType", "I submit application for", ["Shift residence", "Correction", "Replacement EPIC", "Disability marking"]),
+  ] },
+  { title: "1. Shifting of residence", fields: [
+    field("addressHouse", "House / Building / Apartment No.", true, "text", { show: form8Show("Shift residence") }),
+    field("addressStreet", "Street / Area / Locality / Mohalla / Road", true, "text", { show: form8Show("Shift residence") }),
+    field("addressTown", "Town / Village", true, "text", { show: form8Show("Shift residence") }),
+    field("addressPostOffice", "Post Office", true, "text", { show: form8Show("Shift residence") }),
+    field("addressPin", "PIN code", true, "text", { show: form8Show("Shift residence") }),
+    field("addressDistrict", "District", true, "text", { show: form8Show("Shift residence") }),
+    field("addressTehsil", "Tehsil / Taluka / Mandal", true, "text", { show: form8Show("Shift residence") }),
+    field("addressState", "State / UT", true, "text", { show: form8Show("Shift residence") }),
+    select("addressProofType", "Self-attested address proof", [
+      "Water/Electricity/Gas Bill (at least 1 year)",
+      "Aadhaar Card",
+      "Bank/Post Office current passbook",
+      "Indian Passport",
+      "Revenue Department land records / Kisan Bahi",
+      "Registered Rent Lease Deed",
+      "Registered Sale Deed",
+      "Other",
+    ], true, { show: form8Show("Shift residence") }),
+    field("addressProofOther", "Specify other address proof", true, "text", {
+      show: (v) => v.requestType === "Shift residence" && v.addressProofType === "Other",
+    }),
+  ] },
+  { title: "2. Correction of entries (maximum four)", fields: [
+    field("corrections", "Particulars selected for correction", true, "text", { show: form8Show("Correction") }),
+    field("correctName", "Correct name", true, "text", { show: fixShown("Name") }),
+    select("correctGender", "Correct gender", ["Male", "Female", "Transgender"], true, { show: fixShown("Gender") }),
+    field("correctDob", "Correct date of birth (DD/MM/YYYY)", true, "date", { show: fixShown("DoB/Age") }),
+    select("correctRelationType", "Correct relation type", ["Father", "Mother", "Husband", "Wife", "Guardian", "Other"], true, { show: fixShown("Relation Type") }),
+    field("correctRelationName", "Correct relation name", true, "text", { show: fixShown("Relation Name") }),
+    field("correctAddress", "Correct address", true, "textarea", { show: fixShown("Address") }),
+    field("correctMobile", "Correct mobile number", true, "tel", { show: fixShown("Mobile Number") }),
+    field("correctPhoto", "New photo requested", true, "text", { show: fixShown("Photo") }),
+    ...FORM8_CORRECTIONS.map(([name, , proof]) => field(proof, "Proof document for " + name, true, "text", { show: fixShown(name) })),
+  ] },
+  { title: "3. Replacement EPIC (without correction)", fields: [
+    select("replacementReason", "Original EPIC is", ["Lost", "Destroyed due to flood, fire or natural disaster", "Mutilated"], true, { show: form8Show("Replacement EPIC") }),
+    select("lostPoliceReport", "Police report / FIR available", ["Yes", "No"], false, {
+      show: (v) => v.requestType === "Replacement EPIC" && v.replacementReason === "Lost",
+    }),
+    select("oldEpicReturned", "I will return the old/mutilated EPIC if applicable", ["Yes", "No"], false, {
+      show: (v) => v.requestType === "Replacement EPIC" && v.replacementReason === "Mutilated",
+    }),
+  ] },
+  { title: "4. Person with disability", fields: [
+    select("disabilityType", "Category of disability", ["Locomotor", "Visual", "Deaf & Dumb", "Other"], true, { show: form8Show("Disability marking") }),
+    field("disabilityOther", "Other disability description", true, "text", { show: (v) => v.requestType === "Disability marking" && v.disabilityType === "Other" }),
+    field("disabilityPercent", "Percentage of disability", true, "text", { show: form8Show("Disability marking") }),
+    select("hasDisabilityCertificate", "Disability certificate attached", ["Yes", "No"], true, { show: form8Show("Disability marking") }),
+  ] },
+  { title: "Declaration", fields: [
+    field("declarationDate", "Declaration date (DD/MM/YYYY)", true, "date"),
+    field("declarationPlace", "Place", true),
+    select("declaration", "I confirm the details are true and understand the declaration", ["Yes"]),
+  ] },
+];
+
 const pan: IntakeSection[] = [
   { title: "Applicant name as on supporting proof", fields: [
     ...basicName("person"),
@@ -152,7 +248,7 @@ const pan: IntakeSection[] = [
   ]},
 ];
 
-const formSections: Record<IntakeKind, IntakeSection[]> = { passport, voter, pan };
+const formSections: Record<IntakeKind, IntakeSection[]> = { passport, voter, pan, "voter-form8": voterForm8 };
 export function intakeSections(kind: IntakeKind): IntakeSection[] { return formSections[kind]; }
 export function intakeFields(kind: IntakeKind, answers: IntakeValue): IntakeField[] {
   return formSections[kind].flatMap(s=>s.fields).filter(f=>!f.show||f.show(answers));
@@ -160,7 +256,7 @@ export function intakeFields(kind: IntakeKind, answers: IntakeValue): IntakeFiel
 const protectedKeys = new Set(["aadhaarNumber","panNumber","epicNumber","passportNumber"]);
 export function protectedIntakeField(key: string) { return protectedKeys.has(key); }
 export const detailedIntakeSchema = z.object({
-  kind: z.enum(["passport","voter","pan"]),
+  kind: z.enum(["passport","voter","pan","voter-form8"]),
   answers: z.record(z.string().min(1).max(45),z.string().max(400)).refine(v=>Object.keys(v).length<=110),
   documents: z.array(z.string().max(100)).max(18),
   photoFileId: z.uuid().optional(),
@@ -191,11 +287,32 @@ export function validateDetailedIntake(intake: DetailedIntake): Record<string,st
     else if(f.id==="disabilityPercent"&&(!/^\d{1,3}(\.\d{1,2})?$/.test(value)||Number(value)>100))errors[f.id]="Enter a percentage between 0 and 100.";
     else if(f.id==="applicantName"&&value.length<2)errors[f.id]="Enter the applicant name.";
   }
+  if (intake.kind === "voter-form8") {
+    const v = intake.answers;
+    if (v.epicNumber && !/^[A-Z]{3}[0-9]{7}$/.test(v.epicNumber.toUpperCase().trim())) errors.epicNumber = "Enter an EPIC number with 3 letters and 7 digits.";
+    if (v.constituencyNumber && !/^[0-9]{1,4}$/.test(v.constituencyNumber)) errors.constituencyNumber = "Enter a constituency number.";
+    if (!v.mobile?.trim() && !v.relativeMobile?.trim()) errors.mobile = "Provide a contact number for self or a relative.";
+    for (const k of ["mobile","relativeMobile","correctMobile"] as const) {
+      if (v[k]?.trim() && !/^[6-9][0-9]{9}$/.test(v[k].replace(/[\s()-]/g,""))) errors[k] = "Enter a 10-digit Indian mobile number.";
+    }
+    if (v.requestType === "Correction") {
+      const selected = form8CorrectionNames(v);
+      if (!selected.length || selected.length > 4 || v.corrections.split("|").filter(Boolean).length !== selected.length) {
+        errors.corrections = "Choose between one and four different correction particulars.";
+      }
+      if (selected.includes("Photo") && !intake.photoFileId) errors.photoFileId = "Upload a recent photograph for photo correction.";
+    }
+    if (v.requestType === "Disability marking" && v.disabilityPercent &&
+      (!/^[0-9]{1,3}(?:\.[0-9]{1,2})?$/.test(v.disabilityPercent) || Number(v.disabilityPercent) > 100)) {
+      errors.disabilityPercent = "Enter a percentage between 0 and 100.";
+    }
+  }
   if(intake.kind==="voter"&&intake.answers.requestType==="Correction"&&intake.answers.correctionTarget==="Photograph"&&!intake.photoFileId)errors.photoFileId="Upload a photograph for photo correction.";
   return errors;
 }
 
 export const intakeDocumentGuide: Record<IntakeKind, string[]> = {
+  "voter-form8": ["Self-attested supporting proof for the selected change", "Address proof for shifting residence", "Recent photo if correcting the photograph", "Police report/FIR for lost EPIC where applicable", "Disability certificate where applicable"],
   passport: [
     "Present-address proof where required (for example an accepted Aadhaar, utility bill or bank document)",
     "Date-of-birth proof accepted for the applicant's category",
