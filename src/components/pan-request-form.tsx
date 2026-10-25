@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, LockKeyhole } from "lucide-react";
+import DetailedIntakePreview from "@/components/detailed-intake-preview";
+import { saveApplicationDraft, readApplicationDraft, clearApplicationDraft } from "@/lib/tab-application-draft";
 import { OfferRail, OfferStrip, WizardActions, WizardFrame } from "@/components/wizard";
 import { CitySelect, StateSelect } from "@/components/state-city-fields";
 import { COUNTRIES, statesFor } from "@/lib/india-geo";
@@ -42,7 +44,24 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [showConsent, setShowConsent] = useState(false);
+  const [tabDraftReady, setTabDraftReady] = useState(false);
   const idempotencyKey = useRef<string | null>(null);
+
+  useEffect(() => {
+    let active=true;
+    void readApplicationDraft<{data:PanIntake}>("pan-request").then(saved=>{
+      if(!active)return;
+      if(saved?.data)setData(current=>({...current,...saved.data,consent:false}));
+      setTabDraftReady(true);
+    });
+    return()=>{active=false;};
+  }, []);
+
+  useEffect(()=>{
+    if(!tabDraftReady)return;
+    const timer=window.setTimeout(()=>{void saveApplicationDraft("pan-request",{data:{...data,consent:false}});},350);
+    return()=>window.clearTimeout(timer);
+  },[data,tabDraftReady]);
 
   useEffect(() => {
     if (demo || !signedIn) return;
@@ -77,11 +96,18 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
 
   function go(next: number) { setMessage(""); setStep(next); window.scrollTo({ top: 0, behavior: "smooth" }); }
 
-  function next() {
-    const found = problemsFor(step);
+  async function next() {
+    if(!tabDraftReady){setMessage("Restoring your saved application. Please try again.");return;}
+    const found=problemsFor(step);
     setErrors(found);
-    if (Object.keys(found).length) return;
-    go(step + 1);
+    if(Object.keys(found).length)return;
+    if(step===2 && !signedIn){
+      const ok=await saveApplicationDraft("pan-request",{data:{...data,consent:false}});
+      if(!ok){setMessage("Browser storage is unavailable. Enable site storage so your answers can be restored after sign-in.");return;}
+      rememberReturn("/pan/request");router.push("/login");return;
+    }
+    if(step===2 && demo){setMessage("Sign in with a real account to preview your PAN application.");return;}
+    go(step+1);
   }
 
   async function submit() {
@@ -93,11 +119,16 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
       if (firstStep >= 0) go(firstStep);
       return;
     }
-    if (demo) { setMessage("Preview validated. Create a real account to save and send this request."); return; }
+    if(!signedIn || demo){
+      const stored=await saveApplicationDraft("pan-request",{data:{...data,consent:false}});
+      if(!stored){setMessage("Unable to preserve your draft. Enable browser site storage.");return;}
+      rememberReturn("/pan/request");router.push("/login");return;
+    }
     setBusy(true); setMessage("");
     idempotencyKey.current ??= newIdempotencyKey();
     try {
       await secureApi("Z6m2C9pT4hQ7", { ...parsed.data, idempotencyKey: idempotencyKey.current });
+      clearApplicationDraft("pan-request");
       router.push("/profile#requests"); router.refresh();
     } catch (error) {
       const body = error && typeof error === "object" && "body" in error ? (error as { body?: { fields?: Record<string, string> } }).body : undefined;
@@ -127,9 +158,9 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
     rail={<OfferRail category="government-services" locale={locale} whatsappText="Hi NISE COMPORT, I have a question about PAN."/>}
   >{content}</WizardFrame>;
 
-  if (!signedIn) return frame(<div className="callout callout--center"><LockKeyhole size={28}/><b>Sign in to keep your PAN request private</b><span>Your contact details prefill from your profile. You can review everything before sending.</span><div className="callout__actions"><Link className="btn btn--primary" href="/login" onClick={() => rememberReturn("/pan/request")}>Sign in to continue</Link><Link className="btn btn--ghost" href="/signup" onClick={() => rememberReturn("/pan/request")}>Create a free account</Link></div></div>);
 
-  return <>{frame(<form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (step === 3) { if (demo) void submit(); else setShowConsent(true); } else next(); }}>
+
+  return <>{frame(<form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (step===3) { if(signedIn && !demo)setShowConsent(true); } else void next(); }}>
     {demo && <p className="alert alert--info">Local preview: entered information is not saved or sent.</p>}
     {step === 0 && <section>
       <h2>Which PAN service do you need?</h2><p className="wizard-form__sub">Pick one. We’ll adapt the next questions.</p>
@@ -183,7 +214,20 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
       {err("consent")}
     </section>}
 
-    {step === 3 && <section>
+    {step===3 && (!signedIn || demo) && <section className="preview-signin-gate">
+      <LockKeyhole size={24}/>
+      <h2>Sign in to preview your PAN application</h2>
+      <p>Your answers are temporarily saved in this browser tab. After sign-in, you will return here to review the complete form before submission.</p>
+      <div className="callout__actions">
+        <button type="button" className="btn btn--primary" onClick={async()=>{
+          const ok=await saveApplicationDraft("pan-request",{data:{...data,consent:false}});
+          if(!ok){setMessage("Browser storage is blocked. Enable site storage before leaving.");return;}
+          rememberReturn("/pan/request");router.push("/login");
+        }}>Sign in to preview</button>
+        <Link className="btn btn--ghost" href="/signup" onClick={()=>rememberReturn("/pan/request")}>Create an account</Link>
+      </div>
+    </section>}
+    {step===3 && signedIn && !demo && <section>
       <h2>Review before sending</h2><p className="wizard-form__sub">Check everything once. You can edit any step.</p>
       <dl className="summary">{(Object.keys(LABELS) as (keyof PanIntake)[]).map((key) => {
         const value = data[key];
@@ -191,11 +235,12 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
         const target = STEP_FIELDS.findIndex((fields) => fields.includes(key));
         return <div key={key}><dt>{LABELS[key]}</dt><dd>{text}</dd><button type="button" onClick={() => go(Math.max(0, target))}>Edit</button></div>;
       })}</dl>
+      {data.applicant==="individual" && data.detailedIntake && <DetailedIntakePreview intake={data.detailedIntake}/>}
     </section>}
 
     {Object.keys(errors).length > 0 && step !== 3 && <div className="alert alert--error" role="alert">Please check the highlighted details.</div>}
     {message && <p className="alert alert--info" role="status">{message}</p>}
-    <WizardActions locale={locale} onBack={step > 0 ? () => go(step - 1) : undefined} nextLabel={step === 3 ? demo ? "Validate preview" : "Send PAN request" : undefined} busy={busy}/>
+    <WizardActions locale={locale} onBack={step > 0 ? () => go(step - 1) : undefined} nextLabel={step===2 && !signedIn?"Sign in to preview":step===3 && !signedIn?"Sign in to preview":step===3?"Send PAN request":undefined} nextDisabled={!tabDraftReady || (step===3 && (!signedIn || demo))} busy={busy}/>
   </form>)}
   <ConsentModal open={showConsent} onClose={() => setShowConsent(false)} busy={busy} serviceLabel={panServiceLabels[data.service]} onConfirm={() => { setShowConsent(false); void submit(); }}/>
   </>;
