@@ -104,11 +104,12 @@ export function absoluteUrl(path = "/") {
 /** The QR-scan welcome brochure. External WhatsApp opens a prefilled message;
  * an automatic business-side reply is possible only with Cloud API enabled. */
 export function qrWelcomeMessages(): [string, string] {
-  const social = [
-    ...site.sameAs.filter((link) => /(?:instagram|facebook)\.com\//i.test(link)),
-    ...(process.env.NEXT_PUBLIC_INSTAGRAM_URL ? [process.env.NEXT_PUBLIC_INSTAGRAM_URL] : []),
-    ...(process.env.NEXT_PUBLIC_FACEBOOK_URL ? [process.env.NEXT_PUBLIC_FACEBOOK_URL] : []),
-  ].filter((value, index, all) => all.indexOf(value) === index);
+  const instagramUrl = env("NEXT_PUBLIC_INSTAGRAM_URL") ??
+    site.sameAs.find((link) => /instagram\.com\//i.test(link));
+  const instagramHandle = env("NEXT_PUBLIC_INSTAGRAM_HANDLE") ||
+    (instagramUrl ? "@" + instagramUrl.replace(/\/$/, "").split("/").pop()?.replace(/^@/, "") : undefined);
+  const facebookUrl = env("NEXT_PUBLIC_FACEBOOK_URL") ??
+    site.sameAs.find((link) => /facebook\.com\//i.test(link));
   const services = [
     "आपके इस प्रेम के लिए धन्यवाद",
     "",
@@ -127,6 +128,11 @@ export function qrWelcomeMessages(): [string, string] {
     "- Ayushman (Golden) Card",
     "- Food License",
     "- Land Rent / Mutation",
+    "",
+    "*Contact us:*",
+    "*0657-2917622*",
+    "*Mobile / WhatsApp:* +919771219893, +919835552756",
+    "https://maps.app.goo.gl/8RKNgZBJutYiunRx9",
   ].join("\n");
   const contact = [
     "*🙏Nise-Comport🙏*",
@@ -139,7 +145,9 @@ export function qrWelcomeMessages(): [string, string] {
     "*Mobile / WhatsApp:* +919771219893, +919835552756",
     `*Email:* ${site.email}`,
     `*Website:* ${site.url}`,
-    ...social.map((link) => `*Social:* ${link}`),
+    ...(instagramHandle ? [`*Instagram:* ${instagramHandle}`] : []),
+    ...(instagramUrl ? [`*Instagram profile:* ${instagramUrl}`] : []),
+    ...(facebookUrl ? [`*Facebook:* ${facebookUrl}`] : []),
     "https://maps.app.goo.gl/8RKNgZBJutYiunRx9",
     "",
     "Please reply with the service you need. Never share OTPs, passwords, or unmasked identity documents in chat.",

@@ -3191,3 +3191,87 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
   .record-modal__footer { padding: 8px 6px; gap: 3px; }
   .record-modal__footer .btn { padding-inline: 7px; font-size: .76rem; }
 }
+
+
+/* 2026 desk usability: a proper icon rail, wide workspace and reliable dialogs. */
+@media (min-width: 1061px) {
+  .admin-desk .profile__layout {
+    width: calc(100% - 24px);
+    max-width: 1720px;
+    margin-left: 12px;
+    margin-right: auto;
+    column-gap: 14px;
+  }
+  .admin-desk .profile__layout--rail {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+  .admin-desk .profile__layout--rail .profile__nav {
+    overflow: visible;
+    padding: 8px 5px;
+    border-radius: 14px;
+  }
+  .admin-desk .admin-nav-icons {
+    display: grid;
+    gap: 5px;
+    max-height: none;
+    overflow: visible; /* let actual hover tooltips escape the narrow rail */
+  }
+  .admin-desk .admin-nav-icons button {
+    position: relative;
+    min-height: 35px;
+    border-radius: 10px;
+    justify-content: center;
+    overflow: visible;
+    padding: 6px 0;
+  }
+  .admin-desk .admin-nav-icons button::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 14px);
+    transform: translateY(-50%) translateX(-3px);
+    padding: 8px 12px;
+    border-radius: 9px;
+    background: #17213d;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 650;
+    line-height: 1.2;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+    z-index: 60;
+    box-shadow: 0 8px 24px rgb(0 0 0 / .22);
+  }
+  .admin-desk .admin-nav-icons button:hover::after,
+  .admin-desk .admin-nav-icons button:focus-visible::after {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(-50%);
+  }
+}
+.admin-team-groups { display: grid; gap: 14px; align-content: start; min-width: 0; }
+.admin-team-groups > details.admin-accordion { padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+.admin-team-groups > details.admin-accordion > summary {
+  display: flex; align-items: center; gap: 10px; padding: 18px; font-weight: 700;
+  cursor: pointer;
+}
+.admin-team-groups > details.admin-accordion > .admin-queue { box-shadow: none; border: 0; border-top: 1px solid var(--line); border-radius: 0 0 14px 14px; }
+.admin-team__search { display: flex; align-items: center; gap: 8px; width: 100%; }
+.admin-team__search input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--bg); color: var(--ink); }
+.admin-row--openable { cursor: pointer; transition: border-color .16s ease, box-shadow .16s ease; }
+.admin-row--openable:hover, .admin-row--openable:focus-visible { border-color: var(--blue); box-shadow: 0 0 0 2px rgb(40 111 245 / .09); outline: none; }
+.admin-row--openable button, .admin-row--openable a, .admin-row--openable select { cursor: pointer; }
+.record-modal { isolation: isolate; }
+.record-modal__header { position: sticky; top: 0; }
+.record-modal__panel { min-height: 0; }
+.request-modal__panel { width: min(1000px, 100%); }
+.request-modal__body .pan-card { width: 100%; min-width: 0; }
+.request-modal__pagination { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; }
+.request-modal__body { overflow-x: hidden; }
+@media (max-width: 760px) {
+  .admin-team-groups > details.admin-accordion > summary { padding: 14px; }
+  .record-modal__header { align-items: flex-start; }
+  .record-modal__close { min-width: 44px; }
+}

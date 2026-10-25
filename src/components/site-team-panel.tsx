@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, Eye, EyeOff, KeyRound, Pencil, Plus, Trash2, UsersRound } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, EyeOff, KeyRound, Pencil, Plus, Search, Trash2, UsersRound } from "lucide-react";
 import { AdminPager, useAdminPagination } from "@/components/admin-pager";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
 
@@ -22,6 +22,8 @@ function Photo({ src, name, size = 56 }: { src: string | null; name: string; siz
 /** Owner only: who the public Team page and About page show. Staff logins live in the panel above. */
 export default function SiteTeamPanel() {
   const [people, setPeople] = useState<Person[] | null>(null);
+  const [search, setSearch] = useState("");
+  const [missingOnly, setMissingOnly] = useState(false);
   const [staff, setStaff] = useState<StaffAccount[] | null>(null);
   const [issuedLogin, setIssuedLogin] = useState<{ email: string; password: string } | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -68,7 +70,15 @@ export default function SiteTeamPanel() {
     finally { setBusy(""); if (fileInput.current) fileInput.current.value = ""; }
   }
 
-  const paging = useAdminPagination(people ?? []);
+  const needle = search.trim().toLocaleLowerCase();
+  const staffEmails = new Set((staff ?? []).map((account) => account.email.trim().toLocaleLowerCase()));
+  const needsLogin = (person: Person) => !person.email?.trim() || !staffEmails.has(person.email.trim().toLocaleLowerCase());
+  const missingCount = (people ?? []).filter(needsLogin).length;
+  const filteredPeople = (people ?? []).filter((person) =>
+    (!missingOnly || needsLogin(person)) && (!needle ||
+      [person.name, person.role, person.email ?? "", person.phone ?? "", person.bio ?? ""]
+        .some((value) => value.toLocaleLowerCase().includes(needle))));
+  const paging = useAdminPagination(filteredPeople);
   const staffNotListed = (staff ?? []).filter((account) => !(people ?? []).some((person) => person.email?.trim().toLowerCase() === account.email.toLowerCase()));
 
 
@@ -91,7 +101,8 @@ export default function SiteTeamPanel() {
 
   return <section className="admin-queue site-team">
     <h2><UsersRound size={17}/> Team shown on the website</h2>
-    <p className="admin-lead">Public team profiles and login accounts are separate. Match people by their private email address; only the owner may deliberately create a missing staff login. No automatic permission grants happen during page sync.</p>
+    <p className="admin-lead">Public team profiles and login accounts are separate. Match by a verified private email address, then use Create staff login for missing accounts. No permissions are granted automatically.</p>
+    {staff !== null && people !== null && <p className="admin-lead">{people.length} website profiles · {staff.length} existing owner/staff accounts · {missingCount} profiles without a matching login (including profiles missing an email).</p>}
     {error && <div className="alert alert--error" role="alert">{error}</div>}
     {notice && <div className="alert alert--success" role="status">{notice}</div>}
     {issuedLogin && <div className="alert alert--warn" role="status"><strong>One-time password for {issuedLogin.email}:</strong> <code>{issuedLogin.password}</code> <button type="button" className="btn btn--ghost btn--sm" onClick={() => setIssuedLogin(null)}>Hide password</button><p>Only shown for this action. Staff must change it on first sign-in. Do not share it publicly.</p></div>}
@@ -128,8 +139,12 @@ export default function SiteTeamPanel() {
     </form>}
 
     {!people && !error && <p className="admin-empty">Loading…</p>}
+    <label className="admin-team__search"><Search size={17} aria-hidden="true"/><input
+      type="search" aria-label="Search website team profiles" placeholder="Find existing or new profiles by name, role, mobile or email…"
+      value={search} onChange={(event) => setSearch(event.target.value)}/></label>
+    <label className="check"><input type="checkbox" checked={missingOnly} onChange={(event) => setMissingOnly(event.target.checked)}/> Show profiles without a linked staff login only</label>
     <AdminPager {...paging} label="public team members"/>
-    <div className="batch-list">{paging.items.map((person, index) => <article key={person.id} className={person.active ? "batch-row" : "batch-row is-off"}>
+    <div className="batch-list">{paging.items.map((person) => <article key={person.id} className={person.active ? "batch-row" : "batch-row is-off"}>
       <Photo src={person.image} name={person.name}/>
       <div><b>{person.name}</b><small>{person.role}{person.active ? "" : " · hidden"}</small>{(person.phone || person.email) && <small>{[person.phone, person.email].filter(Boolean).join(" · ")}</small>}
         {staff !== null && <small>{person.email && staff.some((account) => account.email.toLowerCase() === person.email?.trim().toLowerCase()) ? "Staff login linked by email" : person.email ? "No staff login for this email" : "Add a private email to create a login"}</small>}
@@ -137,13 +152,14 @@ export default function SiteTeamPanel() {
           <button type="button" className="btn btn--ghost btn--sm" disabled={Boolean(busy)} onClick={() => void provisionLogin(person)}><KeyRound size={14}/> {busy === `login:${person.id}` ? "Creating…" : "Create staff login"}</button>}
       </div>
       <div className="batch-row__actions">
-        <button type="button" className="icon-btn" disabled={paging.page * paging.pageSize + index === 0 || Boolean(busy)} onClick={() => void act({ action: "move", id: person.id, direction: "up" }, "Moved up.")} aria-label={`Move ${person.name} up`}><ArrowUp size={16}/></button>
-        <button type="button" className="icon-btn" disabled={paging.page * paging.pageSize + index === (people?.length ?? 0) - 1 || Boolean(busy)} onClick={() => void act({ action: "move", id: person.id, direction: "down" }, "Moved down.")} aria-label={`Move ${person.name} down`}><ArrowDown size={16}/></button>
+        <button type="button" className="icon-btn" disabled={people?.[0]?.id === person.id || Boolean(busy)} onClick={() => void act({ action: "move", id: person.id, direction: "up" }, "Moved up.")} aria-label={`Move ${person.name} up`}><ArrowUp size={16}/></button>
+        <button type="button" className="icon-btn" disabled={people?.[(people?.length ?? 1) - 1]?.id === person.id || Boolean(busy)} onClick={() => void act({ action: "move", id: person.id, direction: "down" }, "Moved down.")} aria-label={`Move ${person.name} down`}><ArrowDown size={16}/></button>
         <button type="button" className="icon-btn" onClick={() => setDraft({ id: person.id, name: person.name, role: person.role, bio: person.bio ?? "", image: person.image ?? "", active: person.active, phone: person.phone ?? "", email: person.email ?? "" })} aria-label={`Edit ${person.name}`}><Pencil size={16}/></button>
         <button type="button" className="icon-btn" onClick={() => void act({ action: "save", member: { id: person.id, name: person.name, role: person.role, bio: person.bio, image: person.image, active: !person.active, phone: person.phone ?? null, email: person.email ?? null } }, person.active ? "Hidden from the website." : "Shown on the website.")} aria-label={person.active ? `Hide ${person.name}` : `Show ${person.name}`}>{person.active ? <EyeOff size={16}/> : <Eye size={16}/>}</button>
         <button type="button" className="icon-btn" onClick={() => { if (window.confirm(`Remove ${person.name} from the team page?`)) void act({ action: "delete", id: person.id }, "Removed."); }} aria-label={`Remove ${person.name}`}><Trash2 size={16}/></button>
       </div>
     </article>)}</div>
-    {(people?.length ?? 0) > paging.pageSize && <AdminPager {...paging} label="public team members"/>}
+    {filteredPeople.length === 0 && people && <p className="admin-empty">No website team profiles match. Use Add person to create one.</p>}
+    {filteredPeople.length > paging.pageSize && <AdminPager {...paging} label="public team members"/>}
   </section>;
 }
