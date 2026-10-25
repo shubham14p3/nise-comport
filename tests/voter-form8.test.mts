@@ -75,3 +75,16 @@ test("Form 8 validates EPIC, phone, Aadhaar and declaration date",()=>{
   const errors=validateDetailedIntake(value);
   for (const key of ["epicNumber","mobile","aadhaarNumber","declarationDate"]) assert.ok(errors[key],key);
 });
+
+test("Form 8 date-of-birth correction permits valid DOB or age",()=>{
+  const value=form8({corrections:"DoB/Age",correctDob:"33",proofDob:"Birth certificate"});
+  assert.deepEqual(validateDetailedIntake(value),{});
+  value.answers.correctDob="31/02/1995";
+  assert.match(validateDetailedIntake(value).correctDob,/DD\/MM\/YYYY/);
+  value.answers.correctDob="19/08/1994";
+  assert.deepEqual(validateDetailedIntake(value),{});
+});
+test("mobile correction can be prepared even when the sample has no separate proof name",()=>{
+  const value=form8({corrections:"Mobile Number",correctMobile:"9876543210",proofMobile:""});
+  assert.deepEqual(validateDetailedIntake(value),{});
+});
