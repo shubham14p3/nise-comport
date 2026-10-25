@@ -76,3 +76,20 @@
   .pan49-page-number {bottom:3mm;left:6mm;right:6mm}
   .pan49-cell,.pan49-square,.pan49-textbox {print-color-adjust:exact;-webkit-print-color-adjust:exact}
 }
+
+/* Original, user-selected PDF background with vector annotations. The source never leaves the browser. */
+.pan49-template-upload {display:block;margin-top:10px;font-size:12px;font-weight:600;color:#193a78}
+.pan49-template-upload input {display:block;margin-top:5px;width:100%;max-width:420px;font-size:12px}
+.pan49-source-pages {display:grid;justify-content:center;gap:18px;overflow-x:auto;max-width:100%;padding:12px;background:#e6e8ee;border-radius:12px}
+.pan49-source-page {position:relative;width:792px;min-width:792px;height:1128px;background:white;box-shadow:0 5px 20px #11182722}
+.pan49-source-page canvas {display:block;width:100%;height:100%}
+.pan49-source-overlay {position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.pan49-source-notice, .pan49-source-note {font-size:12px;color:#34415b;text-align:center;padding:9px;max-width:792px}
+@media(max-width:850px) {.pan49-source-pages {justify-content:start}}
+@media print {
+  .pan49-source-pages,.pan49-source-pages * {visibility:visible !important}
+  .pan49-source-pages {display:block !important;position:absolute;left:0;top:0;padding:0;background:transparent;overflow:visible !important;max-width:none}
+  .pan49-source-page {display:block;width:210mm;min-width:210mm;height:297mm;page-break-after:always;break-after:page;box-shadow:none}
+  .pan49-source-page:last-of-type {page-break-after:auto;break-after:auto}
+  .pan49-source-notice,.pan49-source-note {display:none !important}
+}
