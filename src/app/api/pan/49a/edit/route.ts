@@ -47,7 +47,9 @@ export async function PATCH(request: NextRequest) {
     if (!["submitted","reviewing","waiting_for_customer"].includes(row.status) || row.officialReference) {
       throw new PublicError("This request is already being processed. Please contact the service desk to request corrections.",409);
     }
-    const {fileId:_ignored, detailedIntake:_plain, ...panFields}=pan;
+    const panFields = {...pan};
+    delete panFields.fileId;
+    delete panFields.detailedIntake;
     const secured = storeDetailedIntake(pan.detailedIntake);
     const [updated] = await db.update(serviceRequests).set({
       details:{...saved,kind:"pan",description:pan.notes||panServiceLabels[pan.service],pan:panFields,intake:secured},
