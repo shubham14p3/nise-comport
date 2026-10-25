@@ -8,6 +8,7 @@ import { paymentForReference, paymentOptions, syncCashfreePayment, upiQrSeconds 
 import { convenienceFee, refundBreakdown, TICKET_AFTER_HOURS } from "@/lib/payments-core";
 import { privateMetadata } from "@/lib/seo";
 import { whatsappLink } from "@/lib/site";
+import { workflowOf } from "@/lib/review-workflow";
 
 export const metadata: Metadata = privateMetadata("Pay for your request");
 export const dynamic = "force-dynamic";
@@ -28,6 +29,7 @@ export default async function PayPage({ params }: { params: Promise<{ reference:
   const { payment, request } = found;
   const options = paymentOptions();
   const fee = convenienceFee(payment.amountPaise, options.feePercent);
+  const discount = workflowOf(request.details).paymentCoupon;
   const paid = payment.amountPaise + payment.feePaise;
   const estimates = (["wallet", "original", "cash"] as const).map((choice) => ({ choice, net: refundBreakdown({ paidPaise: paid, method: payment.method, choice, feePercent: options.feePercent }).netPaise }));
   const ticketOpen = refundTicketAvailable(payment.updatedAt);
@@ -37,6 +39,9 @@ export default async function PayPage({ params }: { params: Promise<{ reference:
       <h1>Pay for <em>{request.serviceName}.</em></h1>
       <PayPanel
         reference={payment.reference} status={payment.status} amountPaise={payment.amountPaise} feePaise={fee} note={payment.note}
+        serviceFeePaise={Math.round(Number(request.serviceFee)*100)}
+        externalFeePaise={Math.round(Number(request.externalFee)*100)}
+        couponCode={discount?.code ?? null} discountPaise={discount?.discountPaise ?? 0}
         paidVia={payment.method} upiSlots={(options.upi ?? []).map((item) => ({ slot: item.slot, label: item.label }))} qrSeconds={upiQrSeconds()}
         helpHref={whatsappLink(`Hello NISE COMPORT, I want to pay ${payment.reference}. Please share the payment details.`)} failureReason={payment.failureReason} ticketRaised={Boolean(payment.issueRaisedAt)} ticketOpen={ticketOpen} refundStatus={payment.refundStatus} refundChoice={payment.refundChoice} refundPaise={payment.refundPaise} estimates={estimates}
         razorpay={options.razorpay} cashfree={options.cashfree} feePercent={options.feePercent}/>
