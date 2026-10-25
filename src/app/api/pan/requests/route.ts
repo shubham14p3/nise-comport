@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
     const { fileId, detailedIntake, ...panInput } = parsed.data;
     pan = panInput;
-    const securedIntake = detailedIntake && panInput.applicant==="individual" ? storeDetailedIntake(detailedIntake) : null;
+    const securedIntake = detailedIntake && (panInput.applicant==="individual" || detailedIntake.kind==="pan49a") ? storeDetailedIntake(detailedIntake) : null;
     if (fileId) throw new PublicError("Document attachments are arranged after review.", 400);
     // const copies so TS carries the "definitely assigned" narrowing into the closure below —
     // the hoisted `let`s above stay typed `T | undefined` inside a nested function either way.
