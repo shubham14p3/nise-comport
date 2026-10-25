@@ -173,7 +173,7 @@ export async function mailMeta(actor: MailActor): Promise<MailMeta> {
     if (["open", "awaiting_customer", "get_back_soon"].includes(row.status)) counts.active += row.total;
   }
   counts.unread = unread;
-  const inbox = actor.staff ? await imapConnection() : null;
+  const inbox = await imapConnection();
   const meta: MailMeta = { staff: actor.staff, counts, unread, supportAddress: process.env.MAIL_SUPPORT_ADDRESS?.trim() || inbox?.user || supportAddress(), mailboxConnected: Boolean(inbox) };
   if (actor.staff) {
     // Every staff member with the Messages permission can check the mailbox; only the owner sees disk and storage figures.
