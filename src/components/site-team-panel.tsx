@@ -144,7 +144,7 @@ export default function SiteTeamPanel() {
       value={search} onChange={(event) => setSearch(event.target.value)}/></label>
     <label className="check"><input type="checkbox" checked={missingOnly} onChange={(event) => setMissingOnly(event.target.checked)}/> Show profiles without a linked staff login only</label>
     <AdminPager {...paging} label="public team members"/>
-    <div className="batch-list">{paging.items.map((person, index) => <article key={person.id} className={person.active ? "batch-row" : "batch-row is-off"}>
+    <div className="batch-list">{paging.items.map((person) => <article key={person.id} className={person.active ? "batch-row" : "batch-row is-off"}>
       <Photo src={person.image} name={person.name}/>
       <div><b>{person.name}</b><small>{person.role}{person.active ? "" : " · hidden"}</small>{(person.phone || person.email) && <small>{[person.phone, person.email].filter(Boolean).join(" · ")}</small>}
         {staff !== null && <small>{person.email && staff.some((account) => account.email.toLowerCase() === person.email?.trim().toLowerCase()) ? "Staff login linked by email" : person.email ? "No staff login for this email" : "Add a private email to create a login"}</small>}
@@ -152,8 +152,8 @@ export default function SiteTeamPanel() {
           <button type="button" className="btn btn--ghost btn--sm" disabled={Boolean(busy)} onClick={() => void provisionLogin(person)}><KeyRound size={14}/> {busy === `login:${person.id}` ? "Creating…" : "Create staff login"}</button>}
       </div>
       <div className="batch-row__actions">
-        <button type="button" className="icon-btn" disabled={paging.page * paging.pageSize + index === 0 || Boolean(busy)} onClick={() => void act({ action: "move", id: person.id, direction: "up" }, "Moved up.")} aria-label={`Move ${person.name} up`}><ArrowUp size={16}/></button>
-        <button type="button" className="icon-btn" disabled={paging.page * paging.pageSize + index === (people?.length ?? 0) - 1 || Boolean(busy)} onClick={() => void act({ action: "move", id: person.id, direction: "down" }, "Moved down.")} aria-label={`Move ${person.name} down`}><ArrowDown size={16}/></button>
+        <button type="button" className="icon-btn" disabled={people?.[0]?.id === person.id || Boolean(busy)} onClick={() => void act({ action: "move", id: person.id, direction: "up" }, "Moved up.")} aria-label={`Move ${person.name} up`}><ArrowUp size={16}/></button>
+        <button type="button" className="icon-btn" disabled={people?.[(people?.length ?? 1) - 1]?.id === person.id || Boolean(busy)} onClick={() => void act({ action: "move", id: person.id, direction: "down" }, "Moved down.")} aria-label={`Move ${person.name} down`}><ArrowDown size={16}/></button>
         <button type="button" className="icon-btn" onClick={() => setDraft({ id: person.id, name: person.name, role: person.role, bio: person.bio ?? "", image: person.image ?? "", active: person.active, phone: person.phone ?? "", email: person.email ?? "" })} aria-label={`Edit ${person.name}`}><Pencil size={16}/></button>
         <button type="button" className="icon-btn" onClick={() => void act({ action: "save", member: { id: person.id, name: person.name, role: person.role, bio: person.bio, image: person.image, active: !person.active, phone: person.phone ?? null, email: person.email ?? null } }, person.active ? "Hidden from the website." : "Shown on the website.")} aria-label={person.active ? `Hide ${person.name}` : `Show ${person.name}`}>{person.active ? <EyeOff size={16}/> : <Eye size={16}/>}</button>
         <button type="button" className="icon-btn" onClick={() => { if (window.confirm(`Remove ${person.name} from the team page?`)) void act({ action: "delete", id: person.id }, "Removed."); }} aria-label={`Remove ${person.name}`}><Trash2 size={16}/></button>
