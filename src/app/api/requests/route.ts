@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     if (input.serviceSlug !== "other" && !found) throw new PublicError("Choose one of the listed services.", 400, { fields: { serviceSlug: "Choose one of the listed services." } });
     service = found ?? { slug: "other", title: "General enquiry" };
     if(input.intake) {
-      if(input.serviceSlug==="voter-id" && input.intake.kind!=="voter")throw new PublicError("Voter requests need the Voter ID form.",400);
+      if(input.serviceSlug==="voter-id" && !["voter","voter-form8"].includes(input.intake.kind))throw new PublicError("Voter requests need the Voter ID form.",400);
       if(input.serviceSlug==="passport-driving-licence" && input.intake.kind!=="passport")throw new PublicError("Passport requests need the passport form.",400);
       if(!["voter-id","passport-driving-licence"].includes(input.serviceSlug))throw new PublicError("This service does not use that questionnaire.",400);
     }
