@@ -139,8 +139,10 @@ export async function sendMail(mail: Mail) {
     console.info(`\n──── [dev mail] to ${mail.to} ────\nSubject: ${mail.subject}\n${text}\n──────────────────────────────\n`);
     return;
   }
-  // A vault outage must not break an existing SMTP configuration.
-  const vault = await resolveIntegration("email").catch((error) => {
+  // A complete server SMTP configuration always wins; do not even query the
+  // encrypted vault when the environment already supplies all SMTP fields.
+  const environmentReady = smtpConfigured();
+  const vault = environmentReady ? {} as Record<string, string> : await resolveIntegration("email").catch((error) => {
     console.error("[mail] integration vault unavailable; falling back to environment SMTP", error instanceof Error ? error.message : error);
     return {} as Record<string, string>;
   });
