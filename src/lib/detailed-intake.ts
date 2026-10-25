@@ -263,7 +263,18 @@ export function validateDetailedIntake(intake: DetailedIntake): Record<string,st
     else if(f.id==="disabilityPercent"&&(!/^\d{1,3}(\.\d{1,2})?$/.test(value)||Number(value)>100))errors[f.id]="Enter a percentage between 0 and 100.";
     else if(f.id==="applicantName"&&value.length<2)errors[f.id]="Enter the applicant name.";
   }
-  if(intake.kind==="pan49a") {\n    const a=intake.answers;\n    if(a.singleMother==="Yes"&&(!a.motherSurname||!a.motherFirst))errors.motherFirst="Enter the mother’s full name for a single-parent application.";\n    if(a.communicationAddress==="Office"&&a.officeAddress!=="Yes")errors.communicationAddress="Fill in the office address or select Residence.";\n    if(a.incomeNone==="Yes"&&["incomeSalary","incomeBusiness","incomeHouse","incomeCapital","incomeOther"].some(k=>a[k]==="Yes"))errors.incomeNone="No income cannot be combined with income sources.";\n    if(a.aadhaarNumber&&!/^\\d{12}$/.test(a.aadhaarNumber))errors.aadhaarNumber="Enter 12 digits.";\n    if(a.aoArea&&!/^[A-Za-z]{3,4}$/.test(a.aoArea))errors.aoArea="Enter a 3–4 letter AO area code.";\n    if(a.aoType&&!/^[A-Za-z]{1,2}$/.test(a.aoType))errors.aoType="Enter a 1–2 letter AO type.";\n    if(a.aoRange&&!/^\\d{1,3}$/.test(a.aoRange))errors.aoRange="Enter a numeric AO range.";\n    if(a.aoNumber&&!/^\\d{1,3}$/.test(a.aoNumber))errors.aoNumber="Enter a numeric AO number.";\n  }\n  if(intake.kind==="voter"&&intake.answers.requestType==="Correction"&&intake.answers.correctionTarget==="Photograph"&&!intake.photoFileId)errors.photoFileId="Upload a photograph for photo correction.";
+  if(intake.kind==="pan49a") {
+    const a=intake.answers;
+    if(a.singleMother==="Yes"&&(!a.motherSurname||!a.motherFirst))errors.motherFirst="Enter the mother’s full name for a single-parent application.";
+    if(a.communicationAddress==="Office"&&a.officeAddress!=="Yes")errors.communicationAddress="Fill in the office address or select Residence.";
+    if(a.incomeNone==="Yes"&&["incomeSalary","incomeBusiness","incomeHouse","incomeCapital","incomeOther"].some(k=>a[k]==="Yes"))errors.incomeNone="No income cannot be combined with income sources.";
+    if(a.aadhaarNumber&&!/^\d{12}$/.test(a.aadhaarNumber))errors.aadhaarNumber="Enter 12 digits.";
+    if(a.aoArea&&!/^[A-Za-z]{3,4}$/.test(a.aoArea))errors.aoArea="Enter a 3–4 letter AO area code.";
+    if(a.aoType&&!/^[A-Za-z]{1,2}$/.test(a.aoType))errors.aoType="Enter a 1–2 letter AO type.";
+    if(a.aoRange&&!/^\d{1,3}$/.test(a.aoRange))errors.aoRange="Enter a numeric AO range.";
+    if(a.aoNumber&&!/^\d{1,3}$/.test(a.aoNumber))errors.aoNumber="Enter a numeric AO number.";
+  }
+  if(intake.kind==="voter"&&intake.answers.requestType==="Correction"&&intake.answers.correctionTarget==="Photograph"&&!intake.photoFileId)errors.photoFileId="Upload a photograph for photo correction.";
   return errors;
 }
 
