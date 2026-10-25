@@ -40,7 +40,9 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
   const locale = useLocale();
   const [step, setStep] = useState(0);
   const [editLoading, setEditLoading] = useState(Boolean(editReference));
-  const [data, setData] = useState<PanIntake>({ service, citizenship: "indian", applicant: service === "business" ? "entity" : "individual", residency: "india", existingPan: ["new", "minor", "business"].includes(service) ? "no" : "yes", fullName: "", birthDate: "", contactName: "", email: "", phone: "", address: "", city: "", state: "", country: "India", postalCode: "", representative: "", entityType: "", corrections: [], documentPlan: [], notes: "", consent: false, detailedIntake: {kind:form93?"pan93":referenceMode?"pan49a":"pan",answers:referenceMode?{
+  const [data, setData] = useState<PanIntake>({ service, citizenship: "indian", applicant: service === "business" ? "entity" : "individual", residency: "india", existingPan: ["new", "minor", "business"].includes(service) ? "no" : "yes", fullName: "", birthDate: "", contactName: "", email: "", phone: "", address: "", city: "", state: "", country: "India", postalCode: "", representative: "", entityType: "", corrections: [], documentPlan: [], notes: "", consent: false, detailedIntake: {kind:form93?"pan93":referenceMode?"pan49a":"pan",answers:form93?{
+    singleMother:"No",officeAddress:"No",raApplicable:"No",residenceStatus:"Resident",communicationSameAsResidence:"Yes",communicationAddress:"Residence",residenceCountry:"India",phoneCountryCode:"91",
+  }:referenceMode?{
     status:"Individual",previousName:"No",singleMother:"No",officeAddress:"No",raApplicable:"No",
     communicationSameAsResidence:"Yes",communicationAddress:"Residence",residenceCountry:"India",phoneCountryCode:"91",
   }:{},documents:[]} });
