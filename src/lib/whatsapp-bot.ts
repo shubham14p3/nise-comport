@@ -7,7 +7,7 @@ import { summarizeHours } from "@/lib/hours";
 import { hitRate, identity } from "@/lib/rate-limit";
 import { publicPrices } from "@/lib/service-prices";
 import { publishedServiceDetails } from "@/lib/services";
-import { qrWelcomeMessage, site } from "@/lib/site";
+import { qrWelcomeMessages, site } from "@/lib/site";
 import { normalizePhone } from "@/lib/validation";
 import { sendText } from "@/lib/whatsapp";
 import {
@@ -49,6 +49,11 @@ export async function handleBotMessage(event: { from: string; text: string; name
   let needsHuman = intent === "human" || intent === "unknown" || intent === "attachment";
   await log({ phone, direction: "in", body: text || "(attachment or empty message)", sender: "customer", name: event.name, userId, needsHuman });
 
+  if (fromWelcomeQr && intent === "menu") {
+    for (const brochure of qrWelcomeMessages()) await replyAndLog(phone, brochure, "bot", userId);
+    return;
+  }
+
   if (intent === "track") {
     await handleStatusQuery(phone, /^\s*(status|track)/i.test(text) ? text : `status ${text}`);
     await log({ phone, direction: "out", body: "(status reply sent)", sender: "bot", userId });
@@ -57,7 +62,7 @@ export async function handleBotMessage(event: { from: string; text: string; name
 
   let reply: string;
   switch (intent) {
-    case "menu": reply = fromWelcomeQr ? qrWelcomeMessage() + "\n\n" + MENU : MENU; break;
+    case "menu": reply = MENU; break;
     case "price": {
       service = service ?? matchService(text, catalogue);
       if (!service) { reply = "Which service? For example “PAN card price”, “voter ID charge” or “bike insurance fee”."; break; }
