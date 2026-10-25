@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { BadgeCheck, Copy, Crown, KeyRound, Mail, Pencil, Phone, ShieldCheck, Trash2, UserMinus, UserPlus, UsersRound } from "lucide-react";
 import { PERMISSION_INFO, STAFF_PERMISSIONS, type Permission } from "@/lib/permissions";
 import { secureApi } from "@/lib/secure-api-client";
+import { AdminPager, useAdminPagination } from "@/components/admin-pager";
 
 type Member = { id: string; name: string; email: string; phone: string | null; role: string; permissions: Permission[]; verified: boolean; createdAt: string; disabled: boolean; tempPassword: boolean };
 type Role = "staff" | "admin";
@@ -92,6 +93,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
   const destroy = (member: Member) => window.confirm(`Delete ${member.name}'s account for good? Their details are erased and they can’t sign in. This cannot be undone.`)
     && patch(member, { delete: true }, `${member.name}’s account was deleted.`);
 
+  const paging = useAdminPagination(members ?? []);
   if (meRole !== "admin") return <p className="alert alert--info">Only the owner can manage the team.</p>;
   return <section className="admin-queue team-panel">
     <h2><UsersRound size={17}/> Team <span>{members?.length ?? "…"}</span></h2>
@@ -103,7 +105,8 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
       <button type="button" className="btn btn--ghost btn--sm" onClick={() => void navigator.clipboard?.writeText(secret.password)}><Copy size={14}/> Copy</button>
       <br/><small>Shown only now. It was also emailed to them.</small>
     </div>}
-    <div className="team-list">{(members ?? []).map((member) => {
+    <AdminPager {...paging} label="team members"/>
+    <div className="team-list">{paging.items.map((member) => {
       const isMe = member.id === meId;
       const open = editing === member.id && edit;
       const locked = busy === member.id;
@@ -142,6 +145,8 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
         </>}
       </article>;
     })}</div>
+    {(members?.length ?? 0) > paging.pageSize && <AdminPager {...paging} label="team members"/>}
+    <details className="admin-accordion"><summary><UserPlus size={15}/> Add a person</summary>
     <form className="team-add" onSubmit={add}>
       <h3><UserPlus size={17}/> Add a person</h3>
       <div className="form-grid">
@@ -155,6 +160,6 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
         : <p className="field__hint">Owners can open every area and manage the team. Only add people you fully trust.</p>}
       <button className="btn btn--primary" disabled={busy === "add" || (role === "staff" && !permissions.length)}>{busy === "add" ? "Adding…" : role === "admin" ? "Add owner" : "Add to team"}<UserPlus size={16}/></button>
       <p className="field__hint">New people get an email with their temporary password and must change it after signing in (Profile → Security). Existing customers keep their own password.</p>
-    </form>
+    </form></details>
   </section>;
 }
