@@ -176,7 +176,11 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
       router.push("/profile#requests"); router.refresh();
     } catch (error) {
       const body = error && typeof error === "object" && "body" in error ? (error as { body?: { fields?: Record<string, string> } }).body : undefined;
-      if (body?.fields) setErrors(body.fields);
+      if (body?.fields) {
+        setErrors(body.fields);
+        const first = STEP_FIELDS.findIndex(fields => fields.some(field => body.fields?.[field as string]));
+        if (first >= 0) go(first);
+      }
       setMessage(error instanceof TypeError ? "You appear to be offline. Your answers are still here; try again when you’re connected." : error instanceof Error ? error.message : "Please try again.");
     } finally { setBusy(false); }
   }
