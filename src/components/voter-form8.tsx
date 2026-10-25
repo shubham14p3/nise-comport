@@ -142,6 +142,7 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
   const [showAadhaar,setShowAadhaar] = useState(false);
   const [touched,setTouched] = useState<string[]>([]);
   const requestKey=useRef<string|null>(null);
+  const previewPending=useRef(false);
   const sections=useMemo(()=>intakeSections("voter-form8"),[]);
   const answers=intake.answers;
   const requestSection=sections[requestSections[answers.requestType] ?? 2];
@@ -303,6 +304,8 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
     }
     if(signedIn && !demo){setProblem("");setShowPreview(true);return;}
     if(demo){setProblem("Sign in with a regular account to preview a completed application.");return;}
+    if(previewPending.current)return;
+    previewPending.current=true;
     setBusy(true);
     setProblem("Saving your completed form securely in this browser before sign-in…");
     try{
@@ -311,7 +314,7 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
       router.push("/login");
     }catch(error){
       setProblem(error instanceof Error?error.message:"Your temporary form could not be saved. No data was discarded.");
-    }finally{setBusy(false);}
+    }finally{previewPending.current=false;setBusy(false);}
   }
   function validFile(file:File,limit:number){
     if(!proofTypes.includes(file.type)||file.size>limit||!file.size)throw new Error("Upload a PDF, JPG, PNG or WebP file within the size limit.");
@@ -388,7 +391,7 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
           <h2>{heading}</h2>
           {step===1&&answers.requestType==="Correction"&&<p className="f8-hint">Select up to four particulars. Each selected item opens its own value and proof fields. For example, choose Relation Type = Husband, enter the correct relation name, and update the mobile number.</p>}
           {step<3&&<div className="f8-inline-preview"><span><Eye size={18}/> See your form as a two-page document</span>
-            <button type="button" onClick={()=>void requestPreview()}>Preview filled Form 8</button></div>}
+            <button type="button" onClick={()=>void requestPreview()}>{signedIn&&!demo?"Preview filled Form 8":"Sign in to preview"}</button></div>}
           {step===0&&<p className="f8-hint">Enter the elector&apos;s current details from their existing voter record. Do not use the sample applicant&apos;s details.</p>}
           {(step===0||step===1||step===2)&&<div className="f8-input-grid">
             {step===1 && answers.requestType==="Correction" ? <>
@@ -419,7 +422,7 @@ export default function VoterForm8({ signedIn, demo, maxDate }: Props) {
           {step===3&&<div className="f8-review">
             <p>Review the two-page Form 8 preview, including the checked correction types, new values, document proof names and declaration.</p>
             <div className="f8-final-preview"><div><b>Your filled Form 8 is ready to verify</b><p>{reviewed?"Both preview pages reviewed. Edit any fields to review again.":"Open the preview, inspect Page 1 and Page 2, then select Done reviewing."}</p></div>
-              <button type="button" onClick={()=>void requestPreview()}><Eye size={17}/> {reviewed?"Reopen preview":"Open final preview"}</button></div>
+              <button type="button" onClick={()=>void requestPreview()}><Eye size={17}/> {reviewed?"Reopen preview":signedIn&&!demo?"Open final preview":"Sign in to preview"}</button></div>
             <div className="f8-review-grid">{sections.filter((section,index)=>index===0||index===5||index===requestSections[answers.requestType]).map(section=><div key={section.title}><h3>{section.title}</h3>
               {section.fields.filter(f=>visible.has(f.id)&&f.id!=="corrections"&&f.id!=="correctPhoto").map(f=><p key={f.id}><span>{f.label}</span><b>{dash(answers[f.id])}</b></p>)}
             </div>)}</div>
