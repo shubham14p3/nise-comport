@@ -49,9 +49,12 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
 
   useEffect(() => {
     let active=true;
-    void readApplicationDraft<{data:PanIntake}>("pan-request").then(saved=>{
+    void readApplicationDraft<{data:PanIntake;step:number}>("pan-request").then(saved=>{
       if(!active)return;
-      if(saved?.data)setData(current=>({...current,...saved.data,consent:false}));
+      if(saved?.data){
+        setData(current=>({...current,...saved.data}));
+        if(Number.isInteger(saved.step)&&saved.step>=0&&saved.step<=3)setStep(saved.step);
+      }
       setTabDraftReady(true);
     });
     return()=>{active=false;};
@@ -59,9 +62,9 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
 
   useEffect(()=>{
     if(!tabDraftReady)return;
-    const timer=window.setTimeout(()=>{void saveApplicationDraft("pan-request",{data:{...data,consent:false}});},350);
+    const timer=window.setTimeout(()=>{void saveApplicationDraft("pan-request",{data,step});},350);
     return()=>window.clearTimeout(timer);
-  },[data,tabDraftReady]);
+  },[data,step,tabDraftReady]);
 
   useEffect(() => {
     if (demo || !signedIn) return;
@@ -102,7 +105,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
     setErrors(found);
     if(Object.keys(found).length)return;
     if(step===2 && !signedIn){
-      const ok=await saveApplicationDraft("pan-request",{data:{...data,consent:false}});
+      const ok=await saveApplicationDraft("pan-request",{data,step:3});
       if(!ok){setMessage("Browser storage is unavailable. Enable site storage so your answers can be restored after sign-in.");return;}
       rememberReturn("/pan/request");router.push("/login");return;
     }
@@ -120,7 +123,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
       return;
     }
     if(!signedIn || demo){
-      const stored=await saveApplicationDraft("pan-request",{data:{...data,consent:false}});
+      const stored=await saveApplicationDraft("pan-request",{data,step:3});
       if(!stored){setMessage("Unable to preserve your draft. Enable browser site storage.");return;}
       rememberReturn("/pan/request");router.push("/login");return;
     }
@@ -220,7 +223,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
       <p>Your answers are temporarily saved in this browser tab. After sign-in, you will return here to review the complete form before submission.</p>
       <div className="callout__actions">
         <button type="button" className="btn btn--primary" onClick={async()=>{
-          const ok=await saveApplicationDraft("pan-request",{data:{...data,consent:false}});
+          const ok=await saveApplicationDraft("pan-request",{data,step:3});
           if(!ok){setMessage("Browser storage is blocked. Enable site storage before leaving.");return;}
           rememberReturn("/pan/request");router.push("/login");
         }}>Sign in to preview</button>
