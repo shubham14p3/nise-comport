@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { PanIntake } from "@/lib/pan-validation";
 type Props={ file: File; answers:Record<string,string>; pan:PanIntake };
+// Only this exact 2-page PDF may use the calibrated character-box coordinates.
+const ORIGINAL_49A_SHA256="f0692dd49744e62ce2cfe3c1da4a6a07dea1e4a885d7e746ed7d7563d3bbf2fd";
 type PdfDoc={numPages:number;getPage:(n:number)=>Promise<{getViewport:(p:{scale:number})=>{width:number;height:number};render:(p:{canvas:HTMLCanvasElement;canvasContext:CanvasRenderingContext2D;viewport:{width:number;height:number}})=>{promise:Promise<unknown>}}>;destroy:()=>Promise<unknown>};
 const l=(answers:Record<string,string>,key:string,fallback="")=>(answers[key]||fallback).toUpperCase();
 function Overlay({page,a,pan}:{page:number;a:Record<string,string>;pan:PanIntake}){
@@ -81,7 +83,11 @@ export default function Pan49ASourceViewer({file,answers,pan}:Props) {
      try{
        const pdfjs=await import("pdfjs-dist");
        pdfjs.GlobalWorkerOptions.workerSrc=new URL("pdfjs-dist/build/pdf.worker.min.mjs",import.meta.url).toString();
-       const data=new Uint8Array(await file.arrayBuffer());
+       const buffer=await file.arrayBuffer();
+       const digest=await crypto.subtle.digest("SHA-256",buffer);
+       const hash=Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,"0")).join("");
+       if(hash!==ORIGINAL_49A_SHA256)throw Error("This is not the original two-page Form 49A PDF. Its boxes may be in different positions. Choose the uploaded 49A_Form_Updated.pdf file.");
+       const data=new Uint8Array(buffer);
        const task=pdfjs.getDocument({data});
        doc=await task.promise as PdfDoc;
        if(doc.numPages!==2)throw Error("This preview needs the exact two-page Form 49A source PDF.");
