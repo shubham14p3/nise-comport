@@ -10,6 +10,7 @@ import { panIntakeSchema, panServiceLabels } from "@/lib/pan-validation";
 import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
 import { isIdempotencyConflict, notifyNewRequest, recordEvent, withUniqueReference } from "@/lib/requests";
 import { sendDbDownFallbackWhatsApp } from "@/lib/whatsapp-alerts";
+import { storeDetailedIntake } from "@/lib/detailed-intake-server";
 
 const envelope = z.object({ idempotencyKey: z.uuid().optional() }).passthrough();
 
@@ -29,8 +30,9 @@ export async function POST(request: NextRequest) {
       for (const issue of parsed.error.issues) { const key = String(issue.path[0] ?? "form"); if (!fields[key]) fields[key] = issue.message; }
       throw new PublicError(parsed.error.issues[0]?.message ?? "Please check the form.", 400, { code: "invalid_input", fields });
     }
-    const { fileId, ...panInput } = parsed.data;
+    const { fileId, detailedIntake, ...panInput } = parsed.data;
     pan = panInput;
+    const securedIntake = detailedIntake && panInput.applicant==="individual" ? storeDetailedIntake(detailedIntake) : null;
     if (fileId) throw new PublicError("Document attachments are arranged after review.", 400);
     // const copies so TS carries the "definitely assigned" narrowing into the closure below —
     // the hoisted `let`s above stay typed `T | undefined` inside a nested function either way.
@@ -51,7 +53,7 @@ export async function POST(request: NextRequest) {
       created = await withUniqueReference("PAN", async (reference) => {
         const [row] = await db.insert(serviceRequests).values({
           reference, userId: currentUser.id, serviceSlug: "pan-card", serviceName: label,
-          details: { kind: "pan", description: currentPan.notes || label, pan: currentPan }, serviceFee: "0.00", externalFee: "0.00", idempotencyKey: idempotencyKey ?? null,
+          details: { kind: "pan", description: currentPan.notes || label, pan: currentPan, ...(securedIntake?{intake:securedIntake}:{}) }, serviceFee: "0.00", externalFee: "0.00", idempotencyKey: idempotencyKey ?? null,
         }).returning({ id: serviceRequests.id, reference: serviceRequests.reference });
         return row;
       });
