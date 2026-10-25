@@ -120,7 +120,7 @@ export async function addContacts(people: Map<string, Person>, fileName: string)
 }
 
 /** People across all registers: one row per mobile (or PAN), with how often they appear. */
-export async function listPeople(options: { q?: string; service?: string; sort?: "repeat" | "recent" | "renewal"; page?: number }) {
+export async function listPeople(options: { q?: string; service?: string; sort?: "repeat" | "recent" | "renewal"; page?: number; pageSize?: number }) {
   const filters: SQL[] = [];
   if (options.service && options.service in RECORD_SERVICES) filters.push(eq(customerRecords.service, options.service));
   const query = (options.q ?? "").trim().slice(0, 80);
@@ -138,7 +138,8 @@ export async function listPeople(options: { q?: string; service?: string; sort?:
   }
   const personKey = sql<string>`coalesce(${customerRecords.mobileHash}, ${customerRecords.panHash}, ${customerRecords.id}::text)`;
   const where = filters.length ? and(...filters) : undefined;
-  const page = Math.max(0, Math.min(options.page ?? 0, 500));
+  const page = Math.max(0, Math.min(options.page ?? 0, 100000));
+  const pageSize = [10, 20, 50].includes(options.pageSize ?? 20) ? options.pageSize! : 20;
   const order = options.sort === "recent" ? sql`max(${customerRecords.recordDate}) desc nulls last`
     : options.sort === "renewal" ? sql`min(${customerRecords.renewalOn}) filter (where ${customerRecords.renewalOn} >= current_date) asc nulls last`
     : sql`count(*) desc, max(${customerRecords.recordDate}) desc nulls last`;
@@ -151,7 +152,7 @@ export async function listPeople(options: { q?: string; service?: string; sort?:
     services: sql<string[]>`array_agg(distinct ${customerRecords.service})`,
     lastDate: sql<string | null>`max(${customerRecords.recordDate})::text`,
     nextRenewal: sql<string | null>`(min(${customerRecords.renewalOn}) filter (where ${customerRecords.renewalOn} >= current_date))::text`,
-  }).from(customerRecords).where(inArray(personKey, keys)).groupBy(personKey).orderBy(order).limit(50).offset(page * 50);
+  }).from(customerRecords).where(inArray(personKey, keys)).groupBy(personKey).orderBy(order).limit(pageSize).offset(page * pageSize);
   const [totals] = await db.select({ people: sql<number>`count(distinct ${personKey})::int`, records: sql<number>`count(*)::int`,
     repeat: sql<number>`(select count(*)::int from (select 1 from ${customerRecords} group by coalesce(mobile_hash, pan_hash, id::text) having count(*) > 1) as r)` }).from(customerRecords).where(where);
   const byService = await db.select({ service: customerRecords.service, total: sql<number>`count(*)::int` }).from(customerRecords).groupBy(customerRecords.service);
