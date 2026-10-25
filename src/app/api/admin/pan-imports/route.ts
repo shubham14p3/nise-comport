@@ -1,7 +1,7 @@
 import { createCipheriv, createHmac, randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { NextRequest, NextResponse } from "next/server";
-import { and, desc, eq, ilike } from "drizzle-orm";
+import { and, count, desc, eq, ilike } from "drizzle-orm";
 import ExcelJS from "exceljs";
 import { z } from "zod";
 import { panImports, panRecords, storedFiles } from "@/db/schema";
@@ -82,17 +82,30 @@ export async function GET(request: NextRequest) {
   try {
     const user = await isAdmin();
     if (!user) return NextResponse.json({ error: "PAN data access is required." }, { status: 403 });
-    const query = (request.nextUrl.searchParams.get("q") ?? "").trim();
-    const imports = await db.select({ id: panImports.id, rowCount: panImports.rowCount, acceptedRows: panImports.acceptedRows, rejectedRows: panImports.rejectedRows, createdAt: panImports.createdAt }).from(panImports).orderBy(desc(panImports.createdAt)).limit(25);
-    if (!query) return NextResponse.json({ imports, records: [] });
-    let records: { id: string; holderName: string; recordStatus: string; createdAt: Date }[] = [];
-    if (/^[A-Za-z]{5}\d{4}[A-Za-z]$/.test(query)) {
-      const key = encryptionKey(); const hash = createHmac("sha256", panIndexKey(key)).update(query.toUpperCase()).digest("hex");
-      records = await db.select({ id: panRecords.id, holderName: panRecords.holderName, recordStatus: panRecords.recordStatus, createdAt: panRecords.createdAt }).from(panRecords).where(eq(panRecords.panHash, hash)).limit(20);
-    } else {
-      const safeQuery = query.replace(/[\\%_]/g, "\\$&").slice(0, 100);
-      records = await db.select({ id: panRecords.id, holderName: panRecords.holderName, recordStatus: panRecords.recordStatus, createdAt: panRecords.createdAt }).from(panRecords).where(ilike(panRecords.holderName, `%${safeQuery}%`)).orderBy(desc(panRecords.createdAt)).limit(50);
+    const params = request.nextUrl.searchParams;
+    if (params.has("imports")) {
+      const imports = await db.select({ id: panImports.id, rowCount: panImports.rowCount, acceptedRows: panImports.acceptedRows, rejectedRows: panImports.rejectedRows, createdAt: panImports.createdAt }).from(panImports).orderBy(desc(panImports.createdAt)).limit(25);
+      return NextResponse.json({ imports }, { headers: { "cache-control": "private, no-store" } });
     }
-    return NextResponse.json({ imports, records });
+    const query = (params.get("q") ?? "").trim().slice(0, 100);
+    if (!query) return NextResponse.json({ records: [], total: 0 }, { headers: { "cache-control": "private, no-store" } });
+    const page = Math.max(0, Math.min(Number(params.get("page")) || 0, 100000));
+    const pageSizeRaw = Number(params.get("pageSize"));
+    const pageSize = [10, 20, 50].includes(pageSizeRaw) ? pageSizeRaw : 20;
+    let where;
+    if (/^[A-Za-z]{5}\\d{4}[A-Za-z]$/.test(query)) {
+      const key = encryptionKey();
+      const hash = createHmac("sha256", panIndexKey(key)).update(query.toUpperCase()).digest("hex");
+      where = eq(panRecords.panHash, hash);
+    } else {
+      const safeQuery = query.replace(/[\\\\%_]/g, "\\\\$&");
+      where = ilike(panRecords.holderName, `%${safeQuery}%`);
+    }
+    const [records, [total]] = await Promise.all([
+      db.select({ id: panRecords.id, holderName: panRecords.holderName, recordStatus: panRecords.recordStatus, createdAt: panRecords.createdAt }).from(panRecords)
+        .where(where).orderBy(desc(panRecords.createdAt), desc(panRecords.id)).limit(pageSize).offset(page * pageSize),
+      db.select({ total: count() }).from(panRecords).where(where),
+    ]);
+    return NextResponse.json({ records, total: total.total }, { headers: { "cache-control": "private, no-store" } });
   } catch (error) { return apiError(error); }
 }
