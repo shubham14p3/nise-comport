@@ -60,8 +60,10 @@ export default function Pan49APreview({ answers: rawAnswers, pan, onEdit }: Prop
   const [sourcePdf, setSourcePdf] = useState<File|null>(null);
   const [sourceError, setSourceError] = useState("");
   useEffect(() => {
+    // The original binary is optional. Do not request a missing URL on every modal mount.
+    // Enable only after public/forms/pan-49a.pdf has actually been committed to this branch.
+    if (process.env.NEXT_PUBLIC_PAN49A_TEMPLATE_READY !== "true") return;
     let active = true;
-    // When the original uploaded template is placed in public/forms it loads for every customer.
     fetch("/forms/pan-49a.pdf", { cache: "force-cache" }).then(async response => {
       if (!response.ok) return;
       const blob = await response.blob();
