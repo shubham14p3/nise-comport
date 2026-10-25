@@ -20,8 +20,6 @@ export default function VoterForm8Modal({ open, onClose, onReviewed, onEdit, chi
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
-  const latestClose = useRef(onClose);
-  latestClose.current = onClose;
 
   useEffect(() => {
     if (!open) return;
@@ -30,7 +28,7 @@ export default function VoterForm8Modal({ open, onClose, onReviewed, onEdit, chi
     document.body.style.overflow = "hidden";
     closeRef.current?.focus();
     const handleKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") { event.preventDefault(); latestClose.current(); return; }
+      if (event.key === "Escape") { event.preventDefault(); onClose(); return; }
       if (event.key !== "Tab" || !dialogRef.current) return;
       const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
         'button:not([disabled]), input:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
@@ -46,7 +44,7 @@ export default function VoterForm8Modal({ open, onClose, onReviewed, onEdit, chi
       document.removeEventListener("keydown", handleKey);
       previousFocus?.focus();
     };
-  }, [open]);
+  }, [open, onClose]);
 
   if (!open) return null;
 
