@@ -68,6 +68,7 @@ type RequestDetail = {
   request: { id: string; reference: string; serviceName: string; status: string; statusLabel: string; details: Record<string, unknown>; createdAt: string; officialReference: string | null; officialReferenceLabel: string | null; officialReferenceSetAt: string | null };
   customer: { name: string; email: string; phone: string | null; whatsapp?: string | null; preferredContact: string };
   review: { rating: number; feedback: string | null; postedGoogleReview: boolean; createdAt: string } | null;
+  files: { id:string;name:string;createdAt:string }[];
   events: { fromStatus: string | null; toStatus: string; fromLabel: string | null; toLabel: string; note: string | null; createdAt: string; actor: string | null }[];
 };
 
@@ -217,10 +218,10 @@ function RequestQueue() {
     finally{setWorkflowBusy(false);}
   }
 
-  async function openPrivateFile(operation: string, id: string) {
+  async function openPrivateFile(operation: string, id: string, fileId?: string) {
     setError("");
     try {
-      const result = await secureFile(operation, { id });
+      const result = await secureFile(operation, { id, ...(fileId?{fileId}:{}) });
       const url = URL.createObjectURL(result.blob);
       window.open(url, "_blank", "noopener,noreferrer");
       window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
@@ -331,6 +332,15 @@ function RequestQueue() {
           <h3>Customer rating</h3>
           <p>{"★".repeat(detail.review.rating)}{"☆".repeat(5 - detail.review.rating)} ({detail.review.rating}/5) · {when(detail.review.createdAt)}</p>
           {detail.review.feedback && <p>“{detail.review.feedback}”</p>}
+        </article>}
+        {detail.files?.length>0&&<article className="pan-card">
+          <h3>Applicant documents ({detail.files.length})</h3>
+          <p>Securely submitted files are linked to this request, including customer follow-ups.</p>
+          <ul className="request-modal__files">{detail.files.map(file=><li key={file.id}>
+            <span><FileText size={16}/>{file.name} <small>{when(file.createdAt)}</small></span>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={()=>void openPrivateFile("V8d4K1rF7nT5",detail.request.id,file.id)}>
+              View securely</button>
+          </li>)}</ul>
         </article>}
         <PanSavedDetails details={detail.request.details}/>
         <article className="pan-card"><h3>Customer request</h3><RequestExtras details={detail.request.details} fallback="No note provided."/></article>
