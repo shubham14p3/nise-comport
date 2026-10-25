@@ -7,9 +7,6 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, Check, FileText, Headphones, House, Laptop, MapPin, PartyPopper, Search, Store, Upload, X } from "lucide-react";
 import AddressPicker, { addressProblem, EMPTY_ADDRESS, formatAddress, type AddressValue } from "@/components/address-picker";
 import { CategoryIcon, WhatsAppIcon } from "@/components/icons";
-import { useLiveCodes } from "@/components/offers-provider";
-import { scopeAllows } from "@/lib/promo-scope";
-import PromoCodeField, { type AppliedCode, type CodeSuggestion } from "@/components/promo-code-field";
 import { OfferRail, OfferStrip, WizardActions, WizardFrame } from "@/components/wizard";
 import ConsentModal from "@/components/consent-modal";
 import DetailedIntakeFields from "@/components/detailed-intake-fields";
@@ -19,7 +16,6 @@ import { newIdempotencyKey } from "@/lib/client-id";
 import type { OpeningHoursRule } from "@/lib/hours";
 import { dict, fill, type Locale } from "@/lib/i18n";
 import { findOffer, isOfferLive, offerAppliesTo, offersFor } from "@/lib/offers";
-import { promoDict } from "@/lib/promo-i18n";
 import { secureApi, secureUpload, SecureApiError } from "@/lib/secure-api-client";
 import { useLocale } from "@/lib/use-locale";
 import { whatsappHref } from "@/lib/public-contact";
@@ -38,7 +34,6 @@ type Draft = {
   offerId: string; consent: boolean; coupon: string;
   serviceTask: "passport" | "driving"; intake: DetailedIntake | null;
 };
-type Voucher = { code: string; emoji: string; names: Record<Locale, string>; used: boolean; live: boolean; personal: boolean; appliesTo?: { categories: string[]; services: string[] } | null };
 type SessionUser = { name: string; role: string } | null;
 
 const DRAFT_KEY = "nise-request-wizard";
@@ -103,7 +98,7 @@ export default function RequestWizard(props: { services: WizardService[]; initia
 }
 
 function initialDraft(services: WizardService[], initial: Initial): Draft {
-  const blank: Draft = { step: 0, serviceSlug: "", category: "all", query: "", name: "", phone: "", contact: "whatsapp", description: "", mode: "", day: "", slot: "", addressId: "", address: EMPTY_ADDRESS, offerId: "", consent: false, coupon: "", serviceTask: "passport", intake: null };
+  const blank: Draft = { step: 0, serviceSlug: "", category: "all", query: "", name: "", phone: "", contact: "whatsapp", description: "", mode: "online", day: "", slot: "", addressId: "", address: EMPTY_ADDRESS, offerId: "", consent: false, coupon: "", serviceTask: "passport", intake: null };
   const saved = readDraft();
   const coupon = (initial.coupon ?? "").toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 40);
   const hasUrlChoice = Boolean(initial.service || initial.category || initial.offer || initial.note);
@@ -123,10 +118,6 @@ function initialDraft(services: WizardService[], initial: Initial): Draft {
 function Wizard({ services, initial, hours, locale }: { services: WizardService[]; initial: Initial; hours: OpeningHoursRule[]; locale: Locale }) {
   const router = useRouter();
   const t = dict(locale).wizard;
-  const p = promoDict(locale);
-  const liveCodes = useLiveCodes();
-  const [applied, setApplied] = useState<AppliedCode | null>(null);
-  const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [draft, setDraft] = useState<Draft>(() => initialDraft(services, initial));
   const [days] = useState(() => upcomingDays(hours));
   const [user, setUser] = useState<SessionUser | undefined>(undefined);
@@ -193,7 +184,6 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         setDraft((current) => ({ ...current, ...back, consent: false, address: { ...EMPTY_ADDRESS, ...(back.address ?? {}) } }));
         setRestored(true);
       }
-      if (profile?.coupons) setVouchers(profile.coupons);
       if (profile) setDraft((current) => ({ ...current, name: current.name || profile.user.name, phone: current.phone || (profile.user.phone ?? "").replace(/^\+91/, ""), contact: current.contact || profile.user.preferredContact }));
       if (saved) {
         setAddresses(saved.addresses);
@@ -282,7 +272,6 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         },
         ...(draft.serviceSlug === "other" && draft.category !== "all" ? { category: draft.category } : {}),
         ...(offer ? { offerId: offer.id } : {}),
-        ...(draft.coupon ? { couponCode: draft.coupon } : {}),
         fileId,
         idempotencyKey: idempotencyKey.current,
       });
@@ -293,9 +282,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         // Always English: this text goes to the shop on WhatsApp.
         summary: [`Service: ${service?.name ?? "Not sure"}`, `Name: ${draft.name.trim()}`, `Mobile: +91 ${draft.phone.trim()}`, `Need: ${draft.description.trim()}`, `Visit: ${[{ walkin: "Walk-in", callback: "Call me back", doorstep: "Doorstep", online: "Online" }[draft.mode as Mode] ?? "", draft.day, draft.slot].filter(Boolean).join(" · ")}`].join("\n"),
         reference: result.request.reference, offerNote: result.offer && !result.offer.applied ? result.offer.reason : undefined,
-        couponOk: Boolean(result.coupon?.applied), couponNote: result.coupon ? result.coupon.applied ? fill(p.promoAppliedDone, { code: result.coupon.code ?? draft.coupon }) : `${p.promoNotApplied} ${result.coupon.reason ?? ""}` : undefined,
       });
-      setApplied(null);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (reason) {
       if (reason instanceof SecureApiError && reason.status === 401) { saveDraft({ ...draft, step: 3 }); rememberReturn("/request?resume=1"); router.push("/login"); return; }
@@ -334,22 +321,14 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   });
   const savedAddress = addresses.find((item) => item.id === draft.addressId);
   const modeCards: { id: Mode; icon: typeof Store; title: string; sub: string; soon?: boolean }[] = [
+    { id: "online", icon: Laptop, title: t.online, sub: t.onlineSub },
     { id: "walkin", icon: Store, title: t.walkin, sub: t.walkinSub },
     { id: "callback", icon: Headphones, title: t.callback, sub: t.callbackSub },
     { id: "doorstep", icon: House, title: t.doorstep, sub: t.doorstepSub, soon: true },
-    { id: "online", icon: Laptop, title: t.online, sub: t.onlineSub },
   ];
   const slotLabel = (slot: Slot | "") => slot ? t[slot] : "";
   const dayLabel = (iso: string) => { const day = days.find((item) => item.iso === iso); return day ? day.offset === 0 ? t.today : day.offset === 1 ? t.tomorrow : `${day.weekday}, ${day.date}` : iso; };
   const visitSummary = draft.mode === "walkin" ? `${t.walkin} · ${dayLabel(draft.day)}${draft.slot ? ` · ${slotLabel(draft.slot)}` : ""}` : draft.mode === "doorstep" ? `${t.doorstep} · ${savedAddress ? `${savedAddress.line1}, ${savedAddress.city}` : formatAddress(draft.address)}` : draft.mode === "callback" ? t.callback : draft.mode === "online" ? t.online : "";
-  // Only suggest codes that work on the chosen service.
-  const fitsService = (scope?: { categories: string[]; services: string[] } | null) => !draft.serviceSlug || scopeAllows(scope, { service: draft.serviceSlug, category: service?.category ?? null });
-  const suggestions: CodeSuggestion[] = [
-    ...vouchers.filter((item) => item.personal && item.live && !item.used && fitsService(item.appliesTo)).map((item) => ({ code: item.code, emoji: item.emoji, label: item.names[locale] ?? item.code, personal: true })),
-    ...[...liveCodes].sort((a, b) => Number(Boolean(activeCategory && b.categories !== "all" && b.categories.includes(activeCategory))) - Number(Boolean(activeCategory && a.categories !== "all" && a.categories.includes(activeCategory))))
-      .filter((item) => item.code && !item.masked && fitsService(item.appliesTo) && !vouchers.some((voucher) => voucher.code === item.code && voucher.used))
-      .map((item) => ({ code: item.code!, emoji: item.emoji, label: item.title[locale] })),
-  ];
   const nameBad = showErrors && draft.step === 1 && draft.name.trim().length < 2;
   const phoneBad = showErrors && draft.step === 1 && !validPhone(draft.phone);
   const describeBad = showErrors && draft.step === 1 && draft.description.trim().length < 8;
@@ -361,7 +340,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     lead={WX.lead[locale]}
     steps={t.steps} current={draft.step} onJump={goTo} locale={locale}
     strip={<OfferStrip category={activeCategory} locale={locale}/>}
-    rail={<OfferRail category={activeCategory} locale={locale} whatsappText={whatsappText} appliedOfferId={offer?.id} appliedCode={applied?.code ?? (draft.coupon || null)}/>}
+    rail={<OfferRail category={activeCategory} locale={locale} whatsappText={whatsappText} appliedOfferId={undefined} appliedCode={null}/>}
   >
     <div ref={cardTop} className="wizard__anchor"/>
     {restored && <p className="alert alert--info wizard-restored">{WX.restored[locale]} <button type="button" className="text-link" onClick={() => { setRestored(false); clearDraft(); void secureApi("D4r8F2kW6nQ1", { action: "clear" }).catch(() => undefined); setDraft(initialDraft(services, {})); }}>{WX.startFresh[locale]}</button></p>}
@@ -444,8 +423,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
           <div><dt>{t.summaryVisit}</dt><dd>{visitSummary}</dd><button type="button" onClick={() => goTo(2)}>{t.edit}</button></div>
         </dl>
         {offer && <div className={`applied-offer tone-${offer.tone}`}><span className="badge badge--live"><i/>{dict(locale).ticker.live}</span><div><b>{offer.highlight[locale]} · {offer.title[locale]}</b><small>{t.offerApplied}. {offer.firstTimeOnly ? t.offerCheck : ""}</small></div></div>}
-        <PromoCodeField locale={locale} value={draft.coupon} applied={applied} signedIn={Boolean(user && user.role !== "demo")} suggestions={suggestions} service={draft.serviceSlug || undefined}
-          onChange={(coupon) => update({ coupon })} onApplied={setApplied}/>
+        <p className="field__hint">Have an offer or coupon? Apply it after our team reviews your application and sends the quotation. The final discount is shown before you pay.</p>
         <label className="check check--agree"><input type="checkbox" checked={draft.consent} onChange={(event) => update({ consent: event.target.checked })}/><span>{t.consent} <Link href="/terms" target="_blank">{WX.terms[locale]}</Link> · <Link href="/privacy" target="_blank">{WX.privacy[locale]}</Link></span></label>
         {user === null && <p className="alert alert--info">{t.signInNote}</p>}
       </section>}
