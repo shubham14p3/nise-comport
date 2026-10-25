@@ -93,7 +93,7 @@ export async function PATCH(request: NextRequest) {
       }).returning({ id: walletEntries.id, userId: walletEntries.userId });
       return created;
     });
-    await logActivity({ kind: "wallet", permission: "wallet", title: "Owner wallet credit correction", detail: `₹${(cents / 100).toFixed(2)} · ${input.reason}`, refType: "wallet", refId: adjustment.id, actorId: actor.id });
+    await logActivity({ kind: "promotion", permission: "wallet", title: "Owner wallet credit correction", detail: `₹${(cents / 100).toFixed(2)} · ${input.reason}`, refType: "wallet", refId: adjustment.id, actorId: actor.id });
     return NextResponse.json({ ok: true, id: adjustment.id }, { headers: { "cache-control": "private, no-store" } });
   } catch (error) { return apiError(error); }
 }
