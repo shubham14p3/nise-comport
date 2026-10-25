@@ -48,3 +48,21 @@ test("AO codes are optional on a fresh worksheet",()=>{
   const errors=validateDetailedIntake({kind:"pan49a",answers:{},documents:[]});
   for(const id of ["aoArea","aoType","aoRange","aoNumber"])assert.equal(errors[id],undefined,id+" unexpectedly required");
 });
+
+test("Form 93 uses the current two-page individual form structure",()=>{
+  const sections=intakeSections("pan93").map(s=>s.title).join("|");
+  for(const name of ["Part A","Part B","Part C","Part D","Part E","Part F","Part G","Verification"])assert.ok(sections.includes(name));
+  const fields=new Set(intakeSections("pan93").flatMap(section=>section.fields.map(f=>f.id)));
+  for(const key of ["personFirst","personSurname","printedName","gender","dob","aadhaarNumber",
+    "residenceHouse","residencePin","residenceStatus","mobile","email","incomeNone",
+    "fatherFirst","motherFirst","printedParent","aoArea","raApplicable","communicationSameAsResidence",
+    "identityProof","addressProof","birthProof","declarationName"])assert.ok(fields.has(key),"Missing Form 93 field "+key);
+  for(const privateStageField of ["couponToken","paymentReference","officialReference","qrCode","signatureImage","photoImage"])
+    assert.ok(!fields.has(privateStageField),"Staff-only field leaked into customer questionnaire");
+});
+test("Form 93 cannot accept fabricated post-payment identifiers in applicant answers",()=>{
+  const errors=validateDetailedIntake({kind:"pan93",answers:{
+    couponToken:"INVALID-CUSTOMER-TOKEN",officialReference:"FAKE",applicationBarcode:"12345",
+  },documents:[]});
+  assert.ok(errors.couponToken&&errors.officialReference&&errors.applicationBarcode);
+});
