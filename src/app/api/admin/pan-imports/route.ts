@@ -93,12 +93,12 @@ export async function GET(request: NextRequest) {
     const pageSizeRaw = Number(params.get("pageSize"));
     const pageSize = [10, 20, 50].includes(pageSizeRaw) ? pageSizeRaw : 20;
     let where;
-    if (/^[A-Za-z]{5}\\d{4}[A-Za-z]$/.test(query)) {
+    if (/^[A-Za-z]{5}\d{4}[A-Za-z]$/.test(query)) {
       const key = encryptionKey();
       const hash = createHmac("sha256", panIndexKey(key)).update(query.toUpperCase()).digest("hex");
       where = eq(panRecords.panHash, hash);
     } else {
-      const safeQuery = query.replace(/[\\\\%_]/g, "\\\\$&");
+      const safeQuery = query.replace(/[\\%_]/g, "\\query.replace(/[\\\\%_]/g, "\\\\$&")");
       where = ilike(panRecords.holderName, `%${safeQuery}%`);
     }
     const [records, [total]] = await Promise.all([
