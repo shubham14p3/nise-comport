@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { ArrowRight, ChevronDown, Search, Sparkles, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CategoryIcon } from "@/components/icons";
 import { categoryMetaFor } from "@/lib/categories";
 import { serviceName } from "@/lib/i18n-forms";
 import { publishedServiceDetails, serviceCatalog, shortServiceName } from "@/lib/services";
 import { lp, tr } from "@/lib/tr";
 import { useLocale } from "@/lib/use-locale";
-import { usePathname } from "next/navigation";
 
 const MAX_PER_GROUP = 4;
 
@@ -25,7 +24,6 @@ const groups = serviceCatalog
 /** Services navigation: roomy category cards and live, keyboard-friendly search. */
 export function ServicesMegaDesktop({ label, active }: { label: string; active: boolean }) {
   const lc = useLocale();
-  const path = usePathname();
   const t = tr(lc);
   const catName = (slug: string, fallback: string) => lc === "en" ? fallback : categoryMetaFor(slug)?.short[lc] ?? fallback;
   const [open, setOpen] = useState(false);
@@ -38,7 +36,6 @@ export function ServicesMegaDesktop({ label, active }: { label: string; active: 
   const scheduleClose = () => { cancelClose(); closeTimer.current=setTimeout(close,220); };
 
   useEffect(() => { return () => { if(closeTimer.current) clearTimeout(closeTimer.current); }; }, []);
-  useEffect(() => { setOpen(false); setQuery(""); }, [path]);
   useEffect(() => {
     if (!open) return;
     const onPointer = (event: MouseEvent) => { if (!wrapRef.current?.contains(event.target as Node)) close(); };
@@ -50,14 +47,14 @@ export function ServicesMegaDesktop({ label, active }: { label: string; active: 
     return () => { document.removeEventListener("mousedown", onPointer); document.removeEventListener("keydown", onKey); };
   }, [open]);
 
-  const filtered = useMemo(() => {
+  const filtered = (() => {
     const q = query.trim().toLocaleLowerCase();
     return groups.map(group => ({
       ...group, shown: q ? group.items.filter(item =>
         [item.title,shortServiceName(item.title),serviceName(item.slug,item.title,lc),group.title,catName(group.slug,group.title)]
           .some(value => value.toLocaleLowerCase().includes(q))) : group.items.slice(0,MAX_PER_GROUP),
     })).filter(group => group.shown.length > 0);
-  }, [query,lc]);
+  })();
   const matching = filtered.reduce((sum,group)=>sum+group.shown.length,0);
   const allServices = groups.reduce((sum,group)=>sum+group.items.length,0);
 
