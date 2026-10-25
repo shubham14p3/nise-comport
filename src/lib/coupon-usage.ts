@@ -1,13 +1,20 @@
-import { and, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import { couponBlocks, couponRedemptions, coupons, printJobs, serviceRequests, users } from "@/db/schema";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { logActivity } from "@/lib/activity";
 
 /** Who used which coupon: one row per use, newest first, with how many times that customer has used that code. */
-export async function couponUsage(filter: { couponId?: string; userId?: string; q?: string }) {
+export async function couponUsage(filter: { couponId?: string; userId?: string; q?: string; page?: number; pageSize?: number }) {
   const q = (filter.q ?? "").trim().slice(0, 60);
   const like = q ? `%${q.replace(/[%_\\]/g, "\\$&")}%` : null;
+  const size = [10, 20, 50].includes(filter.pageSize ?? 20) ? filter.pageSize! : 20;
+  const page = Math.max(0, Math.min(filter.page ?? 0, 100000));
+  const where = and(
+    filter.couponId ? eq(couponRedemptions.couponId, filter.couponId) : undefined,
+    filter.userId ? eq(couponRedemptions.userId, filter.userId) : undefined,
+    like ? or(ilike(coupons.code, like), ilike(users.name, like), ilike(users.phone, like), ilike(users.email, like)) : undefined,
+  );
   const rows = await db.select({
     id: couponRedemptions.id, couponId: coupons.id, code: coupons.code, userId: users.id, name: users.name, phone: users.phone, email: users.email,
     kind: couponRedemptions.requestKind, requestId: couponRedemptions.requestId, amount: couponRedemptions.amount, usedAt: couponRedemptions.createdAt,
@@ -18,12 +25,12 @@ export async function couponUsage(filter: { couponId?: string; userId?: string; 
     .innerJoin(users, eq(users.id, couponRedemptions.userId))
     .leftJoin(serviceRequests, and(eq(couponRedemptions.requestKind, "service"), eq(serviceRequests.id, couponRedemptions.requestId)))
     .leftJoin(printJobs, and(eq(couponRedemptions.requestKind, "print"), eq(printJobs.id, couponRedemptions.requestId)))
-    .where(and(
-      filter.couponId ? eq(couponRedemptions.couponId, filter.couponId) : undefined,
-      filter.userId ? eq(couponRedemptions.userId, filter.userId) : undefined,
-      like ? or(ilike(coupons.code, like), ilike(users.name, like), ilike(users.phone, like), ilike(users.email, like)) : undefined,
-    ))
-    .orderBy(desc(couponRedemptions.createdAt)).limit(300);
+    .where(where)
+    .orderBy(desc(couponRedemptions.createdAt), desc(couponRedemptions.id)).limit(size).offset(page * size);
+  const [total] = await db.select({ count: count() }).from(couponRedemptions)
+    .innerJoin(coupons, eq(coupons.id, couponRedemptions.couponId))
+    .innerJoin(users, eq(users.id, couponRedemptions.userId))
+    .where(where);
   const blocks = await db.select({
     id: couponBlocks.id, userId: couponBlocks.userId, couponId: couponBlocks.couponId, code: coupons.code, reason: couponBlocks.reason, createdAt: couponBlocks.createdAt, name: users.name, phone: users.phone,
   }).from(couponBlocks).innerJoin(users, eq(users.id, couponBlocks.userId)).leftJoin(coupons, eq(coupons.id, couponBlocks.couponId)).orderBy(desc(couponBlocks.createdAt)).limit(200);
@@ -32,6 +39,7 @@ export async function couponUsage(filter: { couponId?: string; userId?: string; 
     uses: rows.map((row) => ({ ...row, amount: Number(row.amount), usedAt: row.usedAt.toISOString(), reference: row.serviceReference ?? row.printReference ?? null, what: row.kind === "print" ? "Print order" : row.serviceName ?? "Service request" })),
     blocks: blocks.map((row) => ({ ...row, createdAt: row.createdAt.toISOString() })),
     codes,
+    total: total.count,
   };
 }
 
