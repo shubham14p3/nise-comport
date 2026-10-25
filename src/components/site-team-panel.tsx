@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, Eye, EyeOff, KeyRound, Pencil, Plus, Trash2, UsersRound } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, EyeOff, KeyRound, Pencil, Plus, Search, Trash2, UsersRound } from "lucide-react";
 import { AdminPager, useAdminPagination } from "@/components/admin-pager";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
 
@@ -22,6 +22,7 @@ function Photo({ src, name, size = 56 }: { src: string | null; name: string; siz
 /** Owner only: who the public Team page and About page show. Staff logins live in the panel above. */
 export default function SiteTeamPanel() {
   const [people, setPeople] = useState<Person[] | null>(null);
+  const [search, setSearch] = useState("");
   const [staff, setStaff] = useState<StaffAccount[] | null>(null);
   const [issuedLogin, setIssuedLogin] = useState<{ email: string; password: string } | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -68,7 +69,11 @@ export default function SiteTeamPanel() {
     finally { setBusy(""); if (fileInput.current) fileInput.current.value = ""; }
   }
 
-  const paging = useAdminPagination(people ?? []);
+  const needle = search.trim().toLocaleLowerCase();
+  const filteredPeople = (people ?? []).filter((person) => !needle ||
+    [person.name, person.role, person.email ?? "", person.phone ?? "", person.bio ?? ""]
+      .some((value) => value.toLocaleLowerCase().includes(needle)));
+  const paging = useAdminPagination(filteredPeople);
   const staffNotListed = (staff ?? []).filter((account) => !(people ?? []).some((person) => person.email?.trim().toLowerCase() === account.email.toLowerCase()));
 
 
@@ -128,6 +133,9 @@ export default function SiteTeamPanel() {
     </form>}
 
     {!people && !error && <p className="admin-empty">Loading…</p>}
+    <label className="admin-team__search"><Search size={17} aria-hidden="true"/><input
+      type="search" aria-label="Search website team profiles" placeholder="Find existing or new profiles by name, role, mobile or email…"
+      value={search} onChange={(event) => setSearch(event.target.value)}/></label>
     <AdminPager {...paging} label="public team members"/>
     <div className="batch-list">{paging.items.map((person, index) => <article key={person.id} className={person.active ? "batch-row" : "batch-row is-off"}>
       <Photo src={person.image} name={person.name}/>
@@ -144,6 +152,7 @@ export default function SiteTeamPanel() {
         <button type="button" className="icon-btn" onClick={() => { if (window.confirm(`Remove ${person.name} from the team page?`)) void act({ action: "delete", id: person.id }, "Removed."); }} aria-label={`Remove ${person.name}`}><Trash2 size={16}/></button>
       </div>
     </article>)}</div>
-    {(people?.length ?? 0) > paging.pageSize && <AdminPager {...paging} label="public team members"/>}
+    {filteredPeople.length === 0 && people && <p className="admin-empty">No website team profiles match. Use Add person to create one.</p>}
+    {filteredPeople.length > paging.pageSize && <AdminPager {...paging} label="public team members"/>}
   </section>;
 }
