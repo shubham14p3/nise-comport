@@ -68,6 +68,7 @@ type RequestDetail = {
   request: { id: string; reference: string; serviceName: string; status: string; statusLabel: string; details: Record<string, unknown>; createdAt: string; officialReference: string | null; officialReferenceLabel: string | null; officialReferenceSetAt: string | null };
   customer: { name: string; email: string; phone: string | null; whatsapp?: string | null; preferredContact: string };
   review: { rating: number; feedback: string | null; postedGoogleReview: boolean; createdAt: string } | null;
+  files: { id:string;name:string;createdAt:string }[];
   events: { fromStatus: string | null; toStatus: string; fromLabel: string | null; toLabel: string; note: string | null; createdAt: string; actor: string | null }[];
 };
 
@@ -91,6 +92,11 @@ function RequestQueue() {
   const [officialRef, setOfficialRef] = useState("");
   const [officialRefLabel, setOfficialRefLabel] = useState("");
   const [officialRefSaving, setOfficialRefSaving] = useState(false);
+  const [reviewNote, setReviewNote] = useState("");
+  const [serviceFee, setServiceFee] = useState("");
+  const [externalFee, setExternalFee] = useState("0");
+  const [quoteNote, setQuoteNote] = useState("");
+  const [workflowBusy, setWorkflowBusy] = useState(false);
   const [jobPage, setJobPage] = useState(0);
   const [requestPage, setRequestPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
@@ -160,6 +166,10 @@ function RequestQueue() {
       setHistoryPage(0);
       setOfficialRef(result.request.officialReference ?? "");
       setOfficialRefLabel(result.request.officialReferenceLabel ?? "");
+      setReviewNote("");
+      setServiceFee("");
+      setExternalFee("0");
+      setQuoteNote("");
     }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not open request details."); }
     finally { setDetailBusy(false); }
@@ -181,10 +191,37 @@ function RequestQueue() {
     finally { setOfficialRefSaving(false); }
   }
 
-  async function openPrivateFile(operation: string, id: string) {
+  async function reviewAction(action: "start" | "changes" | "approve") {
+    if(!detail || workflowBusy)return;
+    setWorkflowBusy(true);setError("");setNotice("");
+    try {
+      await secureApi("N8q4B1tK7mD2",{id:detail.request.id,expectedStatus:detail.request.status,action,note:reviewNote.trim()});
+      await load();
+      await openDetail(detail.request.id);
+      setNotice(action==="changes"?"Customer asked for missing information.":action==="approve"?"Details approved. Enter the amount to request payment.":"Request moved to review.");
+    }catch(reason){setError(reason instanceof Error?reason.message:"Could not update review.");}
+    finally{setWorkflowBusy(false);}
+  }
+  async function issueQuote() {
+    if(!detail||workflowBusy)return;
+    const service=Number(serviceFee),external=Number(externalFee);
+    if(!Number.isFinite(service)||!Number.isFinite(external)||service<0||external<0||service+external<1||
+       !Number.isInteger(Math.round(service*100))||!Number.isInteger(Math.round(external*100))){
+      setError("Enter valid rupee amounts, including paise where needed.");return;
+    }
+    setWorkflowBusy(true);setError("");setNotice("");
+    try{
+      await secureApi("H6k2B9tW4xC7",{action:"create",reference:detail.request.reference,serviceFee:service,externalFee:external,note:quoteNote.trim()});
+      await load();await openDetail(detail.request.id);
+      setNotice("Payment request created. Customer can now pay in their account.");
+    }catch(reason){setError(reason instanceof Error?reason.message:"Unable to issue payment quote.");}
+    finally{setWorkflowBusy(false);}
+  }
+
+  async function openPrivateFile(operation: string, id: string, fileId?: string) {
     setError("");
     try {
-      const result = await secureFile(operation, { id });
+      const result = await secureFile(operation, { id, ...(fileId?{fileId}:{}) });
       const url = URL.createObjectURL(result.blob);
       window.open(url, "_blank", "noopener,noreferrer");
       window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
@@ -240,6 +277,41 @@ function RequestQueue() {
           <button type="button" ref={detailCloseRef} className="btn btn--ghost btn--sm record-modal__close" onClick={() => setDetail(null)} aria-label="Close request details"><X size={17}/> Close</button>
         </header>
         <div className="record-modal__body request-modal__body">
+        {error && <div className="alert alert--error" role="alert">{error}</div>}
+        {notice && <div className="alert alert--success" role="status">{notice}</div>}
+        <section className="case-flow" aria-label="Application review workflow">
+          <div className="case-flow__steps">{[
+            {name:"Submitted",done:true},
+            {name:"Review",done:!["submitted"].includes(detail.request.status)},
+            {name:"Payment",done:["awaiting_payment","payment_received","ready_for_pickup","out_for_delivery","completed"].includes(detail.request.status)},
+            {name:"Processing",done:["payment_received","ready_for_pickup","out_for_delivery","completed"].includes(detail.request.status)},
+            {name:"Completed",done:detail.request.status==="completed"},
+          ].map((step,i)=><div className={step.done?"is-done":""} key={step.name}><span>{i+1}</span><small>{step.name}</small></div>)}</div>
+          {["submitted","reviewing","waiting_for_customer"].includes(detail.request.status)&&<div className="case-flow__actions">
+            <h3>Review application</h3>
+            <p>Admins and staff with request access can review details, request missing information, and approve before issuing any payment quote.</p>
+            <label className="field"><span className="field__label">Missing details / review note</span><textarea rows={3} maxLength={500} value={reviewNote}
+              onChange={e=>setReviewNote(e.target.value)} placeholder="Specify what is missing, which documents are needed, or what you checked."/></label>
+            <div className="case-flow__buttons">
+              {detail.request.status!=="reviewing"&&<button type="button" className="btn btn--ghost btn--sm" disabled={workflowBusy} onClick={()=>void reviewAction("start")}>Start / resume review</button>}
+              <button type="button" className="btn btn--ghost btn--sm" disabled={workflowBusy||reviewNote.trim().length<5} onClick={()=>void reviewAction("changes")}>Request corrections</button>
+              <button type="button" className="btn btn--primary btn--sm" disabled={workflowBusy} onClick={()=>void reviewAction("approve")}>Approve details</button>
+            </div>
+            {detail.request.status==="waiting_for_customer"&&<p>Waiting for customer response. Their reply and documents will return this request to review.</p>}
+            {detail.request.status==="reviewing"&&Boolean((detail.request.details.workflow as {approvedAt?:string}|undefined)?.approvedAt)&&<div className="case-flow__quote">
+              <h3>Details approved — prepare customer payment</h3>
+              <div className="admin-filters">
+                <label>Service fee (₹)<input inputMode="decimal" type="number" step="0.01" min="0" max="500000" value={serviceFee} onChange={e=>setServiceFee(e.target.value)}/></label>
+                <label>Official / external fee (₹)<input inputMode="decimal" type="number" step="0.01" min="0" max="500000" value={externalFee} onChange={e=>setExternalFee(e.target.value)}/></label>
+              </div>
+              <label className="field"><span className="field__label">Payment note (optional)</span><input maxLength={200} value={quoteNote} onChange={e=>setQuoteNote(e.target.value)} placeholder="How charges are calculated"/></label>
+              <p><b>Amount to request: ₹{((Number(serviceFee)||0)+(Number(externalFee)||0)).toFixed(2)}</b> · Promo discounts will appear on the customer payment page.</p>
+              <button type="button" className="btn btn--primary btn--sm" disabled={workflowBusy} onClick={()=>void issueQuote()}>Issue payment request</button>
+            </div>}
+          </div>}
+          {detail.request.status==="awaiting_payment"&&<p>Quotation sent. The customer can pay by UPI or a configured gateway. Paid status is recorded after confirmation, not manually assumed.</p>}
+          {detail.request.status==="payment_received"&&<p>Payment verified. Process the official application and add the reference below when the issuing portal provides it. The usual 1–2 working day estimate is not a guarantee.</p>}
+        </section>
         <p><b>{detail.request.serviceName}</b> · {detail.request.reference} · {detail.request.statusLabel} · {when(detail.request.createdAt)}</p>
         <p><b>{detail.customer.name}</b></p>
         <ContactLinks name={detail.customer.name} phone={detail.customer.phone} whatsapp={detail.customer.whatsapp} email={detail.customer.email} reference={detail.request.reference}/>
@@ -260,6 +332,15 @@ function RequestQueue() {
           <h3>Customer rating</h3>
           <p>{"★".repeat(detail.review.rating)}{"☆".repeat(5 - detail.review.rating)} ({detail.review.rating}/5) · {when(detail.review.createdAt)}</p>
           {detail.review.feedback && <p>“{detail.review.feedback}”</p>}
+        </article>}
+        {detail.files?.length>0&&<article className="pan-card">
+          <h3>Applicant documents ({detail.files.length})</h3>
+          <p>Securely submitted files are linked to this request, including customer follow-ups.</p>
+          <ul className="request-modal__files">{detail.files.map(file=><li key={file.id}>
+            <span><FileText size={16}/>{file.name} <small>{when(file.createdAt)}</small></span>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={()=>void openPrivateFile("V8d4K1rF7nT5",detail.request.id,file.id)}>
+              View securely</button>
+          </li>)}</ul>
         </article>}
         <PanSavedDetails details={detail.request.details}/>
         <article className="pan-card"><h3>Customer request</h3><RequestExtras details={detail.request.details} fallback="No note provided."/></article>

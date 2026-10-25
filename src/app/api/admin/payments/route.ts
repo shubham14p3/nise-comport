@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const schema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("create"), reference: z.string().min(3).max(40), amount: z.union([z.string(), z.number()]), note: z.string().max(200).optional() }),
+  z.object({ action: z.literal("create"), reference: z.string().min(3).max(40), amount: z.union([z.string(), z.number()]).optional(), serviceFee: z.union([z.string(), z.number()]).optional(), externalFee: z.union([z.string(), z.number()]).optional(), note: z.string().max(200).optional() }),
   z.object({ action: z.literal("markPaid"), id: z.string().uuid(), method: z.enum(["upi_qr", "cash"]) }),
   z.object({ action: z.literal("refund"), id: z.string().uuid(), serviceCharge: z.union([z.string(), z.number()]).optional() }),
   z.object({ action: z.literal("cancel"), id: z.string().uuid() }),
@@ -36,9 +36,14 @@ export async function POST(request: NextRequest) {
     const user = await requirePermission("requests");
     const input = schema.parse(await readJson(request));
     if (input.action === "create") {
-      const amountPaise = parseRupeesToPaise(input.amount);
-      if (!amountPaise) throw new PublicError("Enter an amount between ₹1 and ₹5,00,000.", 400, { code: "invalid_input" });
-      await createPaymentRequest({ reference: input.reference, amountPaise, note: input.note }, user);
+      const fee = input.serviceFee!==undefined?Number(input.serviceFee):Number(input.amount??0);
+      const ext = input.externalFee!==undefined?Number(input.externalFee):0;
+      const valid=(x:number)=>Number.isFinite(x)&&x>=0&&Number.isSafeInteger(Math.round(x*100))&&Math.round(x*100)<=50_000_000;
+      if(!valid(fee)||!valid(ext))throw new PublicError("Check the service and external fee amounts.",400);
+      const serviceFeePaise=Math.round(fee*100),externalFeePaise=Math.round(ext*100);
+      const amountPaise=serviceFeePaise+externalFeePaise;
+      if(!parseRupeesToPaise(amountPaise/100))throw new PublicError("Enter a total between ₹1 and ₹5,00,000.",400);
+      await createPaymentRequest({reference:input.reference,amountPaise,serviceFeePaise,externalFeePaise,note:input.note},user);
     } else if (input.action === "markPaid") {
       const [row] = await db.select({ utr: payments.utr }).from(payments).where(eq(payments.id, input.id)).limit(1);
       await markPaid(input.id, { method: input.method, utr: input.method === "upi_qr" ? row?.utr : null, feePaise: 0, verifiedBy: user.id });

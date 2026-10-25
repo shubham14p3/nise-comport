@@ -176,7 +176,8 @@ export default function DetailedIntakeFields({ intake, onChange, errors = {}, ph
     })}
     {intake.kind==="voter" && intake.answers.requestType==="Correction" && intake.answers.correctionTarget==="Photograph" && <div className="field">
       <label className="field__label">New photograph (JPG, PNG, WebP) *</label>
-      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>onPhotoChange?.(e.target.files?.[0]??null)}/>
+      <input type="file" accept="image/jpeg,image/png,image/webp" disabled={!onPhotoChange} onChange={e=>onPhotoChange?.(e.target.files?.[0]??null)}/>
+      {!onPhotoChange && <small>After signing in, return to this step to attach your photograph securely. File uploads are not stored in your browser draft.</small>}
       {photo&&<small>{photo.name} · {(photo.size/1024/1024).toFixed(1)} MB</small>}
       {errors.photoFileId&&<span className="field__error" role="alert">{errors.photoFileId}</span>}
     </div>}

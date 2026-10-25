@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { and, asc, eq } from "drizzle-orm";
 import { requirePermission } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { requestEvents, serviceRequests, serviceReviews, users } from "@/db/schema";
+import { requestEvents, serviceRequests, serviceReviews, storedFiles, users } from "@/db/schema";
 import { statusLabel } from "@/lib/requests";
 import { apiError } from "@/lib/http";
 import { revealRequestDetails } from "@/lib/detailed-intake-server";
@@ -19,6 +19,8 @@ export async function GET(request: NextRequest) {
     if (!row) return NextResponse.json({ error: "Not found." }, { status: 404 });
     const [review] = await db.select({ rating: serviceReviews.rating, feedback: serviceReviews.feedback, postedGoogleReview: serviceReviews.postedGoogleReview, createdAt: serviceReviews.createdAt })
       .from(serviceReviews).where(eq(serviceReviews.requestId, row.request.id)).limit(1);
+    const files = await db.select({ id:storedFiles.id,name:storedFiles.originalName,createdAt:storedFiles.createdAt })
+      .from(storedFiles).where(eq(storedFiles.requestId,row.request.id)).orderBy(asc(storedFiles.createdAt)).limit(40);
     const events = await db.select({
       fromStatus: requestEvents.fromStatus, toStatus: requestEvents.toStatus, note: requestEvents.note,
       createdAt: requestEvents.createdAt, actor: users.name,
@@ -31,6 +33,7 @@ export async function GET(request: NextRequest) {
         officialReference: row.request.officialReference, officialReferenceLabel: row.request.officialReferenceLabel,
         officialReferenceSetAt: row.request.officialReferenceSetAt?.toISOString() ?? null,
       },
+      files: files.map(file=>({...file,createdAt:file.createdAt.toISOString()})),
       customer: row.customer,
       review: review ? { ...review, createdAt: review.createdAt.toISOString() } : null,
       events: events.map((event) => ({ ...event, fromLabel: event.fromStatus ? statusLabel(event.fromStatus) : null, toLabel: statusLabel(event.toStatus), createdAt: event.createdAt.toISOString() })),
