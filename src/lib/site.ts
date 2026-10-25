@@ -100,6 +100,48 @@ export function absoluteUrl(path = "/") {
   return `${site.url}${path.startsWith("/") ? path : `/${path}`}`.replace(/\/$/, "") || site.url;
 }
 
+
+/** The QR-scan welcome brochure. External WhatsApp opens a prefilled message;
+ * an automatic business-side reply is possible only with Cloud API enabled. */
+export function qrWelcomeMessage() {
+  const social = [
+    ...site.sameAs.filter((link) => /(?:instagram|facebook)\.com\//i.test(link)),
+    ...(process.env.NEXT_PUBLIC_INSTAGRAM_URL ? [process.env.NEXT_PUBLIC_INSTAGRAM_URL] : []),
+    ...(process.env.NEXT_PUBLIC_FACEBOOK_URL ? [process.env.NEXT_PUBLIC_FACEBOOK_URL] : []),
+  ].filter((value, index, all) => all.indexOf(value) === index);
+  return [
+    "आपके इस प्रेम के लिए धन्यवाद",
+    "",
+    "*🙏Nise-Comport🙏*",
+    "*CSC & प्रज्ञा केंद्र*",
+    "*With Bank of BARODA CSP*",
+    "*Our Services Related with:-*",
+    "- Caste / Income / Resident / EWS",
+    "- Birth / Death Certificate",
+    "- Income Tax Filing",
+    "- PAN / Voter ID / Passport",
+    "- Aadhaar Correction",
+    "- Bike / Car / Tractor Insurance",
+    "- DL / RTO work",
+    "- Ration Card",
+    "- Ayushman (Golden) Card",
+    "- Food License",
+    "- Land Rent / Mutation",
+    "",
+    "*Visit us:*",
+    "Shop no. 3, V P Singh Building, Hanuman Mandir Road, Kharangajhar, Telco, Jamshedpur",
+    "*9:00 AM–2:30 PM • 4:30 PM–9:00 PM*",
+    "*Landline:* 0657-2917622",
+    "*Mobile / WhatsApp:* +919771219893, +919835552756",
+    `*Email:* ${site.email}`,
+    `*Website:* ${site.url}`,
+    ...social.map((link) => `*Social:* ${link}`),
+    "https://maps.app.goo.gl/8RKNgZBJutYiunRx9",
+    "",
+    "Please reply with the service you need. Never share OTPs, passwords, or unmasked identity documents in chat.",
+  ].join("\n");
+}
+
 export function whatsappLink(message?: string, number: string = site.whatsapp.primary) {
   const branded = message ? (message.startsWith("*NISE COMPORT*") ? message : `*NISE COMPORT* · Kharangajhar, Telco, Jamshedpur\n${message}`) : undefined;
   return `https://wa.me/${number}${branded ? `?text=${encodeURIComponent(branded)}` : ""}`;
