@@ -100,6 +100,8 @@ const OPS = {
   "Z6n2K9cR4vP1": { method: "POST", path: "/api/mail" },
   "Y3d7N5qV1mP8": { method: "POST", path: "/api/pay" },
   "H6k2B9tW4xC7": { method: "POST", path: "/api/admin/payments" },
+  "N8q4B1tK7mD2": { method: "POST", path: "/api/admin/request-workflow" },
+  "R6p2C9wT4kH1": { method: "POST", path: "/api/pay/coupon" },
   "O3bQ7mT5xK2n": { method: "POST", path: "/api/admin/outreach" },
   "K7m2Q9xV4cT8": { method: "POST", path: "/api/auth/mobile" },
   "R3v8N5pH1wD6": { method: "GET", path: "/api/account/records" },
@@ -152,6 +154,11 @@ function targetFor(operation: string, input: Record<string, unknown>) {
     case "G8q4T1vM6rC0": {
       const reference = stringValue(input, "reference", 80);
       return { method: "POST", path: `/api/requests/${encodeURIComponent(reference)}/cancel`, body: { reason: input.reason } };
+    }
+    case "F7m3Q8wN2kC5": {
+      const reference = stringValue(input, "reference", 80);
+      const body = Object.fromEntries(Object.entries(input).filter(([key]) => key !== "reference"));
+      return { method: "POST", path: `/api/requests/${encodeURIComponent(reference)}/followup`, body };
     }
     case "R1k5V8nD3sJ9": {
       const id = stringValue(input, "id", 80);
