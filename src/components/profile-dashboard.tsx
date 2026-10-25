@@ -262,7 +262,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
               <p>Our staff reviewed your information. View the final charges and apply eligible offer codes before paying.</p>
               <Link className="btn btn--primary" href={`/pay/${encodeURIComponent(requestDetail.request.reference)}`}>Review and pay <ArrowRight size={16}/></Link>
             </div>}
-            {requestDetail.request.status==="payment_received"&&<p className="alert alert--info">Your payment has been verified. We usually aim to share the official application reference within 1–2 working days, subject to the issuing portal. Check that your email and WhatsApp contact details are current under Profile.</p>
+            {requestDetail.request.status==="payment_received"&&<p className="alert alert--info">Your payment has been verified. We usually aim to share the official application reference within 1–2 working days, subject to the issuing portal. Check that your email and WhatsApp contact details are current under Profile.</p>}
             {requestDetail.request.officialReference ? (
               <p className="muted">{requestDetail.request.officialReferenceLabel || "Official reference"}: <b>{requestDetail.request.officialReference}</b></p>
             ) : (
