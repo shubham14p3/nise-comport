@@ -38,8 +38,8 @@ export const panIntakeSchema = z.object({
   detailedIntake: detailedIntakeSchema.optional(),
 }).superRefine((input, ctx) => {
   const fail = (path: string, message: string) => ctx.addIssue({ code: "custom", path: [path], message });
-  if(input.detailedIntake && (input.applicant==="individual" || input.detailedIntake.kind==="pan49a")){
-    if(!["pan","pan49a"].includes(input.detailedIntake.kind)) fail("detailedIntake","PAN questionnaire required.");
+  if(input.detailedIntake && (input.applicant==="individual" || ["pan49a","pan93"].includes(input.detailedIntake.kind))){
+    if(!["pan","pan49a","pan93"].includes(input.detailedIntake.kind)) fail("detailedIntake","PAN questionnaire required.");
     else { const problems=validateDetailedIntake(input.detailedIntake); for(const message of Object.values(problems)) { fail("detailedIntake",message); break; } }
   }
   if (["new", "minor", "business"].includes(input.service) && input.existingPan !== "no") fail("existingPan", "Confirm no PAN is already allotted. If unsure, check your records before requesting a new PAN.");
