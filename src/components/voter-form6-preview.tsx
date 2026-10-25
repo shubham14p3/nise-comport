@@ -18,7 +18,6 @@ const dobProofs=["Birth certificate","Aadhaar Card","PAN Card","Driving Licence"
 export default function VoterForm6Preview({answers:a,photoUrl=""}:{answers:IntakeValue;photoUrl?:string}){
   const fullName=[a.firstNameEnglish,a.middleNameEnglish,a.surnameEnglish].filter(Boolean).join(" ");
   const address=[a.addressHouse,a.addressStreet,a.addressTown,a.addressPostOffice,a.addressDistrict,a.addressState,a.addressPin].filter(Boolean).join(", ");
-  const localName=[a.nameLocal,a.surnameLocal].filter(Boolean).join(" ");
   return <div className="form8-preview form6-preview" aria-label="Form 6 three page print preparation">
     <article className="form8-sheet form6-sheet">
       <div className="f8-watermark" aria-hidden="true">PREPARATION DRAFT · NOT SUBMITTED</div>
