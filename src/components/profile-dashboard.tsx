@@ -19,7 +19,7 @@ import {
   ArrowRight, Check, CircleHelp, FileText, FolderOpen, Gift, History, LayoutDashboard,
   MapPin, Plus, Printer, ShieldCheck, UserRound, WalletCards, Mail } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
-import { secureApi } from "@/lib/secure-api-client";
+import { secureApi, secureUpload } from "@/lib/secure-api-client";
 import { whatsappHref } from "@/lib/public-contact";
 import type { CustomerVoucher } from "@/lib/promo-view";
 
@@ -139,6 +139,10 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
   const [requestDetail, setRequestDetail] = useState<RequestDetail | null>(null);
   const [requestDetailError, setRequestDetailError] = useState("");
   const [requestDetailBusy, setRequestDetailBusy] = useState(false);
+  const [reviewReply, setReviewReply] = useState("");
+  const [reviewFile, setReviewFile] = useState<File | null>(null);
+  const [reviewReplyBusy, setReviewReplyBusy] = useState(false);
+  const [reviewReplyError, setReviewReplyError] = useState("");
 
   const firstName = user.name.trim().split(/\s+/)[0];
   const balance = wallet.reduce((total, entry) => total + (entry.kind.toLowerCase() === "debit" ? -1 : 1) * Number(entry.amount), 0);
@@ -169,6 +173,24 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
     if (next !== "requests") { setSelectedRequest(""); setRequestDetail(null); setRequestDetailError(""); }
     try { window.history.replaceState(window.history.state, "", next === "overview" ? "/profile" : `/profile#${next}`); } catch { /* ignore */ }
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  async function submitReviewReply() {
+    if(!requestDetail||demoMode||reviewReplyBusy)return;
+    setReviewReplyBusy(true);setReviewReplyError("");
+    try {
+      let fileId: string|undefined;
+      if(reviewFile){
+        if(reviewFile.size>20*1024*1024)throw new Error("Upload a document under 20 MB.");
+        const result=await secureUpload<{file:{id:string}}>("U7b3R8mQ4zL1",reviewFile);
+        fileId=result.file.id;
+      }
+      await secureApi("F7m3Q8wN2kC5",{reference:requestDetail.request.reference,note:reviewReply.trim(),...(fileId?{fileId}:{})});
+      setReviewReply("");setReviewFile(null);
+      await reload();
+      await viewRequest(requestDetail.request.reference);
+    }catch(reason){setReviewReplyError(reason instanceof Error?reason.message:"Could not send supporting information.");}
+    finally{setReviewReplyBusy(false);}
   }
 
   async function viewRequest(reference: string) {
@@ -223,6 +245,24 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
           {requestDetailBusy && <p className="muted">Opening private request details…</p>}
           {requestDetailError && <div className="alert alert--error">{requestDetailError}</div>}
           {requestDetail && <>
+            {requestDetail.request.status==="waiting_for_customer"&&<section className="case-flow__customer">
+              <h3>Your application needs more information</h3>
+              <p>Our staff requested a correction or missing document. Reply below and it will return to review under the same reference number.</p>
+              <label className="field"><span className="field__label">Additional details or corrections</span><textarea
+                value={reviewReply} onChange={e=>setReviewReply(e.target.value)} rows={3} maxLength={500}
+                placeholder="Reply with the requested information. Please do not include Aadhaar or passport numbers in this text box."/></label>
+              <label className="field"><span className="field__label">Attach a scan, image or PDF (optional)</span><input type="file"
+                accept="application/pdf,image/jpeg,image/png,image/webp" onChange={e=>setReviewFile(e.target.files?.[0]??null)}/></label>
+              {reviewReplyError&&<p className="alert alert--error" role="alert">{reviewReplyError}</p>}
+              <button className="btn btn--primary" type="button" disabled={reviewReplyBusy||(!reviewFile&&reviewReply.trim().length<8)}
+                onClick={()=>void submitReviewReply()}>{reviewReplyBusy?"Sending…":"Send information for review"}</button>
+            </section>}
+            {requestDetail.request.status==="awaiting_payment"&&<div className="case-flow__customer">
+              <h3>Your quotation is ready</h3>
+              <p>Our staff reviewed your information. View the final charges and apply eligible offer codes before paying.</p>
+              <Link className="btn btn--primary" href={`/pay/${encodeURIComponent(requestDetail.request.reference)}`}>Review and pay <ArrowRight size={16}/></Link>
+            </div>}
+            {requestDetail.request.status==="payment_received"&&<p className="alert alert--info">Your payment has been verified. We usually aim to share the official application reference within 1–2 working days, subject to the issuing portal. Check that your email and WhatsApp contact details are current under Profile.</p>
             {requestDetail.request.officialReference ? (
               <p className="muted">{requestDetail.request.officialReferenceLabel || "Official reference"}: <b>{requestDetail.request.officialReference}</b></p>
             ) : (
