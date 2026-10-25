@@ -224,7 +224,7 @@ function StoragePanel({ meta, onSync, syncing }: { meta: MailMeta; onSync: () =>
     <h3><Mail size={14} aria-hidden="true"/> Support mailbox</h3>
     {meta.mailboxConnected
       ? <p>{meta.supportAddress}<br/><small>{meta.sync?.lastError ? `Last check failed: ${meta.sync.lastError}` : meta.sync?.lastRunAt ? `Checked ${listTime(meta.sync.lastRunAt)}` : "Not checked yet"}</small></p>
-      : <p><small>Not connected. Customers can still write on the website. Add the mailbox login in the server settings to receive their emails.</small></p>}
+      : <p><small>Incoming mailbox not configured. Sending email (SMTP) is separate. Set MAIL_IMAP_HOST, MAIL_IMAP_USER and MAIL_IMAP_PASSWORD in cPanel, or enter the IMAP fields under Admin → System & connections → Email. The IMAP account must own the support address.</small></p>}
     {meta.mailboxConnected && <button type="button" className="mbx-btn mbx-btn--ghost mbx-btn--sm" disabled={syncing} onClick={onSync}><RefreshCw size={14} className={syncing ? "is-spinning" : undefined}/> Check now</button>}
   </div>;
 }

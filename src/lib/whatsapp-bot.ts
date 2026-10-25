@@ -7,7 +7,7 @@ import { summarizeHours } from "@/lib/hours";
 import { hitRate, identity } from "@/lib/rate-limit";
 import { publicPrices } from "@/lib/service-prices";
 import { publishedServiceDetails } from "@/lib/services";
-import { site } from "@/lib/site";
+import { qrWelcomeMessages, site } from "@/lib/site";
 import { normalizePhone } from "@/lib/validation";
 import { sendText } from "@/lib/whatsapp";
 import {
@@ -41,12 +41,18 @@ export async function handleBotMessage(event: { from: string; text: string; name
   const userId = account?.id ?? null;
   const text = event.text.slice(0, 500);
   let intent: BotIntent = detectIntent(text);
+  const fromWelcomeQr = /\bscanned\b.*\bqr\b|\bqr\b.*\bscanned\b/i.test(text);
   let service = null as ReturnType<typeof matchService>;
   const catalogue = publishedServiceDetails.map((item) => ({ slug: item.slug, title: item.title, keywords: item.keywords, documents: item.documents }));
   if (intent === "unknown") { service = matchService(text, catalogue); if (service) intent = "price"; }
 
   let needsHuman = intent === "human" || intent === "unknown" || intent === "attachment";
   await log({ phone, direction: "in", body: text || "(attachment or empty message)", sender: "customer", name: event.name, userId, needsHuman });
+
+  if (fromWelcomeQr && intent === "menu") {
+    for (const brochure of qrWelcomeMessages()) await replyAndLog(phone, brochure, "bot", userId);
+    return;
+  }
 
   if (intent === "track") {
     await handleStatusQuery(phone, /^\s*(status|track)/i.test(text) ? text : `status ${text}`);

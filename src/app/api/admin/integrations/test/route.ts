@@ -12,7 +12,11 @@ export async function POST(request: NextRequest) {
     const actor = await requirePermission("campaigns");
     if (actor.role !== "admin") return NextResponse.json({ error: "Owner access required" }, { status: 403 });
     const { provider } = schema.parse(await readJson(request));
-    const c = await getIntegration(provider);
+    const serverSmtp = provider === "email" && ["SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_FROM"].every((key) => Boolean(process.env[key]?.trim()));
+    const c: Record<string, string> | null = serverSmtp ? {
+      host: process.env.SMTP_HOST!, port: process.env.SMTP_PORT!, user: process.env.SMTP_USER!,
+      password: process.env.SMTP_PASSWORD!, from: process.env.SMTP_FROM!,
+    } : await getIntegration(provider);
     if (!c) return NextResponse.json({ ok: false, error: "Credentials not saved." }, { status: 400 });
     if (provider === "email") {
       if (!c.host || !c.port || !c.user || !c.password || !c.from) return NextResponse.json({ ok: false, error: "Complete all SMTP fields." }, { status: 400 });

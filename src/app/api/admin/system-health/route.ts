@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { integrationStatuses } from "@/lib/integration-vault";
 import { paymentOptions } from "@/lib/payments";
 import { otpChannels } from "@/lib/sms";
+import { smtpConfigured } from "@/lib/email";
+import { imapConnection } from "@/lib/mail";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +22,8 @@ export async function GET() {
   } catch {
     // Never leak secrets or the DB connection string in the owner dashboard.
   }
+  const smtpEnvironment = smtpConfigured();
+  const imap = await imapConnection();
   const saved = (provider: string) => integrations.find((item) => item.provider === provider);
   const status = (provider: string) => ({
     configured: Boolean(saved(provider)?.configured), lastSavedAt: saved(provider)?.updatedAt ?? null,
@@ -29,12 +33,12 @@ export async function GET() {
     vaultReady,
     integrations: {
       instagram: status("instagram"), facebook: status("facebook"),
-      whatsapp: status("whatsapp"), email: status("email"),
+      whatsapp: status("whatsapp"), email: { ...status("email"), configured: status("email").configured || smtpEnvironment || Boolean(imap) },
       youtube: { configured: false, checked: false, state: "not_integrated" },
     },
     delivery: {
       sms: otpChannels().includes("sms"), whatsappOtp: otpChannels().includes("whatsapp"),
-      smtpEnvironment: Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASSWORD),
+      smtpEnvironment,
     },
     payments: {
       upi: Boolean(payments.upi?.length), upiAccounts: payments.upi?.length ?? 0,

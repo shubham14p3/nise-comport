@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Database, Eye, Phone, Search, Upload, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
@@ -33,6 +34,9 @@ export default function RecordsPanel() {
   const [addContacts, setAddContacts] = useState(true);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [detail, setDetail] = useState<Detail | null>(null);
+  const [detailPage, setDetailPage] = useState(0);
+  const [detailPageSize, setDetailPageSize] = useState(1);
+  const modalCloseRef = useRef<HTMLButtonElement>(null);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
 
@@ -64,12 +68,28 @@ export default function RecordsPanel() {
 
   async function openPerson(person: Person) {
     setBusy(person.key);
-    try { setDetail(await secureApi<Detail>("W8r2T5yN1cF6", { key: person.key })); }
+    try {
+      const opened = await secureApi<Detail>("W8r2T5yN1cF6", { key: person.key });
+      setDetailPage(0); setDetail(opened);
+    }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not open the records."); }
     finally { setBusy(""); }
   }
 
+  useEffect(() => {
+    if (!detail) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    modalCloseRef.current?.focus();
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setDetail(null); };
+    window.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = previousOverflow; window.removeEventListener("keydown", onKey); };
+  }, [detail]);
+
   const names = data?.services ?? {};
+  const detailsTotal = detail?.records.length ?? 0;
+  const detailsPageCount = Math.max(1, Math.ceil(detailsTotal / detailPageSize));
+  const safeDetailPage = Math.min(detailPage, detailsPageCount - 1);
   return <section className="admin-queue records">
     <h2><Database size={17}/> Customer records {data ? <span>{data.totals.people.toLocaleString("en-IN")}</span> : null}</h2>
     <p className="admin-lead">🔒 Imported registers are encrypted in the database. Portal passwords and user IDs in the sheets are never imported, Aadhaar numbers stay masked, and the uploaded file is deleted after import. Every time someone opens a person’s records it shows in the Inbox.</p>
@@ -126,24 +146,43 @@ export default function RecordsPanel() {
 
     <details className="pan-import-history admin-accordion" open={importsOpen} onToggle={(event) => { const open = event.currentTarget.open; setImportsOpen(open); if (open && !imports.length) void secureApi<{ imports: ImportRow[] }>("W8r2T5yN1cF6", { imports: true }).then((value) => setImports(value.imports)).catch(() => undefined); }}><summary>Recent imports {importsOpen && imports.length ? `(${imports.length})` : ""}</summary>{imports.length ? imports.map((row) => <span key={row.id}>{new Date(row.createdAt).toLocaleDateString("en-IN")} · {row.fileName} · {row.imported} added · {row.duplicates} already there · {row.contactsAdded} contacts</span>) : <small>No imports recorded.</small>}</details>
 
-    {detail && <div className="record-sheet" role="dialog" aria-label={`Records of ${detail.name}`}>
-      <div className="record-sheet__panel">
-        <div className="promo-editor__head"><h3>{detail.name} <span className="repeat-badge">{detail.records.length}×</span></h3><button type="button" className="icon-btn" onClick={() => setDetail(null)} aria-label="Close"><X size={18}/></button></div>
-        <p className="field__hint"><Eye size={12}/> This view was logged in the Inbox.</p>
-        {detail.records.map((record) => <article key={record.id} className="record-card">
-          <header><b>{names[record.service] ?? record.service}</b><small>{day(record.recordDate)}{record.renewalOn ? ` · renewal ${day(record.renewalOn)}` : ""} · {record.source}</small></header>
-          <dl>
-            {record.mobile && <><dt>Mobile</dt><dd><a href={`tel:${record.mobile}`}>{pretty(record.mobile)}</a></dd></>}
-            {record.whatsapp && <><dt>WhatsApp</dt><dd><a href={`https://wa.me/${record.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">{pretty(record.whatsapp)}</a></dd></>}
-            {record.altMobiles?.length > 0 && <><dt>Other mobiles</dt><dd>{record.altMobiles.map((phone) => <a key={phone} href={`tel:${phone}`}>{pretty(phone)} </a>)}</dd></>}
-            {record.email && <><dt>Email</dt><dd><a href={`mailto:${record.email}`}>{record.email}</a></dd></>}
-            {record.address && <><dt>Address</dt><dd>{record.address}</dd></>}
-            {record.pan && <><dt>PAN</dt><dd>{record.pan}</dd></>}
-            {record.aadhaarMasked && <><dt>Aadhaar</dt><dd>{record.aadhaarMasked}</dd></>}
-            {Object.entries(record.fields).map(([label, value]) => <div key={label} className="record-card__field"><dt>{label}</dt><dd>{value}</dd></div>)}
-          </dl>
-        </article>)}
-      </div>
-    </div>}
+    {detail && typeof document !== "undefined" && createPortal(
+      <div className="record-modal" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDetail(null); }}>
+        <div className="record-modal__panel" role="dialog" aria-modal="true" aria-label={`Records of ${detail.name}`}>
+          <header className="record-modal__header">
+            <div><h3>{detail.name} <span className="repeat-badge">{detailsTotal}×</span></h3>
+              <small><Eye size={12}/> Access to these records is logged in the Inbox.</small></div>
+            <button ref={modalCloseRef} type="button" className="btn btn--ghost btn--sm record-modal__close" onClick={() => setDetail(null)} aria-label="Close customer records"><X size={18}/> Close</button>
+          </header>
+          <div className="record-modal__toolbar">
+            <span>{detailsTotal ? `Records ${safeDetailPage * detailPageSize + 1}–${Math.min(detailsTotal, (safeDetailPage + 1) * detailPageSize)} of ${detailsTotal}` : "No records"}</span>
+            <label>Cards per page <select aria-label="Records per detail page" value={detailPageSize} onChange={(event) => { setDetailPageSize(Number(event.target.value)); setDetailPage(0); }}>
+              {[1, 5, 10].map((size) => <option key={size} value={size}>{size}</option>)}
+            </select></label>
+          </div>
+          <div className="record-modal__body" tabIndex={0}>
+            {detail.records.slice(safeDetailPage * detailPageSize, (safeDetailPage + 1) * detailPageSize).map((record) => <article key={record.id} className="record-card">
+              <header><b>{names[record.service] ?? record.service}</b><small>{day(record.recordDate)}{record.renewalOn ? ` · renewal ${day(record.renewalOn)}` : ""} · {record.source}</small></header>
+              <dl>
+                {record.mobile && <><dt>Mobile</dt><dd><a href={`tel:${record.mobile}`}>{pretty(record.mobile)}</a></dd></>}
+                {record.whatsapp && <><dt>WhatsApp</dt><dd><a href={`https://wa.me/${record.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">{pretty(record.whatsapp)}</a></dd></>}
+                {record.altMobiles?.length > 0 && <><dt>Other mobiles</dt><dd>{record.altMobiles.map((phone) => <a key={phone} href={`tel:${phone}`}>{pretty(phone)} </a>)}</dd></>}
+                {record.email && <><dt>Email</dt><dd><a href={`mailto:${record.email}`}>{record.email}</a></dd></>}
+                {record.address && <><dt>Address</dt><dd>{record.address}</dd></>}
+                {record.pan && <><dt>PAN</dt><dd>{record.pan}</dd></>}
+                {record.aadhaarMasked && <><dt>Aadhaar</dt><dd>{record.aadhaarMasked}</dd></>}
+                {Object.entries(record.fields).map(([label, value]) => <div key={label} className="record-card__field"><dt>{label}</dt><dd>{value}</dd></div>)}
+              </dl>
+            </article>)}
+          </div>
+          <footer className="record-modal__footer">
+            <button type="button" className="btn btn--ghost btn--sm" disabled={safeDetailPage === 0} onClick={() => setDetailPage(0)}>First</button>
+            <button type="button" className="btn btn--ghost btn--sm" disabled={safeDetailPage === 0} onClick={() => setDetailPage(safeDetailPage - 1)}>Previous</button>
+            <span>Page {safeDetailPage + 1} of {detailsPageCount}</span>
+            <button type="button" className="btn btn--ghost btn--sm" disabled={safeDetailPage >= detailsPageCount - 1} onClick={() => setDetailPage(safeDetailPage + 1)}>Next</button>
+            <button type="button" className="btn btn--ghost btn--sm" disabled={safeDetailPage >= detailsPageCount - 1} onClick={() => setDetailPage(detailsPageCount - 1)}>Last</button>
+          </footer>
+        </div>
+      </div>, document.body)}
   </section>;
 }

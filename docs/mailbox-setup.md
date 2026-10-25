@@ -14,13 +14,15 @@ the answer joins the same ticket.
 
 ## One-time setup
 
-1. Run `npm run db:migrate` (creates `mail_tickets`, `mail_messages`, `mail_attachments`, `mail_sync`).
+1. First run `npm run db:schema:check` to inspect the existing database. Never run all historical migrations on the live, populated PostgreSQL database. Apply only a separately reviewed missing mail-table migration if required.
 2. Run `npm install` (adds `imapflow` and `mailparser`, used only to read the support mailbox).
-3. In cPanel create the mailbox `support@nisecomport.com`. Set in `.env.local` (see `.env.example`, section 12):
-   `MAIL_IMAP_HOST`, `MAIL_IMAP_USER`, `MAIL_IMAP_PASSWORD`. The SMTP settings used for sending must be able to send **from** that address
-   (ideally the same account). Without the IMAP settings the website still works; only incoming emails are not read.
-4. Add a cPanel cron job, every 5 minutes:
-   `curl -s -X POST -H "Authorization: Bearer YOUR_CRON_SECRET" https://www.nisecomport.com/api/cron/mail`
+3. Use an existing inbox (for example the currently used `help@aitapri.com`) or create a shop-specific mailbox, then configure **incoming IMAP separately from outgoing SMTP**:
+   - On the running server, set `MAIL_SUPPORT_ADDRESS=help@aitapri.com` when that is the actual support inbox, plus `MAIL_IMAP_HOST`, `MAIL_IMAP_PORT=993`, `MAIL_IMAP_USER`, `MAIL_IMAP_PASSWORD`. Keep these outside Git.
+   - Alternatively, Owner → System & connections → Email offers dedicated **Incoming IMAP** fields stored in the encrypted vault. Set `INTEGRATIONS_ENCRYPTION_KEY` privately first. A complete server IMAP profile takes precedence; otherwise the complete vault IMAP profile is used. Incomplete SMTP settings never count as a connected inbox.
+   - Complete server SMTP settings take priority for outgoing mail; otherwise a complete encrypted UI SMTP profile is used. SMTP and IMAP credentials may use the same account only if the provider supports both protocols.
+   - Do not assume emails addressed to `help@aitapri.com` reach another domain's mailbox without an actual mailbox or forwarding rule. Verify delivery in webmail first.
+4. Add a cPanel cron job, every 5 minutes, pointing to the **currently deployed canonical address**:
+   `curl -s -X POST -H "Authorization: Bearer YOUR_CRON_SECRET" https://nisecomport.aitapri.com/api/cron/mail`
 5. In **Team**, give staff the **Messages** permission.
 
 ## How tickets behave

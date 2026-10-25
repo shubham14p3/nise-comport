@@ -139,20 +139,23 @@ export async function sendMail(mail: Mail) {
     console.info(`\n──── [dev mail] to ${mail.to} ────\nSubject: ${mail.subject}\n${text}\n──────────────────────────────\n`);
     return;
   }
-  // A vault outage must not break an existing SMTP configuration.
-  const vault = await resolveIntegration("email").catch((error) => {
+  // A complete server SMTP configuration always wins; do not even query the
+  // encrypted vault when the environment already supplies all SMTP fields.
+  const environmentReady = smtpConfigured();
+  const vault = environmentReady ? {} as Record<string, string> : await resolveIntegration("email").catch((error) => {
     console.error("[mail] integration vault unavailable; falling back to environment SMTP", error instanceof Error ? error.message : error);
     return {} as Record<string, string>;
   });
   const hasVault = Boolean(vault.host && vault.port && vault.user && vault.password && vault.from);
-  const sender = hasVault ? nodemailer.createTransport({
+  const useVault = !smtpConfigured() && hasVault;
+  const sender = useVault ? nodemailer.createTransport({
     host: vault.host, port: Number(vault.port), secure: Number(vault.port) === 465,
     requireTLS: Number(vault.port) === 587,
     auth: { user: vault.user, pass: vault.password },
     connectionTimeout: 10_000, greetingTimeout: 10_000, socketTimeout: 20_000,
   }) : transporter();
   await sender.sendMail({
-    from: mail.extra?.from ?? (hasVault ? vault.from : process.env.SMTP_FROM),
+    from: mail.extra?.from ?? (useVault ? vault.from : process.env.SMTP_FROM),
     ...((mail.extra?.replyTo ?? process.env.SMTP_REPLY_TO) ? { replyTo: mail.extra?.replyTo ?? process.env.SMTP_REPLY_TO } : {}),
     to: mail.to,
     subject: mail.subject,

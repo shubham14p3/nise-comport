@@ -6,7 +6,7 @@ import {
   allowedAttachmentType, cleanBody, cleanSubject, findReferences, htmlToText, looksAutomated, makeTicketKey, MAX_ATTACHMENT_BYTES, MAX_ATTACHMENTS_PER_MESSAGE,
   parseTicketTag, safeFileName, stripQuotedReply, validSignature,
 } from "@/lib/mail-core";
-import { alertStaff, imapConfigured, registerCustomerMessage, resolveLink, supportAddress, writeAttachment } from "@/lib/mail";
+import { alertStaff, imapConnection, registerCustomerMessage, resolveLink, supportAddress, writeAttachment } from "@/lib/mail";
 import { sendTicketMail } from "@/lib/email";
 import { absoluteUrl, site } from "@/lib/site";
 import { MAIL_PATH } from "@/lib/mail-route";
@@ -103,22 +103,22 @@ export async function ingestInbound(input: { fromEmail: string; fromName: string
 
 /** Reads new mail from the support mailbox. Safe to call often; returns quickly when nothing is new. */
 export async function pollSupportMailbox(): Promise<{ ok: boolean; imported: number; skipped: number; error?: string }> {
-  if (!imapConfigured()) return { ok: false, imported: 0, skipped: 0, error: "The support mailbox is not connected." };
+  const settings = await imapConnection();
+  if (!settings) return { ok: false, imported: 0, skipped: 0, error: "Incoming IMAP is not configured. Set MAIL_IMAP_HOST/USER/PASSWORD in the server environment, or IMAP credentials in the encrypted Email integration." };
   let client: ImapClient | null = null;
   let imported = 0; let skipped = 0;
-  const own = supportAddress().toLowerCase();
+  const own = (process.env.MAIL_SUPPORT_ADDRESS?.trim() || settings.user || supportAddress()).toLowerCase();
   try {
     const { ImapFlow } = (await import(/* webpackIgnore: true */ moduleName("imapflow"))) as { ImapFlow: new (options: Record<string, unknown>) => ImapClient };
     const { simpleParser } = (await import(/* webpackIgnore: true */ moduleName("mailparser"))) as { simpleParser: (source: Buffer) => Promise<Parsed> };
-    const port = Number(process.env.MAIL_IMAP_PORT) || 993;
     client = new ImapFlow({
-      host: process.env.MAIL_IMAP_HOST, port, secure: process.env.MAIL_IMAP_SECURE ? process.env.MAIL_IMAP_SECURE !== "false" : port === 993,
-      auth: { user: process.env.MAIL_IMAP_USER, pass: process.env.MAIL_IMAP_PASSWORD }, logger: false,
-      ...(process.env.MAIL_IMAP_TLS_SERVERNAME ? { tls: { servername: process.env.MAIL_IMAP_TLS_SERVERNAME } } : {}),
+      host: settings.host, port: settings.port, secure: settings.secure,
+      auth: { user: settings.user, pass: settings.password }, logger: false,
+      ...(settings.tlsServername ? { tls: { servername: settings.tlsServername } } : {}),
     });
     client.on("error", (error) => console.error("[mail] imap connection error", error.message));
     await client.connect();
-    const lock = await client.getMailboxLock(process.env.MAIL_IMAP_FOLDER?.trim() || "INBOX");
+    const lock = await client.getMailboxLock(settings.folder);
     try {
       const validity = client.mailbox ? String(client.mailbox.uidValidity ?? "") : "";
       const [state] = await db.select().from(mailSync).where(eq(mailSync.id, "main")).limit(1);

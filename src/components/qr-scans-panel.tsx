@@ -35,7 +35,7 @@ export default function QrScansPanel() {
   const cards = [
     { title: "Welcome QR", hint: "WhatsApp, email, sign in and callback on one page.", url: `${site.url}/welcome?src=${placement}`, file: `nise-welcome-${placement}.svg` },
     { title: "Sign-in QR", hint: "Customers can sign in with mobile number or email.", url: `${site.url}/login`, file: "nise-login.svg" },
-    { title: "WhatsApp QR", hint: "Open a direct WhatsApp chat with the shop.", url: `https://wa.me/${site.whatsapp.primary}`, file: "nise-whatsapp.svg" },
+    { title: "WhatsApp QR", hint: "Open WhatsApp with a QR-scan greeting; the business auto-reply requires an active Cloud API.", url: `https://wa.me/${site.whatsapp.primary}?text=${encodeURIComponent("Hi NISE COMPORT, I scanned your QR code.")}`, file: "nise-whatsapp.svg" },
   ];
   return <section className="admin-card admin-qr">
     <div className="admin-qr__header">
