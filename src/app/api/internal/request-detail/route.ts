@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { requestEvents, serviceRequests, storedFiles } from "@/db/schema";
 import { apiError } from "@/lib/http";
+import { revealRequestDetails } from "@/lib/detailed-intake-server";
 import { CUSTOMER_CANCELLABLE, statusLabel, type RequestStatus } from "@/lib/requests";
 
 export async function GET(request: NextRequest) {
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       request: {
         reference: item.reference, serviceSlug: item.serviceSlug, serviceName: item.serviceName,
-        status: item.status, statusLabel: statusLabel(item.status), details: item.details,
+        status: item.status, statusLabel: statusLabel(item.status), details: revealRequestDetails(item.details as Record<string, unknown>),
         createdAt: item.createdAt.toISOString(), cancellable: CUSTOMER_CANCELLABLE.includes(item.status as RequestStatus),
         officialReference: item.officialReference, officialReferenceLabel: item.officialReferenceLabel,
       },
