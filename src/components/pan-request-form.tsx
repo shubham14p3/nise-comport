@@ -61,6 +61,35 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
     if (legacy49a) setPreviewConfirmed(false);
     setData((current) => {
       const next = { ...current, [key]: value };
+      if (legacy49a && key === "detailedIntake" && value && typeof value === "object" && "answers" in value) {
+        const a = value.answers as Record<string,string>;
+        const name = [a.personFirst,a.personMiddle,a.personSurname].filter(Boolean).join(" ").replace(/\s+/g," ").trim();
+        if (name) { next.fullName = name; next.contactName = name; }
+        if (a.dob) {
+          const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(a.dob);
+          next.birthDate = match ? match[3]+"-"+match[2]+"-"+match[1] : "";
+        }
+        if (a.email !== undefined) next.email = a.email;
+        if (a.mobile !== undefined) {
+          const number = a.mobile.replace(/\D/g,"");
+          const countryCode = (a.phoneCountryCode || "").replace(/\D/g,"");
+          next.phone = countryCode && number && !number.startsWith(countryCode) ? "+"+countryCode+number : number;
+        }
+        if (a.communicationSameAsResidence !== "No" || a.communicationAddress === "Residence") {
+          next.address = [a.residenceHouse,a.residenceBuilding,a.residenceStreet,a.residenceLocality].filter(Boolean).join(", ");
+          next.city = a.residenceCity || "";
+          next.state = a.residenceState || "";
+          next.country = a.residenceCountry || "India";
+          next.postalCode = a.residencePin || "";
+        } else if (a.communicationAddress === "Office") {
+          next.address = [a.officeHouse,a.officeBuilding,a.officeStreet,a.officeLocality].filter(Boolean).join(", ");
+          next.city = a.officeCity || "";
+          next.state = a.officeState || "";
+          next.country = a.officeCountry || "India";
+          next.postalCode = a.officePin || "";
+        }
+        if (current.service === "minor") next.representative = [a.fatherFirst,a.fatherMiddle,a.fatherSurname].filter(Boolean).join(" ") || [a.motherFirst,a.motherMiddle,a.motherSurname].filter(Boolean).join(" ");
+      }
       if (key === "service") {
         if (legacy49a && !["new","minor","business"].includes(value as string)) return current;
         if (legacy49a && next.detailedIntake) next.detailedIntake = {...next.detailedIntake,kind:"pan49a"};
@@ -86,7 +115,14 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
   function next() {
     const found = problemsFor(step);
     setErrors(found);
-    if (Object.keys(found).length) return;
+    if (Object.keys(found).length) {
+      requestAnimationFrame(() => {
+        const invalid = document.querySelector<HTMLElement>(".wizard-form [aria-invalid='true'], .detailed-intake__section--error");
+        invalid?.scrollIntoView({behavior:"smooth",block:"center"});
+        if (invalid instanceof HTMLInputElement || invalid instanceof HTMLSelectElement) invalid.focus({preventScroll:true});
+      });
+      return;
+    }
     go(step + 1);
   }
 
@@ -185,21 +221,22 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
     </div>}
     {step === 0 && <section>
       <h2>Which PAN service do you need?</h2><p className="wizard-form__sub">Pick one. We’ll adapt the next questions.</p>
-      <div className="choice-grid choice-grid--2" role="radiogroup" aria-label="PAN service">{(legacy49a ? panServices.filter(item => ["new","minor","business"].includes(item)) : panServices).map((item) => <button key={item} type="button" role="radio" aria-checked={data.service === item} className={data.service === item ? "choice is-selected" : "choice"} onClick={() => update("service", item)}><span className="choice__text"><b>{panServiceLabels[item]}</b></span><span className="choice__check" aria-hidden="true">{data.service === item && <Check size={16}/>}</span></button>)}</div>
+      <div className="choice-grid choice-grid--2" role="radiogroup" aria-label="PAN service">{(legacy49a ? panServices.filter(item => ["new","minor"].includes(item)) : panServices).map((item) => <button key={item} type="button" role="radio" aria-checked={data.service === item} className={data.service === item ? "choice is-selected" : "choice"} onClick={() => update("service", item)}><span className="choice__text"><b>{panServiceLabels[item]}</b></span><span className="choice__check" aria-hidden="true">{data.service === item && <Check size={16}/>}</span></button>)}</div>
       {err("service")}
       <div className="form-grid">
-        {seg("existingPan", "Has a PAN already been allotted?", [["no", "No"], ["yes", "Yes"], ["unsure", "Not sure"]])}
-        {seg("applicant", "Applicant", [["individual", "Individual"], ["entity", "Business / entity"]])}
+        {legacy49a ? <p className="field"><span className="field__label">Existing PAN</span><strong>No PAN allotted (new individual application)</strong></p> : seg("existingPan", "Has a PAN already been allotted?", [["no", "No"], ["yes", "Yes"], ["unsure", "Not sure"]])}
+        {legacy49a ? <p className="field"><span className="field__label">Applicant status</span><strong>Individual</strong></p> : seg("applicant", "Applicant", [["individual", "Individual"], ["entity", "Business / entity"]])}
         {legacy49a ? <p className="field"><span className="field__label">Citizenship / origin</span><strong>Indian (Form 49A reference)</strong></p> : seg("citizenship", "Citizenship / origin", [["indian", "Indian"], ["foreign", "Foreign"]])}
-        {seg("residency", "Communication address", [["india", "In India"], ["overseas", "Outside India"]])}
+        {!legacy49a && seg("residency", "Communication address", [["india", "In India"], ["overseas", "Outside India"]])}
       </div>
       {data.applicant === "entity" && seg("entityType", "Entity type", ["huf", "firm", "llp", "company", "trust", "society", "association", "other"].map((value) => [value, value.toUpperCase()] as [string, string]))}
     </section>}
 
     {step === 1 && <section>
       <h2>Applicant &amp; contact details</h2><p className="wizard-form__sub">{legacy49a ? "Enter the 49A details exactly as on your documents. Aadhaar, if included, is encrypted when submitted; never enter OTPs." : "As they should appear on the application. Don’t enter PAN, Aadhaar numbers or OTPs."}</p>
+      {legacy49a && <p className="field__hint">Name, DOB, email and residence/contact details below also populate the main application automatically. You do not need to type them twice.</p>}
       {legacy49a && data.detailedIntake?.kind === "pan49a" && previewCard()}
-      <div className="form-grid">
+      {!legacy49a && <><div className="form-grid">
         {input("fullName", data.applicant === "entity" ? "Entity full name" : "Applicant full name", "text", { autoComplete: "name" })}
         {input("birthDate", data.applicant === "entity" ? "Date of incorporation / formation" : "Date of birth", "date")}
         {input("representative", "Parent, guardian or authorised representative")}
@@ -218,7 +255,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
         <label className="field" key="state"><span className="field__label">State / province</span><StateSelect country={data.country} value={data.state} onChange={(next) => { update("state", next as never); update("city", "" as never); }}/>{err("state")}</label>
         <label className="field" key="city"><span className="field__label">City</span><CitySelect country={data.country} state={data.state} value={data.city} onChange={(next) => update("city", next as never)}/>{err("city")}</label>
         {input("postalCode", "PIN / postal code", "text", { inputMode: "numeric", autoComplete: "postal-code" })}
-      </div>
+      </div></>}
       {(data.applicant==="individual" || legacy49a) && data.detailedIntake && <DetailedIntakeFields
         intake={data.detailedIntake} onChange={(next)=>update("detailedIntake",next)}
         errors={errors.detailedIntake?validateDetailedIntake(data.detailedIntake):{}}/>}
