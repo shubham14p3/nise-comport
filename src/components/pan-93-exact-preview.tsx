@@ -115,6 +115,11 @@ export default function Pan93ExactPreview({answers,pan,onEdit}:Props){
   const TEMPLATE_SHA256="9b15457e9334ab3dbd0a47c29b9b43b8144df80609d1229dc2d042a799a7e8e6";
   useEffect(()=>{
     if(file)return;
+    // Avoid repeated 404s until the scrubbed binary is installed in public/forms.
+    if(process.env.NEXT_PUBLIC_PAN93_TEMPLATE_READY!=="true"){
+      setPages("missing");
+      return;
+    }
     let active=true;
     fetch("/forms/pan-93-template.pdf",{cache:"force-cache"}).then(async response=>{
       if(!active)return;
