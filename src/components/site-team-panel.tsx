@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, Eye, EyeOff, Pencil, Plus, Trash2, UsersRound } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, EyeOff, KeyRound, Pencil, Plus, Trash2, UsersRound } from "lucide-react";
 import { AdminPager, useAdminPagination } from "@/components/admin-pager";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
 
@@ -22,7 +22,8 @@ function Photo({ src, name, size = 56 }: { src: string | null; name: string; siz
 /** Owner only: who the public Team page and About page show. Staff logins live in the panel above. */
 export default function SiteTeamPanel() {
   const [people, setPeople] = useState<Person[] | null>(null);
-  const [staff, setStaff] = useState<StaffAccount[]>([]);
+  const [staff, setStaff] = useState<StaffAccount[] | null>(null);
+  const [issuedLogin, setIssuedLogin] = useState<{ email: string; password: string } | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -32,6 +33,8 @@ export default function SiteTeamPanel() {
   async function load() {
     const result = await secureApi<{ members: Person[] }>("T9q4M2xV7bL3");
     setPeople(result.members);
+    const accounts = await secureApi<{ staff: StaffAccount[] }>("K8d3N6wQ1zT4");
+    setStaff(accounts.staff);
   }
   useEffect(() => {
     let active = true;
@@ -66,13 +69,32 @@ export default function SiteTeamPanel() {
   }
 
   const paging = useAdminPagination(people ?? []);
-  const staffNotListed = staff.filter((account) => !(people ?? []).some((person) => person.name.toLowerCase() === account.name.toLowerCase()));
+  const staffNotListed = (staff ?? []).filter((account) => !(people ?? []).some((person) => person.name.toLowerCase() === account.name.toLowerCase()));
+
+
+  async function provisionLogin(person: Person) {
+    const email = person.email?.trim().toLowerCase();
+    if (!email) { setError("Add and save a verified email address for this person first."); return; }
+    if (!window.confirm(`Create a staff login for ${person.name} (${email}) with only Requests permission? An existing customer login using this email will be promoted to staff. Confirm the email belongs to this employee first.`)) return;
+    setBusy(`login:${person.id}`); setNotice(""); setError(""); setIssuedLogin(null);
+    try {
+      const response = await secureApi<{ created: boolean; tempPassword: string | null }>("H5r9C2mV7pX1", {
+        name: person.name, email, phone: person.phone || undefined, role: "staff", permissions: ["requests"],
+      });
+      const result = await secureApi<{ staff: StaffAccount[] }>("K8d3N6wQ1zT4");
+      setStaff(result.staff);
+      if (response.tempPassword) setIssuedLogin({ email, password: response.tempPassword });
+      setNotice(response.created ? `Staff login created for ${email}. Share the temporary password securely and require a change on first login.` : `${email} now has staff access using their existing login.`);
+    } catch (e) { setError(e instanceof Error ? e.message : "Could not create a staff account."); }
+    finally { setBusy(""); }
+  }
 
   return <section className="admin-queue site-team">
     <h2><UsersRound size={17}/> Team shown on the website</h2>
-    <p className="admin-lead">These people appear on the public Team page and the About page. Add your staff, change a role or photo, hide someone who has left, or change the order. Staff logins (above) control admin access and are separate.</p>
+    <p className="admin-lead">Public team profiles and login accounts are separate. Match people by their private email address; only the owner may deliberately create a missing staff login. No automatic permission grants happen during page sync.</p>
     {error && <div className="alert alert--error" role="alert">{error}</div>}
     {notice && <div className="alert alert--success" role="status">{notice}</div>}
+    {issuedLogin && <div className="alert alert--warn" role="status"><strong>One-time password for {issuedLogin.email}:</strong> <code>{issuedLogin.password}</code> <button type="button" className="btn btn--ghost btn--sm" onClick={() => setIssuedLogin(null)}>Hide password</button><p>Only shown for this action. Staff must change it on first sign-in. Do not share it publicly.</p></div>}
 
     <div className="personal-codes__head"><h3>Members</h3><button type="button" className="btn btn--primary btn--sm" onClick={() => setDraft({ ...blank })}><Plus size={15}/> Add person</button></div>
 
@@ -87,7 +109,7 @@ export default function SiteTeamPanel() {
         <label>Email <small>(private, only you see it)</small><input type="email" value={draft.email} maxLength={254} onChange={(e) => setDraft({ ...draft, email: e.target.value })}/></label>
       </div>
       {!draft.id && staffNotListed.length > 0 && <label>Fill from a staff account
-        <select value="" onChange={(e) => { const account = staff.find((item) => item.id === e.target.value); if (account) setDraft({ ...draft, name: account.name, email: account.email }); }}>
+        <select value="" onChange={(e) => { const account = staff?.find((item) => item.id === e.target.value); if (account) setDraft({ ...draft, name: account.name, email: account.email }); }}>
           <option value="">Choose a staff member…</option>
           {staffNotListed.map((account) => <option key={account.id} value={account.id}>{account.name} ({account.email})</option>)}
         </select>
@@ -109,7 +131,11 @@ export default function SiteTeamPanel() {
     <AdminPager {...paging} label="public team members"/>
     <div className="batch-list">{paging.items.map((person, index) => <article key={person.id} className={person.active ? "batch-row" : "batch-row is-off"}>
       <Photo src={person.image} name={person.name}/>
-      <div><b>{person.name}</b><small>{person.role}{person.active ? "" : " · hidden"}</small>{(person.phone || person.email) && <small>{[person.phone, person.email].filter(Boolean).join(" · ")}</small>}</div>
+      <div><b>{person.name}</b><small>{person.role}{person.active ? "" : " · hidden"}</small>{(person.phone || person.email) && <small>{[person.phone, person.email].filter(Boolean).join(" · ")}</small>}
+        {staff !== null && <small>{person.email && staff.some((account) => account.email.toLowerCase() === person.email?.trim().toLowerCase()) ? "Staff login linked by email" : person.email ? "No staff login for this email" : "Add a private email to create a login"}</small>}
+        {staff !== null && person.email && !staff.some((account) => account.email.toLowerCase() === person.email?.trim().toLowerCase()) &&
+          <button type="button" className="btn btn--ghost btn--sm" disabled={Boolean(busy)} onClick={() => void provisionLogin(person)}><KeyRound size={14}/> {busy === `login:${person.id}` ? "Creating…" : "Create staff login"}</button>}
+      </div>
       <div className="batch-row__actions">
         <button type="button" className="icon-btn" disabled={paging.page * paging.pageSize + index === 0 || Boolean(busy)} onClick={() => void act({ action: "move", id: person.id, direction: "up" }, "Moved up.")} aria-label={`Move ${person.name} up`}><ArrowUp size={16}/></button>
         <button type="button" className="icon-btn" disabled={paging.page * paging.pageSize + index === (people?.length ?? 0) - 1 || Boolean(busy)} onClick={() => void act({ action: "move", id: person.id, direction: "down" }, "Moved down.")} aria-label={`Move ${person.name} down`}><ArrowDown size={16}/></button>
