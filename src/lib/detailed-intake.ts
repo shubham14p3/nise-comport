@@ -3,7 +3,7 @@ import { z } from "zod";
 /** Customer intake questionnaire based on the sample Passport Seva, ECI Form 8 and PAN Form 49A.
  * These are assistance questionnaires, not government submissions.
  * Requirements/document lists should be checked against the current authority before filing. */
-export type IntakeKind = "passport" | "voter" | "pan" | "voter-form8";
+export type IntakeKind = "passport" | "voter" | "pan" | "voter-form8" | "voter-form6";
 export type IntakeValue = Record<string, string>;
 export type IntakeField = {
   id: string; label: string; required?: boolean; type?: "text" | "date" | "email" | "tel" | "textarea" | "select";
@@ -226,6 +226,96 @@ const voterForm8: IntakeSection[] = [
   ] },
 ];
 
+
+/**
+ * Form 6 (new elector) intake, keyed to the user's 2026 ECI samples:
+ * application pages 1–2 and supplementary SIR declaration page 3.
+ * No official acknowledgement number is collected or manufactured here.
+ */
+const voterForm6: IntakeSection[] = [
+  {title:"Constituency and applicant",fields:[
+    select("constituencyType","Constituency type",["Assembly","Parliamentary (UT without legislative assembly)"]),
+    field("constituencyNumber","Constituency number",true),
+    field("constituencyName","Constituency name",true),
+    field("nameLocal","Name in the official language of the state",true),
+    field("surnameLocal","Surname in state language, if any"),
+    field("firstNameEnglish","First name in English (BLOCK LETTERS)",true),
+    field("middleNameEnglish","Middle name in English"),
+    field("surnameEnglish","Surname in English",false),
+    select("relativeType","Relative's relationship",["Father","Mother","Husband","Wife","Legal Guardian"]),
+    field("relativeNameEnglish","Relative's name in English",true),
+    field("relativeNameLocal","Relative's name in the state language"),
+    field("mobile","Mobile number of self (if available)",false,"tel"),
+    field("relativeMobile","Mobile number of relative (if available)",false,"tel"),
+    field("email","Email of self (if available)",false,"email"),
+    field("relativeEmail","Email of relative (if available)",false,"email"),
+    select("aadhaarStatus","Aadhaar information",["Have Aadhaar","Do not have Aadhaar"]),
+    field("aadhaarNumber","Aadhaar number (12 digits)",true,"text",{show:showIf("aadhaarStatus","Have Aadhaar")}),
+    select("gender","Gender",["Male","Female","Third Gender"]),
+    field("dob","Date of birth (DD/MM/YYYY)",true,"date"),
+    select("birthProof","Proof of date of birth",["Birth certificate","Aadhaar Card","PAN Card","Driving Licence","Class X or XII Certificate","Indian Passport","Other"]),
+    field("birthProofOther","Specify other birth proof",true,"text",{show:showIf("birthProof","Other")}),
+  ]},
+  {title:"Present ordinary residence",fields:[
+    field("addressHouse","House / Building / Apartment No.",true),
+    field("addressStreet","Street / Area / Locality",true),
+    field("addressTehsil","Tehsil / Taluka / Mandal",true),
+    field("addressTown","Town / Village",true),
+    field("addressPostOffice","Post Office",true),
+    field("addressState","State / UT",true),
+    field("addressDistrict","District",true),
+    field("addressPin","PIN code",true),
+    select("addressProof","Self-attested proof of address",["Utility Bill (at least 1 year)","Aadhaar Card","Current Bank / Post Office Passbook","Indian Passport","Land Owning Records / Kisan Bahi","Registered Rent Lease Deed","Registered Sale Deed","Other"]),
+    field("addressProofOther","Specify other address proof",true,"text",{show:showIf("addressProof","Other")}),
+  ]},
+  {title:"Disability and family member already enrolled",fields:[
+    select("hasDisability","Is disability marking requested?",["No","Yes"]),
+    select("disabilityType","Disability category",["Locomotor","Visual","Deaf & Dumb","Other"],true,{show:showIf("hasDisability","Yes")}),
+    field("disabilityOther","Description of disability",true,"text",{show:(v)=>v.hasDisability==="Yes"&&v.disabilityType==="Other"}),
+    field("disabilityPercent","Percentage of disability",true,"text",{show:showIf("hasDisability","Yes")}),
+    select("hasDisabilityCertificate","Disability certificate attached",["Yes","No"],true,{show:showIf("hasDisability","Yes")}),
+    field("familyMemberName","Name of enrolled family member at current address"),
+    field("familyMemberRelationship","Family member's relationship to applicant"),
+    field("familyMemberEpic","Family member's EPIC number (if available)"),
+  ]},
+  {title:"Form 6 declaration",fields:[
+    field("birthVillage","Place of birth - Town / Village",true),
+    field("birthDistrict","Birth district",true),
+    field("birthState","Birth State / UT",true),
+    field("residenceSince","Ordinarily resident since (YYYY-MM)",true),
+    field("declarationDate","Declaration date (DD/MM/YYYY)",true,"date"),
+    field("declarationPlace","Place of submission",true),
+    select("citizenDeclaration","I declare I am an Indian citizen and applying for inclusion for the first time",["Yes"]),
+    select("truthDeclaration","I confirm the applicant has verified these statements and understands Section 31",["Yes"]),
+  ]},
+  {title:"Supplementary declaration - SIR (if applicable)",fields:[
+    select("sirApplicable","Is the additional SIR declaration required?",["Yes","No"]),
+    field("sirElectorName","Elector in the last SIR - name",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("sirEpic","Elector in last SIR - EPIC no. (if available)",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("sirRelativeName","Last SIR elector - relative's name",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("sirRelationship","Last SIR elector - relationship",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("sirState","Last SIR elector - state",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("sirConstituency","Last SIR elector - AC number/name",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("sirPart","Last SIR elector - part number",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("sirSerial","Last SIR elector - serial number",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("sirRelatedName","Relative in the last SIR - elector name",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("sirRelatedEpic","Relative in the last SIR - EPIC",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("sirRelatedRelative","Relative in the last SIR - relative's name",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("sirRelatedRelation","Relative in the last SIR - relationship",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("sirRelatedState","Relative in the last SIR - state",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("sirRelatedConstituency","Relative in the last SIR - AC number/name",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("sirRelatedPart","Relative in the last SIR - part number",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("sirRelatedSerial","Relative in the last SIR - serial number",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("fatherName","Father / Guardian name",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("fatherEpic","Father / Guardian EPIC (optional)",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("motherName","Mother name",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("motherEpic","Mother EPIC (optional)",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("spouseName","Spouse name (if applicable)",false,"text",{show:showIf("sirApplicable","Yes")}),
+    field("spouseEpic","Spouse EPIC (optional)",false,"text",{show:showIf("sirApplicable","Yes")}),
+    select("otherCitizenship","I have not acquired citizenship of another country",["Yes"],true,{show:showIf("sirApplicable","Yes")}),
+  ]},
+];
+
 const pan: IntakeSection[] = [
   { title: "Applicant name as on supporting proof", fields: [
     ...basicName("person"),
@@ -248,7 +338,7 @@ const pan: IntakeSection[] = [
   ]},
 ];
 
-const formSections: Record<IntakeKind, IntakeSection[]> = { passport, voter, pan, "voter-form8": voterForm8 };
+const formSections: Record<IntakeKind, IntakeSection[]> = { passport, voter, pan, "voter-form8": voterForm8, "voter-form6": voterForm6 };
 export function intakeSections(kind: IntakeKind): IntakeSection[] { return formSections[kind]; }
 export function intakeFields(kind: IntakeKind, answers: IntakeValue): IntakeField[] {
   return formSections[kind].flatMap(s=>s.fields).filter(f=>!f.show||f.show(answers));
@@ -256,7 +346,7 @@ export function intakeFields(kind: IntakeKind, answers: IntakeValue): IntakeFiel
 const protectedKeys = new Set(["aadhaarNumber","panNumber","epicNumber","passportNumber"]);
 export function protectedIntakeField(key: string) { return protectedKeys.has(key); }
 export const detailedIntakeSchema = z.object({
-  kind: z.enum(["passport","voter","pan","voter-form8"]),
+  kind: z.enum(["passport","voter","pan","voter-form8","voter-form6"]),
   answers: z.record(z.string().min(1).max(45),z.string().max(400)).refine(v=>Object.keys(v).length<=110),
   documents: z.array(z.string().max(100)).max(18),
   photoFileId: z.uuid().optional(),
@@ -287,6 +377,17 @@ export function validateDetailedIntake(intake: DetailedIntake): Record<string,st
     else if(f.id==="disabilityPercent"&&(!/^\d{1,3}(\.\d{1,2})?$/.test(value)||Number(value)>100))errors[f.id]="Enter a percentage between 0 and 100.";
     else if(f.id==="applicantName"&&value.length<2)errors[f.id]="Enter the applicant name.";
   }
+  if (intake.kind === "voter-form6") {
+    const v=intake.answers;
+    if (!v.mobile?.trim() && !v.relativeMobile?.trim()) errors.mobile = "Provide a self or relative contact mobile.";
+    for(const key of ["mobile","relativeMobile"]){
+      if(v[key]?.trim() && !/^[6-9]\d{9}$/.test(v[key].trim()))errors[key]="Enter a 10-digit Indian mobile number.";
+    }
+    if(v.residenceSince && !/^\d{4}-(0[1-9]|1[0-2])$/.test(v.residenceSince)) errors.residenceSince="Use YYYY-MM (for example 2026-01).";
+    if(v.familyMemberEpic && !/^[A-Z]{3}\d{7}$/.test(v.familyMemberEpic.toUpperCase()))errors.familyMemberEpic="Enter a valid EPIC or leave this field blank.";
+    if(v.hasDisability==="Yes" && v.disabilityPercent && (Number(v.disabilityPercent)<0 || Number(v.disabilityPercent)>100 || !/^\d{1,3}(?:\.\d{1,2})?$/.test(v.disabilityPercent)))errors.disabilityPercent="Enter a percentage from 0 to 100.";
+    if(!intake.photoFileId)errors.photoFileId="A recent photograph is required for the Form 6 assistance request.";
+  }
   if (intake.kind === "voter-form8") {
     const v = intake.answers;
     if (v.epicNumber && !/^[A-Z]{3}[0-9]{7}$/.test(v.epicNumber.toUpperCase().trim())) errors.epicNumber = "Enter an EPIC number with 3 letters and 7 digits.";
@@ -314,6 +415,7 @@ export function validateDetailedIntake(intake: DetailedIntake): Record<string,st
 }
 
 export const intakeDocumentGuide: Record<IntakeKind, string[]> = {
+  "voter-form6": ["Recent passport-size colour photo", "Self-attested date-of-birth proof", "Self-attested residence proof", "Any required SIR declaration details and supporting records"],
   "voter-form8": ["Self-attested supporting proof for the selected change", "Address proof for shifting residence", "Recent photo if correcting the photograph", "Police report/FIR for lost EPIC where applicable", "Disability certificate where applicable"],
   passport: [
     "Present-address proof where required (for example an accepted Aadhaar, utility bill or bank document)",
