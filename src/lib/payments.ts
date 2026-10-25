@@ -1,4 +1,5 @@
 import { and, count, desc, eq, sql } from "drizzle-orm";
+import { after } from "next/server";
 import { payments, serviceRequests, users, walletEntries } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import { db } from "@/lib/db";
@@ -9,6 +10,10 @@ import { cleanUtr, convenienceFee, parseUpiAccounts, upiLink, type UpiAccount, o
 import { site } from "@/lib/site";
 import { qrSvg } from "@/lib/qr";
 import { enforceRate, identity } from "@/lib/rate-limit";
+import { canQuote } from "@/lib/review-workflow";
+import { deliverNotifications, queueNotification } from "@/lib/notifications";
+import { sendStatusWhatsApp } from "@/lib/whatsapp-alerts";
+import { recordEvent } from "@/lib/requests";
 
 export type PaymentRow = typeof payments.$inferSelect;
 
@@ -59,22 +64,66 @@ export async function listPayments(status?: string, page = 0, pageSize = 20) {
   return { rows: rows.map((row) => ({ ...row.payment, requestName: row.requestName, customer: row.customer, phone: row.phone })), total: total.value };
 }
 
-export async function createPaymentRequest(input: { reference: string; amountPaise: number; note?: string }, actor: { id: string }) {
-  const [request] = await db.select().from(serviceRequests).where(eq(serviceRequests.reference, input.reference.trim().toUpperCase())).limit(1);
-  if (!request) throw new PublicError("No request found with that reference.", 404);
-  const [open] = await db.select({ id: payments.id }).from(payments).where(and(eq(payments.requestId, request.id), sql`${payments.status} in ('due','verifying')`)).limit(1);
-  if (open) throw new PublicError("This request already has an unpaid payment. Cancel it first to create a new one.", 409);
-  const [row] = await db.insert(payments).values({
-    requestId: request.id, reference: request.reference, userId: request.userId, amountPaise: input.amountPaise, note: input.note?.slice(0, 200) || null, createdBy: actor.id,
-  }).returning();
-  await db.update(serviceRequests).set({ status: "awaiting_payment", updatedAt: new Date() }).where(and(eq(serviceRequests.id, request.id), sql`${serviceRequests.status} in ('submitted','reviewing','waiting_for_customer')`));
-  await logActivity({ kind: "request", permission: "requests", title: `Payment of ₹${input.amountPaise / 100} requested`, detail: request.reference, refType: "payment", refId: row.id, actorId: actor.id });
-  return row;
+export async function createPaymentRequest(input: { reference: string; amountPaise: number; note?: string; serviceFeePaise?: number; externalFeePaise?: number }, actor: { id: string }) {
+  const serviceFeePaise=input.serviceFeePaise??input.amountPaise;
+  const externalFeePaise=input.externalFeePaise??0;
+  if(!Number.isSafeInteger(serviceFeePaise)||!Number.isSafeInteger(externalFeePaise)||serviceFeePaise<0||externalFeePaise<0||
+    serviceFeePaise+externalFeePaise!==input.amountPaise||input.amountPaise<100||input.amountPaise>50_000_000)
+    throw new PublicError("Enter a valid quote with total between ₹1 and ₹5,00,000.",400);
+  const result=await db.transaction(async(tx)=>{
+    const [request]=await tx.select().from(serviceRequests).where(eq(serviceRequests.reference,input.reference.trim().toUpperCase())).limit(1);
+    if(!request)throw new PublicError("No request found with that reference.",404);
+    if(!canQuote(request.status,request.details))
+      throw new PublicError("Review and approve all application details before requesting payment.",409);
+    const [existing]=await tx.select({id:payments.id,status:payments.status}).from(payments)
+      .where(eq(payments.requestId,request.id)).orderBy(desc(payments.createdAt)).limit(1);
+    if(existing && existing.status!=="cancelled")
+      throw new PublicError("This request already has a payment. Manage or cancel it before issuing another quote.",409);
+    const now=new Date();
+    const [updated]=await tx.update(serviceRequests).set({
+      status:"awaiting_payment",serviceFee:(serviceFeePaise/100).toFixed(2),
+      externalFee:(externalFeePaise/100).toFixed(2),updatedAt:now,
+    }).where(and(eq(serviceRequests.id,request.id),eq(serviceRequests.status,"reviewing"),eq(serviceRequests.updatedAt,request.updatedAt)))
+      .returning({id:serviceRequests.id});
+    if(!updated)throw new PublicError("This request was updated while you were quoting. Reload and retry.",409);
+    const [payment]=await tx.insert(payments).values({
+      requestId:request.id,reference:request.reference,userId:request.userId,
+      amountPaise:input.amountPaise,note:input.note?.slice(0,200)||null,createdBy:actor.id,
+    }).returning();
+    return {payment,request};
+  });
+  const {payment,request}=result;
+  await recordEvent("service",request.id,actor.id,"reviewing","awaiting_payment",
+    `Review approved, quotation ₹${(serviceFeePaise/100).toFixed(2)} service + ₹${(externalFeePaise/100).toFixed(2)} external. ${input.note??""}`.slice(0,500));
+  await logActivity({kind:"request",permission:"requests",title:`Payment of ₹${input.amountPaise/100} requested`,
+    detail:request.reference,refType:"payment",refId:payment.id,actorId:actor.id});
+  const [customer]=await db.select({name:users.name,email:users.email,phone:users.phone,whatsapp:users.whatsapp}).from(users)
+    .where(eq(users.id,request.userId)).limit(1);
+  if(customer){
+    try {
+      const id=await queueNotification(request.userId,"customer_message",{
+        email:customer.email,subject:`Payment quotation ready: ${request.reference}`,
+        lines:[`Hello ${customer.name},`,`We have reviewed your ${request.serviceName} application.`,
+          `Service fee: ₹${(serviceFeePaise/100).toFixed(2)}`,
+          `Official/external fee: ₹${(externalFeePaise/100).toFixed(2)}`,
+          `Total: ₹${(input.amountPaise/100).toFixed(2)} (before eligible promo discount or payment processing fee).`,
+          `View the payment page: ${site.url}/pay/${encodeURIComponent(request.reference)}`,
+          "When payment is verified, we will start processing and update your account with the official reference when available."],
+      });
+      after(async()=>{await deliverNotifications([id]).catch(error=>console.error("[quote] notification delivery retry queued",error));});
+    }catch(error){console.error("[quote] could not queue payment link email",error);}
+    sendStatusWhatsApp({name:customer.name,phone:customer.whatsapp??customer.phone,reference:request.reference,service:request.serviceName,status:"Quotation ready — pay through your account"});
+  }
+  return payment;
 }
 
-export async function cancelPayment(id: string) {
-  const [row] = await db.update(payments).set({ status: "cancelled", updatedAt: new Date() }).where(and(eq(payments.id, id), sql`${payments.status} <> 'paid'`)).returning({ requestId: payments.requestId });
-  if (row) await db.update(serviceRequests).set({ status: "reviewing", updatedAt: new Date() }).where(and(eq(serviceRequests.id, row.requestId), eq(serviceRequests.status, "awaiting_payment")));
+export async function cancelPayment(id:string){
+  const [payment]=await db.select().from(payments).where(eq(payments.id,id)).limit(1);
+  if(!payment || !["due","failed","verifying"].includes(payment.status))throw new PublicError("Only an unpaid request may be cancelled.",409);
+  const [row]=await db.update(payments).set({status:"cancelled",updatedAt:new Date()})
+    .where(and(eq(payments.id,id),eq(payments.status,payment.status))).returning({requestId:payments.requestId});
+  if(row)await db.update(serviceRequests).set({status:"reviewing",updatedAt:new Date()})
+    .where(and(eq(serviceRequests.id,row.requestId),eq(serviceRequests.status,"awaiting_payment")));
 }
 
 /** Marks a payment as paid exactly once. Safe to call again for the same payment (webhooks retry). */
