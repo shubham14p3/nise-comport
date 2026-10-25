@@ -14,6 +14,8 @@ import { resolveService } from "@/lib/site-content";
 import type { ScopeContext } from "@/lib/promo-scope";
 import { isServiceDetail, serviceCatalog, servicesInCategory } from "@/lib/services";
 import { normalizePhone } from "@/lib/validation";
+import { detailedIntakeSchema } from "@/lib/detailed-intake";
+import { storeDetailedIntake } from "@/lib/detailed-intake-server";
 import { closeWizardLeads } from "@/lib/leads";
 import { sendDbDownFallbackWhatsApp, sendRequestWhatsApp, whatsappAlertsEnabled } from "@/lib/whatsapp-alerts";
 
@@ -22,6 +24,7 @@ const schema = z.object({
   description: z.string().trim().min(8, "Please describe what you need in a few words (at least 8 characters).").max(1500, "Keep the description under 1,500 characters."),
   preferredContact: z.enum(["email", "phone", "whatsapp"]).optional(),
   fileId: z.uuid().optional(),
+  intake: detailedIntakeSchema.optional(),
   /** Step-flow extras (all optional so older clients keep working). */
   contactName: z.string().trim().min(2).max(100).optional(),
   contactPhone: z.string().trim().max(20).optional(),
@@ -57,6 +60,12 @@ export async function POST(request: NextRequest) {
     const found = input.serviceSlug === "other" ? undefined : (await resolveService(input.serviceSlug)) ?? undefined;
     if (input.serviceSlug !== "other" && !found) throw new PublicError("Choose one of the listed services.", 400, { fields: { serviceSlug: "Choose one of the listed services." } });
     service = found ?? { slug: "other", title: "General enquiry" };
+    if(input.intake) {
+      if(input.serviceSlug==="voter-id" && input.intake.kind!=="voter")throw new PublicError("Voter requests need the Voter ID form.",400);
+      if(input.serviceSlug==="passport-driving-licence" && input.intake.kind!=="passport")throw new PublicError("Passport requests need the passport form.",400);
+      if(!["voter-id","passport-driving-licence"].includes(input.serviceSlug))throw new PublicError("This service does not use that questionnaire.",400);
+    }
+    const storedIntake = input.intake ? storeDetailedIntake(input.intake) : null;
     // const copies so TS carries the "definitely assigned" narrowing into the closure below —
     // the hoisted `let`s above stay typed `T | undefined` inside a nested function either way.
     const currentUser = user;
@@ -103,6 +112,11 @@ export async function POST(request: NextRequest) {
     const offer = await checkOffer(input.offerId, category, user.id);
     const coupon = await checkCoupon(input.couponCode, user.id, found ? { service: found.slug, category } : { service: "other" });
 
+    if(input.intake?.photoFileId) {
+      const [photo] = await db.select({ id: storedFiles.id, requestId: storedFiles.requestId }).from(storedFiles)
+        .where(and(eq(storedFiles.id,input.intake.photoFileId),eq(storedFiles.userId,user.id))).limit(1);
+      if(!photo||photo.requestId)throw new PublicError("Photograph is unavailable. Upload it again.",400,{fields:{photoFileId:"Upload the photo again."}});
+    }
     if (input.fileId) {
       const [file] = await db.select({ id: storedFiles.id, requestId: storedFiles.requestId }).from(storedFiles).where(and(eq(storedFiles.id, input.fileId), eq(storedFiles.userId, user.id))).limit(1);
       if (!file || file.requestId) throw new PublicError("The attached file is no longer available. Please attach it again.", 400, { fields: { fileId: "Attach the file again." } });
@@ -115,6 +129,7 @@ export async function POST(request: NextRequest) {
           reference, userId: currentUser.id, serviceSlug: currentService.slug, serviceName: currentService.title,
           details: {
             description: currentInput.description,
+            ...(storedIntake ? { intake: storedIntake } : {}),
             ...(currentInput.preferredContact ? { preferredContact: currentInput.preferredContact } : {}),
             ...(currentInput.contactName ? { contactName: currentInput.contactName } : {}),
             ...(contactPhone ? { contactPhone } : {}),
@@ -135,6 +150,9 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
+    if(input.intake?.photoFileId) {
+      await db.update(storedFiles).set({requestId:created.id}).where(and(eq(storedFiles.id,input.intake.photoFileId),eq(storedFiles.userId,user.id),isNull(storedFiles.requestId)));
+    }
     if (input.fileId) {
       await db.update(storedFiles).set({ requestId: created.id }).where(and(eq(storedFiles.id, input.fileId), eq(storedFiles.userId, user.id), isNull(storedFiles.requestId)));
     }
@@ -142,6 +160,7 @@ export async function POST(request: NextRequest) {
     await recordEvent("service", created.id, user.id, null, "submitted", "Created online");
     await notifyNewRequest(user, created.reference, service.title, [
       `Note: ${input.description.slice(0, 300)}`,
+      ...(input.intake ? [`Application form: ${input.intake.kind}`, "Questionnaire saved securely — open the request in staff dashboard to view"] : []),
       ...(contactPhone ? [`Phone: ${contactPhone}${input.preferredContact ? ` (prefers ${input.preferredContact})` : ""}`] : []),
       ...(visit ? [`Visit: ${[visit.mode, visit.day, visit.slot, visit.address].filter(Boolean).join(" · ")}`] : []),
       ...(offer.applied ? [`Offer claimed: ${offer.title}`] : []),
