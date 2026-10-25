@@ -10,6 +10,8 @@ import { hasPermission } from "@/lib/permissions";
 import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
 import { privateStoragePath, privateStorageRoot } from "@/lib/storage";
 import { sendMail, sendTicketMail, smtpConfigured } from "@/lib/email";
+import { resolveIntegration } from "@/lib/integration-vault";
+import { chooseImapConnection, type ImapConnection } from "@/lib/mail-config";
 import { absoluteUrl, site } from "@/lib/site";
 import { MAIL_PATH } from "@/lib/mail-route";
 import {
@@ -25,7 +27,17 @@ export function actorFor(user: User): MailActor { return { user, staff: hasPermi
 
 export function supportAddress() { return (process.env.MAIL_SUPPORT_ADDRESS || process.env.MAIL_IMAP_USER || process.env.SMTP_USER || site.email).trim(); }
 function supportFrom() { return process.env.MAIL_SUPPORT_FROM?.trim() || `"${site.name} Support" <${supportAddress()}>`; }
-export function imapConfigured() { return Boolean(process.env.MAIL_IMAP_HOST && process.env.MAIL_IMAP_USER && process.env.MAIL_IMAP_PASSWORD); }
+
+/** Environment variables win; a complete encrypted vault IMAP profile is the fallback.
+ * SMTP keys alone do not connect an inbox. */
+export async function imapConnection(): Promise<ImapConnection | null> {
+  const fromEnvironment = chooseImapConnection(process.env);
+  if (fromEnvironment) return fromEnvironment;
+  if (!/^[a-f0-9]{64}$/i.test(process.env.INTEGRATIONS_ENCRYPTION_KEY || "")) return null;
+  const vault = await resolveIntegration("email").catch(() => ({}));
+  return chooseImapConnection(process.env, vault);
+}
+
 function mailLimitBytes() { const mb = Number(process.env.MAIL_STORAGE_LIMIT_MB); return (Number.isFinite(mb) && mb > 0 ? mb : 2048) * 1024 * 1024; }
 function userLimitBytes() { const mb = Number(process.env.MAIL_USER_QUOTA_MB); return (Number.isFinite(mb) && mb > 0 ? mb : 200) * 1024 * 1024; }
 function mailDomain() { const at = supportAddress().split("@")[1]; return at || site.url.replace(/^https?:\/\//, "").replace(/\/.*/, ""); }
@@ -161,7 +173,8 @@ export async function mailMeta(actor: MailActor): Promise<MailMeta> {
     if (["open", "awaiting_customer", "get_back_soon"].includes(row.status)) counts.active += row.total;
   }
   counts.unread = unread;
-  const meta: MailMeta = { staff: actor.staff, counts, unread, supportAddress: supportAddress(), mailboxConnected: imapConfigured() };
+  const inbox = actor.staff ? await imapConnection() : null;
+  const meta: MailMeta = { staff: actor.staff, counts, unread, supportAddress: process.env.MAIL_SUPPORT_ADDRESS?.trim() || inbox?.user || supportAddress(), mailboxConnected: Boolean(inbox) };
   if (actor.staff) {
     // Every staff member with the Messages permission can check the mailbox; only the owner sees disk and storage figures.
     const [sync] = await db.select().from(mailSync).where(eq(mailSync.id, "main")).limit(1);
