@@ -130,3 +130,13 @@
 @media print{
   .f8-sample-bar,.f8-sample-alert,.f8-inline-preview,.f8-final-preview{display:none!important}
 }
+
+
+.f8-fix-card{padding:16px;border:1px solid #dce7f4;border-radius:13px;background:#fbfdff}
+.f8-fix-card>header{display:flex;align-items:flex-start;gap:11px;margin-bottom:14px}
+.f8-fix-number{display:grid;place-items:center;flex:none;width:32px;height:32px;border-radius:9px;background:#e5effd;color:#17568c;font-weight:800}
+.f8-fix-card h3{font-size:1rem;margin:0 0 5px;color:#174d7d}
+.f8-fix-card p{font-size:.78rem;color:#66758a;margin:0;line-height:1.5}
+.f8-fix-card .f8-input-grid{align-items:start}
+.f8-fix-card .f8-input{min-width:0}
+.f8-fix-card:has(.f8-input--invalid){border-color:#d96060;background:#fffafa}
