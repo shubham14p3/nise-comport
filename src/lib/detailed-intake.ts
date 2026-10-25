@@ -19,7 +19,6 @@ const field = (id: string, label: string, required = false, type: IntakeField["t
 const select = (id: string, label: string, choices: readonly string[], required = true, extra: Partial<IntakeField> = {}) =>
   field(id, label, required, "select", { options: choices, ...extra });
 const showIf = (id: string, value: string) => (answers: IntakeValue) => answers[id] === value;
-const only = (id: string, choices: readonly string[]) => (answers: IntakeValue) => choices.includes(answers[id]);
 
 const address = (prefix: string, title: string): IntakeSection => ({
   title,
