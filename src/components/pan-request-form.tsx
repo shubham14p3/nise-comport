@@ -69,8 +69,8 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
         setMessage("This request is now being processed. It is read-only; contact the service desk for changes.");
         return;
       }
-      if(!rawIntake||typeof rawIntake!=="object"||(rawIntake as {kind?:string}).kind!=="pan49a") {
-        setMessage("The saved request does not contain a Form 49A worksheet.");
+      if(!rawIntake||typeof rawIntake!=="object"||!["pan49a","pan93"].includes((rawIntake as {kind?:string}).kind??"")) {
+        setMessage("The saved request does not contain an editable PAN worksheet.");
         return;
       }
       const parsed=panIntakeSchema.safeParse({...oldPan,detailedIntake:rawIntake});
@@ -202,7 +202,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
     {err(key)}
   </fieldset>;
 
-  const showSample49A = () => {
+  const showSampleForm = () => {
     const sample: Record<string,string> = {
       personTitle:"Shri",personSurname:"APPLICANT",personFirst:"DEMO",personMiddle:"",
       printedName:"DEMO APPLICANT",previousName:"No",gender:"Male",dob:"15/06/1994",
@@ -225,7 +225,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
       representative:"",contactName:"DEMO APPLICANT", email:"demo@example.com",phone:"+919000000000",
       address:"12, Sample Road, Test Locality",city:"Jamshedpur",state:"Jharkhand",
       country:"India",postalCode:"831004",consent:false,documentPlan:[],
-      detailedIntake:{kind:"pan49a",answers:sample,documents:[]},
+      detailedIntake:{kind:form93?"pan93":"pan49a",answers:sample,documents:[]},
     }));
     setErrors({});
     setPreviewConfirmed(false);
@@ -235,10 +235,10 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
 
   const previewCard = (review = false) => <div className="pan49-open-card">
     <div className="pan49-open-card__info"><span className="pan49-open-card__icon"><FileText size={23} aria-hidden="true"/></span><div>
-      <strong>{review ? "Your completed Form 49A is ready for review" : "See your form as a real two-page document"}</strong>
+      <strong>{review ? "Your completed ${form93 ? "Form 93" : "Form 49A"} is ready for review" : "See your form as a real two-page document"}</strong>
       <p>{review ? "Open the document, check both pages and return here to confirm before sending." : "Preview your entered fields at any time. Blank fields remain empty until completed."}</p>
     </div></div>
-    <button className="pan49-open-card__button" type="button" onClick={() => setShowPreview(true)}><Eye size={18} aria-hidden="true"/>{review ? "Open final preview" : "Preview filled Form 49A"}</button>
+    <button className="pan49-open-card__button" type="button" onClick={() => setShowPreview(true)}><Eye size={18} aria-hidden="true"/>{review ? "Open final preview" : "Preview filled PAN form"}</button>
   </div>;
 
   const frame = (content: React.ReactNode) => <WizardFrame
@@ -250,7 +250,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
     rail={<OfferRail category="government-services" locale={locale} whatsappText="Hi NISE COMPORT, I have a question about PAN."/>}
   >{content}</WizardFrame>;
 
-  if (editLoading) return frame(<p className="alert alert--info" role="status">Loading your securely saved Form 49A…</p>);
+  if (editLoading) return frame(<p className="alert alert--info" role="status">Loading your securely saved PAN form…</p>);
 
   if (!signedIn) return frame(<div className="callout callout--center"><LockKeyhole size={28}/><b>Sign in to keep your PAN request private</b><span>Your contact details prefill from your profile. You can review everything before sending.</span><div className="callout__actions"><Link className="btn btn--primary" href="/login" onClick={() => rememberReturn(form93 ? "/pan/93" : referenceMode ? "/pan/49a" : "/pan/request")}>Sign in to continue</Link><Link className="btn btn--ghost" href="/signup" onClick={() => rememberReturn(referenceMode ? "/pan/49a" : "/pan/request")}>Create a free account</Link></div></div>);
 
@@ -260,7 +260,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
       <div className="pan49-open-card__info"><span className="pan49-open-card__icon"><FileText size={23} aria-hidden="true"/></span>
         <div><strong>Test the completed PDF layout instantly</strong><p>Load entirely fictional sample data and open the two-page preview. No account or submission required.</p></div>
       </div>
-      <button className="pan49-open-card__button" type="button" onClick={showSample49A}><Eye size={18} aria-hidden="true"/>Show filled sample in modal</button>
+      <button className="pan49-open-card__button" type="button" onClick={showSampleForm}><Eye size={18} aria-hidden="true"/>Show filled sample in modal</button>
     </div>}
     {step === 0 && <section>
       <h2>Which PAN service do you need?</h2><p className="wizard-form__sub">Pick one. We’ll adapt the next questions.</p>
@@ -331,7 +331,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
 
     {Object.keys(errors).length > 0 && step !== 3 && <div className="alert alert--error" role="alert">Please check the highlighted details.</div>}
     {message && <p className="alert alert--info" role="status">{message}</p>}
-    <WizardActions locale={locale} onBack={step > 0 ? () => go(step - 1) : undefined} nextLabel={step === 3 ? demo ? "Validate preview" : editReference ? "Save corrected Form 49A" : "Send PAN request" : undefined} busy={busy}/>
+    <WizardActions locale={locale} onBack={step > 0 ? () => go(step - 1) : undefined} nextLabel={step === 3 ? demo ? "Validate preview" : editReference ? "Save corrected PAN form" : "Send PAN request" : undefined} busy={busy}/>
   </form>)}
   {referenceMode && ["pan49a","pan93"].includes(data.detailedIntake?.kind??"") && <Pan49AModal
     form93={form93}
