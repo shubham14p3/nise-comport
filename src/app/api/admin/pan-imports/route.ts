@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
       const hash = createHmac("sha256", panIndexKey(key)).update(query.toUpperCase()).digest("hex");
       where = eq(panRecords.panHash, hash);
     } else {
-      const safeQuery = query.replace(/[\\%_]/g, "\\query.replace(/[\\\\%_]/g, "\\\\$&")");
+      const safeQuery = query.replace(/[%_\\]/g, (character) => String.fromCharCode(92) + character);
       where = ilike(panRecords.holderName, `%${safeQuery}%`);
     }
     const [records, [total]] = await Promise.all([
