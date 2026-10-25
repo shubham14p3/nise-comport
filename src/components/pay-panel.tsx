@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { secureApi } from "@/lib/secure-api-client";
 import { rupees } from "@/lib/payments-core";
+import Link from "next/link";
 
 type Props = {
   reference: string; status: string; amountPaise: number; feePaise: number; note: string | null; paidVia: string | null;
+  serviceFeePaise: number; externalFeePaise: number; couponCode: string | null; discountPaise: number;
   upiSlots: { slot: number; label: string }[]; qrSeconds: number; razorpay: boolean; cashfree: boolean; feePercent: number;
   helpHref: string; failureReason: string | null; ticketRaised: boolean; ticketOpen: boolean; refundStatus: string | null; refundChoice: string | null; refundPaise: number | null;
   estimates: { choice: "wallet" | "original" | "cash"; net: number }[];
@@ -26,6 +28,7 @@ const clock = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms
 export default function PayPanel(p: Props) {
   const router = useRouter();
   const [utr, setUtr] = useState("");
+  const [coupon, setCoupon] = useState("");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
@@ -55,6 +58,12 @@ export default function PayPanel(p: Props) {
   async function run<T>(label: string, work: () => Promise<T>) {
     setBusy(label); setError("");
     try { return await work(); } catch (e) { setError(e instanceof Error ? e.message : "Something went wrong."); return null; } finally { setBusy(""); }
+  }
+
+  async function applyCoupon() {
+    if(!coupon.trim())return;
+    const result=await run("coupon",()=>secureApi("R6p2C9wT4kH1",{reference:p.reference,code:coupon.trim().toUpperCase()}));
+    if(result){setReveal(null);setCoupon("");router.refresh();}
   }
 
   async function submitUtr() {
@@ -102,13 +111,31 @@ export default function PayPanel(p: Props) {
         {choice === "original" && <input value={details} onChange={(e) => setDetails(e.target.value)} placeholder="Bank account + IFSC, or UPI ID" maxLength={300}/>}
         <button className="btn btn--ghost btn--block" type="button" disabled={busy === "refund"} onClick={() => void askRefund()}>{busy === "refund" ? "Sending…" : "Request refund"}</button>
       </section>;
-  if (p.status === "paid") return <div className="pay-card pay-card--done"><h2>Payment received ✓</h2><p>Thank you. We have recorded {rupees(p.amountPaise + (p.paidVia === "razorpay" || p.paidVia === "cashfree" ? p.feePaise : 0))} against {p.reference}. A receipt was emailed to you.</p>{refundBox}{error && <p role="alert" className="form-error">{error}</p>}</div>;
+  if (p.status === "paid") return <div className="pay-card pay-card--done"><h2>Payment received ✓</h2><p>Thank you. We have recorded {rupees(p.amountPaise + (p.paidVia === "razorpay" || p.paidVia === "cashfree" ? p.feePaise : 0))} against {p.reference}. A receipt was emailed to you.</p><p className="pay-notice">We will now process your application. We normally aim to share the first official application reference within 1–2 working days, subject to the government portal or provider. We'll add the reference to your account once available. <Link href="/profile#profile">Verify your email and WhatsApp contact details</Link> to receive updates.</p>{refundBox}{error && <p role="alert" className="form-error">{error}</p>}</div>;
   if (p.status === "cancelled") return <div className="pay-card"><h2>This payment request was cancelled</h2><p>Please contact us if you think this is a mistake.</p></div>;
 
   return <div className="pay-card">
     {p.razorpay && <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload"/>}
     {p.cashfree && <Script src="https://sdk.cashfree.com/js/v3/cashfree.js" strategy="lazyOnload"/>}
     <p className="pay-amount">{rupees(p.amountPaise)}</p>
+    <section className="pay-breakdown" aria-label="Quotation breakdown">
+      <h2>Your reviewed quotation</h2>
+      <dl>
+        <div><dt>NISE COMPORT service fee</dt><dd>{rupees(p.serviceFeePaise)}</dd></div>
+        <div><dt>Official / external fee</dt><dd>{rupees(p.externalFeePaise)}</dd></div>
+        {p.discountPaise>0&&<div><dt>Promo discount {p.couponCode ? `(${p.couponCode})`:""}</dt><dd>−{rupees(p.discountPaise)}</dd></div>}
+        <div><dt><strong>Amount due (before optional gateway fee)</strong></dt><dd><strong>{rupees(p.amountPaise)}</strong></dd></div>
+      </dl>
+      {p.status==="due"&&!p.couponCode&&<div className="pay-code">
+        <label className="field-label" htmlFor="pay-promo">Have an offer or promo code?</label>
+        <div className="admin-form-row"><input id="pay-promo" maxLength={40} autoCapitalize="characters" spellCheck={false} value={coupon}
+          placeholder="Enter promo code" onChange={e=>setCoupon(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g,"").slice(0,40))}/>
+          <button type="button" className="btn btn--primary btn--sm" disabled={!coupon.trim()||Boolean(busy)} onClick={()=>void applyCoupon()}>
+            {busy==="coupon"?"Applying…":"Apply offer"}</button></div>
+        <small>Discounts apply only to our service fee—not official charges or payment gateway fees. <Link href="/offers">Browse active offers</Link>.</small>
+      </div>}
+      {p.couponCode&&<p className="alert alert--success">Your offer {p.couponCode} is applied.</p>}
+    </section>
     {p.note && <p>{p.note}</p>}
     <p className="pay-ref">Request {p.reference}</p>
 
