@@ -16,7 +16,7 @@ export default async function Pan49AReferencePage({ searchParams }: { searchPara
         <span><b>Archived form preview — not an official PAN submission.</b> Form 49A stopped being accepted for new applications after 31 March 2026. Individuals who are Indian citizens now use Form 93; Indian entities use Form 94. <Link href="/pan/forms">View current form guidance</Link>.</span>
       </div>
     </div>
-    {!user && <div className="container"><p className="alert alert--info">Demo mode: you can enter details and preview both pages without signing in. Your entries are not saved or submitted. <Link href="/login">Sign in</Link> to save a real assistance request.</p></div>}
-    <PanRequestForm service="new" demo={!user || user.role==="demo"} signedIn legacy49a editReference={editReference}/>
+    {!user && <div className="container"><p className="alert alert--info">You can fill your details before signing in; the two-page preview is unlocked after successful login. <Link href="/login">Sign in</Link> to save a real assistance request.</p></div>}
+    <PanRequestForm service="new" demo={user?.role==="demo"} signedIn={Boolean(user)} legacy49a editReference={editReference}/>
   </main>;
 }
