@@ -8,6 +8,8 @@ import { OfferRail, OfferStrip, WizardActions, WizardFrame } from "@/components/
 import { CitySelect, StateSelect } from "@/components/state-city-fields";
 import { COUNTRIES, statesFor } from "@/lib/india-geo";
 import ConsentModal from "@/components/consent-modal";
+import DetailedIntakeFields from "@/components/detailed-intake-fields";
+import { validateDetailedIntake } from "@/lib/detailed-intake";
 import { newIdempotencyKey } from "@/lib/client-id";
 import { panIntakeSchema, panServiceLabels, panServices, type PanIntake } from "@/lib/pan-validation";
 import { secureApi } from "@/lib/secure-api-client";
@@ -17,7 +19,7 @@ import { rememberReturn } from "@/lib/after-login";
 const STEPS = ["PAN service", "Applicant", "Documents", "Review"];
 const STEP_FIELDS: (keyof PanIntake)[][] = [
   ["service", "existingPan", "applicant", "citizenship", "residency", "entityType"],
-  ["fullName", "birthDate", "representative", "contactName", "email", "phone", "address", "city", "state", "country", "postalCode", "corrections"],
+  ["fullName", "birthDate", "representative", "contactName", "email", "phone", "address", "city", "state", "country", "postalCode", "corrections", "detailedIntake"],
   ["documentPlan", "notes", "consent"],
   [],
 ];
@@ -35,7 +37,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
   const router = useRouter();
   const locale = useLocale();
   const [step, setStep] = useState(0);
-  const [data, setData] = useState<PanIntake>({ service, citizenship: "indian", applicant: service === "business" ? "entity" : "individual", residency: "india", existingPan: ["new", "minor", "business"].includes(service) ? "no" : "yes", fullName: "", birthDate: "", contactName: "", email: "", phone: "", address: "", city: "", state: "", country: "India", postalCode: "", representative: "", entityType: "", corrections: [], documentPlan: [], notes: "", consent: false });
+  const [data, setData] = useState<PanIntake>({ service, citizenship: "indian", applicant: service === "business" ? "entity" : "individual", residency: "india", existingPan: ["new", "minor", "business"].includes(service) ? "no" : "yes", fullName: "", birthDate: "", contactName: "", email: "", phone: "", address: "", city: "", state: "", country: "India", postalCode: "", representative: "", entityType: "", corrections: [], documentPlan: [], notes: "", consent: false, detailedIntake: {kind:"pan",answers:{},documents:[]} });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -164,6 +166,9 @@ export default function PanRequestForm({ service, demo = false, signedIn = true 
         <label className="field" key="city"><span className="field__label">City</span><CitySelect country={data.country} state={data.state} value={data.city} onChange={(next) => update("city", next as never)}/>{err("city")}</label>
         {input("postalCode", "PIN / postal code", "text", { inputMode: "numeric", autoComplete: "postal-code" })}
       </div>
+      {data.applicant==="individual" && data.detailedIntake && <DetailedIntakeFields
+        intake={data.detailedIntake} onChange={(next)=>update("detailedIntake",next)}
+        errors={errors.detailedIntake?validateDetailedIntake(data.detailedIntake):{}}/>}
       {["correction", "marriage", "minor-to-major"].includes(data.service) && <fieldset className="field"><legend className="field__label">Which details need updating?</legend>
         <div className="check-grid">{CORRECTIONS.map((value) => <label className="check" key={value}><input type="checkbox" checked={data.corrections.includes(value)} onChange={(event) => update("corrections", event.target.checked ? [...data.corrections, value] : data.corrections.filter((item) => item !== value))}/><span>{pretty(value)}</span></label>)}</div>
         {err("corrections")}
