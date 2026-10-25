@@ -3386,3 +3386,33 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 @media (prefers-reduced-motion: reduce) {
   .mega__group, .mega__service-link svg { transition: none; }
 }
+
+
+/* Guided customer request workflow and transparent payment quote. */
+.case-flow { display: grid; gap: 18px; padding: 18px; margin: 10px 0 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.case-flow__steps { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 7px; }
+.case-flow__steps > div { display: flex; align-items: center; flex-direction: column; gap: 7px; min-width: 0; padding: 10px 4px; border-radius: 10px; color: var(--muted); background: var(--bg); }
+.case-flow__steps > div.is-done { background: #eaf2ff; color: #1c4d9b; }
+.case-flow__steps > div > span { display: grid; place-items: center; flex: none; width: 29px; height: 29px; border: 2px solid currentColor; border-radius: 50%; font-size: .8rem; font-weight: 750; }
+.case-flow__steps small { font-size: .71rem; font-weight: 680; text-align: center; line-height: 1.3; }
+.case-flow__actions { display: grid; gap: 12px; padding-top: 9px; border-top: 1px solid var(--line); }
+.case-flow__actions h3,.case-flow__quote h3,.case-flow__customer h3 { margin: 0; font-size: 1.1rem; }
+.case-flow__actions > p { margin: 0; font-size: .87rem; color: var(--muted); }
+.case-flow__actions .field textarea { width: 100%; min-height: 90px; }
+.case-flow__buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+.case-flow__quote { display: grid; gap: 12px; padding: 16px; border: 1px solid #b8caef; border-radius: 14px; background: #f5f8ff; }
+.case-flow__quote .admin-filters { background: transparent; padding: 0; }
+.case-flow__customer { display: grid; gap: 12px; padding: 16px; margin: 12px 0; border: 1px solid #b8caef; border-radius: 15px; background: #f5f8ff; }
+.case-flow__customer .field textarea,.case-flow__customer .field input { width: 100%; }
+.case-flow__customer .btn { justify-self: start; }
+.pay-breakdown { display: grid; gap: 13px; padding: 18px; border: 1px solid var(--line); border-radius: 15px; margin-bottom: 16px; background: var(--bg); }
+.pay-breakdown h2 { margin: 0; font-size: 1rem; }
+.pay-breakdown dl { margin: 0; display: grid; gap: 8px; }
+.pay-breakdown dl > div { display: flex; justify-content: space-between; gap: 15px; font-size: .88rem; }
+.pay-breakdown dl > div:last-child { border-top: 1px solid var(--line); padding-top: 12px; }
+.pay-breakdown dd { margin: 0; text-align: right; white-space: nowrap; }
+.pay-code { display: grid; gap: 8px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.pay-code .admin-form-row { display: flex; gap: 8px; }
+.pay-code .admin-form-row input { flex: 1; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 9px; }
+.pay-code small { color: var(--muted); }
+@media (max-width: 640px) { .case-flow { padding: 12px; } .case-flow__steps { gap: 3px; } .case-flow__steps small { font-size: .6rem; } .case-flow__steps > div > span { width: 24px; height: 24px; } .case-flow__buttons > button { flex: 1; } }
