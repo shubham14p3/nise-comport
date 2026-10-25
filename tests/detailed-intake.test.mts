@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { detailedIntakeSchema, intakeFields, intakeSections, validateDetailedIntake, type DetailedIntake } from "../src/lib/detailed-intake.ts";
 
 function complete(kind: DetailedIntake["kind"]): DetailedIntake {
-  const answers: Record<string,string> = kind==="passport" ? {applicationType:"Fresh"} :
+  const answers: Record<string,string> = kind==="passport" ? {applicationType:"Fresh", previousPassport:"No"} :
     kind==="voter" ? {requestType:"Correction", correctionTarget:"Name",aadhaarStatus:"No"} :
     {previousName:"No",singleMother:"No",officeAddress:"No"};
   for (let i=0;i<3;i++) for(const f of intakeFields(kind,answers)){
