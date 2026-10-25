@@ -38,7 +38,7 @@ export const panIntakeSchema = z.object({
   detailedIntake: detailedIntakeSchema.optional(),
 }).superRefine((input, ctx) => {
   const fail = (path: string, message: string) => ctx.addIssue({ code: "custom", path: [path], message });
-  if(input.detailedIntake && input.applicant==="individual"){
+  if(input.detailedIntake && (input.applicant==="individual" || input.detailedIntake.kind==="pan49a")){
     if(!["pan","pan49a"].includes(input.detailedIntake.kind)) fail("detailedIntake","PAN questionnaire required.");
     else { const problems=validateDetailedIntake(input.detailedIntake); for(const message of Object.values(problems)) { fail("detailedIntake",message); break; } }
   }
