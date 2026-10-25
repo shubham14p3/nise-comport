@@ -2,37 +2,62 @@
 
 import { AdminPager } from "@/components/admin-pager";
 import { FormEvent, useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import dynamic from "next/dynamic";
 import SiteHeader from "@/components/site-header";
-import IntegrationsPanel from "@/components/integrations-panel";
+
 import { WhatsAppIcon } from "@/components/icons";
-import PanImportPanel from "@/components/pan-import-panel";
-import WalletCreditForm from "@/components/wallet-credit-form";
+
+
 import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
 import { ArrowRight, Bell, Cake, ClipboardList, Contact, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
-import PromotionsPanel from "@/components/promotions-panel";
-import CampaignsPanel from "@/components/campaigns-panel";
-import ContactsPanel from "@/components/contacts-panel";
-import OutreachPanel from "@/components/outreach-panel";
-import TeamPanel from "@/components/team-panel";
-import SiteTeamPanel from "@/components/site-team-panel";
-import PaymentsPanel from "@/components/payments-panel";
-import PricesPanel from "@/components/prices-panel";
-import HardwarePanel from "@/components/hardware-panel";
-import CouponUsagePanel from "@/components/coupon-usage-panel";
-import QrScansPanel from "@/components/qr-scans-panel";
-import LegalPanel from "@/components/legal-panel";
-import MailClient from "@/components/mail-client";
-import LoyaltyPanel from "@/components/loyalty-panel";
-import ChatsPanel from "@/components/chats-panel";
-import InboxPanel from "@/components/inbox-panel";
-import SiteContentPanel from "@/components/site-content-panel";
-import GalleryPanel from "@/components/gallery-panel";
-import TestimonialsPanel from "@/components/testimonials-panel";
-import RecordsPanel from "@/components/records-panel";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import { STAFF_PERMISSIONS, type Permission } from "@/lib/permissions";
 import Link from "next/link";
+
+const SystemConnectionsPanel = dynamic(() => import("@/components/system-connections-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const PanImportPanel = dynamic(() => import("@/components/pan-import-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const WalletCreditForm = dynamic(() => import("@/components/wallet-credit-form"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const PromotionsPanel = dynamic(() => import("@/components/promotions-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const CampaignsPanel = dynamic(() => import("@/components/campaigns-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const ContactsPanel = dynamic(() => import("@/components/contacts-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const OutreachPanel = dynamic(() => import("@/components/outreach-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const TeamPanel = dynamic(() => import("@/components/team-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const SiteTeamPanel = dynamic(() => import("@/components/site-team-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const PaymentsPanel = dynamic(() => import("@/components/payments-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const PricesPanel = dynamic(() => import("@/components/prices-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const HardwarePanel = dynamic(() => import("@/components/hardware-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const CouponUsagePanel = dynamic(() => import("@/components/coupon-usage-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const QrScansPanel = dynamic(() => import("@/components/qr-scans-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const LegalPanel = dynamic(() => import("@/components/legal-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const MailClient = dynamic(() => import("@/components/mail-client"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const LoyaltyPanel = dynamic(() => import("@/components/loyalty-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const ChatsPanel = dynamic(() => import("@/components/chats-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const InboxPanel = dynamic(() => import("@/components/inbox-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const SiteContentPanel = dynamic(() => import("@/components/site-content-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const GalleryPanel = dynamic(() => import("@/components/gallery-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const TestimonialsPanel = dynamic(() => import("@/components/testimonials-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const RecordsPanel = dynamic(() => import("@/components/records-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
 
 type Row = { id: string; reference: string; name: string; email: string; phone: string | null; whatsapp?: string | null; status: string; createdAt: string };
 type Job = Row & { fileName: string; pageCount: number; total: string; fulfillment: string; scheduledAt: string | null };
@@ -241,7 +266,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "chats", label: "WhatsApp chats", icon: Megaphone, needs: "campaigns" },
   { id: "contacts", label: "Contacts", icon: Contact, needs: "campaigns" },
   { id: "outreach", label: "Birthdays & renewals", icon: Cake, needs: "staff" },
-  { id: "integrations", label: "Integrations", icon: ShieldCheck, needs: "admin" },
+  { id: "integrations", label: "System & connections", icon: ShieldCheck, needs: "admin" },
   { id: "team", label: "Team", icon: UsersRound, needs: "admin" },
   { id: "pan", label: "PAN data", icon: Database, needs: "pan" },
   { id: "wallet", label: "Wallet", icon: WalletCards, needs: "wallet" },
@@ -251,6 +276,13 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "legal", label: "Legal pages", icon: LayoutTemplate, needs: "content" },
   { id: "payments", label: "Payments", icon: WalletCards, needs: "requests" },
 ];
+
+const NAV_SECTIONS = [
+  { id: "work", title: "Work & messages", tabs: ["inbox", "mail", "requests", "chats", "payments"] },
+  { id: "people", title: "Customers & records", tabs: ["records", "pan", "contacts", "wallet", "loyalty", "team"] },
+  { id: "marketing", title: "Offers & campaigns", tabs: ["promotions", "couponuse", "campaigns", "outreach", "qrscans"] },
+  { id: "website", title: "Website & setup", tabs: ["content", "gallery", "testimonials", "prices", "hardware", "legal", "integrations"] },
+] as const;
 
 const readHash = () => window.location.hash.slice(1);
 const subscribeHash = (callback: () => void) => { window.addEventListener("hashchange", callback); return () => window.removeEventListener("hashchange", callback); };
@@ -330,9 +362,12 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
     <div className={railOpen ? "container profile__layout" : "container profile__layout profile__layout--rail"}>
       <aside className="profile__nav" aria-label="Admin sections">
         <button type="button" className="profile__nav-toggle" onClick={toggleRail} aria-expanded={railOpen} title={railOpen ? "Hide the menu" : "Show the menu"}>{railOpen ? <PanelLeftClose size={19}/> : <PanelLeftOpen size={19}/>}<span>Hide menu</span></button>
-        <nav>{tabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={active === id ? "is-active" : undefined} aria-current={active === id ? "page" : undefined} onClick={() => choose(id)} title={label}>
-          <Icon size={19}/><span>{label}</span>{id === "inbox" && unread > 0 && <small aria-label={`${unread} new`}>{unread > 99 ? "99+" : unread}</small>}{id === "mail" && mailUnread > 0 && <small aria-label={`${mailUnread} unread`}>{mailUnread > 99 ? "99+" : mailUnread}</small>}
-        </button>)}</nav>
+        <nav className="admin-nav-groups">{NAV_SECTIONS.map((section) => { const visible = tabs.filter((tab) => (section.tabs as readonly string[]).includes(tab.id)); return visible.length > 0 && <details key={section.id} className="admin-nav-group" open={undefined}>
+          <summary>{section.title}<span>{visible.length}</span></summary>
+          <div>{visible.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={active === id ? "is-active" : undefined} aria-current={active === id ? "page" : undefined} onClick={() => choose(id)} title={label}>
+            <Icon size={18}/><span>{label}</span>{id === "inbox" && unread > 0 && <small aria-label={`${unread} new`}>{unread > 99 ? "99+" : unread}</small>}{id === "mail" && mailUnread > 0 && <small aria-label={`${mailUnread} unread`}>{mailUnread > 99 ? "99+" : mailUnread}</small>}
+          </button>)}</div>
+        </details>; })}</nav>
       </aside>
       <section className="profile__main admin-page" aria-live="polite" aria-label={current?.label}>
         {!tabs.length && <p className="alert alert--info">Your account doesn’t have access to any admin area yet. Ask the owner to add it in Team.</p>}
@@ -361,10 +396,10 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
         {active === "legal" && <LegalPanel/>}
         {active === "loyalty" && <LoyaltyPanel/>}
         {active === "payments" && <PaymentsPanel/>}
-        {active === "integrations" && <IntegrationsPanel/>}
+        {active === "integrations" && <SystemConnectionsPanel/>}
         {active === "team" && <><TeamPanel meRole={me.role} meId={me.id}/><SiteTeamPanel/></>}
         {active === "pan" && <PanImportPanel/>}
-        {active === "wallet" && <WalletCreditForm/>}
+        {active === "wallet" && <WalletCreditForm canCorrect={isOwner}/>}
       </section>
     </div>
   </main>;
