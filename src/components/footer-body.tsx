@@ -7,7 +7,6 @@ import BrandWordmark from "@/components/brand-wordmark";
 import { MAIL_PATH } from "@/lib/mail-route";
 import { CategoryIcon, WhatsAppIcon } from "@/components/icons";
 import { categoryMeta } from "@/lib/categories";
-import { summarizeHours } from "@/lib/hours";
 import { serviceCatalog } from "@/lib/services";
 import { site, whatsappLink } from "@/lib/site";
 import { lp, tr } from "@/lib/tr";
@@ -29,10 +28,12 @@ const POPULAR: [string, string, string, string][] = [
  * Shared footer on every page: the same name, address and phone (NAP) as the Google Business
  * Profile, plus links to the most important pages so every page passes link value to them.
  */
-export default function FooterBody({ year, partners }: { year: number; partners: ReactNode }) {
+export default function FooterBody({ year, partners, hoursByLocale }: { year: number; partners: ReactNode; hoursByLocale: Record<"en" | "hi" | "bn", string[]> }) {
   const lc = useLocale();
   const t = tr(lc);
-  const hours = summarizeHours(site.openingHours, lc);
+  // Use the server-rendered hours snapshot on both SSR and hydration.
+  // NEXT_PUBLIC_OPENING_HOURS is dynamic in site.ts and unavailable in the browser bundle.
+  const hours = hoursByLocale[lc];
   const href = (path: string) => lp(lc, path);
   return <footer className="site-footer">
     <div className="footer-glow" aria-hidden="true"/>
