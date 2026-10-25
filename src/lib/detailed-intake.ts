@@ -3,7 +3,7 @@ import { z } from "zod";
 /** Customer intake questionnaire based on the sample Passport Seva, ECI Form 8 and PAN Form 49A.
  * These are assistance questionnaires, not government submissions.
  * Requirements/document lists should be checked against the current authority before filing. */
-export type IntakeKind = "passport" | "voter" | "pan" | "pan49a";
+export type IntakeKind = "passport" | "voter" | "pan" | "pan49a" | "pan93";
 export type IntakeValue = Record<string, string>;
 export type IntakeField = {
   id: string; label: string; required?: boolean; type?: "text" | "date" | "email" | "tel" | "textarea" | "select";
@@ -227,7 +227,75 @@ const pan49a: IntakeSection[] = [
   ] },
 ];
 
-const formSections: Record<IntakeKind, IntakeSection[]> = { passport, voter, pan, pan49a };
+
+/** New Form 93 (Rule 158): exact two-page reference provided as five sample PDFs in October 2026.
+ * Customer entries only. Application/payment refs, barcodes, photos, signatures are staff-only
+ * post-processing additions and deliberately NOT part of this questionnaire. */
+const pan93: IntakeSection[] = [
+  { title:"Part A · 1–4 Applicant and Aadhaar",fields:[
+    ...basicName("person"),field("printedName","Name on PAN card (auto-filled)",true),
+    select("gender","Gender",["Male","Female","Transgender"]),
+    field("dob","Date of birth (DD/MM/YYYY)",true,"date"),
+    select("aadhaarAllotted","Do you have an Aadhaar number?",yesNo,true),
+    field("aadhaarNumber","Aadhaar (12 digits)",true,"text",{show:showIf("aadhaarAllotted","Yes"),hint:"Encrypted application data. Never disclose over WhatsApp or email."}),
+    field("aadhaarName","Name as per Aadhaar",true,"text",{show:showIf("aadhaarAllotted","Yes")}),
+  ]},
+  address("residence","Part A · 5 Residence address"),
+  {title:"Part A · 6 Office address",fields:[
+    select("officeAddress","Do you need to enter an office address?",yesNo),
+    ...address("office","Office address").fields.map(f=>({...f,required:false,show:showIf("officeAddress","Yes")})),
+  ]},
+  {title:"Part A · 7–10 Residency and contact",fields:[
+    select("residenceStatus","Residential status",["Resident","Non Resident","Resident but Not ordinarily Resident"]),
+    field("passportNumber","Passport number for non-residents",true,"text",{show:(a)=>a.residenceStatus!=="Resident"&&!!a.residenceStatus}),
+    field("tinNumber","Taxpayer Identification Number (if any)"),
+    field("phoneCountryCode","Mobile country code"),
+    field("mobile","Mobile number",true,"tel"),
+    field("email","Email address",true,"email"),
+    field("phoneAreaCode","Landline area/STD code (optional)"),
+    field("landlineNumber","Landline number (optional)"),
+  ]},
+  {title:"Part B · 11 Sources of income",fields:[
+    select("incomeSalary","Salary",yesNo),select("incomeBusiness","Business/profession",yesNo),
+    select("incomeHouse","House property",yesNo),select("incomeCapital","Capital gains",yesNo),
+    select("incomeOther","Other sources",yesNo),select("incomeNone","No income",yesNo),
+  ]},
+  {title:"Part C · 12–15 Father and mother",fields:[
+    select("singleMother","Single-parent application?",yesNo),
+    ...basicName("father").map(f=>({...f,required:f.id!=="fatherMiddle",show:(a)=>a.singleMother!=="Yes"})),
+    ...basicName("mother").map(f=>({...f,required:f.id!=="motherMiddle"&&f.id!=="motherSurname"})),
+    select("printedParent","Parent's name to print on PAN card",["Father","Mother"],true,{show:(a)=>a.singleMother!=="Yes"}),
+  ]},
+  {title:"Part D · 16 AO code (optional during intake)",fields:[
+    field("aoArea","AO area code"),field("aoType","AO type"),
+    field("aoRange","AO range code"),field("aoNumber","AO number"),
+  ]},
+  {title:"Part E · 17–21 Representative assessee",fields:[
+    select("raApplicable","Is a representative assessee involved?",yesNo),
+    ...basicName("ra").map(f=>({...f,required:f.id!=="raMiddle",show:showIf("raApplicable","Yes")})),
+    field("raPan","Representative PAN (if any)",false,"text",{show:showIf("raApplicable","Yes")}),
+    field("raAadhaarNumber","Representative Aadhaar (if provided)",false,"text",{show:showIf("raApplicable","Yes")}),
+    ...address("ra","Representative address").fields.map(f=>({...f,required:false,show:showIf("raApplicable","Yes")})),
+  ]},
+  {title:"Part F · 22 Communication address",fields:[
+    select("communicationSameAsResidence","Use the residence address for communication?",yesNo),
+    select("communicationAddress","Where should correspondence be sent?",["Residence","Office","Representative"],true,{show:showIf("communicationSameAsResidence","No")}),
+  ]},
+  {title:"Part G · 23–24 Enclosed documents",fields:[
+    select("identityProof","Proof of identity",["Aadhaar","Passport","Voter ID","Driving licence","Other"]),
+    select("addressProof","Proof of address",["Aadhaar","Passport","Voter ID","Driving licence","Other"]),
+    select("birthProof","Proof of date of birth",["Birth certificate","Passport","Matric certificate","Voter ID","Other"]),
+  ]},
+  {title:"Verification and declaration",fields:[
+    field("declarationName","Name of applicant / declarant",true),
+    field("declarationCapacity","Capacity (e.g., SELF)",true),
+    field("declarationPlace","Place",true),
+    field("declarationDate","Declaration date (DD/MM/YYYY)",true,"date"),
+    select("declaration","I confirm that my submitted information is accurate",["Yes"]),
+  ]},
+];
+
+const formSections: Record<IntakeKind, IntakeSection[]> = { passport, voter, pan, pan49a, pan93 };
 export function intakeSections(kind: IntakeKind): IntakeSection[] { return formSections[kind]; }
 export function intakeFields(kind: IntakeKind, answers: IntakeValue): IntakeField[] {
   return formSections[kind].flatMap(s=>s.fields).filter(f=>!f.show||f.show(answers));
@@ -235,7 +303,7 @@ export function intakeFields(kind: IntakeKind, answers: IntakeValue): IntakeFiel
 const protectedKeys = new Set(["aadhaarNumber","panNumber","epicNumber","passportNumber"]);
 export function protectedIntakeField(key: string) { return protectedKeys.has(key); }
 export const detailedIntakeSchema = z.object({
-  kind: z.enum(["passport","voter","pan","pan49a"]),
+  kind: z.enum(["passport","voter","pan","pan49a","pan93"]),
   answers: z.record(z.string().min(1).max(45),z.string().max(400)).refine(v=>Object.keys(v).length<=110),
   documents: z.array(z.string().max(100)).max(18),
   photoFileId: z.uuid().optional(),
@@ -266,7 +334,7 @@ export function validateDetailedIntake(intake: DetailedIntake): Record<string,st
     else if(f.id==="disabilityPercent"&&(!/^\d{1,3}(\.\d{1,2})?$/.test(value)||Number(value)>100))errors[f.id]="Enter a percentage between 0 and 100.";
     else if(f.id==="applicantName"&&value.length<2)errors[f.id]="Enter the applicant name.";
   }
-  if(intake.kind==="pan49a") {
+  if(intake.kind==="pan49a" || intake.kind==="pan93") {
     const a=intake.answers;
     if(a.singleMother==="Yes"&&(!a.motherSurname||!a.motherFirst))errors.motherFirst="Enter the mother’s full name for a single-parent application.";
     if(a.communicationSameAsResidence==="No"&&a.communicationAddress==="Office"&&a.officeAddress!=="Yes")errors.communicationAddress="Fill in the office address or select Residence.";
@@ -302,6 +370,7 @@ export const intakeDocumentGuide: Record<IntakeKind, string[]> = {
     "Disability certificate if applicable",
     "Replacement declaration / supporting evidence if needed",
   ],
+  pan93: ["Proof of identity","Proof of address","Proof of date of birth","Photographs and signatures supplied to staff separately"],
   pan49a: ["Proof of identity","Proof of address","Proof of birth / incorporation","Recent photographs for individuals","Signature or thumb impression arranged separately"],
   pan: [
     "Proof of identity",
