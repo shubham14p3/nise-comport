@@ -31,7 +31,7 @@ function fromISO(raw: string) {
 
 export default function DetailedIntakeFields({ intake, onChange, errors = {}, photo, onPhotoChange }: Props) {
   const id = useId().replaceAll(":","");
-  const is49a = intake.kind === "pan49a";
+  const is49a = intake.kind === "pan49a" || intake.kind === "pan93";
   const [expanded,setExpanded]=useState<Record<string,boolean>>({});
   const [touched,setTouched]=useState<Record<string,boolean>>({});
   const [attempted,setAttempted]=useState(false);
