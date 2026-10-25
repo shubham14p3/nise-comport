@@ -3299,9 +3299,12 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 
 /* Modern Services navigation – roomy search-first mega menu, readable cards. */
 @media (min-width: 1061px) {
+  /* Centre on the entire desktop navigation, not on the narrow Services trigger.
+     Absolute anchoring also tracks the header while the top ticker is visible. */
+  .desktop-nav .mega { position: static; }
   .desktop-nav .mega__panel {
-    position: fixed; inset: auto auto auto 50%;
-    top: calc(var(--header-h) + 8px);
+    position: absolute; inset: auto auto auto 50%;
+    top: calc(100% + 14px);
     transform: translateX(-50%);
     width: min(1080px, calc(100vw - 48px)); max-width: calc(100vw - 48px);
     padding: 0; border-radius: 22px; overflow: hidden;
