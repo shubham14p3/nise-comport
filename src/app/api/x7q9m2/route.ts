@@ -18,6 +18,7 @@ const OPS = {
   "I2t7V4mC9nK5": { method: "POST", path: "/api/admin/integrations/test" },
   "S9p2C6mV4tK8": { method: "POST", path: "/api/admin/social-publish" },
   "I8n3T5gR2sV7": { method: "GET", path: "/api/admin/integrations" },
+  "S1y4H8nP6vC3": { method: "GET", path: "/api/admin/system-health" },
   "I4n9S6vC1pT8": { method: "POST", path: "/api/admin/integrations" },
   "Q7m4kP2vL9sD": { method: "POST", path: "/api/auth/password" },
   "N5c8R1xT6bW3": { method: "POST", path: "/api/auth/request-otp" },
