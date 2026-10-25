@@ -9,7 +9,7 @@ import { CitySelect, StateSelect } from "@/components/state-city-fields";
 import { COUNTRIES, statesFor } from "@/lib/india-geo";
 import ConsentModal from "@/components/consent-modal";
 import DetailedIntakeFields from "@/components/detailed-intake-fields";
-import { validateDetailedIntake } from "@/lib/detailed-intake";
+import { intakeSections, validateDetailedIntake } from "@/lib/detailed-intake";
 import { newIdempotencyKey } from "@/lib/client-id";
 import { panIntakeSchema, panServiceLabels, panServices, type PanIntake } from "@/lib/pan-validation";
 import { secureApi } from "@/lib/secure-api-client";
@@ -219,13 +219,14 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
       declarationName:"DEMO APPLICANT",declarationCapacity:"SELF",declarationPlace:"JAMSHEDPUR",
       declarationDate:"25/10/2026",declaration:"Yes",
     };
+    const formAnswers = form93 ? Object.fromEntries(Object.entries({...sample,residenceStatus:"Resident",communicationSameAsResidence:"Yes"}).filter(([key])=>intakeSections("pan93").some(section=>section.fields.some(f=>f.id===key)))) : sample;
     setData(current => ({
       ...current, service:"new", applicant:"individual", citizenship:"indian", existingPan:"no",
       residency:"india", entityType:"", fullName:"DEMO APPLICANT", birthDate:"1994-06-15",
       representative:"",contactName:"DEMO APPLICANT", email:"demo@example.com",phone:"+919000000000",
       address:"12, Sample Road, Test Locality",city:"Jamshedpur",state:"Jharkhand",
       country:"India",postalCode:"831004",consent:false,documentPlan:[],
-      detailedIntake:{kind:form93?"pan93":"pan49a",answers:sample,documents:[]},
+      detailedIntake:{kind:form93?"pan93":"pan49a",answers:formAnswers,documents:[]},
     }));
     setErrors({});
     setPreviewConfirmed(false);
@@ -235,7 +236,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
 
   const previewCard = (review = false) => <div className="pan49-open-card">
     <div className="pan49-open-card__info"><span className="pan49-open-card__icon"><FileText size={23} aria-hidden="true"/></span><div>
-      <strong>{review ? "Your completed ${form93 ? "Form 93" : "Form 49A"} is ready for review" : "See your form as a real two-page document"}</strong>
+      <strong>{review ? (form93 ? "Your completed Form 93 is ready for review" : "Your completed Form 49A is ready for review") : "See your form as a real two-page document"}</strong>
       <p>{review ? "Open the document, check both pages and return here to confirm before sending." : "Preview your entered fields at any time. Blank fields remain empty until completed."}</p>
     </div></div>
     <button className="pan49-open-card__button" type="button" onClick={() => setShowPreview(true)}><Eye size={18} aria-hidden="true"/>{review ? "Open final preview" : "Preview filled PAN form"}</button>
