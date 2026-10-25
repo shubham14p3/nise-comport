@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, count, desc, eq, ilike, notInArray, or, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, ilike, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { requirePermission } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { db } from "@/lib/db";
-import { printJobs, serviceRequests, storedFiles, users } from "@/db/schema";
+import { printJobs, serviceRequests, users } from "@/db/schema";
 import { REQUEST_STATUSES } from "@/lib/requests";
 import { apiError } from "@/lib/http";
 
@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
     const [jobs, requests, [jobCount], [requestCount]] = await Promise.all([
       db.select({ id: printJobs.id, reference: printJobs.reference, name: users.name, email: users.email, phone: users.phone, whatsapp: users.whatsapp, fileName: printJobs.fileName, pageCount: printJobs.pageCount, total: printJobs.total, fulfillment: printJobs.fulfillment, status: printJobs.status, createdAt: printJobs.createdAt, scheduledAt: printJobs.scheduledAt })
         .from(printJobs).innerJoin(users, eq(printJobs.userId, users.id)).where(printFilters.length ? and(...printFilters) : undefined).orderBy(desc(printJobs.createdAt), desc(printJobs.id)).limit(pageSize).offset(jobPage * pageSize),
-      db.select({ id: serviceRequests.id, reference: serviceRequests.reference, name: users.name, email: users.email, phone: users.phone, whatsapp: users.whatsapp, serviceName: serviceRequests.serviceName, status: serviceRequests.status, createdAt: serviceRequests.createdAt, fileName: storedFiles.originalName, officialReference: serviceRequests.officialReference, officialReferenceLabel: serviceRequests.officialReferenceLabel })
-        .from(serviceRequests).innerJoin(users, eq(serviceRequests.userId, users.id)).leftJoin(storedFiles, eq(storedFiles.requestId, serviceRequests.id)).where(requestFilters.length ? and(...requestFilters) : undefined).orderBy(desc(serviceRequests.createdAt), desc(serviceRequests.id)).limit(pageSize).offset(requestPage * pageSize),
+      db.select({ id: serviceRequests.id, reference: serviceRequests.reference, name: users.name, email: users.email, phone: users.phone, whatsapp: users.whatsapp, serviceName: serviceRequests.serviceName, status: serviceRequests.status, createdAt: serviceRequests.createdAt, fileName: sql<string | null>`(select sf.original_name from stored_files sf where sf.request_id = ${serviceRequests.id} order by sf.created_at desc limit 1)`, officialReference: serviceRequests.officialReference, officialReferenceLabel: serviceRequests.officialReferenceLabel })
+        .from(serviceRequests).innerJoin(users, eq(serviceRequests.userId, users.id)).where(requestFilters.length ? and(...requestFilters) : undefined).orderBy(desc(serviceRequests.createdAt), desc(serviceRequests.id)).limit(pageSize).offset(requestPage * pageSize),
       db.select({ total: count() }).from(printJobs).innerJoin(users, eq(printJobs.userId, users.id)).where(printFilters.length ? and(...printFilters) : undefined),
       db.select({ total: count() }).from(serviceRequests).innerJoin(users, eq(serviceRequests.userId, users.id)).where(requestFilters.length ? and(...requestFilters) : undefined),
     ]);
