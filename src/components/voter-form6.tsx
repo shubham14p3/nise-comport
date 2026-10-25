@@ -31,6 +31,16 @@ export default function VoterForm6({signedIn,demo,maxDate}:Props){
   const [photo,setPhoto]=useState<File|null>(null);
   const [photoUrl,setPhotoUrl]=useState("");
   const photoVersion=useRef(0);
+
+  const [proof,setProof]=useState<File|null>(null);
+  const [showAadhaar,setShowAadhaar]=useState(false);
+  const [showPreview,setShowPreview]=useState(false);
+  const [reviewed,setReviewed]=useState(false);
+  const [confirmed,setConfirmed]=useState(false);
+  const [busy,setBusy]=useState(false);
+  const [reference,setReference]=useState("");
+  const [revisionOf,setRevisionOf]=useState("");
+  const requestKey=useRef<string|null>(null);
   useEffect(()=>{
     if(!signedIn || demo)return;
     let cancelled=false;
@@ -58,15 +68,6 @@ export default function VoterForm6({signedIn,demo,maxDate}:Props){
     }).catch(()=>{if(!cancelled)setMessage("Your temporary form could not be restored. Please check your details.");});
     return ()=>{cancelled=true;};
   },[signedIn,demo]);
-  const [proof,setProof]=useState<File|null>(null);
-  const [showAadhaar,setShowAadhaar]=useState(false);
-  const [showPreview,setShowPreview]=useState(false);
-  const [reviewed,setReviewed]=useState(false);
-  const [confirmed,setConfirmed]=useState(false);
-  const [busy,setBusy]=useState(false);
-  const [reference,setReference]=useState("");
-  const [revisionOf,setRevisionOf]=useState("");
-  const requestKey=useRef<string|null>(null);
   const sections=intakeSections("voter-form6");
   const answers=intake.answers;
   const active=intakeFields("voter-form6",answers);
