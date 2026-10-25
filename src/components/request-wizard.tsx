@@ -10,6 +10,8 @@ import { CategoryIcon, WhatsAppIcon } from "@/components/icons";
 import { OfferRail, OfferStrip, WizardActions, WizardFrame } from "@/components/wizard";
 import ConsentModal from "@/components/consent-modal";
 import DetailedIntakeFields from "@/components/detailed-intake-fields";
+import DetailedIntakePreview from "@/components/detailed-intake-preview";
+import { saveApplicationDraft, readApplicationDraft, clearApplicationDraft } from "@/lib/tab-application-draft";
 import { validateDetailedIntake, type DetailedIntake, type IntakeKind } from "@/lib/detailed-intake";
 import { categoryMeta, categoryMetaFor } from "@/lib/categories";
 import { newIdempotencyKey } from "@/lib/client-id";
@@ -57,9 +59,9 @@ function readDraft(): Partial<Draft> | null {
 function saveDraft(draft: Draft) {
   try {
     // Do not persist full applicant information in browser storage.
-    const { intake: _intake, ...safe } = draft;
-    void _intake;
-    window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify(safe));
+    // Full applicant data is stored separately as a short-lived sealed tab draft.
+    const { step, serviceSlug, category, query, mode, serviceTask, offerId } = draft;
+    window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify({step,serviceSlug,category,query,mode,serviceTask,offerId}));
   } catch { /* storage unavailable */ }
 }
 function clearDraft() {
@@ -132,6 +134,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const leadSent = useRef<string | null>(null);
   const draftRef = useRef<Draft | null>(null);
   const [restored, setRestored] = useState(false);
+  const [tabDraftReady, setTabDraftReady] = useState(false);
   const idempotencyKey = useRef<string | null>(null);
   const cardTop = useRef<HTMLDivElement>(null);
 
@@ -150,7 +153,27 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     ? chosenOffer
     : activeCategory ? offersFor(activeCategory).find((item) => item.categories !== "all") : undefined;
 
-  useEffect(() => { saveDraft(draft); draftRef.current = draft; }, [draft]);
+  useEffect(() => {
+    let active=true;
+    void readApplicationDraft<{draft:Draft}>("service-request").then(saved=>{
+      if(!active)return;
+      const hasUrlChoice=Boolean(initial.service||initial.category||initial.offer||initial.note);
+      if(saved?.draft&&(initial.resume||!hasUrlChoice)){
+        setDraft(current=>({...current,...saved.draft,address:{...EMPTY_ADDRESS,...saved.draft.address},consent:false}));
+        setRestored(true);
+      }
+      setTabDraftReady(true);
+    });
+    return()=>{active=false;};
+  }, [initial.service,initial.category,initial.offer,initial.note,initial.resume]);
+
+  useEffect(() => {
+    draftRef.current=draft;
+    if(!tabDraftReady)return;
+    saveDraft(draft);
+    const timer=window.setTimeout(()=>{void saveApplicationDraft("service-request",{draft:{...draft,consent:false}});},350);
+    return()=>window.clearTimeout(timer);
+  }, [draft,tabDraftReady]);
 
   // Signed in: keep the half-filled request on the server too, so it's there next time.
   useEffect(() => {
@@ -230,11 +253,28 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     }).catch(() => undefined);
   }
 
-  function next() {
-    if (draft.step === 1) captureLead();
-    const problem = validate(draft.step);
-    if (problem) { setError(problem); setShowErrors(true); return; }
-    goTo(Math.min(3, draft.step + 1));
+  async function next() {
+    if(!tabDraftReady){setError("Restoring saved answers. Please try again.");return;}
+    if(draft.step===1)captureLead();
+    const problem=validate(draft.step);
+    const photoOnly=activeIntake?.kind==="voter" && Boolean(intakeErrors.photoFileId) &&
+      Object.keys(intakeErrors).length===1;
+    if(problem && !(draft.step===1 && user===null && photoOnly)){
+      setError(problem);setShowErrors(true);return;
+    }
+    if(draft.step===2 && user===null){
+      const ok=await saveApplicationDraft("service-request",{draft:{...draft,step:3,consent:false}});
+      if(!ok){setError("Browser storage is unavailable. Enable site storage before signing in so your answers are not lost.");return;}
+      saveDraft({...draft,step:3});
+      rememberReturn("/request?resume=1");router.push("/login");return;
+    }
+    if(draft.step===2 && user?.role==="demo"){
+      setError("Sign in with a real account to preview this application.");return;
+    }
+    if(draft.step===2 && activeIntake && Object.keys(intakeErrors).length){
+      setError(Object.values(intakeErrors)[0]);setShowErrors(true);goTo(1);return;
+    }
+    goTo(Math.min(3,draft.step+1));
   }
 
   async function submit(consentConfirmed = false) {
@@ -276,6 +316,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         idempotencyKey: idempotencyKey.current,
       });
       clearDraft();
+      clearApplicationDraft("service-request");
       void secureApi("D4r8F2kW6nQ1", { action: "clear" }).catch(() => undefined);
       setDone({
         whatsappSent: Boolean(result.whatsappSent),
@@ -344,7 +385,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   >
     <div ref={cardTop} className="wizard__anchor"/>
     {restored && <p className="alert alert--info wizard-restored">{WX.restored[locale]} <button type="button" className="text-link" onClick={() => { setRestored(false); clearDraft(); void secureApi("D4r8F2kW6nQ1", { action: "clear" }).catch(() => undefined); setDraft(initialDraft(services, {})); }}>{WX.startFresh[locale]}</button></p>}
-    <form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (draft.step === 3) void submit(); else next(); }}>
+    <form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (draft.step === 3) void submit(); else void next(); }}>
       {draft.step === 0 && <section>
         <h2>{t.s1Title}</h2><p className="wizard-form__sub">{t.s1Sub}</p>
         <label className="input-wrap input-wrap--lg"><Search size={20} aria-hidden="true"/><span className="sr-only">{t.search}</span><input type="search" value={draft.query} onChange={(event) => update({ query: event.target.value })} placeholder={t.search}/></label>
@@ -412,16 +453,26 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         </div>}
       </section>}
 
-      {draft.step === 3 && <section>
+      {draft.step===3 && (!user || user.role==="demo") && <section className="preview-signin-gate">
+        <h2>Sign in to preview your application</h2>
+        <p>Your answers are temporarily saved in this browser tab. After a successful sign-in you will return to this page and review the complete information before sending.</p>
+        <button type="button" className="btn btn--primary" onClick={async()=>{
+          const ok=await saveApplicationDraft("service-request",{draft:{...draft,step:3,consent:false}});
+          if(!ok){setError("Browser storage is blocked; enable it before leaving this form.");return;}
+          saveDraft({...draft,step:3});rememberReturn("/request?resume=1");router.push("/login");
+        }}>Sign in to preview</button>
+      </section>}
+      {draft.step===3 && user && user.role!=="demo" && <section>
         <h2>{t.s4Title}</h2><p className="wizard-form__sub">{t.s4Sub}</p>
         <dl className="summary">
           <div><dt>{t.summaryService}</dt><dd>{service ? serviceName(service.slug, service.name, locale) : t.somethingElse}</dd><button type="button" onClick={() => goTo(0)}>{t.edit}</button></div>
           <div><dt>{t.summaryContact}</dt><dd>{draft.name} · +91 {draft.phone} · {draft.contact === "whatsapp" ? t.viaWhatsapp : draft.contact === "phone" ? t.viaPhone : t.viaEmail}</dd><button type="button" onClick={() => goTo(1)}>{t.edit}</button></div>
           <div><dt>{t.summaryNote}</dt><dd>{draft.description}</dd><button type="button" onClick={() => goTo(1)}>{t.edit}</button></div>
-          {activeIntake && <div><dt>Application details</dt><dd>{activeIntake.kind.toUpperCase()}: {Object.keys(activeIntake.answers).length} fields completed · {activeIntake.documents.length} document types ready</dd><button type="button" onClick={() => goTo(1)}>Edit</button></div>}
+          {activeIntake && <div><dt>Application details</dt><dd>{activeIntake.kind.toUpperCase()}: {Object.keys(activeIntake.answers).length} fields completed</dd><button type="button" onClick={() => goTo(1)}>Edit</button></div>}
           {file && <div><dt>{t.summaryFile}</dt><dd>{file.name}</dd><button type="button" onClick={() => goTo(1)}>{t.edit}</button></div>}
           <div><dt>{t.summaryVisit}</dt><dd>{visitSummary}</dd><button type="button" onClick={() => goTo(2)}>{t.edit}</button></div>
         </dl>
+        {activeIntake && <DetailedIntakePreview intake={activeIntake}/>}
         {offer && <div className={`applied-offer tone-${offer.tone}`}><span className="badge badge--live"><i/>{dict(locale).ticker.live}</span><div><b>{offer.highlight[locale]} · {offer.title[locale]}</b><small>{t.offerApplied}. {offer.firstTimeOnly ? t.offerCheck : ""}</small></div></div>}
         <p className="field__hint">Have an offer or coupon? Apply it after our team reviews your application and sends the quotation. The final discount is shown before you pay.</p>
         <label className="check check--agree"><input type="checkbox" checked={draft.consent} onChange={(event) => update({ consent: event.target.checked })}/><span>{t.consent} <Link href="/terms" target="_blank">{WX.terms[locale]}</Link> · <Link href="/privacy" target="_blank">{WX.privacy[locale]}</Link></span></label>
@@ -429,7 +480,9 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       </section>}
 
       {error && <div className="alert alert--error" role="alert">{error}</div>}
-      <WizardActions locale={locale} onBack={draft.step > 0 ? () => goTo(draft.step - 1) : undefined} nextLabel={draft.step === 3 ? user === null ? t.signInToSend : t.submit : t.next} busy={busy}/>
+      <WizardActions locale={locale} onBack={draft.step > 0 ? () => goTo(draft.step - 1) : undefined}
+        nextLabel={draft.step===2 && user===null?"Sign in to preview":draft.step===3 && !user?"Sign in to preview":draft.step===3?t.submit:t.next}
+        nextDisabled={!tabDraftReady || user===undefined || (draft.step===3 && user?.role==="demo")} busy={busy}/>
     </form>
     <ConsentModal open={showConsent} onClose={() => setShowConsent(false)} busy={busy} serviceLabel={service?.name} onConfirm={() => { setShowConsent(false); void submit(true); }}/>
   </WizardFrame>;
