@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CalendarDays, Check, ChevronLeft, ChevronRight, Eye, EyeOff, FileDown, FileText, ShieldCheck } from "lucide-react";
@@ -8,6 +8,7 @@ import { INDIA_STATES } from "@/lib/india-geo";
 import { intakeFields, intakeSections, validateDetailedIntake, type DetailedIntake, type IntakeField, type IntakeValue } from "@/lib/detailed-intake";
 import { newIdempotencyKey } from "@/lib/client-id";
 import { rememberReturn } from "@/lib/after-login";
+import { clearTemporaryVoterDraft, readTemporaryVoterDraft, saveTemporaryVoterDraft } from "@/lib/voter-browser-draft";
 import { secureApi, secureUpload, SecureApiError } from "@/lib/secure-api-client";
 import VoterForm8Modal from "@/components/voter-form8-modal";
 import VoterForm6Preview from "@/components/voter-form6-preview";
@@ -30,6 +31,33 @@ export default function VoterForm6({signedIn,demo,maxDate}:Props){
   const [photo,setPhoto]=useState<File|null>(null);
   const [photoUrl,setPhotoUrl]=useState("");
   const photoVersion=useRef(0);
+  useEffect(()=>{
+    if(!signedIn || demo)return;
+    let cancelled=false;
+    void readTemporaryVoterDraft("voter-form6").then(draft=>{
+      if(cancelled || !draft)return;
+      const problems=validateDetailedIntake(draft.photo?{...draft.intake,photoFileId:"restored-photo"}:draft.intake);
+      if(Object.keys(problems).length)return;
+      setIntake(draft.intake);
+      setPhoto(draft.photo);
+      setProof(draft.proof);
+      setPhotoUrl("");
+      const version=++photoVersion.current;
+      if(draft.photo){
+        const reader=new FileReader();
+        reader.onload=()=>{if(version===photoVersion.current && typeof reader.result==="string")setPhotoUrl(reader.result);};
+        reader.readAsDataURL(draft.photo);
+      }
+      setStep(4);
+      setTouched([]);
+      setErrors({});
+      setReviewed(false);
+      setConfirmed(false);
+      setMessage("Signed in successfully. Your completed Form 6 was restored. Review all three pages.");
+      setShowPreview(true);
+    }).catch(()=>{if(!cancelled)setMessage("Your temporary form could not be restored. Please check your details.");});
+    return ()=>{cancelled=true;};
+  },[signedIn,demo]);
   const [proof,setProof]=useState<File|null>(null);
   const [showAadhaar,setShowAadhaar]=useState(false);
   const [showPreview,setShowPreview]=useState(false);
@@ -38,7 +66,6 @@ export default function VoterForm6({signedIn,demo,maxDate}:Props){
   const [busy,setBusy]=useState(false);
   const [reference,setReference]=useState("");
   const [revisionOf,setRevisionOf]=useState("");
-  const [sample,setSample]=useState(false);
   const requestKey=useRef<string|null>(null);
   const sections=intakeSections("voter-form6");
   const answers=intake.answers;
@@ -74,7 +101,7 @@ export default function VoterForm6({signedIn,demo,maxDate}:Props){
     setStep(screen);
     requestAnimationFrame(()=>{document.getElementById("f6-"+(key==="photoFileId"?"photo":key))?.scrollIntoView({block:"center",behavior:"smooth"});});
   }
-  function advance(){
+  async function advance(){
     const keys=new Set(sections[step]?.fields.map(f=>f.id).filter(k=>visible.has(k))??[]);
     if(step===0)keys.add("photoFileId");
     if(step===3)sections[4].fields.forEach(f=>{if(visible.has(f.id))keys.add(f.id);});
@@ -85,32 +112,8 @@ export default function VoterForm6({signedIn,demo,maxDate}:Props){
       jumpToError(Object.keys(subset)[0]);return;
     }
     setErrors({});setMessage("");setStep(Math.min(step+1,4));
-    if(step===3)setShowPreview(true);
+    if(step===3)await requestPreview();
     window.scrollTo({top:0,behavior:"smooth"});
-  }
-  function showSample(){
-    setIntake({kind:"voter-form6",documents:[],answers:{
-      constituencyType:"Assembly",constituencyNumber:"47",constituencyName:"EXAMPLE CONSTITUENCY",
-      nameLocal:"उदाहरण",surnameLocal:"आवेदक",firstNameEnglish:"EXAMPLE",surnameEnglish:"APPLICANT",
-      relativeType:"Father",relativeNameEnglish:"SAMPLE PARENT",relativeNameLocal:"उदाहरण अभिभावक",
-      mobile:"9000000000",aadhaarStatus:"Do not have Aadhaar",gender:"Female",
-      dob:"14/11/1995",birthProof:"PAN Card",
-      addressHouse:"12",addressStreet:"SAMPLE ROAD",addressTehsil:"JAMSHEDPUR",
-      addressTown:"JAMSHEDPUR",addressPostOffice:"TELCO WORKS",addressState:"Jharkhand",
-      addressDistrict:"East Singhbhum",addressPin:"831004",addressProof:"Aadhaar Card",
-      hasDisability:"No",familyMemberName:"SAMPLE PARENT",familyMemberRelationship:"Father",
-      birthVillage:"JAMSHEDPUR",birthDistrict:"East Singhbhum",birthState:"Jharkhand",
-      residenceSince:"2026-01",declarationDate:"25/10/2026",declarationPlace:"JAMSHEDPUR",
-      citizenDeclaration:"Yes",truthDeclaration:"Yes",sirApplicable:"Yes",
-      fatherName:"SAMPLE PARENT",motherName:"SAMPLE MOTHER",otherCitizenship:"Yes",
-    }});
-    setSample(true);setStep(0);setTouched([]);setErrors({});setMessage("");setConfirmed(false);setReviewed(false);
-    setPhoto(null);setPhotoUrl("");setProof(null);setShowPreview(true);setReference("");requestKey.current=null;
-  }
-  function clearSample(){
-    setSample(false);setIntake(makeBlank());setStep(0);setTouched([]);setErrors({});
-    setMessage("");setConfirmed(false);setReviewed(false);setPhoto(null);setPhotoUrl("");setProof(null);
-    setShowPreview(false);requestKey.current=null;
   }
   function renderField(f:IntakeField){
     if(!visible.has(f.id))return null;
@@ -138,13 +141,30 @@ export default function VoterForm6({signedIn,demo,maxDate}:Props){
       {error&&<small role="alert" className="f6-error">{error}</small>}
     </label>;
   }
+  async function requestPreview(){
+    const issues=validateDetailedIntake(photo?{...intake,photoFileId:"local-photo-selected"}:intake);
+    if(Object.keys(issues).length){
+      setErrors(issues);setTouched(t=>[...new Set([...t,...Object.keys(issues)])]);
+      setMessage("Please complete all highlighted fields before previewing.");
+      jumpToError(Object.keys(issues)[0]);return;
+    }
+    if(signedIn&&!demo){setMessage("");setShowPreview(true);return;}
+    if(demo){setMessage("Sign in with a regular account to preview your completed Form 6.");return;}
+    setBusy(true);setMessage("Saving your completed Form 6 securely for sign-in…");
+    try{
+      await saveTemporaryVoterDraft("voter-form6",{intake,photo,proof});
+      rememberReturn("/voter/form-6");
+      router.push("/login");
+    }catch(error){
+      setMessage(error instanceof Error?error.message:"Your temporary form could not be saved. No data was discarded.");
+    }finally{setBusy(false);}
+  }
   async function submit(){
     if(Object.keys(problems).length){
       setErrors(problems);setTouched(t=>[...new Set([...t,...Object.keys(problems)])]);
       setMessage("Please correct the incomplete fields before saving.");
       jumpToError(Object.keys(problems)[0]);return;
     }
-    if(sample){setMessage("This is fictional sample data. Clear it and enter a real application.");return;}
     if(!reviewed){setMessage("Review all three pages of the document before saving.");setShowPreview(true);return;}
     if(!confirmed){setMessage("Confirm that the applicant has checked every detail.");return;}
     if(!signedIn){rememberReturn("/voter/form-6");router.push("/login");return;}
@@ -170,6 +190,7 @@ export default function VoterForm6({signedIn,demo,maxDate}:Props){
         idempotencyKey:requestKey.current,
       });
       setReference(result.request.reference);setRevisionOf("");
+      void clearTemporaryVoterDraft("voter-form6").catch(()=>undefined);
       window.scrollTo({top:0,behavior:"smooth"});
     }catch(error){
       if(error instanceof SecureApiError&&error.status===401){rememberReturn("/voter/form-6");router.push("/login");return;}
@@ -187,9 +208,6 @@ export default function VoterForm6({signedIn,demo,maxDate}:Props){
       <h1>New voter registration — Form 6</h1>
       <p>Complete the application once. Verify it against the two Form 6 pages and the supplementary declaration shown in your reference PDF.</p>
       <div className="f8-warning"><ShieldCheck size={17}/> This is Nise Comport assistance. Only the Election Commission of India can accept an official application and issue an acknowledgement.</div>
-      {!reference&&<div className="f8-sample-bar"><div><b>Inspect a completed sample</b><p>Fictional data only, with a three-page preview.</p></div>
-        <button type="button" onClick={showSample}><Eye size={16}/> Show filled Form 6 sample</button></div>}
-      {sample&&<div className="f8-sample-alert"><b>Fictional sample — cannot submit.</b><button type="button" onClick={clearSample}>Clear sample</button></div>}
       {revisionOf&&<div className="f8-warning">Editing a new copy of {revisionOf}. Original request unchanged.</div>}
     </div>
     {reference?<section className="f8-success">
@@ -211,7 +229,7 @@ export default function VoterForm6({signedIn,demo,maxDate}:Props){
       <div className="f8-layout">
         <section className="f8-editor"><h2>{step===4?"Check the complete application":sections[step].title}</h2>
           {step<4&&<div className="f8-inline-preview"><span><Eye size={17}/> Live filled three-page document</span>
-            <button type="button" onClick={()=>setShowPreview(true)}>Open preview</button></div>}
+            <button type="button" onClick={()=>void requestPreview()}>Open preview</button></div>}
           {step<4&&<div className="f6-input-grid">{sections[step].fields.map(renderField)}
             {step===3&&<div className="f6-wide f6-sir-guidance"><h3>Supplementary SIR declaration</h3>
               <p>The uploaded Form 6 examples include a third-page SIR declaration. Choose whether this supplementary declaration applies; if yes, complete its available historical electoral-roll and family details.</p></div>}
@@ -232,7 +250,7 @@ export default function VoterForm6({signedIn,demo,maxDate}:Props){
           {step===4&&<div className="f8-review">
             <div className="f8-final-preview"><div><b>Ready for a three-page Form 6 preview</b>
               <p>{reviewed?"All three pages reviewed.":"Open, check both application pages and the supplementary declaration, then select Done reviewing."}</p></div>
-              <button type="button" onClick={()=>setShowPreview(true)}><Eye size={17}/> {reviewed?"Reopen":"Open final preview"}</button>
+              <button type="button" onClick={()=>void requestPreview()}><Eye size={17}/> {reviewed?"Reopen":"Open final preview"}</button>
             </div>
             {summary.map((section,i)=><details key={section.title} className="f6-review-section" open={i===0?true:undefined}>
               <summary>{section.title}</summary><dl>{section.fields.filter(f=>visible.has(f.id)&&answers[f.id]).map(f=><div key={f.id}><dt>{f.label}</dt><dd>{f.id==="aadhaarNumber"?"••••••••"+answers[f.id].slice(-4):answers[f.id]}</dd></div>)}</dl>
@@ -244,17 +262,22 @@ export default function VoterForm6({signedIn,demo,maxDate}:Props){
           <div className="f8-actions">
             {step>0&&<button type="button" className="f8-secondary" onClick={()=>{setStep(n=>n-1);setMessage("");}}><ChevronLeft size={17}/> Back</button>}
             {step<4?<button type="button" onClick={advance}>Continue <ChevronRight size={17}/></button>:
-              <button type="button" onClick={submit} disabled={busy||sample}><FileText size={17}/>{busy?"Saving securely…":"Save assistance request"}</button>}
+              <button type="button" onClick={submit} disabled={busy}><FileText size={17}/>{busy?"Saving securely…":"Save assistance request"}</button>}
           </div>
-          {step===4&&!signedIn&&<p className="f8-hint">Preview works as a guest. Sign in to save securely. No government submission occurs here.</p>}
+          {step===4&&!signedIn&&<p className="f8-hint">Complete all fields, then sign in to unlock the preview. Your draft and attachments are protected in temporary encrypted browser storage during sign-in (30-minute expiry).</p>}
         </section>
         <aside className="f8-preview-rail">
-          <div className="f8-preview-heading"><h2>Form 6 · Live preview</h2><button type="button" onClick={()=>setShowPreview(true)}><Eye size={15}/> Expand</button></div>
-          <VoterForm6Preview answers={answers} photoUrl={photoUrl}/>
+          <div className="f8-preview-heading"><h2>Form 6 · Live preview</h2><button type="button" onClick={()=>void requestPreview()}><Eye size={15}/> Expand</button></div>
+          {signedIn&&!demo&&!Object.keys(problems).length&&reviewed ?
+            <VoterForm6Preview answers={answers} photoUrl={photoUrl}/> :
+            <div className="f8-preview-locked"><ShieldCheck size={31}/>
+              <b>Preview available after completion and sign-in</b>
+              <p>Complete the new-voter application, then click Preview. After successful sign-in, this form and its photo will reopen automatically.</p>
+            </div>}
         </aside>
       </div>
     </>}
-    <VoterForm8Modal open={showPreview} onClose={()=>setShowPreview(false)}
+    <VoterForm8Modal open={showPreview&&signedIn&&!demo&&!Object.keys(problems).length} onClose={()=>setShowPreview(false)}
       onEdit={reference?undefined:()=>{setShowPreview(false);setStep(0);setReviewed(false);setConfirmed(false);}}
       onReviewed={()=>{setReviewed(true);setMessage("");}}
       formTitle="Voter Form 6" pageTitles={pageTitles}>
