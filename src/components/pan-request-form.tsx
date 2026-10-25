@@ -60,6 +60,10 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
       if(!alive)return;
       const oldPan=result.request.details.pan;
       const rawIntake=result.request.details.intake;
+      if (!oldPan || typeof oldPan !== "object" || Array.isArray(oldPan)) {
+        setMessage("Saved application details are unavailable. Please contact the service desk.");
+        return;
+      }
       if(!["submitted","reviewing","waiting_for_customer"].includes(result.request.status) || result.request.officialReference) {
         setMessage("This request is now being processed. It is read-only; contact the service desk for changes.");
         return;
