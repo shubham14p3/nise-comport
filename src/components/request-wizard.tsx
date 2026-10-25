@@ -161,6 +161,11 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       if(saved?.draft&&(initial.resume||!hasUrlChoice)){
         setDraft(current=>({...current,...saved.draft,address:{...EMPTY_ADDRESS,...saved.draft.address},consent:false}));
         setRestored(true);
+      } else if(initial.resume) {
+        // A non-sensitive navigation marker may outlive the expiring sealed
+        // answers. Never show a misleading empty preview.
+        setDraft(current=>({...current,step:current.serviceSlug?1:0,consent:false}));
+        setError("Your temporary application draft expired or could not be restored. Please review and refill your details.");
       }
       setTabDraftReady(true);
     });
