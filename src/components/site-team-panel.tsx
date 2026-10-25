@@ -23,6 +23,7 @@ function Photo({ src, name, size = 56 }: { src: string | null; name: string; siz
 export default function SiteTeamPanel() {
   const [people, setPeople] = useState<Person[] | null>(null);
   const [search, setSearch] = useState("");
+  const [missingOnly, setMissingOnly] = useState(false);
   const [staff, setStaff] = useState<StaffAccount[] | null>(null);
   const [issuedLogin, setIssuedLogin] = useState<{ email: string; password: string } | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -70,9 +71,13 @@ export default function SiteTeamPanel() {
   }
 
   const needle = search.trim().toLocaleLowerCase();
-  const filteredPeople = (people ?? []).filter((person) => !needle ||
-    [person.name, person.role, person.email ?? "", person.phone ?? "", person.bio ?? ""]
-      .some((value) => value.toLocaleLowerCase().includes(needle)));
+  const staffEmails = new Set((staff ?? []).map((account) => account.email.trim().toLocaleLowerCase()));
+  const needsLogin = (person: Person) => !person.email?.trim() || !staffEmails.has(person.email.trim().toLocaleLowerCase());
+  const missingCount = (people ?? []).filter(needsLogin).length;
+  const filteredPeople = (people ?? []).filter((person) =>
+    (!missingOnly || needsLogin(person)) && (!needle ||
+      [person.name, person.role, person.email ?? "", person.phone ?? "", person.bio ?? ""]
+        .some((value) => value.toLocaleLowerCase().includes(needle))));
   const paging = useAdminPagination(filteredPeople);
   const staffNotListed = (staff ?? []).filter((account) => !(people ?? []).some((person) => person.email?.trim().toLowerCase() === account.email.toLowerCase()));
 
@@ -96,7 +101,8 @@ export default function SiteTeamPanel() {
 
   return <section className="admin-queue site-team">
     <h2><UsersRound size={17}/> Team shown on the website</h2>
-    <p className="admin-lead">Public team profiles and login accounts are separate. Match people by their private email address; only the owner may deliberately create a missing staff login. No automatic permission grants happen during page sync.</p>
+    <p className="admin-lead">Public team profiles and login accounts are separate. Match by a verified private email address, then use Create staff login for missing accounts. No permissions are granted automatically.</p>
+    {staff !== null && people !== null && <p className="admin-lead">{people.length} website profiles · {staff.length} existing owner/staff accounts · {missingCount} profiles without a matching login (including profiles missing an email).</p>}
     {error && <div className="alert alert--error" role="alert">{error}</div>}
     {notice && <div className="alert alert--success" role="status">{notice}</div>}
     {issuedLogin && <div className="alert alert--warn" role="status"><strong>One-time password for {issuedLogin.email}:</strong> <code>{issuedLogin.password}</code> <button type="button" className="btn btn--ghost btn--sm" onClick={() => setIssuedLogin(null)}>Hide password</button><p>Only shown for this action. Staff must change it on first sign-in. Do not share it publicly.</p></div>}
@@ -136,6 +142,7 @@ export default function SiteTeamPanel() {
     <label className="admin-team__search"><Search size={17} aria-hidden="true"/><input
       type="search" aria-label="Search website team profiles" placeholder="Find existing or new profiles by name, role, mobile or email…"
       value={search} onChange={(event) => setSearch(event.target.value)}/></label>
+    <label className="check"><input type="checkbox" checked={missingOnly} onChange={(event) => setMissingOnly(event.target.checked)}/> Show profiles without a linked staff login only</label>
     <AdminPager {...paging} label="public team members"/>
     <div className="batch-list">{paging.items.map((person, index) => <article key={person.id} className={person.active ? "batch-row" : "batch-row is-off"}>
       <Photo src={person.image} name={person.name}/>
