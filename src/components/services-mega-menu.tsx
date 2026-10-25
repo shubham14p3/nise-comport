@@ -134,12 +134,6 @@ export function ServicesMegaDesktop({ label, active }: { label: string; active: 
   </div>;
 }
 
-wRight size={16} aria-hidden="true"/></Link>
-      </div>
-    </div>
-  );
-}
-
 /**
  * Mobile: the whole services section is collapsed behind one toggle, so it doesn't push every
  * other link down the sheet by default. Opening it reveals the per-category expandable rows.
