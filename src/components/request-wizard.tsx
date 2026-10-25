@@ -171,7 +171,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       setUser(session.user);
       if (!session.user || session.user.role === "demo") return;
       const [profile, saved, server] = await Promise.all([
-        secureApi<{ user: { name: string; phone: string | null; preferredContact: Contact }; coupons?: Voucher[] }>("P8a2N5dK1vR7").catch(() => null),
+        secureApi<{ user: { name: string; phone: string | null; preferredContact: Contact } }>("P8a2N5dK1vR7").catch(() => null),
         secureApi<{ addresses: SavedAddress[] }>("P3v8F1qL6sM4").catch(() => null),
         secureApi<{ draft: Partial<Draft> | null }>("D9k3W7pR2xN5").catch(() => null),
       ]);
