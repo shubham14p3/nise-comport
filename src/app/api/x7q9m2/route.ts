@@ -227,7 +227,7 @@ function fileTarget(operation: string, input: Record<string, unknown>) {
   if (!id) return null;
   if (operation === "E1n6V2kP9cF5") return `/api/uploads?id=${encodeURIComponent(id)}`;
   if (operation === "H3q7M0xP6cL2") return `/api/admin/jobs/${encodeURIComponent(id)}/file`;
-  if (operation === "V8d4K1rF7nT5") return `/api/admin/requests/${encodeURIComponent(id)}/file`;
+  if (operation === "V8d4K1rF7nT5") { const fileId=stringValue(input,"fileId",80); return `/api/admin/requests/${encodeURIComponent(id)}/file${fileId?`?fileId=${encodeURIComponent(fileId)}`:""}`; }
   // Message centre: an attachment, a ticket's files as one zip, and a file of the linked request or print order.
   if (operation === "N4c8V1bH6qY3") return `/api/mail/file?id=${encodeURIComponent(id)}`;
   if (operation === "T2m7S5xK9wD4") return `/api/mail/zip?id=${encodeURIComponent(id)}`;
