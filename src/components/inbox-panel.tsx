@@ -7,7 +7,7 @@ import { WhatsAppIcon } from "@/components/icons";
 import { secureApi } from "@/lib/secure-api-client";
 
 type Item = { id: string; kind: string; category: string | null; title: string; detail: string | null; createdAt: string; actor: string | null };
-type Lead = { id: string; name: string; phone: string; topic: string; message: string | null; status: string; page: string | null; createdAt: string };
+type Lead = { id: string; name: string; phone: string; topic: string; message: string | null; status: string; source: string; details: { email?: string; serviceSlug?: string } | null; page: string | null; createdAt: string };
 type Inbox = { items: Item[]; unread: number; seenAt: string; pending: { category: string; label: string; total: number }[]; leads: Lead[] };
 
 const ICON: Record<string, string> = { lead: "📞", request: "📝", print: "🖨️", status: "🔄", import: "📥", record_view: "👁️", claim: "🔑", flag: "🚩", signup: "🆕", staff: "👥", campaign: "📣", promotion: "🎟️" };
@@ -69,7 +69,7 @@ export default function InboxPanel({ onSeen }: { onSeen?: () => void }) {
     };
   }, [onSeen]);
 
-  async function lead(row: Lead, status: "called" | "done" | "spam") {
+  async function lead(row: Lead, status: "called" | "done" | "spam" | "offline_closed" | "online_invited") {
     setBusy(row.id);
     try { await secureApi("E3h8K1tW6qZ9", { id: row.id, status }); await load(); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not update."); }
@@ -97,13 +97,17 @@ export default function InboxPanel({ onSeen }: { onSeen?: () => void }) {
       <h3><Phone size={16}/> Call these people back <span>{data.leads.length}</span></h3>
       {leads.slice(leadAt * PAGE_SIZE, (leadAt + 1) * PAGE_SIZE).map((row) => <article key={row.id} className={`lead-row lead-row--${row.status}`}>
         <div><b>{row.name}</b> <a href={`tel:${row.phone}`}>{pretty(row.phone)}</a>
-          <small>{row.topic}{row.message && !row.message.includes("\n") ? ` — ${row.message}` : ""} · {ago(row.createdAt)}{row.status === "called" ? " · called once" : ""}</small>
+          <small>{row.topic}{row.message && !row.message.includes("\n") ? ` — ${row.message}` : ""} · {ago(row.createdAt)}{row.status === "called" ? " · contacted" : row.status === "online_invited" ? " · online form sent" : ""}</small>
+          {row.source==="service-callback" && <small><b>Callback enquiry</b> · {row.details?.email && <a href={`mailto:${row.details.email}`}>{row.details.email}</a>}</small>}
           {row.message?.includes("\n") && <p className="lead-row__details">{row.message}</p>}</div>
         <div className="lead-row__actions">
           <a className="btn btn--ghost btn--sm" href={`tel:${row.phone}`}><Phone size={14}/>Call</a>
           <a className="btn btn--ghost btn--sm" href={`https://wa.me/${row.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`Namaste ${row.name}, NISE COMPORT here about your enquiry: ${row.topic}.`)}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={14}/>WhatsApp</a>
           {row.status === "new" && <button type="button" className="profile-text-button" disabled={busy === row.id} onClick={() => void lead(row, "called")}><Check size={13}/>Called</button>}
-          <button type="button" className="profile-text-button" disabled={busy === row.id} onClick={() => void lead(row, "done")}><Check size={13}/>Done</button>
+          {row.source==="service-callback" ? <>
+            {row.status!=="online_invited" && <button type="button" className="btn btn--primary btn--sm" disabled={busy === row.id} onClick={() => {if(window.confirm("Has this customer agreed to continue online? Send the application link to their provided email?"))void lead(row,"online_invited");}}><Check size={13}/>Send online form</button>}
+            <button type="button" className="profile-text-button" disabled={busy === row.id} onClick={() => void lead(row,"offline_closed")}>Close offline</button>
+          </> : <button type="button" className="profile-text-button" disabled={busy === row.id} onClick={() => void lead(row, "done")}><Check size={13}/>Done</button>}
           <button type="button" className="profile-text-button" disabled={busy === row.id} onClick={() => void lead(row, "spam")}><X size={13}/>Spam</button>
         </div>
       </article>)}
