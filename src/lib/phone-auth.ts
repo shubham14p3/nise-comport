@@ -1,7 +1,7 @@
 import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 import { and, desc, eq, gt, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import { hash } from "@node-rs/argon2";
-import { phoneOtps, recordClaims, sessions, users } from "@/db/schema";
+import { activityLog, phoneOtps, recordClaims, sessions, users } from "@/db/schema";
 import { createSession } from "@/lib/auth";
 import { generatePin } from "@/lib/mobile-login-core";
 import { seal } from "@/lib/vault";
@@ -76,7 +76,15 @@ export async function confirmPhoneVerification(userId: string, phoneInput: strin
   await consume(userId, phone, "verify", code, ip);
   const [taken] = await db.select({ id: users.id }).from(users).where(and(eq(users.phone, phone), sql`${users.phoneVerifiedAt} is not null`, ne(users.id, userId), isNull(users.deletedAt))).limit(1);
   if (taken) throw new PublicError("This number is already verified on another account.", 409, { code: "phone_taken" });
-  await db.update(users).set({ phone, phoneVerifiedAt: new Date(), updatedAt: new Date() }).where(eq(users.id, userId));
+  await db.transaction(async tx=>{
+    await tx.update(users).set({phone,phoneVerifiedAt:new Date(),updatedAt:new Date()}).where(eq(users.id,userId));
+    await tx.insert(activityLog).values({
+      kind:"staff",permission:"team",category:"customer-profile",
+      title:"Customer verified their mobile number",
+      detail:`Verified mobile ending ${phone.slice(-4)}`,
+      refType:"customer-profile",refId:userId,actorId:userId,
+    });
+  });
   // A proven number earns the one-time ₹20 credit and opens (or approves) the claim on any records under it.
   await grantVerifyReward(userId, "phone").catch((error) => console.error("[rewards] phone reward failed", error));
   await approveClaimsForVerifiedPhone(userId, phone).catch((error) => console.error("[claims] approve failed", error));
