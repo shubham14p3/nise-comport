@@ -266,6 +266,22 @@ export async function sendOfficialReferenceEmail(to: string, name: string, refer
 }
 
 /** A message to a customer (e.g. their personal promo code) with a button to their account. */
+/** Only staff can trigger this invitation after confirming the callback customer wishes to proceed online. */
+export async function sendServiceFormInvitationEmail(to: string, name: string, service: string, url: string) {
+  await sendMail({
+    to,
+    subject: `Your NISE COMPORT online form — ${service}`,
+    heading: "Continue your service request online",
+    paragraphs: [
+      `Hello ${name},`,
+      `As discussed with our team, you can now continue online with ${service}.`,
+      "Open the link below, fill in the application details, sign in to preview, and submit after verifying everything.",
+      "Do not share Aadhaar OTPs or account passwords. You may also visit our service desk instead.",
+    ],
+    action: { label: "Open my service form", href: url },
+  });
+}
+
 export async function sendCustomerMessageEmail(to: string, subject: string, lines: string[], link: string) {
   await sendMail({ to, subject, heading: subject, paragraphs: lines, action: { label: "Open my account", href: link } });
 }
