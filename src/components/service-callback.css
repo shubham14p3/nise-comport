@@ -18,3 +18,13 @@
 .service-callback-success{padding:28px 25px 24px;display:grid;justify-items:center;text-align:center;gap:13px}
 .service-callback-success h3{font-size:18px}.service-callback-success p{font-size:13px;line-height:1.6;color:#576986}
 @media(max-width:520px){.service-callback-overlay{padding:0;align-items:end}.service-callback-dialog{width:100%;max-height:95dvh;border-radius:19px 19px 0 0}.service-callback-dialog__header,.service-callback-form{padding:17px}}
+
+.service-callback-reward{display:flex;gap:9px;align-items:flex-start;background:#f8f4ff;border:1px solid #dcd3ff;color:#513b84;padding:11px;border-radius:11px;font-size:12px;line-height:1.55}
+.service-callback-reward svg{flex:none;margin-top:1px}
+.service-callback-account{display:flex;align-items:flex-start;gap:11px;background:#f1f7ff;color:#283d5b;border:1px solid #cddffc;border-radius:12px;padding:13px;text-align:left}
+.service-callback-account>svg{flex:none;color:#2569cc}
+.service-callback-account b{font-size:13px}
+.service-callback-account p{margin:5px 0;color:#516784;font-size:12px;line-height:1.6}
+.service-callback-account a{font-size:12px;font-weight:700;text-decoration:underline;color:#194ebc}
+.inbox__callback-tabs{display:flex;gap:8px;margin:10px 0 16px;flex-wrap:wrap}
+.inbox__callback-tabs [aria-pressed="true"]{background:#e8f0ff;color:#144ca5;border-color:#8db7f5}
