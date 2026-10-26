@@ -8,15 +8,16 @@ import { normalizePhone } from "@/lib/validation";
 export const runtime = "nodejs";
 
 const schema = z.object({
-  name: z.string().max(120).optional(), phone: z.string().min(6).max(30), topic: z.string().max(120).optional(),
+  name: z.string().max(120).optional(), phone: z.string().min(6).max(30), email: z.email().max(200).optional(), serviceSlug: z.string().max(80).optional(), consent: z.boolean().optional(), topic: z.string().max(120).optional(),
   message: z.string().max(800).optional(), page: z.string().max(300).optional(), locale: z.string().max(5).optional(),
-  source: z.enum(["chat", "form", "wizard"]).optional(),
+  source: z.enum(["chat", "form", "wizard", "service-callback"]).optional(),
 });
 
 /** "Please call me": public, rate-limited per IP and per number. */
 export async function POST(request: NextRequest) {
   try {
     const input = schema.parse(await request.json());
+    if(input.source==="service-callback" && input.consent!==true)return NextResponse.json({error:"Confirm that we may contact you about this request."},{status:400});
     await enforceRate(RATE_RULES.leadsPerIpHour, identity("ip", clientIp(request)), "Too many requests.");
     const phone = normalizePhone(input.phone);
     if (phone) await enforceRate(RATE_RULES.leadsPerPhoneDay, identity("lead-phone", phone), "We already have your number and will call you.");
