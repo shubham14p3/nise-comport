@@ -72,9 +72,30 @@ export async function closeWizardLeads(phone: string) {
   await db.update(leads).set({ status: "done", handledAt: new Date() }).where(and(eq(leads.phone, normal), eq(leads.source, "wizard"), eq(leads.status, "new")));
 }
 
-export async function updateLead(id: string, status: (typeof LEAD_STATUSES)[number], actor: { id: string; name: string }) {
+/** Claim the callback; admin can take over an existing assignment.
+ * handledBy is durable owner, actorId in logActivity tracks each action. */
+export async function claimLead(id:string,actor:{id:string;name:string;role:string}) {
+  const [old]=await db.select().from(leads).where(eq(leads.id,id)).limit(1);
+  if(!old || old.source!=="service-callback")throw new PublicError("Callback not found.",404);
+  if(!["new","called","online_invited"].includes(old.status))throw new PublicError("This callback is already closed.",409);
+  if(old.handledBy===actor.id)return old;
+  if(old.handledBy && actor.role!=="admin")throw new PublicError("This callback belongs to another teammate. Ask an admin to reassign it.",409);
+  const [row]=await db.update(leads).set({handledBy:actor.id}).where(and(
+    eq(leads.id,id),old.handledBy?eq(leads.handledBy,old.handledBy):sql`${leads.handledBy} is null`
+  )).returning();
+  if(!row)throw new PublicError("Another staff member just claimed this callback. Refresh to see who.",409);
+  await logActivity({kind:"lead",permission:"requests",category:"leads",title:`${actor.name} ${old.handledBy?"reassigned":"took"} the callback for ${row.name}`,refType:"lead",refId:row.id,actorId:actor.id});
+  return row;
+}
+
+export async function updateLead(id: string, status: (typeof LEAD_STATUSES)[number], actor: { id: string; name: string; role?: string }) {
   const [existing]=await db.select().from(leads).where(eq(leads.id,id)).limit(1);
   if(!existing)throw new PublicError("That enquiry no longer exists.",404);
+  if(existing.source==="service-callback"){
+    if(!existing.handledBy)throw new PublicError("Tap Take case before changing a callback.",409);
+    if(existing.handledBy!==actor.id && actor.role!=="admin")
+      throw new PublicError("This callback is assigned to another staff member.",403);
+  }
   if(existing.source==="service-callback" && existing.status===status)return existing;
   if(existing.source==="service-callback" && !canTakeCallbackAction(existing.status,status))
     throw new PublicError("This callback action is not available at its current stage.",409);
@@ -95,7 +116,7 @@ export async function updateLead(id: string, status: (typeof LEAD_STATUSES)[numb
   }
   if(status==="offline_closed" && !["new","called","online_invited"].includes(existing.status))
     throw new PublicError("This callback has already been closed.",409);
-  const [row] = await db.update(leads).set({ status, handledBy: actor.id, handledAt: new Date() }).where(and(eq(leads.id, id),eq(leads.status,existing.status))).returning();
+  const [row] = await db.update(leads).set({ status, handledBy: existing.handledBy??actor.id, handledAt: new Date() }).where(and(eq(leads.id, id),eq(leads.status,existing.status))).returning();
   if (!row) throw new PublicError("This callback was changed by someone else. Refresh the inbox.", 409);
   const verb = { new: "reopened", called: "called", online_invited: "sent the online form to", offline_closed: "closed the offline callback for", done: "closed", spam: "marked as spam" }[status];
   await logActivity({ kind: "lead", permission: "requests", category: "leads", title: `${actor.name} ${verb} the enquiry from ${row.name}`, detail: row.topic, refType: "lead", refId: row.id, actorId: actor.id });
