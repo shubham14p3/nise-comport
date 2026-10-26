@@ -497,7 +497,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
           <AdminMetric tone="violet" icon={<Bell size={22}/>} number={summary.unread} label="New in the inbox" onClick={() => document.querySelector(".inbox__feed")?.scrollIntoView({ behavior: "smooth" })}/>
           {can("records") && <AdminMetric tone="green" icon={<FolderLock size={22}/>} number="Search" label="Customer records" onClick={() => choose("records")}/>}
         </div>}
-        {active === "inbox" && <InboxPanel onSeen={clearUnread}/>}
+        {active === "inbox" && <InboxPanel onSeen={clearUnread} viewer={{id:me.id,role:me.role}}/>}
         {active === "mail" && <MailClient mode="staff" onUnread={setMailUnread}/>}
         {active === "requests" && <RequestQueue/>}
         {active === "records" && <RecordsPanel/>}
