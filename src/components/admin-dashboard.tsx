@@ -11,7 +11,7 @@ import { WhatsAppIcon } from "@/components/icons";
 
 import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
-import { ArrowRight, Bell, Cake, ClipboardList, Contact, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { ArrowRight, Bell, Cake, ClipboardList, Contact, UserRound, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
 
 
@@ -43,6 +43,7 @@ const PromotionsPanel = dynamic(() => import("@/components/promotions-panel"), {
 const CampaignsPanel = dynamic(() => import("@/components/campaigns-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
 const ContactsPanel = dynamic(() => import("@/components/contacts-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
 const OutreachPanel = dynamic(() => import("@/components/outreach-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const CustomerManagementPanel = dynamic(() => import("@/components/customer-management-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading customer records…</p> });
 const TeamPanel = dynamic(() => import("@/components/team-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
 const SiteTeamPanel = dynamic(() => import("@/components/site-team-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
 const PaymentsPanel = dynamic(() => import("@/components/payments-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
@@ -362,7 +363,7 @@ function RequestQueue() {
   </>;
 }
 
-type Tab = "integrations" | "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "hardware" | "couponuse" | "qrscans" | "legal" | "loyalty" | "chats" | "mail" | "outreach";
+type Tab = "customers" | "integrations" | "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "hardware" | "couponuse" | "qrscans" | "legal" | "loyalty" | "chats" | "mail" | "outreach";
 const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | "admin" | "staff" }[] = [
   { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
   { id: "mail", label: "Messages", icon: Mail, needs: "mail" },
@@ -380,6 +381,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "outreach", label: "Birthdays & renewals", icon: Cake, needs: "staff" },
   { id: "integrations", label: "System & connections", icon: ShieldCheck, needs: "admin" },
   { id: "team", label: "Team", icon: UsersRound, needs: "admin" },
+  { id: "customers", label: "Customers", icon: UserRound, needs: "admin" },
   { id: "pan", label: "PAN data", icon: Database, needs: "pan" },
   { id: "wallet", label: "Wallet", icon: WalletCards, needs: "wallet" },
   { id: "prices", label: "Service prices", icon: TicketPercent, needs: "content" },
@@ -391,7 +393,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
 
 const NAV_SECTIONS = [
   { id: "work", title: "Work & messages", tabs: ["inbox", "mail", "requests", "chats", "payments"] },
-  { id: "people", title: "Customers & records", tabs: ["records", "pan", "contacts", "wallet", "loyalty", "team"] },
+  { id: "people", title: "Customers & records", tabs: ["customers", "records", "pan", "contacts", "wallet", "loyalty", "team"] },
   { id: "marketing", title: "Offers & campaigns", tabs: ["promotions", "couponuse", "campaigns", "outreach", "qrscans"] },
   { id: "website", title: "Website & setup", tabs: ["content", "gallery", "testimonials", "prices", "hardware", "legal", "integrations"] },
 ] as const;
@@ -501,6 +503,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
         {active === "mail" && <MailClient mode="staff" onUnread={setMailUnread}/>}
         {active === "requests" && <RequestQueue/>}
         {active === "records" && <RecordsPanel/>}
+        {active === "customers" && isOwner && <CustomerManagementPanel/>}
         {active === "promotions" && <PromotionsPanel canEdit/>}
         {active === "content" && <SiteContentPanel/>}
         {active === "gallery" && <GalleryPanel/>}
