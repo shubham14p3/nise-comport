@@ -36,7 +36,8 @@ export async function createLead(input: LeadInput) {
     : input.details ?? null;
   const [row] = await db.insert(leads).values({ name, phone, topic, message, page: input.page?.slice(0, 200) || null, locale, source: input.source === "form" || input.source === "wizard" || input.source==="service-callback" ? input.source : "chat", details }).returning();
   // Keep the number for WhatsApp follow-up without changing an existing YES/STOP.
-  await db.insert(contacts).values({ name, phone, locale, source: "enquiry", services: [] }).onConflictDoNothing();
+  // Callback consent is service-specific, not permission to add this person to a marketing contact list.
+  if(input.source!=="service-callback") await db.insert(contacts).values({ name, phone, locale, source: "enquiry", services: [] }).onConflictDoNothing();
   await logActivity({ kind: "lead", permission: "requests", category: "leads", title: `Call back ${name} · ${formatPhone(phone)}`, detail: `${topic}${message ? ` — ${message}` : ""}`, refType: "lead", refId: row.id });
   after(async () => {
     if (!smtpConfigured()) return;
