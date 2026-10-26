@@ -217,6 +217,6 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
     <section className="section section--flush">
       <div className="container"><div className="note-card"><ShieldCheck size={22}/><p>NISE COMPORT is an independent service facilitator, not a government authority, bank or insurer. The applicant is responsible for accurate information. Approval, issuance, processing times and decisions rest with the relevant authority or provider. Our service charge is separate from any official or third-party fee.</p></div></div>
     </section>
-    {!comingSoon && <FloatingStart href={motor ?? (detail ? startHref : `/request?category=${service.slug}`)} label={motor ? "Get quotes" : "Start now"}/>}
+    {!comingSoon && <FloatingStart href={detail ? "#service-start" : `/request?category=${service.slug}`} label="Choose how to start"/>}
   </main>;
 }
