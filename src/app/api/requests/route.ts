@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
     const replyTo = contactPhone ?? user.whatsapp ?? user.phone ?? null;
     sendRequestWhatsApp({ name: input.contactName ?? user.name, phone: replyTo, reference: created.reference, service: service.title, details: input.description });
     // They finished the form: the "started a request" call-back is no longer needed.
-    if (replyTo) await closeWizardLeads(replyTo).catch(() => undefined);
+    if (replyTo) await closeWizardLeads(replyTo, input.serviceSlug, created.reference).catch(() => undefined);
     return NextResponse.json({
       ok: true, request: created, whatsappSent: whatsappAlertsEnabled(),
       ...(input.offerId ? { offer: { applied: offer.applied, ...(offer.reason ? { reason: offer.reason } : {}) } } : {}),
