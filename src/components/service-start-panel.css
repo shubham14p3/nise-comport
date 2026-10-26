@@ -28,3 +28,10 @@
 .service-start__success button{justify-self:start}
 .service-start__note{display:flex;align-items:flex-start;gap:6px;font-size:.75rem;color:#77899b;line-height:1.6;margin:14px 0 0}
 @media(max-width:600px){.service-start{padding:17px}.service-start__options button{padding:12px 9px}.service-start__options button.is-selected{padding:11px 8px}}
+
+.callback-mini{margin:15px 0 22px;padding:16px;border:1px solid #bed7ed;background:linear-gradient(130deg,#f0f7ff,#fff);border-radius:13px;display:grid;gap:10px}
+.callback-mini>b,.callback-mini>div>b{font-size:.97rem;color:#1d588b}
+.callback-mini p{font-size:.83rem;color:#63758b;margin:5px 0 0;line-height:1.6}
+.callback-mini .field{margin:0}
+.callback-mini>button{justify-self:start;display:flex;gap:8px;align-items:center}
+.callback-mini .callback-mini__saved{padding:10px;background:#edf9ef;color:#20653c;border-radius:8px}
