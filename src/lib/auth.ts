@@ -3,7 +3,8 @@ import { cookies } from "next/headers";
 import { and, count, desc, eq, gt, inArray, isNotNull, isNull, lt, ne, notInArray, sql } from "drizzle-orm";
 import { hash, verify } from "@node-rs/argon2";
 import { db } from "@/lib/db";
-import { addresses, emailOtps, notifications, printJobs, serviceRequests, sessions, storedFiles, users } from "@/db/schema";
+import { activityLog, addresses, emailOtps, notifications, printJobs, serviceRequests, sessions, storedFiles, users } from "@/db/schema";
+import { formatAuditChange,profileChanges } from "@/lib/customer-audit";
 import { sendAccountDeletedEmail, sendAccountExistsEmail, sendEmailChangedNotice, sendOtpEmail, sendPasswordChangedEmail, type OtpPurpose } from "@/lib/email";
 import { isUniqueViolation, PublicError, RateLimitError, humanDuration } from "@/lib/errors";
 import { clearRate, enforceRate, hitRate, identity, peekRate, RATE_RULES } from "@/lib/rate-limit";
@@ -329,7 +330,18 @@ export async function confirmEmailChange(user: User, newEmailInput: string, code
   await consumeOtp(newEmail, `email-change:${user.id}`, code, ip);
   const oldEmail = user.email;
   try {
-    await db.update(users).set({ email: newEmail, emailVerifiedAt: new Date(), updatedAt: new Date() }).where(eq(users.id, user.id));
+    await db.transaction(async tx=>{
+      const [before]=await tx.select().from(users).where(eq(users.id,user.id)).limit(1);
+      if(!before || !isActive(before))throw new PublicError("Account not found.",404);
+      const [after]=await tx.update(users).set({email:newEmail,emailVerifiedAt:new Date(),updatedAt:new Date()})
+        .where(eq(users.id,user.id)).returning();
+      const changes=profileChanges(before,after);
+      if(changes.length)await tx.insert(activityLog).values(changes.map(change=>({
+        kind:"staff" as const,permission:"team",category:"customer-profile",
+        title:`Customer verified a new ${change.label}`,
+        detail:formatAuditChange(change),refType:"customer-profile",refId:user.id,actorId:user.id
+      })));
+    });
   } catch (error) {
     if (isUniqueViolation(error)) throw new PublicError("That email is already used by another account.", 409);
     throw error;
