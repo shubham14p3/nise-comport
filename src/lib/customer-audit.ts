@@ -7,10 +7,12 @@ export const PROFILE_AUDIT_FIELDS=[
 export type ProfileAuditField=(typeof PROFILE_AUDIT_FIELDS)[number][0];
 
 export type AuditChange={field:ProfileAuditField;label:string;before:string|null;after:string|null};
-export function profileChanges(before:Record<string,unknown>,after:Record<string,unknown>):AuditChange[]{
+export function profileChanges(before:object,after:object):AuditChange[]{
+  const left=before as Record<string,unknown>;
+  const right=after as Record<string,unknown>;
   return PROFILE_AUDIT_FIELDS.flatMap(([field,label])=>{
-    const oldValue=before[field]==null?"":String(before[field]);
-    const newValue=after[field]==null?"":String(after[field]);
+    const oldValue=left[field]==null?"":String(left[field]);
+    const newValue=right[field]==null?"":String(right[field]);
     if(oldValue===newValue)return [];
     return [{field,label,before:oldValue||null,after:newValue||null}];
   });
