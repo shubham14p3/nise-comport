@@ -200,7 +200,16 @@ export async function verifyEmailOtp(emailInput: string, code: string, purpose: 
     const passwordHash = await hash(profile.password);
     let created: User;
     try {
-      [created] = await db.insert(users).values({ email, name, phone, passwordHash, emailVerifiedAt: new Date(), passwordChangedAt: new Date() }).returning();
+      created = await db.transaction(async tx=>{
+        const [user]=await tx.insert(users).values({email,name,phone,passwordHash,emailVerifiedAt:new Date(),passwordChangedAt:new Date()}).returning();
+        await tx.insert(activityLog).values({
+          kind:"signup",permission:"team",category:"customer-profile",
+          title:"Customer account created after email verification",
+          detail:`Name: ${name.slice(0,80)}; email: ${email.slice(0,160)}; phone: ${phone??"(none)"}`.slice(0,500),
+          refType:"customer-profile",refId:user.id,actorId:user.id,
+        });
+        return user;
+      });
     } catch (error) {
       if (isUniqueViolation(error)) throw new PublicError("An account already exists for this email. Please sign in instead.", 409, { code: "account_exists" });
       throw error;
