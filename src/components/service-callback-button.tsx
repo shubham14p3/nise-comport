@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { CheckCircle2, Clock3, PhoneCall, ShieldCheck, X } from "lucide-react";
+import { createPortal } from "react-dom";
 import { secureApi } from "@/lib/secure-api-client";
 import "./service-callback.css";
 
@@ -57,7 +58,7 @@ export default function ServiceCallbackButton({serviceSlug,serviceName,size="sm"
 
   return <>
     <button type="button" className={`btn ${size==="lg"?"btn--lg":"btn--sm"} ${className||"btn--ghost"}`} onClick={()=>{setOpen(true);setError("");}}><PhoneCall size={size==="lg"?18:15}/> Request callback</button>
-    {open&&<div className="service-callback-overlay" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)setOpen(false);}}>
+    {open&&typeof document!=="undefined"&&createPortal(<div className="service-callback-overlay" role="presentation" onMouseDown={event=>{if(event.target===event.currentTarget)setOpen(false);}}>
       <div className="service-callback-dialog" ref={dialog} role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <header className="service-callback-dialog__header">
           <span className="service-callback-dialog__mark"><PhoneCall size={22}/></span>
@@ -81,6 +82,6 @@ export default function ServiceCallbackButton({serviceSlug,serviceName,size="sm"
           <p className="service-callback-privacy"><ShieldCheck size={14}/> No account or payment required for this enquiry.</p>
         </form>}
       </div>
-    </div>}
+    </div>,document.body)}
   </>;
 }
