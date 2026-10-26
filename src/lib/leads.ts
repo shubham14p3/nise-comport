@@ -1,5 +1,5 @@
 import { after } from "next/server";
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { contacts, leads } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import { db } from "@/lib/db";
@@ -19,7 +19,7 @@ export async function createLead(input: LeadInput) {
   const phone = normalizePhone(input.phone ?? "");
   if (!phone) throw new PublicError("Please enter a valid 10-digit mobile number.", 400, { fields: { phone: "Check the number." } });
   const name = (input.name ?? "").replace(/[^\p{L}\p{M}\s.'-]/gu, " ").replace(/\s+/g, " ").trim().slice(0, 80) || "Customer";
-  const topic = (input.topic ?? "").replace(/\s+/g, " ").trim().slice(0, 80) || "General enquiry";
+  let topic = (input.topic ?? "").replace(/\s+/g, " ").trim().slice(0, 80) || "General enquiry";
   const message = (input.message ?? "").replace(/[ \t]+/g, " ").trim().slice(0, 1500) || null;
   const locale = ["en", "hi", "bn"].includes(input.locale ?? "") ? input.locale! : "en";
   // Service-specific callbacks collect only these three contact fields.
@@ -29,7 +29,10 @@ export async function createLead(input: LeadInput) {
   if(input.source==="service-callback"){
     if(name==="Customer" || name.length<2)throw new PublicError("Please enter your full name.",400);
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length>200)throw new PublicError("Enter a valid email address.",400,{fields:{email:"Enter a valid email address."}});
-    if(!/^[a-z0-9-]{2,80}$/.test(serviceSlug) || !(await resolveService(serviceSlug)))throw new PublicError("Choose an available service.",400);
+    if(!/^[a-z0-9-]{2,80}$/.test(serviceSlug))throw new PublicError("Choose an available service.",400);
+    const service=await resolveService(serviceSlug);
+    if(!service)throw new PublicError("Choose an available service.",400);
+    topic=service.title.slice(0,80);
   }
   const details = input.source==="service-callback"
     ? {serviceSlug,email,origin:"service-callback",consentedToCallback:true}
@@ -47,6 +50,20 @@ export async function createLead(input: LeadInput) {
   return row;
 }
 
+/** Mark an invited callback as converted only when the same customer signed in
+ * with the invited email, matching mobile and service. Other callbacks remain untouched. */
+export async function completeInvitedServiceCallback(phone: string, email: string, serviceSlug: string) {
+  const normal=normalizePhone(phone);
+  const verifiedEmail=email.trim().toLowerCase();
+  if(!normal||!verifiedEmail||!serviceSlug)return;
+  await db.update(leads).set({status:"done",handledAt:new Date()})
+    .where(and(
+      eq(leads.phone,normal),eq(leads.source,"service-callback"),eq(leads.status,"online_invited"),
+      sql`${leads.details}->>'serviceSlug' = ${serviceSlug}`,
+      sql`lower(${leads.details}->>'email') = ${verifiedEmail}`,
+    ));
+}
+
 /** Closes "started a request" call-backs once that number has sent the full request. */
 export async function closeWizardLeads(phone: string) {
   const normal = normalizePhone(phone);
@@ -60,7 +77,8 @@ export async function updateLead(id: string, status: (typeof LEAD_STATUSES)[numb
   if(["online_invited","offline_closed"].includes(status) && existing.source!=="service-callback")
     throw new PublicError("This action is only available for service callback requests.",400);
   if(status==="online_invited"){
-    if(!["new","called","online_invited"].includes(existing.status))throw new PublicError("This callback is already closed.",409);
+    if(existing.status==="online_invited")return existing;
+    if(!["new","called"].includes(existing.status))throw new PublicError("This callback is already closed.",409);
     const details=existing.details && typeof existing.details==="object"&&!Array.isArray(existing.details) ? existing.details as Record<string,unknown> : {};
     const email=typeof details.email==="string" ? details.email : "";
     const slug=typeof details.serviceSlug==="string" ? details.serviceSlug : "";
@@ -73,8 +91,8 @@ export async function updateLead(id: string, status: (typeof LEAD_STATUSES)[numb
   }
   if(status==="offline_closed" && !["new","called","online_invited"].includes(existing.status))
     throw new PublicError("This callback has already been closed.",409);
-  const [row] = await db.update(leads).set({ status, handledBy: actor.id, handledAt: new Date() }).where(eq(leads.id, id)).returning();
-  if (!row) throw new PublicError("That enquiry no longer exists.", 404);
+  const [row] = await db.update(leads).set({ status, handledBy: actor.id, handledAt: new Date() }).where(and(eq(leads.id, id),eq(leads.status,existing.status))).returning();
+  if (!row) throw new PublicError("This callback was changed by someone else. Refresh the inbox.", 409);
   const verb = { new: "reopened", called: "called", online_invited: "sent the online form to", offline_closed: "closed the offline callback for", done: "closed", spam: "marked as spam" }[status];
   await logActivity({ kind: "lead", permission: "requests", category: "leads", title: `${actor.name} ${verb} the enquiry from ${row.name}`, detail: row.topic, refType: "lead", refId: row.id, actorId: actor.id });
   return row;
