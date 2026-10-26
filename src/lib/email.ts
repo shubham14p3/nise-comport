@@ -210,6 +210,20 @@ export async function sendEmailChangedNotice(oldEmail: string, name: string, new
   });
 }
 
+/** Account closure initiated by the owner, without promising deletion of statutory records. */
+export async function sendAdminAccountArchivedEmail(to:string,name:string){
+  await sendMail({
+    to,subject:"Your NISE COMPORT account was closed",
+    heading:"Your account has been closed",
+    paragraphs:[
+      `Hello ${name},`,
+      "Your NISE COMPORT customer login has been closed by our service team.",
+      "Account contact details have been anonymised in the login record. We may still retain legally required service documents, payments, and audit records.",
+      `If you believe this was a mistake, please contact our office at ${site.phones.primary.display}.`
+    ],
+  });
+}
+
 export async function sendAccountDeletedEmail(to: string, name: string) {
   await sendMail({
     to, subject: "Your NISE COMPORT account was deleted", heading: "Your account was deleted",
