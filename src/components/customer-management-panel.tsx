@@ -37,7 +37,13 @@ export default function CustomerManagementPanel(){
     }catch(err){setError(err instanceof Error?err.message:"Unable to open customer history.");}
     finally{setBusy(false);}
   }
-  useEffect(()=>{void search("",false);},[]);
+  useEffect(()=>{
+    let mounted=true;
+    void secureApi<{users:Customer[]}>("C2m7R4vN9kP6",{q:"",archived:false})
+      .then(data=>{if(mounted)setList(data.users)})
+      .catch(err=>{if(mounted)setError(err instanceof Error?err.message:"Unable to load customers.")});
+    return()=>{mounted=false};
+  },[]);
   async function act(action:"edit"|"disable"|"enable"|"archive"){
     if(!selected)return;
     const text=action==="archive"?
