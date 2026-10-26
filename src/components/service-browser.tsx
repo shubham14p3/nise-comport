@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { ArrowRight, Search, SlidersHorizontal, X } from "lucide-react";
+import ServiceCallbackButton from "@/components/service-callback-button";
 import { CategoryIcon } from "@/components/icons";
 import ShowMore, { useShowMore } from "@/components/show-more";
 import { categoryMeta } from "@/lib/categories";
@@ -71,7 +72,7 @@ export default function ServiceBrowser({ services, lang = "en" }: { services: Br
         <div className="svc-card__top"><span className="svc-card__icon">{meta && <CategoryIcon icon={meta.icon} size={22}/>}</span><span className="chip chip--soft">{meta?.short[lang]}</span></div>
         <h3><Link prefetch={false} href={service.href ?? `/services/${service.slug}`}>{service.name}</Link></h3>
         <p>{service.description}</p>
-        <div className="svc-card__actions"><Link prefetch={false} className="btn btn--primary btn--sm" href={service.requestHref}>{t("Start", "शुरू करें", "শুরু করুন")} <ArrowRight size={16}/></Link><Link prefetch={false} className="btn btn--ghost btn--sm" href={service.href ?? `/services/${service.slug}`}>{t("Details", "जानकारी", "বিস্তারিত")}</Link></div>
+        <div className="svc-card__actions"><ServiceCallbackButton serviceSlug={service.slug} serviceName={service.name}/><Link prefetch={false} className="btn btn--primary btn--sm" href={service.requestHref}>Continue online <ArrowRight size={16}/></Link><Link prefetch={false} className="btn btn--ghost btn--sm" href={service.href ?? `/services/${service.slug}`}>{t("Details", "जानकारी", "বিস্তারিত")}</Link></div>
       </article>;
     })}</div><ShowMore shown={Math.min(paging.count, results.length)} total={results.length} onMore={paging.more} label={t("services", "सेवाएँ", "পরিষেবা")} lang={lang}/></> : <div className="empty-state"><h3>{t("No match for", "कोई परिणाम नहीं:", "কোনও ফল নেই:")} “{query}”</h3><p>{t("Try another word, pick “All”, or ask us directly. We help with many things that aren’t listed.", "कोई दूसरा शब्द आज़माइए, “सभी” चुनिए या हमसे सीधे पूछिए। सूची में न होने वाले कई कामों में भी हम मदद करते हैं।", "অন্য কোনও শব্দ চেষ্টা করুন, “সব” বাছুন বা সরাসরি আমাদের জিজ্ঞাসা করুন। তালিকায় নেই এমন অনেক কাজেও আমরা সাহায্য করি।")}</p><div className="empty-state__actions"><button type="button" className="btn btn--ghost" onClick={() => { setTyped(""); setPicked("all"); syncUrl("", "all"); }}>{t("Clear filters", "फ़िल्टर हटाएँ", "ফিল্টার সরান")}</button><Link prefetch={false} className="btn btn--primary" href={`/request?note=${encodeURIComponent(query)}`}>{t("Ask us about it", "हमसे पूछिए", "আমাদের জিজ্ঞাসা করুন")} <ArrowRight size={16}/></Link></div></div>}
   </div>;
