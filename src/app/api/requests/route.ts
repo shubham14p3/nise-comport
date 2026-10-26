@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     if (input.serviceSlug !== "other" && !found) throw new PublicError("Choose one of the listed services.", 400, { fields: { serviceSlug: "Choose one of the listed services." } });
     service = found ?? { slug: "other", title: "General enquiry" };
     if(input.intake) {
-      if(input.serviceSlug==="voter-id" && input.intake.kind!=="voter")throw new PublicError("Voter requests need the Voter ID form.",400);
+      if(input.serviceSlug==="voter-id" && !["voter","voter-form8","voter-form6"].includes(input.intake.kind))throw new PublicError("Voter requests need the Voter ID form.",400);
       if(input.serviceSlug==="passport-driving-licence" && input.intake.kind!=="passport")throw new PublicError("Passport requests need the passport form.",400);
       if(!["voter-id","passport-driving-licence"].includes(input.serviceSlug))throw new PublicError("This service does not use that questionnaire.",400);
     }
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
     const replyTo = contactPhone ?? user.whatsapp ?? user.phone ?? null;
     sendRequestWhatsApp({ name: input.contactName ?? user.name, phone: replyTo, reference: created.reference, service: service.title, details: input.description });
     // They finished the form: the "started a request" call-back is no longer needed.
-    if (replyTo) await closeWizardLeads(replyTo).catch(() => undefined);
+    if (replyTo) await closeWizardLeads(replyTo, input.serviceSlug, created.reference).catch(() => undefined);
     return NextResponse.json({
       ok: true, request: created, whatsappSent: whatsappAlertsEnabled(),
       ...(input.offerId ? { offer: { applied: offer.applied, ...(offer.reason ? { reason: offer.reason } : {}) } } : {}),

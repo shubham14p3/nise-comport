@@ -8,7 +8,7 @@ import Breadcrumbs from "@/components/breadcrumbs";
 import JsonLd from "@/components/json-ld";
 import ServiceBrowser from "@/components/service-browser";
 import { pageMetadata } from "@/lib/seo";
-import { requestHrefFor, serviceCatalog, serviceSeoTitle, shortServiceName } from "@/lib/services";
+import { serviceCatalog, serviceSeoTitle, shortServiceName } from "@/lib/services";
 import { site } from "@/lib/site";
 import { itemListLd } from "@/lib/structured-data";
 
@@ -23,7 +23,7 @@ export default async function ServicesPage() {
   const all = await allServices();
   const services = all.map((service) => ({
     slug: service.slug, title: service.title, name: shortServiceName(service.title), description: service.description,
-    category: service.categorySlug, keywords: service.keywords, requestHref: requestHrefFor(service.slug),
+    category: service.categorySlug, keywords: service.keywords, requestHref: `/services/${service.slug}#service-start`,
   }));
   return <main className="page"><SiteHeader/>
     <section className="page-hero page-hero--compact">

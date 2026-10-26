@@ -1,0 +1,102 @@
+/* Form 6 three-page print specimen, matching the 2026 ECI Form 6 samples.
+   Text remains applicant-supplied; official acknowledgement and signature are blank. */
+.f6-progress{grid-template-columns:repeat(5,minmax(0,1fr))}
+.f6-input-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.f6-input{display:flex;flex-direction:column;gap:7px;min-width:0;font-size:.85rem;font-weight:700}
+.f6-input>span{color:#33465f}
+.f6-input input,.f6-input select,.f6-input textarea{width:100%;max-width:100%;background:#fff;border:1px solid #bbc8d8;border-radius:9px;padding:10px 11px;min-height:42px;color:#152638;font-size:.9rem;font-weight:500}
+.f6-input input:focus,.f6-input select:focus,.f6-input textarea:focus{outline:2px solid #7ba8e8}
+.f6-input.f6-invalid input,.f6-input.f6-invalid select{border-color:#c33;background:#fff8f8}
+.f6-wide{grid-column:1/-1}
+.f6-field-control{display:flex;gap:6px;align-items:center;min-width:0}
+.f6-field-control>input{min-width:0;flex:1}
+.f6-field-control>button{flex:none;display:grid;place-items:center;width:42px;height:42px;border:1px solid #c9d6e8;border-radius:9px;background:#edf5ff;color:#225781}
+.f6-calendar{display:flex;align-items:center;gap:4px;flex:none;background:#f1f6fc;padding:4px 5px;border:1px solid #c4d5e9;border-radius:8px}
+.f6-calendar input{max-width:117px;width:117px;min-width:0;padding:4px 0;border:0;min-height:30px;background:transparent;font-size:11px}
+.f6-error{font-size:.79rem;font-weight:700;color:#b52b2b}
+.f6-photo-field{padding:14px;border-radius:12px;border:1px dashed #a4bfdc;display:grid;gap:8px;background:#f8fbff}
+.f6-photo-field label{font-size:.86rem;font-weight:700}
+.f6-photo-field input{max-width:100%}
+.f6-photo-field small{font-size:.78rem;color:#65748a}
+.f6-review-section{margin:11px 0;background:#fafcff;border:1px solid #dae5f0;border-radius:9px;padding:9px 13px}
+.f6-review-section>summary{cursor:pointer;font-weight:800;font-size:.88rem;color:#1b5280}
+.f6-review-section dl{display:grid;gap:0;margin:8px 0}
+.f6-review-section dl>div{display:grid;grid-template-columns:1fr 1.1fr;gap:8px;border-top:1px solid #e9eef6;padding:6px 2px;font-size:.8rem}
+.f6-review-section dt{color:#64748b}.f6-review-section dd{margin:0;color:#273b52;overflow-wrap:anywhere;font-weight:600}
+.form6-preview{gap:12px}
+.form6-sheet{font-family:Arial,"Noto Sans Devanagari",sans-serif;font-size:clamp(7px,.68vw,10px);line-height:1.4;padding:4.8%;color:#151a21}
+.form6-sheet h2,.form6-sheet h3,.form6-sheet h4{margin:0}
+.f6-head{display:grid;grid-template-columns:13% 1fr 22%;align-items:center;gap:8px;text-align:center;padding:3% 1% 2%;border-bottom:3px double #333}
+.f6-mark{display:grid;place-items:center;aspect-ratio:1;gap:3px;text-align:center;border:1px solid #445b7c;border-radius:50%;color:#135489;font-size:.7em}
+.f6-mark strong{font-size:2em}
+.f6-head b{font-size:1.4em;display:block}
+.f6-head small{display:block;font-size:.9em}
+.f6-head h2{font-size:1.55em}.f6-head h3{font-size:1.35em;margin-top:3px}
+.f6-ack{text-align:left;font-size:.9em;overflow-wrap:anywhere}
+.f6-ack strong,.f6-ack small{display:block}
+.f6-block{border:1px solid #4a4a4a;border-top:0;padding:6px 10px;overflow-wrap:anywhere}
+.f6-block h3{font-size:1.1em;margin:0 0 5px}
+.f6-block p{margin:4px 0}
+.f6-constituency{min-height:9.5%}
+.f6-constituency>p{margin:3px 0}
+.f6-const-grid{display:flex;gap:14px;justify-content:flex-end}
+.f6-const-grid .f6-label-value{width:36%}
+.f6-applicant{min-height:15%}
+.f6-photo{float:right;width:18%;height:124px;display:grid;place-items:center;margin:5px 4px 8px 10px;border:1px solid #555;text-align:center;padding:3px;font-size:.78em;color:#333;overflow:hidden}
+.f6-photo img{width:100%;height:100%;object-fit:cover}
+.f6-label-value{display:flex;align-items:baseline;gap:8px;padding:2px 0;min-width:0;line-height:1.5}
+.f6-label-value>span{flex:none;color:#292929;min-width:24%}
+.f6-label-value>strong{font-weight:700;min-width:0;overflow-wrap:anywhere}
+.f6-digit-row{padding:4px 10px}
+.f6-digit-cells{display:inline-flex;flex-wrap:nowrap;max-width:100%;gap:2px;vertical-align:middle}
+.f6-digit-cells>span{display:inline-flex;width:1.55em;height:1.6em;border:1px solid #888;align-items:center;justify-content:center;font-size:1.06em}
+.f6-checkbox{display:inline-grid;place-items:center;vertical-align:middle;width:1.6em;height:1.6em;border:1px solid #8b8b8b;margin:0 .3em;color:#333;font-weight:900}
+.f6-picks{display:inline-flex;align-items:center;gap:11px;flex-wrap:wrap}
+.f6-picks>span{display:inline-flex;align-items:center;gap:2px;white-space:nowrap}
+.f6-aadhaar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.f6-proof-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px 13px;margin-top:5px}
+.f6-proof-grid p{font-size:.95em;margin:3px 0;display:flex;align-items:center;gap:3px}
+.f6-address-grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid #555;gap:0}
+.f6-address-cell{padding:5px;border-bottom:1px solid #999;min-height:35px}
+.f6-address-cell:nth-child(odd){border-right:1px solid #777}
+.f6-address-cell .f6-label-value{display:grid;grid-template-columns:42% 58%;gap:5px}
+.f6-address-cell .f6-label-value>span{flex:auto;min-width:0}
+.f6-half{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.f6-declaration p{line-height:1.5}
+.f6-note p{margin:6px 0}
+.f6-sir-sheet{padding:5%;font-size:clamp(8px,.9vw,12px)}
+.f6-sir-sheet>header{text-align:center;padding:0 0 5%;font-size:1.1em}
+.f6-sir-sheet>header h2{font-size:1.7em}
+.f6-sir-sheet>header p{margin:6px 0}
+.f6-sir-sheet>.f6-label-value{margin-bottom:8px}
+.f6-sir-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0 25px}
+.f6-sir-grid h3{background:#e7e9eb;padding:14px 9px;text-align:center;font-size:1.05em;min-height:42px;line-height:1.5}
+.f6-sir-grid section>.f6-label-value{border-bottom:1px solid #ddd;min-height:28px;display:grid;grid-template-columns:42% 58%;gap:4px;align-items:baseline}
+.f6-sir-grid section>.f6-label-value span{min-width:0}
+.f6-sir-kin{display:grid;grid-template-columns:1fr 1fr;gap:16px 22px;margin:20px 0}
+.f6-sir-kin>.f6-label-value{display:grid;gap:5px}
+.f6-sir-kin>.f6-label-value>strong{display:block;border:1px solid #777;min-height:24px;text-align:center;padding:4px 6px}
+.f6-sir-declaration{margin:25px 0;font-size:1em}
+.f6-sir-declaration p{margin:15px 0}
+.f6-sir-or{text-align:center;font-weight:900}
+.f6-signature{text-align:right;margin-top:20px}
+.f8-modal[data-count="3"][data-page="1"] .form6-sheet:not(:nth-child(1)),
+.f8-modal[data-count="3"][data-page="2"] .form6-sheet:not(:nth-child(2)),
+.f8-modal[data-count="3"][data-page="3"] .form6-sheet:not(:nth-child(3)){display:none}
+.f8-modal[data-count="3"] .form6-sheet{font-size:clamp(9px,1.1vw,12px)}
+@media(max-width:900px){.f6-progress{grid-template-columns:repeat(3,minmax(0,1fr))}.form6-sheet{font-size:clamp(8px,1.1vw,11px)}}
+@media(max-width:620px){
+.f6-progress{grid-template-columns:repeat(2,1fr)}
+.f6-input-grid{grid-template-columns:1fr}
+.f6-calendar{flex:1}.f6-calendar input{max-width:100%;width:100%;min-width:70px}
+.form6-sheet{font-size:6px}
+.f6-photo{height:65px}
+.f6-sir-grid{gap:8px}.f6-sir-sheet{font-size:6px}
+}
+@media print{
+.f6-input-grid,.f6-progress,.f6-photo-field{display:none!important}
+.form6-sheet{width:210mm!important;height:297mm!important;min-height:297mm!important;font-size:8pt!important;break-after:page!important;page-break-after:always!important}
+.form6-sheet:last-child{break-after:auto!important;page-break-after:auto!important}
+.f8-modal[data-count="3"] .form6-sheet{display:block!important;font-size:8pt!important}
+.f8-modal[data-count="3"] .form6-sheet:last-child{break-after:auto!important}
+}

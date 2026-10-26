@@ -62,7 +62,7 @@ export async function inbox(user: Inboxer, options: { category?: string; limit?:
     const [prints] = await db.select({ total: count() }).from(printJobs).where(notInArray(printJobs.status, [...CLOSED_STATUSES]));
     if (prints.total) byCategory.set("print", { label: "Print orders", total: prints.total });
     pending = [...byCategory.entries()].map(([category, value]) => ({ category, ...value })).sort((a, b) => b.total - a.total);
-    newLeads = await db.select().from(leads).where(inArray(leads.status, ["new", "called"])).orderBy(desc(leads.createdAt)).limit(50);
+    newLeads = await db.select().from(leads).where(inArray(leads.status, ["new", "called", "online_invited"])).orderBy(desc(leads.createdAt)).limit(50);
   }
   return { items: rows, unread: unread.total, seenAt, pending, leads: newLeads };
 }

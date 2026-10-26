@@ -11,6 +11,7 @@ import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
 import { isIdempotencyConflict, notifyNewRequest, recordEvent, withUniqueReference } from "@/lib/requests";
 import { sendDbDownFallbackWhatsApp } from "@/lib/whatsapp-alerts";
 import { storeDetailedIntake } from "@/lib/detailed-intake-server";
+import { closeWizardLeads } from "@/lib/leads";
 
 const envelope = z.object({ idempotencyKey: z.uuid().optional() }).passthrough();
 
@@ -69,6 +70,7 @@ export async function POST(request: NextRequest) {
       `Applicant: ${currentPan.fullName}`, `Contact: ${currentPan.contactName} · ${currentPan.phone}`, `Email: ${currentPan.email}`,
       `Address: ${currentPan.address}`, `City: ${currentPan.city}`, `State / province: ${currentPan.state}`, `Country: ${currentPan.country}`, `PIN / postal code: ${currentPan.postalCode}`,
     ]);
+    await closeWizardLeads(currentPan.phone,"pan-card",created.reference).catch(()=>undefined);
     return NextResponse.json({ reference: created.reference }, { status: 201 });
   } catch (error) {
     if (isUnavailable(error) && user) {
