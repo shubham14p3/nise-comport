@@ -7,7 +7,7 @@ import { WhatsAppIcon } from "@/components/icons";
 import { secureApi } from "@/lib/secure-api-client";
 
 type Item = { id: string; kind: string; category: string | null; title: string; detail: string | null; createdAt: string; actor: string | null };
-type Lead = { id: string; name: string; phone: string; topic: string; message: string | null; status: string; source: string; details: { email?: string; serviceSlug?: string } | null; page: string | null; createdAt: string };
+type Lead = { id: string; name: string; phone: string; topic: string; message: string | null; status: string; handledBy: string | null; ownerName?: string | null; source: string; details: { email?: string; serviceSlug?: string } | null; page: string | null; createdAt: string };
 type Inbox = { items: Item[]; unread: number; seenAt: string; pending: { category: string; label: string; total: number }[]; leads: Lead[] };
 
 const ICON: Record<string, string> = { lead: "📞", request: "📝", print: "🖨️", status: "🔄", import: "📥", record_view: "👁️", claim: "🔑", flag: "🚩", signup: "🆕", staff: "👥", campaign: "📣", promotion: "🎟️" };
@@ -37,12 +37,13 @@ const pretty = (phone: string) => phone.replace(/^\+91(\d{5})(\d{5})$/, "+91 $1 
  * Admin → Inbox: what's waiting per service, people who asked to be called back, and a feed of
  * what happened (new requests, status changes, imports, who opened which customer records).
  */
-export default function InboxPanel({ onSeen }: { onSeen?: () => void }) {
+export default function InboxPanel({ onSeen, viewer }: { onSeen?: () => void; viewer?: {id?:string;role:string} }) {
   const [data, setData] = useState<Inbox | null>(null);
   const [category, setCategory] = useState("");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [leadPage, setLeadPage] = useState(0);
+  const [leadFilter,setLeadFilter] = useState<"all"|"mine">("all");
   const [feedPage, setFeedPage] = useState(0);
 
   async function load(nextCategory = category) {
@@ -69,6 +70,13 @@ export default function InboxPanel({ onSeen }: { onSeen?: () => void }) {
     };
   }, [onSeen]);
 
+  async function takeCase(row:Lead){
+    setBusy(row.id);setError("");
+    try{await secureApi("U6c2R9pL5wM7",{id:row.id,action:"claim"});await load();}
+    catch(reason){setError(reason instanceof Error?reason.message:"Could not take the case.");}
+    finally{setBusy("")}
+  }
+
   async function lead(row: Lead, status: "called" | "done" | "spam" | "offline_closed" | "online_invited") {
     setBusy(row.id);
     try { await secureApi("E3h8K1tW6qZ9", { id: row.id, status }); await load(); }
@@ -77,7 +85,7 @@ export default function InboxPanel({ onSeen }: { onSeen?: () => void }) {
   }
 
   const seenAt = data ? new Date(data.seenAt).getTime() : 0;
-  const leads = data?.leads ?? []; const items = data?.items ?? [];
+  const leads = (data?.leads ?? []).filter(row => leadFilter!=="mine" || (viewer?.id && row.handledBy===viewer.id)); const items = data?.items ?? [];
   // Stay on a valid page when the list shrinks (for example after marking a lead done).
   const leadAt = Math.min(leadPage, Math.max(0, Math.ceil(leads.length / PAGE_SIZE) - 1));
   const feedAt = Math.min(feedPage, Math.max(0, Math.ceil(items.length / PAGE_SIZE) - 1));
@@ -94,21 +102,22 @@ export default function InboxPanel({ onSeen }: { onSeen?: () => void }) {
     </div>}
 
     {data && data.leads.length > 0 && <div className="inbox__leads">
-      <h3><Phone size={16}/> Call these people back <span>{data.leads.length}</span></h3>
+      <h3><Phone size={16}/> Callbacks <span>{leads.length}</span></h3><div className="inbox__callback-tabs"><button className="btn btn--ghost btn--sm" type="button" aria-pressed={leadFilter==="all"} onClick={()=>{setLeadFilter("all");setLeadPage(0)}}>All callbacks</button><button className="btn btn--ghost btn--sm" type="button" aria-pressed={leadFilter==="mine"} onClick={()=>{setLeadFilter("mine");setLeadPage(0)}}>My callbacks</button></div>
       {leads.slice(leadAt * PAGE_SIZE, (leadAt + 1) * PAGE_SIZE).map((row) => <article key={row.id} className={`lead-row lead-row--${row.status}`}>
         <div><b>{row.name}</b> <a href={`tel:${row.phone}`}>{pretty(row.phone)}</a>
           <small>{row.topic}{row.message && !row.message.includes("\n") ? ` — ${row.message}` : ""} · {ago(row.createdAt)}{row.status === "called" ? " · contacted" : row.status === "online_invited" ? " · online form sent" : ""}</small>
-          {row.source==="service-callback" && <small><b>Callback enquiry</b> · {row.details?.email && <a href={`mailto:${row.details.email}`}>{row.details.email}</a>}</small>}
+          {row.source==="service-callback" && <small><b>Callback enquiry</b> · {row.details?.email && <a href={`mailto:${row.details.email}`}>{row.details.email}</a>} · <strong>{row.ownerName ? `Handled by ${row.ownerName}` : "Unassigned"}</strong></small>}
           {row.message?.includes("\n") && <p className="lead-row__details">{row.message}</p>}</div>
         <div className="lead-row__actions">
           <a className="btn btn--ghost btn--sm" href={`tel:${row.phone}`}><Phone size={14}/>Call</a>
           <a className="btn btn--ghost btn--sm" href={`https://wa.me/${row.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`Namaste ${row.name}, NISE COMPORT here about your enquiry: ${row.topic}.`)}`} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={14}/>WhatsApp</a>
-          {row.status === "new" && <button type="button" className="profile-text-button" disabled={busy === row.id} onClick={() => void lead(row, "called")}><Check size={13}/>Called</button>}
-          {row.source==="service-callback" ? <>
+          {row.source==="service-callback" && (!row.handledBy || (viewer?.role==="admin" && row.handledBy!==viewer.id)) && <button type="button" className="btn btn--primary btn--sm" disabled={busy===row.id} onClick={()=>void takeCase(row)}>{row.handledBy?"Take over":"Take case"}</button>}
+          {row.status === "new" && (row.source!=="service-callback" || row.handledBy===viewer?.id || viewer?.role==="admin") && <button type="button" className="profile-text-button" disabled={busy === row.id} onClick={() => void lead(row, "called")}><Check size={13}/>Called</button>}
+          {row.source==="service-callback" ? (row.handledBy===viewer?.id || viewer?.role==="admin" ? <>
             {row.status!=="online_invited" && <button type="button" className="btn btn--primary btn--sm" disabled={busy === row.id} onClick={() => {if(window.confirm("Has this customer agreed to continue online? Send the application link to their provided email?"))void lead(row,"online_invited");}}><Check size={13}/>Send online form</button>}
             <button type="button" className="profile-text-button" disabled={busy === row.id} onClick={() => void lead(row,"offline_closed")}>Close offline</button>
-          </> : <button type="button" className="profile-text-button" disabled={busy === row.id} onClick={() => void lead(row, "done")}><Check size={13}/>Done</button>}
-          <button type="button" className="profile-text-button" disabled={busy === row.id} onClick={() => void lead(row, "spam")}><X size={13}/>Spam</button>
+          </> : null) : <button type="button" className="profile-text-button" disabled={busy === row.id} onClick={() => void lead(row, "done")}><Check size={13}/>Done</button>}
+          {(row.source!=="service-callback" || row.handledBy===viewer?.id || viewer?.role==="admin") && <button type="button" className="profile-text-button" disabled={busy === row.id} onClick={() => void lead(row, "spam")}><X size={13}/>Spam</button>}
         </div>
       </article>)}
       <Pager page={leadAt} total={leads.length} onPage={setLeadPage} label="Call-back pages"/>
