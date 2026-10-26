@@ -3,6 +3,7 @@
 import {FormEvent,useEffect,useState} from "react";
 import {ArrowLeft,History,Search,ShieldCheck,UserRound,UserX} from "lucide-react";
 import {secureApi} from "@/lib/secure-api-client";
+import "./customer-management-panel.css";
 
 type Customer={id:string;name:string;email:string;phone:string|null;emailVerified:boolean;phoneVerified:boolean;createdAt:string;updatedAt:string;disabled:boolean;archived:boolean};
 type RecordItem={id:string;when:string;title:string;detail:string|null;actorId:string|null;actorName:string|null};
