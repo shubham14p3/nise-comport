@@ -8,7 +8,7 @@ import { cleanName,looksLikeEmail,normalizeEmail,normalizePhone } from "@/lib/va
 import { profileChanges,formatAuditChange } from "@/lib/customer-audit";
 import { PublicError } from "@/lib/errors";
 import { apiError,readJson } from "@/lib/http";
-import { sendEmailChangedNotice,sendAccountDeletedEmail } from "@/lib/email";
+import { sendEmailChangedNotice,sendAdminAccountArchivedEmail } from "@/lib/email";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -126,7 +126,7 @@ export async function PATCH(request:NextRequest){
       await tx.delete(sessions).where(eq(sessions.userId,user.id));
       return saved;
     });
-    if(input.action==="archive")after(async()=>{await sendAccountDeletedEmail(user.email,user.name).catch(error=>console.error("[customers] archive notice failed",error instanceof Error?error.message:"unknown"));});
+    if(input.action==="archive")after(async()=>{await sendAdminAccountArchivedEmail(user.email,user.name).catch(error=>console.error("[customers] archive notice failed",error instanceof Error?error.message:"unknown"));});
     return NextResponse.json({user:publicCustomer(result),message:input.action==="archive"?
       "Account archived and sign-in disabled; legally required service records retained.":
       "Customer access updated."});
