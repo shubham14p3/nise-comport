@@ -50,9 +50,9 @@ export default function CustomerManagementPanel(){
         id:selected.user.id,action,...(action==="edit"?edit:{}),reason,
         ...(action==="archive"?{confirm:"ARCHIVE"}:{}),
       });
-      setNote(result.message);
       await open(selected.user.id);
       await search(q,showArchived);
+      setNote(result.message);
     }catch(err){setError(err instanceof Error?err.message:"Could not update this customer.");}
     finally{setBusy(false);}
   }
