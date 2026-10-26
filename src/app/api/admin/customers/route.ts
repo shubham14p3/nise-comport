@@ -120,7 +120,7 @@ export async function PATCH(request:NextRequest){
           phone:null,whatsapp:null,profileSummary:null,city:null,state:null,postalCode:null,
           emailVerifiedAt:null,phoneVerifiedAt:null};
       const [saved]=await tx.update(users).set({...fields,updatedAt:now}).where(eq(users.id,user.id)).returning();
-      await tx.insert(activityLog).values(auditRow(actor.id,user.id,`${actor.name} ${input.action}d customer account`,`Reason: ${input.reason}`));
+      await tx.insert(activityLog).values(auditRow(actor.id,user.id,`${actor.name} ${input.action==="archive"?"archived":input.action==="enable"?"enabled":"disabled"} customer account`,`Reason: ${input.reason}`));
       await tx.delete(sessions).where(eq(sessions.userId,user.id));
       return saved;
     });
