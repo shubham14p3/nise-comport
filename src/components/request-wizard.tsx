@@ -9,6 +9,7 @@ import AddressPicker, { addressProblem, EMPTY_ADDRESS, formatAddress, type Addre
 import { CategoryIcon, WhatsAppIcon } from "@/components/icons";
 import { OfferRail, OfferStrip, WizardActions, WizardFrame } from "@/components/wizard";
 import ConsentModal from "@/components/consent-modal";
+import "@/components/service-start-panel.css";
 import DetailedIntakeFields from "@/components/detailed-intake-fields";
 import DetailedIntakePreview from "@/components/detailed-intake-preview";
 import { saveApplicationDraft, readApplicationDraft, clearApplicationDraft } from "@/lib/tab-application-draft";
@@ -131,7 +132,9 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const [done, setDone] = useState<{ reference: string; offerNote?: string; couponNote?: string; couponOk?: boolean; whatsappSent?: boolean; summary: string } | null>(null);
   const [showErrors, setShowErrors] = useState(false);
   const [showConsent, setShowConsent] = useState(false);
-  const leadSent = useRef<string | null>(null);
+  const [callbackEmail,setCallbackEmail] = useState("");
+  const [callbackConsent,setCallbackConsent] = useState(false);
+  const [callbackSaved,setCallbackSaved] = useState(false);
   const draftRef = useRef<Draft | null>(null);
   const [restored, setRestored] = useState(false);
   const [tabDraftReady, setTabDraftReady] = useState(false);
@@ -246,21 +249,29 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     return "";
   }
 
-  /** As soon as we have a name and number, the shop gets a call-back (closed again when the request is sent). */
-  function captureLead() {
-    if (draft.name.trim().length < 2 || !validPhone(draft.phone)) return;
-    const key = `${draft.phone.replace(/\D/g, "").slice(-10)}|${draft.serviceSlug}`;
-    if (leadSent.current === key) return;
-    leadSent.current = key;
-    void secureApi("Q3n7B1xK5vR8", {
-      name: draft.name.trim(), phone: draft.phone.trim(), topic: `Started a request: ${service?.name ?? "General enquiry"}`.slice(0, 120),
-      message: draft.description.trim().slice(0, 800) || undefined, page: "/request", locale, source: "wizard",
-    }).catch(() => undefined);
+  async function requestCallbackFromWizard(){
+    if(busy)return;
+    if(draft.name.trim().length<2 || !validPhone(draft.phone) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(callbackEmail.trim()) || !callbackConsent){
+      setError("Enter your name, 10-digit mobile, email and consent to request a callback.");
+      setShowErrors(true);return;
+    }
+    setBusy(true);setError("");
+    try {
+      const res=await fetch("/api/leads",{
+        method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({intent:"callback",source:"form",name:draft.name.trim(),
+          phone:draft.phone.trim(),email:callbackEmail.trim(),consent:true,
+          serviceSlug:draft.serviceSlug||"other",page:"/request"}),
+      });
+      const body:{error?:string}=await res.json();
+      if(!res.ok)throw new Error(body.error||"Unable to request callback.");
+      setCallbackSaved(true);
+    }catch(reason){setError(reason instanceof Error?reason.message:"Unable to request callback.");}
+    finally{setBusy(false);}
   }
 
   async function next() {
     if(!tabDraftReady){setError("Restoring saved answers. Please try again.");return;}
-    if(draft.step===1)captureLead();
     const problem=validate(draft.step);
     const photoOnly=activeIntake?.kind==="voter" && Boolean(intakeErrors.photoFileId) &&
       Object.keys(intakeErrors).length===1;
@@ -425,8 +436,18 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
             <option value="passport">Passport application / reissue</option><option value="driving">Driving licence / RTO help</option>
           </select></label>}
         <div className="form-grid">
-          <label className="field"><span className="field__label">{t.name}</span><input value={draft.name} onChange={(event) => update({ name: event.target.value.replace(/[^\p{L}\p{M}\s.'-]/gu, "") })} onBlur={captureLead} autoComplete="name" maxLength={100} required aria-invalid={nameBad}/>{nameBad && <span className="field__error">{t.errName}</span>}</label>
+          <label className="field"><span className="field__label">{t.name}</span><input value={draft.name} onChange={(event) => update({ name: event.target.value.replace(/[^\p{L}\p{M}\s.'-]/gu, "") })} autoComplete="name" maxLength={100} required aria-invalid={nameBad}/>{nameBad && <span className="field__error">{t.errName}</span>}</label>
           <label className="field"><span className="field__label">{t.phone}</span><span className="input-wrap"><span className="input-prefix">+91</span><input value={draft.phone} onChange={(event) => update({ phone: event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16) })} inputMode="tel" autoComplete="tel-national" placeholder="98765 43210" required onBlur={captureLead} aria-invalid={phoneBad}/></span>{phoneBad ? <span className="field__error">{t.errPhone}</span> : <span className="field__hint">{t.phoneHint}</span>}</label>
+        </div>
+        <div className="callback-mini">
+          <div><b>Prefer that we call you first?</b><p>Leave your name and number above, add your email, and we can discuss online or offline assistance before you fill the detailed application.</p></div>
+          {callbackSaved ? <p className="callback-mini__saved" role="status">Callback requested. You may continue filling the form online if you prefer.</p> : <>
+            <label className="field"><span className="field__label">Email for the callback *</span>
+              <input type="email" value={callbackEmail} onChange={event=>setCallbackEmail(event.target.value)} maxLength={254} placeholder="you@example.com" autoComplete="email"/></label>
+            <label className="service-start__consent"><input type="checkbox" checked={callbackConsent} onChange={event=>setCallbackConsent(event.target.checked)}/>
+              <span>I agree to be contacted about this service.</span></label>
+            <button className="btn btn--ghost btn--sm" type="button" disabled={busy} onClick={()=>void requestCallbackFromWizard()}><Headphones size={16}/> Request a callback instead</button>
+          </>}
         </div>
         <fieldset className="field"><legend className="field__label">{t.contactVia}</legend><div className="seg">
           {(["whatsapp", "phone", "email"] as Contact[]).map((option) => <button key={option} type="button" className={draft.contact === option ? "is-active" : undefined} aria-pressed={draft.contact === option} onClick={() => update({ contact: option })}>{option === "whatsapp" ? <WhatsAppIcon size={16}/> : null}{option === "whatsapp" ? t.viaWhatsapp : option === "phone" ? t.viaPhone : t.viaEmail}</button>)}
