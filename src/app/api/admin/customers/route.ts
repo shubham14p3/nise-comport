@@ -1,4 +1,4 @@
-import { NextRequest,NextResponse } from "next/server";
+import { NextRequest,NextResponse,after } from "next/server";
 import { and,desc,eq,ilike,isNull,or } from "drizzle-orm";
 import { z } from "zod";
 import { activityLog,sessions,users } from "@/db/schema";
@@ -8,7 +8,7 @@ import { cleanName,looksLikeEmail,normalizeEmail,normalizePhone } from "@/lib/va
 import { profileChanges,formatAuditChange } from "@/lib/customer-audit";
 import { PublicError } from "@/lib/errors";
 import { apiError,readJson } from "@/lib/http";
-import { sendEmailChangedNotice } from "@/lib/email";
+import { sendEmailChangedNotice,sendAccountDeletedEmail } from "@/lib/email";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -84,7 +84,9 @@ export async function PATCH(request:NextRequest){
         const [used]=await db.select({id:users.id}).from(users).where(and(eq(users.phone,phone),isNull(users.deletedAt))).limit(1);
         if(used)throw new PublicError("This mobile number is already registered.",409);
       }
-      const result=await db.transaction(async tx=>{
+      if(input.action==="enable" && !user.disabledAt)throw new PublicError("This account is already active.",409);
+    if(input.action==="disable" && user.disabledAt)throw new PublicError("This account is already disabled.",409);
+    const result=await db.transaction(async tx=>{
         const [fresh]=await tx.select().from(users).where(eq(users.id,user.id)).limit(1);
         if(!fresh || fresh.updatedAt.getTime()!==user.updatedAt.getTime())throw new PublicError("This customer was edited elsewhere. Refresh and retry.",409);
         const [saved]=await tx.update(users).set({
@@ -100,7 +102,7 @@ export async function PATCH(request:NextRequest){
       });
       if(email!==user.email) {
         await db.delete(sessions).where(eq(sessions.userId,user.id));
-        void sendEmailChangedNotice(user.email,user.name,email).catch(()=>undefined);
+        after(async()=>{await sendEmailChangedNotice(user.email,user.name,email).catch(error=>console.error("[customers] notice failed",error instanceof Error?error.message:"unknown"));});
       }
       return NextResponse.json({user:publicCustomer(result),message:"Customer details updated. Changed email/phone must be verified again."});
     }
@@ -124,6 +126,7 @@ export async function PATCH(request:NextRequest){
       await tx.delete(sessions).where(eq(sessions.userId,user.id));
       return saved;
     });
+    if(input.action==="archive")after(async()=>{await sendAccountDeletedEmail(user.email,user.name).catch(error=>console.error("[customers] archive notice failed",error instanceof Error?error.message:"unknown"));});
     return NextResponse.json({user:publicCustomer(result),message:input.action==="archive"?
       "Account archived and sign-in disabled; legally required service records retained.":
       "Customer access updated."});
