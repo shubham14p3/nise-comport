@@ -83,7 +83,7 @@ export default function ServiceCallbackButton({serviceSlug,serviceName,size="sm"
             <ShieldCheck size={18}/>
             <div><b>{accountOptIn?"Your NISE account setup":"Create a NISE account when you’re ready"}</b>
               <p>{accountEmailStatus==="sent"
-                ? "Check your email for a temporary 6-digit verification code. Confirm it to finish creating your account; then you can sign in or log out whenever you like."
+                ? "If eligible for a new account, check your email for a temporary 6-digit verification code. Confirm it to finish creating your account; then you can sign in or log out whenever you like."
                 : "Your callback is saved. Email verification is not yet available; you can request a fresh code from the sign-up page."}</p>
               <Link href="/signup?callback=1" onClick={()=>setOpen(false)}>Finish account setup</Link>
               <p>Already registered? <Link href="/login" onClick={()=>setOpen(false)}>Sign in to your account</Link></p>
@@ -93,7 +93,7 @@ export default function ServiceCallbackButton({serviceSlug,serviceName,size="sm"
         </div>:<form onSubmit={event=>{void submit(event);}} className="service-callback-form">
           <div className="service-callback-service"><Clock3 size={17}/><span>Enquiry for <strong>{serviceName}</strong></span></div>
           <p>Only your contact details are needed now. No documents, PAN or Aadhaar details.</p>
-          <div className="service-callback-reward"><Gift size={16}/><span>We’ll start setting up your account by email. Earn ₹30 welcome credit after email verification, and another ₹20 after verifying your mobile, on eligible services and subject to coupon conditions.</span></div>
+          <div className="service-callback-reward"><Gift size={16}/><span>Optionally start account setup by email. Earn ₹30 welcome credit after email verification, and another ₹20 after verifying your mobile, on eligible services and subject to coupon conditions.</span></div>
           <label>Full name <span>*</span><input autoComplete="name" value={name} onChange={e=>setName(e.target.value)} minLength={2} maxLength={80} required placeholder="Your full name"/></label>
           <label>Mobile number <span>*</span><input type="tel" autoComplete="tel" inputMode="tel" value={phone} onChange={e=>setPhone(e.target.value)} maxLength={25} minLength={10} required placeholder="10-digit mobile number"/></label>
           <label>Email address <span>*</span><input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} maxLength={200} required placeholder="name@example.com"/></label>
