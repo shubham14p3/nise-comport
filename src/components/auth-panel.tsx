@@ -62,6 +62,24 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
   const offer = mode === "signup" ? findOffer("welcome-50") : codes[0] ?? findOffer("welcome-50");
 
   useEffect(() => {
+    if(mode!=="signup" || new URLSearchParams(window.location.search).get("callback")!=="1")return;
+    setMethod("email");
+    try{
+      const saved=sessionStorage.getItem("nise-callback-signup");
+      if(!saved)return;
+      const parsed=JSON.parse(saved) as {name?:string;email?:string;phone?:string;emailCodeSent?:boolean;createdAt?:number};
+      if(!parsed.createdAt || Date.now()-parsed.createdAt>30*60_000){sessionStorage.removeItem("nise-callback-signup");return;}
+      if(parsed.name)setName(parsed.name);
+      if(parsed.email)setEmail(parsed.email);
+      if(parsed.phone)setPhone(parsed.phone);
+      if(parsed.emailCodeSent && Date.now()-parsed.createdAt<8*60_000) {
+        setStage("otp");
+        setSuccess("A 6-digit email verification code was sent when you requested your callback. Enter that code below, then complete your profile.");
+      }
+    }catch{/* Normal signup remains available. */}
+  },[mode]);
+
+  useEffect(() => {
     if (resendIn <= 0) return;
     const timer = window.setTimeout(() => setResendIn((value) => Math.max(0, value - 1)), 1000);
     return () => window.clearTimeout(timer);
@@ -78,6 +96,7 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
     // Clear the anonymous session cache after successful authentication, and
     // signal persistent layout providers (offers) to load signed-in state.
     invalidateSessionCache();
+    try { sessionStorage.removeItem("nise-callback-signup"); } catch {}
     let target = takeReturn();
     if (target === "/profile") {
       try {
