@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { CheckCircle2, Clock3, PhoneCall, ShieldCheck, X } from "lucide-react";
+import { CheckCircle2, Clock3, Gift, PhoneCall, ShieldCheck, X } from "lucide-react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import { secureApi } from "@/lib/secure-api-client";
 import "./service-callback.css";
@@ -18,6 +19,7 @@ export default function ServiceCallbackButton({serviceSlug,serviceName,size="sm"
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState("");
   const [sent,setSent]=useState(false);
+  const [accountEmailStatus,setAccountEmailStatus]=useState<"sent"|"unavailable"|"not_requested">("not_requested");
   const titleId=useId();
   const dialog=useRef<HTMLDivElement>(null);
   const closer=useRef<HTMLButtonElement>(null);
@@ -46,11 +48,18 @@ export default function ServiceCallbackButton({serviceSlug,serviceName,size="sm"
     if(!consent){setError("Please allow our staff to contact you about this service.");return;}
     setBusy(true);setError("");
     try{
-      await secureApi("Q3n7B1xK5vR8",{
+      const response=await secureApi<{accountEmailStatus?:"sent"|"unavailable"|"not_requested"}>("Q3n7B1xK5vR8",{
         source:"service-callback",serviceSlug,topic:serviceName,
         page:typeof window!=="undefined"?window.location.pathname:"",
         name:name.trim(),phone:phone.trim(),email:email.trim(),consent,
       });
+      setAccountEmailStatus(response.accountEmailStatus??"unavailable");
+      try {
+        sessionStorage.setItem("nise-callback-signup",JSON.stringify({
+          name:name.trim(),email:email.trim().toLowerCase(),phone:phone.trim(),
+          emailCodeSent:response.accountEmailStatus==="sent",createdAt:Date.now()
+        }));
+      }catch{/* Direct sign-up works without browser storage. */}
       setSent(true);
     }catch(reason){setError(reason instanceof Error?reason.message:"Could not request a callback. Please try again.");}
     finally{setBusy(false);}
@@ -69,10 +78,21 @@ export default function ServiceCallbackButton({serviceSlug,serviceName,size="sm"
           <CheckCircle2 size={40} color="#18754e"/>
           <h3>Your request has been received</h3>
           <p>Our team will contact you about <strong>{serviceName}</strong>. You can decide to continue online or visit our desk after speaking to us.</p>
+          <div className="service-callback-account">
+            <ShieldCheck size={18}/>
+            <div><b>Your NISE account setup has started</b>
+              <p>{accountEmailStatus==="sent"
+                ? "Check your email for a temporary 6-digit verification code. Confirm it to finish creating your account; then you can sign in or log out whenever you like."
+                : "Your callback is saved. Email verification is not yet available; you can request a fresh code from the sign-up page."}</p>
+              <Link href="/signup?callback=1" onClick={()=>setOpen(false)}>Finish account setup</Link>
+              <p>Already registered? <Link href="/login" onClick={()=>setOpen(false)}>Sign in to your account</Link></p>
+            </div>
+          </div>
           <button type="button" className="btn btn--primary" onClick={()=>setOpen(false)}>Done</button>
         </div>:<form onSubmit={event=>{void submit(event);}} className="service-callback-form">
           <div className="service-callback-service"><Clock3 size={17}/><span>Enquiry for <strong>{serviceName}</strong></span></div>
           <p>Only your contact details are needed now. No documents, PAN or Aadhaar details.</p>
+          <div className="service-callback-reward"><Gift size={16}/><span>We’ll start setting up your account by email. Earn ₹30 welcome credit after email verification, and another ₹20 after verifying your mobile, on eligible services and subject to coupon conditions.</span></div>
           <label>Full name <span>*</span><input autoComplete="name" value={name} onChange={e=>setName(e.target.value)} minLength={2} maxLength={80} required placeholder="Your full name"/></label>
           <label>Mobile number <span>*</span><input type="tel" autoComplete="tel" inputMode="tel" value={phone} onChange={e=>setPhone(e.target.value)} maxLength={25} minLength={10} required placeholder="10-digit mobile number"/></label>
           <label>Email address <span>*</span><input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} maxLength={200} required placeholder="name@example.com"/></label>
