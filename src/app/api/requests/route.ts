@@ -16,7 +16,7 @@ import { isServiceDetail, serviceCatalog, servicesInCategory } from "@/lib/servi
 import { normalizePhone } from "@/lib/validation";
 import { detailedIntakeSchema } from "@/lib/detailed-intake";
 import { storeDetailedIntake } from "@/lib/detailed-intake-server";
-import { closeWizardLeads } from "@/lib/leads";
+import { closeWizardLeads, completeInvitedServiceCallback } from "@/lib/leads";
 import { sendDbDownFallbackWhatsApp, sendRequestWhatsApp, whatsappAlertsEnabled } from "@/lib/whatsapp-alerts";
 
 const schema = z.object({
@@ -169,7 +169,10 @@ export async function POST(request: NextRequest) {
     const replyTo = contactPhone ?? user.whatsapp ?? user.phone ?? null;
     sendRequestWhatsApp({ name: input.contactName ?? user.name, phone: replyTo, reference: created.reference, service: service.title, details: input.description });
     // They finished the form: the "started a request" call-back is no longer needed.
-    if (replyTo) await closeWizardLeads(replyTo).catch(() => undefined);
+    if (replyTo) {
+      await closeWizardLeads(replyTo).catch(() => undefined);
+      await completeInvitedServiceCallback(replyTo,user.email,service.slug).catch(() => undefined);
+    }
     return NextResponse.json({
       ok: true, request: created, whatsappSent: whatsappAlertsEnabled(),
       ...(input.offerId ? { offer: { applied: offer.applied, ...(offer.reason ? { reason: offer.reason } : {}) } } : {}),
