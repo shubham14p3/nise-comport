@@ -9,6 +9,7 @@ import { staffAlertEmail } from "@/lib/notifications";
 import { site } from "@/lib/site";
 import { resolveService } from "@/lib/site-content";
 import { requestHrefFor } from "@/lib/services";
+import { canTakeCallbackAction } from "@/lib/service-callback-flow";
 import { formatPhone, normalizePhone } from "@/lib/validation";
 
 export type LeadInput = { name?: string; phone: string; email?: string; serviceSlug?: string; topic?: string; message?: string; page?: string; locale?: string; source?: string; details?: Record<string, unknown> };
@@ -74,6 +75,9 @@ export async function closeWizardLeads(phone: string) {
 export async function updateLead(id: string, status: (typeof LEAD_STATUSES)[number], actor: { id: string; name: string }) {
   const [existing]=await db.select().from(leads).where(eq(leads.id,id)).limit(1);
   if(!existing)throw new PublicError("That enquiry no longer exists.",404);
+  if(existing.source==="service-callback" && existing.status===status)return existing;
+  if(existing.source==="service-callback" && !canTakeCallbackAction(existing.status,status))
+    throw new PublicError("This callback action is not available at its current stage.",409);
   if(["online_invited","offline_closed"].includes(status) && existing.source!=="service-callback")
     throw new PublicError("This action is only available for service callback requests.",400);
   if(status==="online_invited"){
