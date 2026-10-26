@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { apiError, clientIp } from "@/lib/http";
 import { createLead } from "@/lib/leads";
+import { requestEmailOtp } from "@/lib/auth";
 import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
 import { normalizePhone } from "@/lib/validation";
 
@@ -22,6 +23,18 @@ export async function POST(request: NextRequest) {
     const phone = normalizePhone(input.phone);
     if (phone) await enforceRate(RATE_RULES.leadsPerPhoneDay, identity("lead-phone", phone), "We already have your number and will call you.");
     const lead = await createLead(input);
-    return NextResponse.json({ ok: true, id: lead.id }, { status: 201 });
+    // Start signup by issuing the existing one-time email challenge.
+    // A real account is only created when its email owner verifies that challenge.
+    let accountEmailStatus: "sent" | "unavailable" | "not_requested" = "not_requested";
+    if(input.source==="service-callback" && input.email){
+      try {
+        await requestEmailOtp(input.email,"signup",clientIp(request));
+        accountEmailStatus="sent";
+      } catch (reason) {
+        console.error("[callbacks] account verification email unavailable",reason instanceof Error?reason.message:"unavailable");
+        accountEmailStatus="unavailable";
+      }
+    }
+    return NextResponse.json({ ok: true, id: lead.id, accountEmailStatus }, { status: 201 });
   } catch (error) { return apiError(error); }
 }
