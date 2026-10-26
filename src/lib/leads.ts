@@ -33,11 +33,23 @@ export async function createLead(input: LeadInput) {
   return row;
 }
 
-/** Closes "started a request" call-backs once that number has sent the full request. */
-export async function closeWizardLeads(phone: string) {
+/** Close automatic wizard leads and only the matching invited callback when an application is sent. */
+export async function closeWizardLeads(phone: string, serviceSlug?: string, reference?: string) {
   const normal = normalizePhone(phone);
   if (!normal) return;
-  await db.update(leads).set({ status: "done", handledAt: new Date() }).where(and(eq(leads.phone, normal), eq(leads.source, "wizard"), eq(leads.status, "new")));
+  await db.update(leads).set({ status:"done",handledAt:new Date() })
+    .where(and(eq(leads.phone,normal),eq(leads.source,"wizard"),eq(leads.status,"new")));
+  if (!serviceSlug) return;
+  const invited=await db.select().from(leads)
+    .where(and(eq(leads.phone,normal),eq(leads.status,"online_invited"))).limit(100);
+  for(const row of invited){
+    if(!isServiceCallback(row.details)||row.details.serviceSlug!==serviceSlug)continue;
+    const details=row.details && typeof row.details==="object" ? row.details as Record<string,unknown> : {};
+    await db.update(leads).set({status:"done",handledAt:new Date(),
+      details:{...details,outcome:"online",completedAt:new Date().toISOString(),
+        ...(reference?{requestReference:reference}:{})},
+    }).where(and(eq(leads.id,row.id),eq(leads.status,"online_invited")));
+  }
 }
 
 export async function updateLead(id: string, status: CallbackStatus, actor: { id: string; name: string }) {
