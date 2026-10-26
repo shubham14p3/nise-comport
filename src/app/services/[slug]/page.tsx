@@ -13,6 +13,7 @@ import JsonLd from "@/components/json-ld";
 import { CategoryIcon, WhatsAppIcon } from "@/components/icons";
 import OfferCard from "@/components/offer-card";
 import SiteBanners from "@/components/site-banners";
+import ServiceStartPanel from "@/components/service-start-panel";
 import TestimonialsSection from "@/components/testimonials-section";
 import { resolveService, servicesInCategoryAll } from "@/lib/site-content";
 import { articlesForService } from "@/lib/content";
@@ -112,8 +113,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
           <p className="page-hero__lead">{service.description}</p>
           {editorial?.audience && <p className="page-hero__audience"><b>For:</b> {editorial.audience}</p>}
           <div className="page-hero__ctas">
-            {motor ? <Link className="btn btn--primary btn--lg" href={motor}>Get insurance quotes <ArrowRight size={18}/></Link>
-              : !comingSoon && <Link className="btn btn--primary btn--lg" href={detail ? startHref : `/request?category=${service.slug}`}>Start in 4 steps <ArrowRight size={18}/></Link>}
+            {!comingSoon && <Link className="btn btn--primary btn--lg" href={detail ? "#service-start" : `/request?category=${service.slug}`}>Request callback or apply online <ArrowRight size={18}/></Link>}
             <a className="btn btn--wa btn--lg" href={enquiry} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> WhatsApp</a>
             <a className="btn btn--glass btn--lg" href={`tel:${site.phones.primary.e164}`}><Phone size={18}/> Call</a>
           </div>
@@ -166,14 +166,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
         <p className="fine">Page reviewed: {reviewed}</p>
       </div>
       <aside className="detail__aside">
-        <div className="start-card">
-          <span className="eyebrow">READY WHEN YOU ARE</span>
-          <h3>Start {shortServiceName(title)}</h3>
-          <ol className="mini-steps"><li>Pick service</li><li>Your details</li><li>Visit time</li><li>Send</li></ol>
-          <Link className="btn btn--primary btn--block" href={startHref}>Start in 4 steps <ArrowRight size={18}/></Link>
-          <a className="btn btn--wa btn--block" href={enquiry} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> Ask on WhatsApp</a>
-          <p className="fine"><ShieldCheck size={15}/> Fees explained before we start.</p>
-        </div>
+        <ServiceStartPanel slug={service.slug} title={title} onlineHref={motor ?? startHref}/>
         <SiteBanners placement="service-page" category={categorySlug}/>
         {offers.map((offer) => <OfferCard key={offer.id} offer={offer} variant="rail"/>)}
       </aside>
@@ -184,7 +177,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
           <div className="svc-card__top"><span className="svc-card__icon">{meta && <CategoryIcon icon={meta.icon} size={22}/>}</span></div>
           <h3><Link href={`/services/${item.slug}`}>{shortServiceName(item.title)}</Link></h3>
           <p>{item.description}</p>
-          <div className="svc-card__actions"><Link className="btn btn--primary btn--sm" href={requestHrefFor(item.slug)}>Start <ArrowRight size={16}/></Link><Link className="btn btn--ghost btn--sm" href={`/services/${item.slug}`}>Details</Link></div>
+          <div className="svc-card__actions"><Link className="btn btn--primary btn--sm" href={`/services/${item.slug}#service-start`}>Choose how to start <ArrowRight size={16}/></Link><Link className="btn btn--ghost btn--sm" href={`/services/${item.slug}`}>Details</Link></div>
         </article>)}</div>
       </div>
     </section>}
