@@ -172,7 +172,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
           <span className="eyebrow">READY WHEN YOU ARE</span>
           <h3>Start {shortServiceName(title)}</h3>
           <ol className="mini-steps"><li>Pick service</li><li>Your details</li><li>Visit time</li><li>Send</li></ol>
-          <ServiceCallbackButton serviceSlug={service.slug} serviceName={title} className="btn--primary"/><Link className="btn btn--ghost btn--block" href={startHref}>Continue online <ArrowRight size={18}/></Link>
+          <ServiceCallbackButton serviceSlug={service.slug} serviceName={title} className="btn--primary btn--block"/><Link className="btn btn--ghost btn--block" href={startHref}>Continue online <ArrowRight size={18}/></Link>
           <a className="btn btn--wa btn--block" href={enquiry} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> Ask on WhatsApp</a>
           <p className="fine"><ShieldCheck size={15}/> Fees explained before we start.</p>
         </div>
