@@ -78,6 +78,7 @@ const OPS = {
   "O9c4V7mB2pL5": { method: "POST", path: "/api/admin/inbox" },
   "E3h8K1tW6qZ9": { method: "PATCH", path: "/api/admin/leads" },
   "U6c2R9pL5wM7": { method: "POST", path: "/api/admin/leads" },
+  "R7k2C9vM4pN8": { method: "PATCH", path: "/api/admin/customers" },
   "B4j9D6sX2mH7": { method: "POST", path: "/api/admin/records" },
   "F2q6N9vK3xT5": { method: "GET", path: "/api/admin/testimonials" },
   "R8m4P1wD7zL2": { method: "POST", path: "/api/admin/testimonials" },
@@ -205,6 +206,11 @@ function targetFor(operation: string, input: Record<string, unknown>) {
       const q = stringValue(input, "q", 80);
       const consent = stringValue(input, "consent", 20);
       return { method: "GET", path: `/api/admin/contacts?q=${encodeURIComponent(q)}&consent=${encodeURIComponent(consent)}` };
+    }
+    case "C2m7R4vN9kP6": {
+      const id=stringValue(input,"id",80);
+      const q=stringValue(input,"q",80);
+      return {method:"GET",path:`/api/admin/customers?${id?`id=${encodeURIComponent(id)}`:`q=${encodeURIComponent(q)}&archived=${input.archived?"1":"0"}`}`};
     }
     case "B6r1K8mQ3cT9": {
       const id = stringValue(input, "id", 80);
