@@ -160,6 +160,9 @@ export function expandFullForms(text: string): string {
 function withShortForms(query: string): string {
   const q = normaliseSearch(query);
   let out = q;
+  // Common typed forms: "pn" for PAN, and letters typed with spaces ("P A N").
+  if (/(^| )pn( |$)/.test(q)) out += " pan";
+  if (/(^| )p a n( |$)/.test(q)) out += " pan";
   for (const [short, longs] of FULL_FORMS) if (longs.some((long) => q.includes(long))) out += ` ${short}`;
   return out;
 }
