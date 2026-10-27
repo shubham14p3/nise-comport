@@ -15,7 +15,7 @@ if (mode !== "prod" && mode !== "local") {
   console.error("APP_ENV must be 'prod' or 'local'.");
   process.exit(1);
 }
-const SITE = (process.env.NEXT_PUBLIC_SITE_URL || (mode === "prod" ? "https://nisecomport.aitapri.com" : "http://localhost:3000")).trim();
+const SITE = (process.env.NEXT_PUBLIC_SITE_URL || (mode === "prod" ? "https://nisecomport.com" : "http://localhost:3000")).trim();
 try {
   const url = new URL(SITE);
   if (!["http:", "https:"].includes(url.protocol)) throw new Error("Unsupported protocol");
@@ -50,7 +50,7 @@ try {
 
 const parsedSite = new URL(SITE);
 if ((mode === "prod" && ["localhost", "127.0.0.1", "0.0.0.0"].includes(parsedSite.hostname))
-    || (mode === "local" && parsedSite.hostname === "nisecomport.aitapri.com")) {
+    || (mode === "local" && parsedSite.hostname === "nisecomport.com")) {
   console.error("APP_ENV and NEXT_PUBLIC_SITE_URL point to different environments.");
   process.exit(1);
 }
