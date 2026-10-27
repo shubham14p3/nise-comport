@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "node:crypto";
+import { hash } from "@node-rs/argon2";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
-import { contacts, serviceRequests, storedFiles } from "@/db/schema";
-import { getCurrentUser } from "@/lib/auth";
+import { contacts, serviceRequests, storedFiles, users } from "@/db/schema";
+import { getCurrentUser, requestEmailOtp } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { apiError, clientIp, readJson } from "@/lib/http";
@@ -33,7 +35,7 @@ export async function POST(request: NextRequest) {
     await enforceRate(RATE_RULES.leadsPerIpHour, identity("ip", clientIp(request)), "Too many requests.");
     await enforceRate(RATE_RULES.leadsPerPhoneDay, identity("lead-phone", phone), "We already have your request and will call you.");
     const summary = summariseInsurance(form);
-    const topic = `${form.vehicle === "car" ? "Car" : "Bike"} insurance · ${PURPOSES[form.purpose]}`;
+    const topic = `${form.vehicle === "car" ? "Car" : form.vehicle === "three-wheeler" ? "Three-wheeler" : "Two-wheeler"} insurance · ${PURPOSES[form.purpose]}`;
     const renewOn = renewalDate(form);
 
     // Keep the number (and renewal date) for reminders without changing an existing YES/STOP.
@@ -45,10 +47,25 @@ export async function POST(request: NextRequest) {
       await db.update(contacts).set({ services: [...services, { service: "insurance", renewalOn: renewOn, note: form.regNo || null }].slice(0, 12), updatedAt: new Date() }).where(eq(contacts.id, existing.id));
     }
 
-    const user = await getCurrentUser();
+    // Visitors get an account too (not verified yet). We email a sign-in code; entering it verifies the email
+    // and unlocks the verified-customer discount.
+    const visitor = await getCurrentUser();
+    let account: "created" | "unverified" | "verified" = "verified";
+    if (!visitor || visitor.role === "demo") {
+      account = "created";
+      const [existingAccount] = await db.select({ id: users.id, verifiedAt: users.emailVerifiedAt }).from(users).where(eq(users.email, form.email)).limit(1);
+      if (!existingAccount) {
+        await db.insert(users).values({ name: form.name, email: form.email, phone, whatsapp: whatsapp ?? null, passwordHash: await hash(randomBytes(32).toString("hex")), preferredContact: "whatsapp" }).onConflictDoNothing();
+      } else account = existingAccount.verifiedAt ? "verified" : "unverified";
+      if (account !== "verified") {
+        try { await requestEmailOtp(form.email, "signin", clientIp(request)); } catch (error) { console.error("[insurance] could not send verification code", error); }
+      }
+    }
+
+    const user = visitor;
     if (!user || user.role === "demo") {
       const lead = await createLead({ name: form.name, phone, topic, message: summary.join("\n"), page: "/insurance", source: "form", details: { insurance: form } });
-      return NextResponse.json({ ok: true, kind: "lead", id: lead.id }, { status: 201 });
+      return NextResponse.json({ ok: true, kind: "lead", id: lead.id, account }, { status: 201 });
     }
 
     const service = findService(form.vehicle === "car" ? "car-insurance" : "bike-insurance")!;

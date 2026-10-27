@@ -89,8 +89,8 @@ export const REJECTION_REASONS = ["No valid driving licence", "Driving under alc
 
 export type InsurancePurpose = "new" | "renew" | "expired" | "claim";
 export type InsuranceForm = {
-  purpose: InsurancePurpose; vehicle: "bike" | "car";
-  regNo?: string; make?: string; model?: string; fuel?: string; year?: string; city?: string;
+  purpose: InsurancePurpose; vehicle: "bike" | "car" | "three-wheeler";
+  regNo?: string; chassisNo?: string; engineNo?: string; make?: string; model?: string; fuel?: string; year?: string; city?: string;
   prevInsurer?: string; prevType?: string; expiry?: string; claimedLastYear?: "yes" | "no" | "unsure"; ncb?: string; policyNo?: string;
   cover?: string; term?: string; addOns?: string[]; loan?: "yes" | "no";
   incidentDate?: string; incident?: string; incidentNote?: string; fir?: "yes" | "no" | "na";
@@ -108,10 +108,12 @@ const day = (value: unknown) => typeof value === "string" && /^\d{4}-\d{2}-\d{2}
 /** Cleans the form; returns problems by field (empty object = fine). */
 export function checkInsuranceForm(raw: Record<string, unknown>): { form: InsuranceForm; problems: Record<string, string> } {
   const purpose = (["new", "renew", "expired", "claim"] as const).find((item) => item === raw.purpose) ?? "renew";
-  const vehicle = raw.vehicle === "car" ? "car" : "bike";
+  const vehicle = raw.vehicle === "car" ? "car" : raw.vehicle === "three-wheeler" ? "three-wheeler" : "bike";
   const regNo = clip(raw.regNo, 14).toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const chassisNo = clip(raw.chassisNo, 25).toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const engineNo = clip(raw.engineNo, 25).toUpperCase().replace(/[^A-Z0-9]/g, "");
   const form: InsuranceForm = {
-    purpose, vehicle, regNo, make: clip(raw.make, 40), model: clip(raw.model, 60), fuel: FUELS.includes(clip(raw.fuel, 12)) ? clip(raw.fuel, 12) : "",
+    purpose, vehicle, regNo, chassisNo, engineNo, make: clip(raw.make, 40), model: clip(raw.model, 60), fuel: FUELS.includes(clip(raw.fuel, 12)) ? clip(raw.fuel, 12) : "",
     year: /^(19[89]\d|20\d\d)$/.test(clip(raw.year, 4)) ? clip(raw.year, 4) : "", city: clip(raw.city, 40),
     prevInsurer: clip(raw.prevInsurer, 60), prevType: clip(raw.prevType, 20), expiry: day(raw.expiry),
     claimedLastYear: raw.claimedLastYear === "yes" || raw.claimedLastYear === "no" ? raw.claimedLastYear : "unsure",
@@ -127,9 +129,10 @@ export function checkInsuranceForm(raw: Record<string, unknown>): { form: Insura
   if (form.name.length < 2) problems.name = "Enter your name.";
   if (!/^(\+?91[\s-]?|0)?[6-9]\d{4}[\s-]?\d{5}$/.test(form.phone)) problems.phone = "Enter a 10-digit mobile number.";
   if (form.whatsapp && !/^(\+?91[\s-]?|0)?[6-9]\d{4}[\s-]?\d{5}$/.test(form.whatsapp)) problems.whatsapp = "Check the WhatsApp number.";
+  if (!form.email) problems.email = "Enter your email. We use it for your account and policy updates.";
   if (form.email && !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(form.email)) problems.email = "Check the email.";
-  if (purpose !== "new" && form.regNo && !/^[A-Z]{2}\d{1,2}[A-Z]{0,3}\d{1,4}$/.test(form.regNo) && !/^\d{2}BH\d{4}[A-Z]{1,2}$/.test(form.regNo)) problems.regNo = "Use the number plate format, e.g. JH05AB1234.";
-  if (purpose !== "new" && !form.regNo) problems.regNo = "Enter the vehicle number.";
+  if (form.regNo && !/^[A-Z]{2}\d{1,2}[A-Z]{0,3}\d{1,4}$/.test(form.regNo) && !/^\d{2}BH\d{4}[A-Z]{1,2}$/.test(form.regNo)) problems.regNo = "Use the number plate format, e.g. JH05AB1234.";
+  if (!form.regNo) problems.regNo = "Enter the vehicle number.";
   if (purpose === "new" && !form.make && !form.model) problems.model = "Tell us the vehicle make and model.";
   if (purpose === "claim" && !form.incident) problems.incident = "Choose what happened.";
   return { form, problems };
@@ -137,13 +140,14 @@ export function checkInsuranceForm(raw: Record<string, unknown>): { form: Insura
 
 /** Plain-text summary for staff (request note, lead message, email alert). */
 export function summariseInsurance(form: InsuranceForm) {
-  const vehicle = form.vehicle === "car" ? "Car" : "Bike";
+  const vehicle = form.vehicle === "car" ? "Car" : form.vehicle === "three-wheeler" ? "Three-wheeler" : "Two-wheeler";
   const lines = [
     `${PURPOSES[form.purpose]} · ${vehicle}${form.regNo ? ` ${form.regNo}` : ""}${form.make || form.model ? ` · ${[form.make, form.model].filter(Boolean).join(" ")}` : ""}${form.fuel ? ` · ${form.fuel}` : ""}${form.year ? ` · ${form.year}` : ""}${form.city ? ` · ${form.city}` : ""}`,
   ];
   if (form.purpose !== "new") lines.push(`Current policy: ${form.prevInsurer || "insurer not given"}${form.prevType ? ` (${form.prevType})` : ""}${form.expiry ? ` · ends ${form.expiry}` : ""}${form.policyNo ? ` · no. ${form.policyNo}` : ""} · claimed last year: ${form.claimedLastYear}${form.ncb ? ` · NCB ${form.ncb}%` : ""}`);
   if (form.purpose !== "claim") lines.push(`Wants: ${COVER_CHOICES[form.cover ?? "unsure"]}${form.term ? ` · ${form.term}` : ""}${form.addOns?.length ? ` · add-ons: ${form.addOns.map((id) => ADD_ONS.find((addOn) => addOn.id === id)?.name ?? id).join(", ")}` : ""}${form.loan === "yes" ? " · vehicle on loan" : ""}`);
   if (form.purpose === "claim") lines.push(`Claim: ${form.incident}${form.incidentDate ? ` on ${form.incidentDate}` : ""} · FIR: ${form.fir}${form.incidentNote ? ` · ${form.incidentNote}` : ""}`);
+  if (form.chassisNo || form.engineNo) lines.push(`Chassis: ${form.chassisNo || "not given"} · Engine: ${form.engineNo || "not given"}`);
   lines.push(`Contact: ${form.name} · ${form.phone}${form.whatsapp ? ` · WhatsApp ${form.whatsapp}` : ""}${form.email ? ` · ${form.email}` : ""}${form.callTime ? ` · call ${form.callTime}` : ""}`);
   if (form.note) lines.push(`Note: ${form.note}`);
   return lines;
