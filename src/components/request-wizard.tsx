@@ -393,12 +393,18 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     <form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (draft.step === 3) void submit(); else void next(); }}>
       {draft.step === 0 && <section>
         <h2>{t.s1Title}</h2><p className="wizard-form__sub">{t.s1Sub}</p>
-        <label className="input-wrap input-wrap--lg"><Search size={20} aria-hidden="true"/><span className="sr-only">{t.search}</span><input type="search" value={draft.query} onChange={(event) => update({ query: event.target.value })} placeholder={t.search}/></label>
-        <div className="chip-row" role="group" aria-label="Categories">
+        <div className="req-search" role="search">
+          <Search size={20} aria-hidden="true"/>
+          <label className="sr-only" htmlFor="req-search-input">{t.search}</label>
+          <input id="req-search-input" type="search" value={draft.query} onChange={(event) => update({ query: event.target.value })} placeholder={t.search} autoComplete="off" enterKeyHint="search"/>
+          {draft.query && <button type="button" className="req-search__clear" aria-label="Clear search" onClick={() => update({ query: "" })}><X size={16}/></button>}
+        </div>
+        <div className="chip-row chip-row--scroll req-cats" role="group" aria-label="Categories">
           <button type="button" className={draft.category === "all" ? "chip-btn is-active" : "chip-btn"} onClick={() => update({ category: "all" })}>{t.allCategories}</button>
           {categoryMeta.map((meta) => <button key={meta.slug} type="button" className={`chip-btn tone-${meta.tone}${draft.category === meta.slug ? " is-active" : ""}`} onClick={() => update({ category: meta.slug })}><CategoryIcon icon={meta.icon} size={16}/>{meta.short[locale]}</button>)}
         </div>
-        <div className="choice-grid" role="radiogroup" aria-label={t.s1Title}>
+        {draft.query.trim() && <p className="req-count" aria-live="polite">{filtered.length} {filtered.length === 1 ? "match" : "matches"} for “{draft.query.trim()}”</p>}
+        <div className={`choice-grid req-results${draft.query.trim() ? " is-searching" : ""}`} role="radiogroup" aria-label={t.s1Title}>
           {filtered.map((item) => {
             const meta = categoryMetaFor(item.category);
             const selected = draft.serviceSlug === item.slug;
