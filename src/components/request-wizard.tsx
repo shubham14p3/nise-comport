@@ -23,7 +23,7 @@ import { useLocale } from "@/lib/use-locale";
 import { whatsappHref } from "@/lib/public-contact";
 import { rememberReturn } from "@/lib/after-login";
 import { serviceName, WIZARD_EXTRA as WX } from "@/lib/i18n-forms";
-import { expandFullForms, matchesSearch, normaliseSearch } from "@/lib/search-terms";
+import { expandFullForms, matchesSearch, normaliseSearch, searchAliases } from "@/lib/search-terms";
 
 export type WizardService = { slug: string; name: string; category: string; description: string };
 type Mode = "walkin" | "callback" | "doorstep" | "online";
@@ -365,7 +365,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const searching = normaliseSearch(draft.query).length > 0;
   const filtered = services.filter((item) => {
     if (!searching) return draft.category === "all" || item.category === draft.category;
-    const haystack = normaliseSearch(`${item.name} ${serviceName(item.slug, item.name, locale)} ${item.description} ${item.category.replace(/-/g, " ")}`);
+    const haystack = normaliseSearch(`${item.name} ${serviceName(item.slug, item.name, locale)} ${item.description} ${item.category.replace(/-/g, " ")} ${searchAliases(item.name)}`);
     return matchesSearch(expandFullForms(haystack), draft.query);
   });
   const savedAddress = addresses.find((item) => item.id === draft.addressId);

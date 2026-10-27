@@ -156,18 +156,43 @@ export function expandFullForms(text: string): string {
   return out;
 }
 
+const ALIAS_STOP = new Set(["and", "of", "in", "the", "a", "for", "to", "near", "with", "on"]);
+
+/**
+ * Short forms worked out from a service title, for any service: the first letters of its words
+ * ("Driving Licence" → "dl") and the consonant shape of each word ("PAN" → "pn").
+ */
+export function searchAliases(title: string): string {
+  const words = normaliseSearch(title).split(" ").filter((word) => word && !ALIAS_STOP.has(word));
+  const out = new Set<string>();
+  if (words.length >= 2) out.add(words.map((word) => word[0]).join(""));
+  for (const word of words) if (word.length >= 3 && /^[a-z]+$/.test(word)) { const shape = skeleton(word); if (shape.length >= 2 && shape.length <= 3) out.add(shape); }
+  return [...out].join(" ");
+}
+
+/** Joins typed letters with spaces ("P A N" → "pan"). */
+function joinSpacedLetters(query: string): string {
+  const out: string[] = [];
+  let run = "";
+  for (const token of query.split(" ").filter(Boolean)) {
+    if (token.length === 1) { run += token; continue; }
+    if (run) { out.push(run); run = ""; }
+    out.push(token);
+  }
+  if (run) out.push(run);
+  return out.join(" ");
+}
+
 /** Turns a typed full name into its short form, so "permanent account number" also searches for "pan". */
 function withShortForms(query: string): string {
   const q = normaliseSearch(query);
   let out = q;
-  // Common typed forms: "pn" for PAN, and letters typed with spaces ("P A N").
-  if (/^pn$/.test(q) || /^p a n$/.test(q)) return "pan";
   for (const [short, longs] of FULL_FORMS) if (longs.some((long) => q.includes(long))) out += ` ${short}`;
   return out;
 }
 
 export function matchesSearch(haystack: string, query: string): boolean {
-  query = withShortForms(query);
+  query = withShortForms(joinSpacedLetters(normaliseSearch(query)));
   const words = normaliseSearch(query).split(" ").filter(Boolean);
   if (!words.length) return true;
   // Two-word local phrases ("प्रमाण पत्र", "जीवन प्रमाण") are handled by also trying the whole query.
@@ -176,7 +201,8 @@ export function matchesSearch(haystack: string, query: string): boolean {
   if (phrase.length && phrase.some((term) => haystack.includes(term))) return true;
   let tokens: string[] | null = null;
   return words.every((word) => {
-    if (haystack.includes(word) || expandWord(word).some((term) => haystack.includes(term))) return true;
+    const exact = word.length <= 3 ? haystack.split(" ").includes(word) : haystack.includes(word);
+    if (exact || expandWord(word).some((term) => haystack.includes(term))) return true;
     tokens ??= haystack.split(" ");
     return fuzzyWordMatch(word, tokens);
   });

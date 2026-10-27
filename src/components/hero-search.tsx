@@ -5,7 +5,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import LoopScroller from "@/components/loop-scroller";
 import { Search } from "lucide-react";
-import { matchesSearch, normaliseSearch } from "@/lib/search-terms";
+import { matchesSearch, normaliseSearch, searchAliases } from "@/lib/search-terms";
 
 const SUGGESTIONS = ["PAN card correction", "Income certificate", "Bike insurance renewal", "AEPS cash withdrawal", "Passport photo", "Exam form filling", "Voter ID", "Website for my shop"];
 
@@ -15,7 +15,7 @@ export default function HeroSearch({ popular, services = [] }: { popular: { labe
   const [query, setQuery] = useState("");
   const [hint, setHint] = useState(0);
   const matches = useMemo(() => {
-    return query.trim() ? services.filter((item) => matchesSearch(normaliseSearch(item.title), query)) : services;
+    return query.trim() ? services.filter((item) => matchesSearch(normaliseSearch(`${item.title} ${searchAliases(item.title)}`), query)) : services;
   }, [query, services]);
 
   useEffect(() => {
