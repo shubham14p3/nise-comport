@@ -193,10 +193,15 @@ function withShortForms(query: string): string {
   return out;
 }
 
+/** Filler words people put into sentences ("I need help with ..."). They are ignored when matching. */
+const FILLER = new Set(("i im me my mine want wanna need needs like how what where when which who to for the a an is are am do does can could would should please plz pls help with on in at of and or get got make some any from near about give tell know apply kaise kya kaha kahan kab chahiye chahie mujhe mera meri mere hai hain ka ki ke ko se karna karein karo kar lagega lagta aur ya bhai sir banaye banao banwao banvao karwao karvao bnao bataiye batao bata dijiye kijiye kariye hoga hogi milega milegi").split(" "));
+
 export function matchesSearch(haystack: string, query: string): boolean {
   query = withShortForms(joinSpacedLetters(normaliseSearch(query)));
-  const words = normaliseSearch(query).split(" ").filter(Boolean);
-  if (!words.length) return true;
+  const typed = normaliseSearch(query).split(" ").filter(Boolean);
+  if (!typed.length) return true;
+  const words = typed.filter((word) => !FILLER.has(word));
+  if (!words.length) return false;
   // Two-word local phrases ("प्रमाण पत्र", "जीवन प्रमाण") are handled by also trying the whole query.
   const whole = normaliseSearch(query);
   const phrase = expandWord(whole);
