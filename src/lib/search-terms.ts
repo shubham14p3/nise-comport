@@ -118,6 +118,8 @@ function skeleton(word: string) {
 /** Does a possibly misspelt word look like one of the words in the text? Handles wrong letters, missing letters, swapped letters and short forms. */
 export function fuzzyWordMatch(word: string, tokens: string[]): boolean {
   if (word.length < 3 || !/^[a-z]+$/.test(word)) return false;
+  // Four-letter words only match by sound ("paan" → "pan"), so "card" does not match "car".
+  if (word.length === 4) return tokens.some((token) => token.length >= 3 && skeleton(token) === skeleton(word));
   const limit = word.length <= 4 ? 1 : word.length <= 8 ? 2 : 3;
   const skel = skeleton(word);
   for (const token of tokens) {
@@ -206,4 +208,13 @@ export function matchesSearch(haystack: string, query: string): boolean {
     tokens ??= haystack.split(" ");
     return fuzzyWordMatch(word, tokens);
   });
+}
+
+const SMALL_WORDS = new Set(["of", "in", "to", "is", "my", "me", "on", "at", "an", "by", "or", "do", "we", "up", "it", "be", "as", "if", "no", "so", "ok", "hi", "hu", "ho", "ka", "ki", "ke", "ko", "se", "me", "ek", "hai", "kya"]);
+
+/** How many of the typed words (ignoring very short ones) match this text, allowing for typos, spaced letters and short forms. */
+export function searchScore(haystack: string, query: string): number {
+  // Two-letter short forms ("pn") count, but common small words ("of", "is") do not.
+  const words = withShortForms(joinSpacedLetters(normaliseSearch(query))).split(" ").filter((word) => word.length >= 3 || (word.length === 2 && !SMALL_WORDS.has(word)));
+  return words.reduce((total, word) => total + (matchesSearch(haystack, word) ? 1 : 0), 0);
 }
