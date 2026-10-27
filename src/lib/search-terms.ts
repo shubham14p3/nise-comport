@@ -118,6 +118,8 @@ function skeleton(word: string) {
 /** Does a possibly misspelt word look like one of the words in the text? Handles wrong letters, missing letters, swapped letters and short forms. */
 export function fuzzyWordMatch(word: string, tokens: string[]): boolean {
   if (word.length < 3 || !/^[a-z]+$/.test(word)) return false;
+  // Four-letter words only match by sound ("paan" → "pan"), so "card" does not match "car".
+  if (word.length === 4) return tokens.some((token) => token.length >= 3 && skeleton(token) === skeleton(word));
   const limit = word.length <= 4 ? 1 : word.length <= 8 ? 2 : 3;
   const skel = skeleton(word);
   for (const token of tokens) {
@@ -132,17 +134,92 @@ export function fuzzyWordMatch(word: string, tokens: string[]): boolean {
 }
 
 /** Does `haystack` (already normalised) satisfy every typed word, in English or another language, allowing for spelling mistakes? */
+/** Common short forms and the full names people type for them (and the other way round). */
+const FULL_FORMS: [string, string[]][] = [
+  ["pan", ["permanent account number", "pan card"]],
+  ["aadhaar", ["aadhar", "uidai", "unique identification"]],
+  ["itr", ["income tax return", "income tax"]],
+  ["dl", ["driving licence", "driving license"]],
+  ["gst", ["goods and services tax"]],
+  ["epic", ["voter id", "election photo identity"]],
+  ["cctv", ["closed circuit camera", "camera"]],
+  ["kyc", ["know your customer"]],
+  ["abha", ["ayushman bharat health account"]],
+  ["lpg", ["gas cylinder", "gas"]],
+  ["msme", ["udyam"]],
+  ["dmt", ["money transfer"]],
+  ["aeps", ["cash withdrawal", "banking"]],
+];
+
+/** Adds the full names for any short form found in `text`, so "PAN" also matches "permanent account number". */
+export function expandFullForms(text: string): string {
+  let out = text;
+  for (const [short, longs] of FULL_FORMS) if (new RegExp(`(^| )${short}( |$)`).test(text)) out += ` ${longs.join(" ")}`;
+  return out;
+}
+
+const ALIAS_STOP = new Set(["and", "of", "in", "the", "a", "for", "to", "near", "with", "on"]);
+
+/**
+ * Short forms worked out from a service title, for any service: the first letters of its words
+ * ("Driving Licence" → "dl") and the consonant shape of each word ("PAN" → "pn").
+ */
+export function searchAliases(title: string): string {
+  const words = normaliseSearch(title).split(" ").filter((word) => word && !ALIAS_STOP.has(word));
+  const out = new Set<string>();
+  if (words.length >= 2) out.add(words.map((word) => word[0]).join(""));
+  for (const word of words) if (word.length >= 3 && /^[a-z]+$/.test(word)) { const shape = skeleton(word); if (shape.length >= 2 && shape.length <= 3) out.add(shape); }
+  return [...out].join(" ");
+}
+
+/** Joins typed letters with spaces ("P A N" → "pan"). */
+function joinSpacedLetters(query: string): string {
+  const out: string[] = [];
+  let run = "";
+  for (const token of query.split(" ").filter(Boolean)) {
+    if (token.length === 1) { run += token; continue; }
+    if (run) { out.push(run); run = ""; }
+    out.push(token);
+  }
+  if (run) out.push(run);
+  return out.join(" ");
+}
+
+/** Turns a typed full name into its short form, so "permanent account number" also searches for "pan". */
+function withShortForms(query: string): string {
+  const q = normaliseSearch(query);
+  let out = q;
+  for (const [short, longs] of FULL_FORMS) if (longs.some((long) => q.includes(long))) out += ` ${short}`;
+  return out;
+}
+
+/** Filler words people put into sentences ("I need help with ..."). They are ignored when matching. */
+const FILLER = new Set(("i im me my mine want wanna need needs like how what where when which who to for the a an is are am do does can could would should please plz pls help with on in at of and or get got make some any from near about give tell know apply kaise kya kaha kahan kab chahiye chahie mujhe mera meri mere hai hain ka ki ke ko se karna karein karo kar lagega lagta aur ya bhai sir banaye banao banwao banvao karwao karvao bnao bataiye batao bata dijiye kijiye kariye hoga hogi milega milegi").split(" "));
+
 export function matchesSearch(haystack: string, query: string): boolean {
-  const words = normaliseSearch(query).split(" ").filter(Boolean);
-  if (!words.length) return true;
+  query = withShortForms(joinSpacedLetters(normaliseSearch(query)));
+  const typed = normaliseSearch(query).split(" ").filter(Boolean);
+  if (!typed.length) return true;
+  const words = typed.filter((word) => !FILLER.has(word));
+  if (!words.length) return false;
   // Two-word local phrases ("प्रमाण पत्र", "जीवन प्रमाण") are handled by also trying the whole query.
   const whole = normaliseSearch(query);
   const phrase = expandWord(whole);
   if (phrase.length && phrase.some((term) => haystack.includes(term))) return true;
   let tokens: string[] | null = null;
   return words.every((word) => {
-    if (haystack.includes(word) || expandWord(word).some((term) => haystack.includes(term))) return true;
+    const exact = word.length <= 3 ? haystack.split(" ").includes(word) : haystack.includes(word);
+    if (exact || expandWord(word).some((term) => haystack.includes(term))) return true;
     tokens ??= haystack.split(" ");
     return fuzzyWordMatch(word, tokens);
   });
+}
+
+const SMALL_WORDS = new Set(["of", "in", "to", "is", "my", "me", "on", "at", "an", "by", "or", "do", "we", "up", "it", "be", "as", "if", "no", "so", "ok", "hi", "hu", "ho", "ka", "ki", "ke", "ko", "se", "me", "ek", "hai", "kya"]);
+
+/** How many of the typed words (ignoring very short ones) match this text, allowing for typos, spaced letters and short forms. */
+export function searchScore(haystack: string, query: string): number {
+  // Two-letter short forms ("pn") count, but common small words ("of", "is") do not.
+  const words = withShortForms(joinSpacedLetters(normaliseSearch(query))).split(" ").filter((word) => word.length >= 3 || (word.length === 2 && !SMALL_WORDS.has(word)));
+  return words.reduce((total, word) => total + (matchesSearch(haystack, word) ? 1 : 0), 0);
 }

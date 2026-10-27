@@ -1,6 +1,6 @@
 # NiSE COMPORT deployment — MilesWeb Node.js
 
-Production URL: **https://nisecomport.aitapri.com**. Node listens on port **3020**. Working directory: `~/nisecomport.aitapri.com`. Startup command: **`npm start`**. Node.js version: **26.12.1**.
+Production URL: **https://nisecomport.com**. Node listens on port **3020**. Working directory: `~/nisecomport.com`. Startup command: **`npm start`**. Node.js version: **26.12.1**.
 
 > MilesWeb runs out of process slots when compiling Next.js (`EAGAIN`). **Do not run `npm run build`, `npm run release`, `npm run init`, `npm run db:setup`, or `npm run db:migrate` on MilesWeb.** The existing PostgreSQL database is retained unchanged; inspect schema and obtain approval before any migration. Build locally, ship only the production build, and restart the panel app.
 
@@ -11,7 +11,7 @@ Keep the following in the **server's own** `.env.local` (outside Git):
 ```dotenv
 APP_ENV=prod
 INTERNAL_API_PORT=3020
-NEXT_PUBLIC_SITE_URL=https://nisecomport.aitapri.com
+NEXT_PUBLIC_SITE_URL=https://nisecomport.com
 CANONICAL_HOST_REDIRECT=true
 ```
 
@@ -35,7 +35,7 @@ The browser's `NEXT_PUBLIC_API_ENVELOPE_PUBLIC_JWK` is baked into the local buil
 The browser uses relative API requests. Each supported hostname can serve sign-in
 without relaxing the encrypted API's same-origin security policy. With
 `CANONICAL_HOST_REDIRECT=true`, both the `www` and non-`www` forms of
-`nisecomport.aitapri.com`, `nicecompote.aitapri.com`, `nicecompote.com`,
+`nisecomport.com`, `nicecompote.aitapri.com`, `nicecompote.com`,
 and the earlier documented `nisecomport.com` redirect to
 `NEXT_PUBLIC_SITE_URL`. The original path and query string are preserved.
 Host-only login cookies are **not** shared across unrelated domains; routing
@@ -45,7 +45,7 @@ To activate another address, **before testing login**, configure its DNS
 (A/AAAA or CNAME as appropriate), cPanel/hosting domain binding and valid HTTPS
 certificate for the exact hostname, including the `www` version. Domain aliases
 alone do not provision DNS, SSL or a virtual host. Keep
-`NEXT_PUBLIC_SITE_URL=https://nisecomport.aitapri.com` while that is the
+`NEXT_PUBLIC_SITE_URL=https://nisecomport.com` while that is the
 live primary domain; for a custom-domain migration, switch the canonical URL,
 rebuild the Next.js frontend, deploy it and test sign-in and redirects. Add
 new exact hostnames (not wildcard patterns) via `SITE_DOMAIN_ALIASES` if
@@ -69,9 +69,9 @@ The `.next/` directory is intentionally ignored by Git. Archive it directly; exc
 
 ```bash
 tar -czf nise-next.tar.gz --exclude='.next/cache' --exclude='.next/dev' .next
-scp -P 22 nise-next.tar.gz nisecomp2@45.199.139.25:~/nisecomport.aitapri.com/
+scp -P 22 nise-next.tar.gz nisecomp2@45.199.139.25:~/nisecomport.com/
 # Update the two verification scripts as well; these are NOT included in .next.
-scp -P 22 scripts/check-build.mjs scripts/api-smoke-check.mjs nisecomp2@45.199.139.25:~/nisecomport.aitapri.com/scripts/
+scp -P 22 scripts/check-build.mjs scripts/api-smoke-check.mjs nisecomp2@45.199.139.25:~/nisecomport.com/scripts/
 ```
 
 Do **not** upload Windows `node_modules/` to Linux. Leave Linux-installed production dependencies on the server.
@@ -83,7 +83,7 @@ Do **not** upload Windows `node_modules/` to Linux. Leave Linux-installed produc
 
 ```bash
 ssh -p 22 nisecomp2@45.199.139.25
-cd ~/nisecomport.aitapri.com
+cd ~/nisecomport.com
 mv .next .next-previous
 tar -xzf nise-next.tar.gz
 node scripts/check-build.mjs
@@ -98,8 +98,8 @@ node scripts/check-build.mjs
 **Public endpoints (safe checks):**
 
 ```bash
-curl -I --max-time 15 https://nisecomport.aitapri.com/
-curl -i --max-time 15 https://nisecomport.aitapri.com/api/health
+curl -I --max-time 15 https://nisecomport.com/
+curl -i --max-time 15 https://nisecomport.com/api/health
 curl -i --max-time 15 http://127.0.0.1:3020/api/health
 ```
 

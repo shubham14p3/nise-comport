@@ -22,7 +22,7 @@ the answer joins the same ticket.
    - Complete server SMTP settings take priority for outgoing mail; otherwise a complete encrypted UI SMTP profile is used. SMTP and IMAP credentials may use the same account only if the provider supports both protocols.
    - Do not assume emails addressed to `help@aitapri.com` reach another domain's mailbox without an actual mailbox or forwarding rule. Verify delivery in webmail first.
 4. Add a cPanel cron job, every 5 minutes, pointing to the **currently deployed canonical address**:
-   `curl -s -X POST -H "Authorization: Bearer YOUR_CRON_SECRET" https://nisecomport.aitapri.com/api/cron/mail`
+   `curl -s -X POST -H "Authorization: Bearer YOUR_CRON_SECRET" https://nisecomport.com/api/cron/mail`
 5. In **Team**, give staff the **Messages** permission.
 
 ## How tickets behave

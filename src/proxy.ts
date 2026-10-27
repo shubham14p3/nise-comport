@@ -10,7 +10,7 @@ const PRIVATE_API_PREFIXES = [
 ];
 
 function canonicalHost() {
-  try { return new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://nisecomport.aitapri.com").host; } catch { return "nisecomport.aitapri.com"; }
+  try { return new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://nisecomport.com").host; } catch { return "nisecomport.com"; }
 }
 
 function isLocal(host: string) {

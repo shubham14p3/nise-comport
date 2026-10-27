@@ -30,7 +30,7 @@ export function internalApiHeaders(secret: string, targetUrl: URL): Headers {
 
 /** Exact public site hostnames, with optional www on each. No wildcard suffix matching. */
 const PUBLIC_SITE_DOMAINS = [
-  "nisecomport.aitapri.com", // Current deployed site.
+  "nisecomport.com", // Current deployed site.
   "nicecompote.aitapri.com", // Requested alternate subdomain.
   "nicecompote.com", // Planned custom domain.
   "nisecomport.com", // Existing branded domain in site documentation.

@@ -14,6 +14,8 @@ import { liveOffers } from "@/lib/offers";
 import { useLocale } from "@/lib/use-locale";
 import { findGuide, findVariant, HELP_GUIDES, type HelpGuide } from "@/lib/help-docs";
 import { secureApi } from "@/lib/secure-api-client";
+import { expandFullForms, searchAliases, searchScore } from "@/lib/search-terms";
+import { isKnownRecord, loadSearchRecords, type SearchRecords } from "@/lib/search-records";
 
 export type ChatService = { slug: string; title: string; category: string; keywords: string[] };
 type TopicId = keyof Dictionary["chat"]["topics"];
@@ -64,22 +66,21 @@ function normalise(text: string) {
 }
 
 function matchTopic(text: string): TopicId | null {
-  const clean = ` ${normalise(text)} `;
   let best: TopicId | null = null; let bestScore = 0;
   for (const topic of TOPICS) {
-    const score = TOPIC_WORDS[topic].reduce((total, word) => total + (clean.includes(` ${word} `) || (word.length > 3 && clean.includes(word)) ? word.length : 0), 0);
+    const score = searchScore(expandFullForms(normalise(`${TOPIC_WORDS[topic].join(" ")} ${searchAliases(TOPIC_WORDS[topic].join(" "))}`)), text);
     if (score > bestScore) { best = topic; bestScore = score; }
   }
   return best;
 }
 
-function matchServices(text: string, services: ChatService[]) {
-  const words = normalise(text).split(" ").filter((word) => word.length > 2);
-  if (!words.length) return [];
+function matchServices(text: string, services: ChatService[], records: SearchRecords | null) {
   return services
     .map((service) => {
-      const haystack = normalise(`${service.title} ${service.keywords.join(" ")}`);
-      return { service, score: words.reduce((total, word) => total + (haystack.includes(word) ? 1 : 0), 0) };
+      const haystack = expandFullForms(normalise(`${service.title} ${service.keywords.join(" ")} ${searchAliases(service.title)}`));
+      // A known search record for this service counts as a strong match.
+      const score = isKnownRecord(records, service.slug, text) ? 100 : searchScore(haystack, text);
+      return { service, score };
     })
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)
@@ -252,9 +253,11 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
     if (topic) { answerTopic(topic, text); return; }
     setMessages((list) => [...list, { id: newId(), from: "user", text }]);
     setContext(text);
-    const found = matchServices(text, services);
-    if (found.length) botSay({ text: t.matches, services: found, actions: [{ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${text}`), kind: "wa" }] });
-    else botSay({ text: t.noMatch, callback: true, actions: [{ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${text}`), kind: "wa" }, { label: t.callUs, href: `tel:${phone}`, kind: "tel" }] });
+    void loadSearchRecords().then((records) => {
+      const found = matchServices(text, services, records);
+      if (found.length) botSay({ text: t.matches, services: found, actions: [{ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${text}`), kind: "wa" }] });
+      else botSay({ text: t.noMatch, callback: true, actions: [{ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${text}`), kind: "wa" }, { label: t.callUs, href: `tel:${phone}`, kind: "tel" }] });
+    });
   }
 
   function restart() {
