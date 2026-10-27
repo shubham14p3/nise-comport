@@ -6,18 +6,19 @@ import { db } from "@/lib/db";
 import { logActivity } from "@/lib/activity";
 import { PublicError } from "@/lib/errors";
 import { deliverNotifications, queueNotification } from "@/lib/notifications";
-import { sanitizePermissions, type Permission } from "@/lib/permissions";
+import { sanitizePermissions, sanitizeScope, SCOPE_PREFIX, type Permission } from "@/lib/permissions";
+import { serviceCatalog } from "@/lib/services";
 import { site } from "@/lib/site";
 import { openWorkCount } from "@/lib/auth";
 import { cleanName, looksLikeEmail, normalizeEmail, normalizePhone, passwordProblem } from "@/lib/validation";
 
-export type StaffMember = { id: string; name: string; email: string; phone: string | null; role: string; permissions: Permission[]; verified: boolean; createdAt: string; disabled: boolean; tempPassword: boolean };
+export type StaffMember = { id: string; name: string; email: string; phone: string | null; role: string; permissions: Permission[]; categories: string[]; verified: boolean; createdAt: string; disabled: boolean; tempPassword: boolean };
 
 export async function listStaff(): Promise<StaffMember[]> {
   const rows = await db.select().from(users).where(and(inArray(users.role, ["admin", "staff"]), isNull(users.deletedAt))).orderBy(asc(users.role), asc(users.name));
   return rows.map((row) => ({
     id: row.id, name: row.name, email: row.email, phone: row.phone, role: row.role,
-    permissions: row.role === "admin" ? [] : sanitizePermissions(row.permissions), verified: Boolean(row.emailVerifiedAt), createdAt: row.createdAt.toISOString(), disabled: Boolean(row.disabledAt), tempPassword: row.mustChangePassword,
+    permissions: row.role === "admin" ? [] : sanitizePermissions(row.permissions), categories: row.role === "admin" ? [] : sanitizeScope(row.permissions), verified: Boolean(row.emailVerifiedAt), createdAt: row.createdAt.toISOString(), disabled: Boolean(row.disabledAt), tempPassword: row.mustChangePassword,
   }));
 }
 
@@ -60,6 +61,18 @@ const roleWord = (role: string) => (role === "admin" ? "an owner (administrator)
  * password. A new person gets an account with a temporary password (generated, or the one the owner
  * typed) that is emailed to them and shown to the owner once; they must replace it after signing in.
  */
+/** Turns what the form sent ("requests", "scope:pan-card" …) into the stored list, checking category names. */
+function storedAccess(input: unknown) {
+  const permissions = sanitizePermissions(input);
+  const categories = sanitizeScope(input);
+  const known = new Set(serviceCatalog.map((group) => group.slug));
+  const unknown = categories.filter((slug) => !known.has(slug));
+  if (unknown.length) throw new PublicError("One of the service categories is not recognised. Refresh the page and try again.", 400);
+  // Category limits only mean something for requests, so keep them only when requests is ticked.
+  const scoped = permissions.includes("requests") ? categories : [];
+  return { permissions, categories: scoped, stored: [...permissions, ...scoped.map((slug) => `${SCOPE_PREFIX}${slug}`)] };
+}
+
 export async function addStaff(
   input: { email: string; name: string; phone?: string; role?: "staff" | "admin"; permissions: string[]; password?: string },
   actor: { id: string; name: string },
@@ -67,7 +80,8 @@ export async function addStaff(
   const role = input.role === "admin" ? "admin" : "staff";
   const email = normalizeEmail(input.email);
   if (!looksLikeEmail(email)) throw new PublicError("Enter a valid email address.", 400, { fields: { email: "Enter a valid email address." } });
-  const permissions = role === "admin" ? [] : sanitizePermissions(input.permissions);
+  const access = role === "admin" ? { permissions: [] as Permission[], categories: [] as string[], stored: [] as string[] } : storedAccess(input.permissions);
+  const { permissions, stored } = access;
   if (role === "staff" && !permissions.length) throw new PublicError("Tick at least one thing this person may do.", 400, { fields: { permissions: "Choose at least one." } });
   const phone = cleanPhoneInput(input.phone);
   const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1);
@@ -79,7 +93,7 @@ export async function addStaff(
     if (existing.role === "admin") throw new PublicError("This person is already an owner.", 409);
     if (existing.role === "demo") throw new PublicError("The demo account can’t be staff.", 409);
     if (existing.role === "staff" && role === "staff") throw new PublicError("This person is already on the team. Edit them in the list below.", 409);
-    await db.update(users).set({ role, permissions, ...(phone ? { phone } : {}), updatedAt: new Date() }).where(eq(users.id, existing.id));
+    await db.update(users).set({ role, permissions: stored, ...(phone ? { phone } : {}), updatedAt: new Date() }).where(eq(users.id, existing.id));
     userId = existing.id;
     displayName = existing.name;
   } else {
@@ -87,7 +101,7 @@ export async function addStaff(
     if (name.length < 2) throw new PublicError("Enter the person’s name.", 400, { fields: { name: "Enter a name." } });
     tempPassword = chooseTempPassword(input.password, { email, name });
     const [row] = await db.insert(users).values({
-      email, name, phone, role, permissions, passwordHash: await hash(tempPassword), mustChangePassword: true, emailVerifiedAt: new Date(),
+      email, name, phone, role, permissions: stored, passwordHash: await hash(tempPassword), mustChangePassword: true, emailVerifiedAt: new Date(),
     }).returning({ id: users.id });
     userId = row.id;
     displayName = name;
@@ -155,9 +169,9 @@ export async function updateStaff(id: string, patch: StaffPatch, actor: { id: st
   if (nextRole === "admin") {
     if (member.permissions.length) set.permissions = [];
   } else if (patch.permissions !== undefined || nextRole !== member.role) {
-    const permissions = sanitizePermissions(patch.permissions ?? member.permissions);
-    if (!permissions.length) throw new PublicError("Keep at least one permission, or remove the person from the team.", 400);
-    set.permissions = permissions; notes.push("access");
+    const access = storedAccess(patch.permissions ?? member.permissions);
+    if (!access.permissions.length) throw new PublicError("Keep at least one permission, or remove the person from the team.", 400);
+    set.permissions = access.stored; notes.push("access");
   }
   if (patch.disabled !== undefined && Boolean(member.disabledAt) !== patch.disabled) {
     if (self) throw new PublicError("You can’t disable yourself.", 400);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requirePermission } from "@/lib/auth";
+import { requireAnyPermission } from "@/lib/auth";
 import { apiError, readJson } from "@/lib/http";
 import { PublicError } from "@/lib/errors";
 import { cancelPayment, createPaymentRequest, listPayments, markPaid, paymentOptions, paymentSummary, processRefund } from "@/lib/payments";
@@ -21,7 +21,7 @@ const schema = z.discriminatedUnion("action", [
 
 export async function GET(request: NextRequest) {
   try {
-    await requirePermission("requests");
+    await requireAnyPermission(["payments", "requests"]);
     const status = request.nextUrl.searchParams.get("status") ?? "";
     const options = paymentOptions();
     const page = Math.max(0, Number(request.nextUrl.searchParams.get("page")) || 0);
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requirePermission("requests");
+    const user = await requireAnyPermission(["payments", "requests"]);
     const input = schema.parse(await readJson(request));
     if (input.action === "create") {
       const fee = input.serviceFee!==undefined?Number(input.serviceFee):Number(input.amount??0);

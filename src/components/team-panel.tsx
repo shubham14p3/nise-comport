@@ -2,19 +2,33 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { BadgeCheck, Copy, Crown, KeyRound, Mail, Pencil, Phone, Search, ShieldCheck, Trash2, UserMinus, UserPlus, UsersRound } from "lucide-react";
-import { PERMISSION_INFO, STAFF_PERMISSIONS, type Permission } from "@/lib/permissions";
+import { PERMISSION_INFO, STAFF_PERMISSIONS, SCOPE_PREFIX } from "@/lib/permissions";
+import { serviceCatalog } from "@/lib/services";
 import { secureApi } from "@/lib/secure-api-client";
 import { AdminPager, useAdminPagination } from "@/components/admin-pager";
 
-type Member = { id: string; name: string; email: string; phone: string | null; role: string; permissions: Permission[]; verified: boolean; createdAt: string; disabled: boolean; tempPassword: boolean };
+type Member = { id: string; name: string; email: string; phone: string | null; role: string; permissions: string[]; categories: string[]; verified: boolean; createdAt: string; disabled: boolean; tempPassword: boolean };
 type Role = "staff" | "admin";
-type Edit = { name: string; email: string; phone: string; role: Role; permissions: Permission[] };
+type Edit = { name: string; email: string; phone: string; role: Role; permissions: string[] };
 
-function PermissionBoxes({ value, onChange, disabled }: { value: Permission[]; onChange: (next: Permission[]) => void; disabled?: boolean }) {
-  return <div className="perm-grid">{STAFF_PERMISSIONS.map((permission) => <label key={permission} className={value.includes(permission) ? "perm is-on" : "perm"}>
-    <input type="checkbox" checked={value.includes(permission)} disabled={disabled} onChange={(event) => onChange(event.target.checked ? [...value, permission] : value.filter((item) => item !== permission))}/>
-    <span><b>{PERMISSION_INFO[permission].label}</b><small>{PERMISSION_INFO[permission].detail}</small></span>
-  </label>)}</div>;
+/** Permissions and service categories share one list: "requests", "payments", … and "scope:<category>". */
+function PermissionBoxes({ value, onChange, disabled }: { value: string[]; onChange: (next: string[]) => void; disabled?: boolean }) {
+  const scoped = value.includes("requests");
+  return <>
+    <div className="perm-grid">{STAFF_PERMISSIONS.map((permission) => <label key={permission} className={value.includes(permission) ? "perm is-on" : "perm"}>
+      <input type="checkbox" checked={value.includes(permission)} disabled={disabled} onChange={(event) => onChange(event.target.checked
+        ? [...value, permission]
+        : value.filter((item) => item !== permission && !(permission === "requests" && item.startsWith(SCOPE_PREFIX))))}/>
+      <span><b>{PERMISSION_INFO[permission].label}</b><small>{PERMISSION_INFO[permission].detail}</small></span>
+    </label>)}</div>
+    {scoped && <div className="scope-box">
+      <span className="field__label">Which service categories? <em>leave all unticked for every category</em></span>
+      <div className="perm-grid">{serviceCatalog.map((group) => { const key = SCOPE_PREFIX + group.slug; const on = value.includes(key); return <label key={group.slug} className={on ? "perm is-on" : "perm"}>
+        <input type="checkbox" checked={on} disabled={disabled} onChange={(event) => onChange(event.target.checked ? [...value, key] : value.filter((item) => item !== key))}/>
+        <span><b>{group.title}</b></span>
+      </label>; })}</div>
+    </div>}
+  </>;
 }
 
 function RolePick({ value, onChange, disabled }: { value: Role; onChange: (role: Role) => void; disabled?: boolean }) {
@@ -36,7 +50,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<Role>("staff");
   const [password, setPassword] = useState("");
-  const [permissions, setPermissions] = useState<Permission[]>(["requests"]);
+  const [permissions, setPermissions] = useState<string[]>(["requests"]);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -69,7 +83,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
 
   function startEdit(member: Member) {
     setEditing(member.id); setError(""); setNotice("");
-    setEdit({ name: member.name, email: member.email, phone: member.phone ?? "", role: member.role === "admin" ? "admin" : "staff", permissions: member.permissions.length ? member.permissions : ["requests"] });
+    setEdit({ name: member.name, email: member.email, phone: member.phone ?? "", role: member.role === "admin" ? "admin" : "staff", permissions: member.permissions.length ? [...member.permissions, ...member.categories.map((slug) => SCOPE_PREFIX + slug)] : ["requests"] });
   }
 
   async function patch(member: Member, body: Record<string, unknown>, done: string) {
@@ -140,7 +154,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
           </div>
         </> : <>
           {member.role === "admin" ? <p className="admin-empty">Full access to every area.</p>
-            : <p className="admin-empty">{member.permissions.map((permission) => PERMISSION_INFO[permission].label).join(" · ") || "No access"}</p>}
+            : <p className="admin-empty">{member.permissions.map((permission) => PERMISSION_INFO[permission].label).join(" · ") || "No access"}{member.permissions.includes("requests") && (member.categories.length ? ` · Categories: ${member.categories.map((slug) => serviceCatalog.find((group) => group.slug === slug)?.title ?? slug).join(", ")}` : " · All categories")}</p>}
           <div className="staff-card__actions">
             <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => startEdit(member)}><Pencil size={15}/> Edit</button>
             {!isMe && <>

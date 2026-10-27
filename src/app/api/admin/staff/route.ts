@@ -16,7 +16,7 @@ export async function GET() {
 
 const addSchema = z.object({
   email: z.string().trim().min(3).max(254), name: z.string().trim().max(100).default(""), phone: z.string().trim().max(20).optional(),
-  role: z.enum(["staff", "admin"]).default("staff"), permissions: z.array(z.string().max(40)).max(10).default([]), password: z.string().max(128).optional(),
+  role: z.enum(["staff", "admin"]).default("staff"), permissions: z.array(z.string().max(40)).max(80).default([]), password: z.string().max(128).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 const patchSchema = z.object({
   id: z.uuid(),
   name: z.string().trim().max(100).optional(), email: z.string().trim().max(254).optional(), phone: z.string().trim().max(20).nullable().optional(),
-  role: z.enum(["staff", "admin"]).optional(), permissions: z.array(z.string().max(40)).max(10).optional(),
+  role: z.enum(["staff", "admin"]).optional(), permissions: z.array(z.string().max(40)).max(80).optional(),
   disabled: z.boolean().optional(), remove: z.boolean().optional(),
   resetPassword: z.boolean().optional(), password: z.string().max(128).optional(), delete: z.boolean().optional(),
 });

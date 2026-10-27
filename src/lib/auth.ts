@@ -397,6 +397,14 @@ export async function requirePermission(permission: Permission) {
   return user;
 }
 
+/** Admin, or a staff member who has at least one of these permissions. */
+export async function requireAnyPermission(permissions: Permission[]) {
+  const user = await getCurrentUser();
+  if (!user || !(user.role === "admin" || user.role === "staff")) throw new PublicError("Staff access is required.", 403, { code: "forbidden" });
+  if (!permissions.some((permission) => hasPermission(user, permission))) throw new PublicError("You don’t have access to this part of the admin area. Ask the owner to add it to your account.", 403, { code: "forbidden" });
+  return user;
+}
+
 export async function destroySession() {
   const cookieStore = await cookies();
   if (cookieStore.get(DEMO_COOKIE)) { cookieStore.delete(DEMO_COOKIE); return; }

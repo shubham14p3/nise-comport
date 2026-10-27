@@ -376,7 +376,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "gallery", label: "Gallery photos", icon: Images, needs: "content" },
   { id: "testimonials", label: "Testimonials", icon: Star, needs: "content" },
   { id: "campaigns", label: "WhatsApp", icon: Megaphone, needs: "campaigns" },
-  { id: "chats", label: "WhatsApp chats", icon: Megaphone, needs: "campaigns" },
+  { id: "chats", label: "WhatsApp chats", icon: Megaphone, needs: "whatsapp" },
   { id: "contacts", label: "Contacts", icon: Contact, needs: "campaigns" },
   { id: "outreach", label: "Birthdays & renewals", icon: Cake, needs: "staff" },
   { id: "integrations", label: "System & connections", icon: ShieldCheck, needs: "admin" },
@@ -388,7 +388,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "hardware", label: "Hardware parts", icon: Database, needs: "content" },
   { id: "loyalty", label: "Loyalty credit", icon: WalletCards, needs: "wallet" },
   { id: "legal", label: "Legal pages", icon: LayoutTemplate, needs: "content" },
-  { id: "payments", label: "Payments", icon: WalletCards, needs: "requests" },
+  { id: "payments", label: "Payments", icon: WalletCards, needs: "payments" },
 ];
 
 const NAV_SECTIONS = [
