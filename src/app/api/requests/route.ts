@@ -1,3 +1,4 @@
+import { captureCustomer } from "@/lib/customer-capture";
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq, inArray, isNull, ne } from "drizzle-orm";
 import { z } from "zod";
@@ -167,6 +168,7 @@ export async function POST(request: NextRequest) {
       ...(coupon.applied ? [`Coupon: ${coupon.code} (₹${coupon.value} off the service charge if it is ₹${coupon.minimum} or more)`] : []),
     ], found && "categorySlug" in found ? String(found.categorySlug) : undefined);
     const replyTo = contactPhone ?? user.whatsapp ?? user.phone ?? null;
+    await captureCustomer({ name: input.contactName ?? user.name, phone: replyTo, email: user.email, serviceSlug: currentService.slug, source: "request" });
     sendRequestWhatsApp({ name: input.contactName ?? user.name, phone: replyTo, reference: created.reference, service: service.title, details: input.description });
     // They finished the form: the "started a request" call-back is no longer needed.
     if (replyTo) {
