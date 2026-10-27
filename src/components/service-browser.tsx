@@ -6,7 +6,7 @@ import { ArrowRight, Search, SlidersHorizontal, X } from "lucide-react";
 import { CategoryIcon } from "@/components/icons";
 import ShowMore, { useShowMore } from "@/components/show-more";
 import { categoryMeta } from "@/lib/categories";
-import { matchesSearch, normaliseSearch } from "@/lib/search-terms";
+import { expandFullForms, matchesSearch, normaliseSearch } from "@/lib/search-terms";
 import { tr } from "@/lib/tr";
 import type { Locale } from "@/lib/i18n";
 
@@ -39,8 +39,9 @@ export default function ServiceBrowser({ services, lang = "en" }: { services: Br
   }
 
   const results = services.filter((service) => {
-    if (category !== "all" && service.category !== category) return false;
-    return matchesSearch(normaliseSearch(`${service.title} ${service.description} ${service.keywords.join(" ")}`), query);
+    // Searching covers every category; the category filter only applies when nothing is typed.
+    if (!normaliseSearch(query)) return category === "all" || service.category === category;
+    return matchesSearch(expandFullForms(normaliseSearch(`${service.title} ${service.description} ${service.keywords.join(" ")} ${service.category.replace(/-/g, " ")}`)), query);
   });
 
   const paging = useShowMore(12, `${query}|${category}`);

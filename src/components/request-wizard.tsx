@@ -23,6 +23,7 @@ import { useLocale } from "@/lib/use-locale";
 import { whatsappHref } from "@/lib/public-contact";
 import { rememberReturn } from "@/lib/after-login";
 import { serviceName, WIZARD_EXTRA as WX } from "@/lib/i18n-forms";
+import { expandFullForms, matchesSearch, normaliseSearch } from "@/lib/search-terms";
 
 export type WizardService = { slug: string; name: string; category: string; description: string };
 type Mode = "walkin" | "callback" | "doorstep" | "online";
@@ -360,10 +361,12 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     </div></div>;
   }
 
+  // Typing a search looks across every service (all categories, all languages, short and full names).
+  const searching = normaliseSearch(draft.query).length > 0;
   const filtered = services.filter((item) => {
-    if (draft.category !== "all" && item.category !== draft.category) return false;
-    const words = draft.query.toLowerCase().split(/\s+/).filter(Boolean);
-    return words.every((word) => `${item.name} ${serviceName(item.slug, item.name, locale)} ${item.description}`.toLowerCase().includes(word));
+    if (!searching) return draft.category === "all" || item.category === draft.category;
+    const haystack = normaliseSearch(`${item.name} ${serviceName(item.slug, item.name, locale)} ${item.description} ${item.category.replace(/-/g, " ")}`);
+    return matchesSearch(expandFullForms(haystack), draft.query);
   });
   const savedAddress = addresses.find((item) => item.id === draft.addressId);
   const modeCards: { id: Mode; icon: typeof Store; title: string; sub: string; soon?: boolean }[] = [
@@ -403,7 +406,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
           <button type="button" className={draft.category === "all" ? "chip-btn is-active" : "chip-btn"} onClick={() => update({ category: "all" })}>{t.allCategories}</button>
           {categoryMeta.map((meta) => <button key={meta.slug} type="button" className={`chip-btn tone-${meta.tone}${draft.category === meta.slug ? " is-active" : ""}`} onClick={() => update({ category: meta.slug })}><CategoryIcon icon={meta.icon} size={16}/>{meta.short[locale]}</button>)}
         </div>
-        {draft.query.trim() && <p className="req-count" aria-live="polite">{filtered.length} {filtered.length === 1 ? "match" : "matches"} for “{draft.query.trim()}”</p>}
+        {draft.query.trim() && <p className="req-count" aria-live="polite">{filtered.length} {filtered.length === 1 ? "match" : "matches"} for “{draft.query.trim()}” in all services</p>}
         <div className={`choice-grid req-results${draft.query.trim() ? " is-searching" : ""}`} role="radiogroup" aria-label={t.s1Title}>
           {filtered.map((item) => {
             const meta = categoryMetaFor(item.category);

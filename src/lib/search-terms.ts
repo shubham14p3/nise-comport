@@ -132,7 +132,40 @@ export function fuzzyWordMatch(word: string, tokens: string[]): boolean {
 }
 
 /** Does `haystack` (already normalised) satisfy every typed word, in English or another language, allowing for spelling mistakes? */
+/** Common short forms and the full names people type for them (and the other way round). */
+const FULL_FORMS: [string, string[]][] = [
+  ["pan", ["permanent account number", "pan card"]],
+  ["aadhaar", ["aadhar", "uidai", "unique identification"]],
+  ["itr", ["income tax return", "income tax"]],
+  ["dl", ["driving licence", "driving license"]],
+  ["gst", ["goods and services tax"]],
+  ["epic", ["voter id", "election photo identity"]],
+  ["cctv", ["closed circuit camera", "camera"]],
+  ["kyc", ["know your customer"]],
+  ["abha", ["ayushman bharat health account"]],
+  ["lpg", ["gas cylinder", "gas"]],
+  ["msme", ["udyam"]],
+  ["dmt", ["money transfer"]],
+  ["aeps", ["cash withdrawal", "banking"]],
+];
+
+/** Adds the full names for any short form found in `text`, so "PAN" also matches "permanent account number". */
+export function expandFullForms(text: string): string {
+  let out = text;
+  for (const [short, longs] of FULL_FORMS) if (new RegExp(`(^| )${short}( |$)`).test(text)) out += ` ${longs.join(" ")}`;
+  return out;
+}
+
+/** Turns a typed full name into its short form, so "permanent account number" also searches for "pan". */
+function withShortForms(query: string): string {
+  const q = normaliseSearch(query);
+  let out = q;
+  for (const [short, longs] of FULL_FORMS) if (longs.some((long) => q.includes(long))) out += ` ${short}`;
+  return out;
+}
+
 export function matchesSearch(haystack: string, query: string): boolean {
+  query = withShortForms(query);
   const words = normaliseSearch(query).split(" ").filter(Boolean);
   if (!words.length) return true;
   // Two-word local phrases ("प्रमाण पत्र", "जीवन प्रमाण") are handled by also trying the whole query.
