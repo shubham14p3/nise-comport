@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import LoopScroller from "@/components/loop-scroller";
 import { Search } from "lucide-react";
 import { matchesSearch, normaliseSearch, searchAliases } from "@/lib/search-terms";
+import { isKnownRecord, loadSearchRecords, type SearchRecords } from "@/lib/search-records";
 
 const SUGGESTIONS = ["PAN card correction", "Income certificate", "Bike insurance renewal", "AEPS cash withdrawal", "Passport photo", "Exam form filling", "Voter ID", "Website for my shop"];
 
@@ -14,9 +15,11 @@ export default function HeroSearch({ popular, services = [] }: { popular: { labe
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [hint, setHint] = useState(0);
+  const [records, setRecords] = useState<SearchRecords | null>(null);
+  useEffect(() => { if (normaliseSearch(query)) void loadSearchRecords().then(setRecords); }, [query]);
   const matches = useMemo(() => {
-    return query.trim() ? services.filter((item) => matchesSearch(normaliseSearch(`${item.title} ${searchAliases(item.title)}`), query)) : services;
-  }, [query, services]);
+    return query.trim() ? services.filter((item) => isKnownRecord(records, item.slug, query) || matchesSearch(normaliseSearch(`${item.title} ${searchAliases(item.title)}`), query)) : services;
+  }, [query, services, records]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setHint((value) => (value + 1) % SUGGESTIONS.length), 2600);

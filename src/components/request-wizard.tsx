@@ -24,6 +24,7 @@ import { whatsappHref } from "@/lib/public-contact";
 import { rememberReturn } from "@/lib/after-login";
 import { serviceName, WIZARD_EXTRA as WX } from "@/lib/i18n-forms";
 import { expandFullForms, matchesSearch, normaliseSearch, searchAliases } from "@/lib/search-terms";
+import { isKnownRecord, loadSearchRecords, type SearchRecords } from "@/lib/search-records";
 
 export type WizardService = { slug: string; name: string; category: string; description: string };
 type Mode = "walkin" | "callback" | "doorstep" | "online";
@@ -122,6 +123,8 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const router = useRouter();
   const t = dict(locale).wizard;
   const [draft, setDraft] = useState<Draft>(() => initialDraft(services, initial));
+  const [records, setRecords] = useState<SearchRecords | null>(null);
+  useEffect(() => { if (draft.query.trim()) void loadSearchRecords().then(setRecords); }, [draft.query]);
   const [days] = useState(() => upcomingDays(hours));
   const [user, setUser] = useState<SessionUser | undefined>(undefined);
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
@@ -365,6 +368,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const searching = normaliseSearch(draft.query).length > 0;
   const filtered = services.filter((item) => {
     if (!searching) return draft.category === "all" || item.category === draft.category;
+    if (isKnownRecord(records, item.slug, draft.query)) return true;
     const haystack = normaliseSearch(`${item.name} ${serviceName(item.slug, item.name, locale)} ${item.description} ${item.category.replace(/-/g, " ")} ${searchAliases(item.name)}`);
     return matchesSearch(expandFullForms(haystack), draft.query);
   });

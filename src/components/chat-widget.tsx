@@ -15,6 +15,7 @@ import { useLocale } from "@/lib/use-locale";
 import { findGuide, findVariant, HELP_GUIDES, type HelpGuide } from "@/lib/help-docs";
 import { secureApi } from "@/lib/secure-api-client";
 import { expandFullForms, searchAliases, searchScore } from "@/lib/search-terms";
+import { isKnownRecord, loadSearchRecords, type SearchRecords } from "@/lib/search-records";
 
 export type ChatService = { slug: string; title: string; category: string; keywords: string[] };
 type TopicId = keyof Dictionary["chat"]["topics"];
@@ -73,11 +74,13 @@ function matchTopic(text: string): TopicId | null {
   return best;
 }
 
-function matchServices(text: string, services: ChatService[]) {
+function matchServices(text: string, services: ChatService[], records: SearchRecords | null) {
   return services
     .map((service) => {
       const haystack = expandFullForms(normalise(`${service.title} ${service.keywords.join(" ")} ${searchAliases(service.title)}`));
-      return { service, score: searchScore(haystack, text) };
+      // A known search record for this service counts as a strong match.
+      const score = isKnownRecord(records, service.slug, text) ? 100 : searchScore(haystack, text);
+      return { service, score };
     })
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)
@@ -250,9 +253,11 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
     if (topic) { answerTopic(topic, text); return; }
     setMessages((list) => [...list, { id: newId(), from: "user", text }]);
     setContext(text);
-    const found = matchServices(text, services);
-    if (found.length) botSay({ text: t.matches, services: found, actions: [{ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${text}`), kind: "wa" }] });
-    else botSay({ text: t.noMatch, callback: true, actions: [{ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${text}`), kind: "wa" }, { label: t.callUs, href: `tel:${phone}`, kind: "tel" }] });
+    void loadSearchRecords().then((records) => {
+      const found = matchServices(text, services, records);
+      if (found.length) botSay({ text: t.matches, services: found, actions: [{ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${text}`), kind: "wa" }] });
+      else botSay({ text: t.noMatch, callback: true, actions: [{ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${text}`), kind: "wa" }, { label: t.callUs, href: `tel:${phone}`, kind: "tel" }] });
+    });
   }
 
   function restart() {

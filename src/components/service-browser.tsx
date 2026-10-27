@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { ArrowRight, Search, SlidersHorizontal, X } from "lucide-react";
 import { CategoryIcon } from "@/components/icons";
 import ShowMore, { useShowMore } from "@/components/show-more";
 import { categoryMeta } from "@/lib/categories";
 import { expandFullForms, matchesSearch, normaliseSearch, searchAliases } from "@/lib/search-terms";
+import { isKnownRecord, loadSearchRecords, type SearchRecords } from "@/lib/search-records";
 import { tr } from "@/lib/tr";
 import type { Locale } from "@/lib/i18n";
 
@@ -28,6 +29,8 @@ export default function ServiceBrowser({ services, lang = "en" }: { services: Br
   const [picked, setPicked] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const query = typed ?? params.get("q") ?? "";
+  const [records, setRecords] = useState<SearchRecords | null>(null);
+  useEffect(() => { if (normaliseSearch(query)) void loadSearchRecords().then(setRecords); }, [query]);
   const category = picked ?? params.get("category") ?? "all";
 
   function syncUrl(nextQuery: string, nextCategory: string) {
@@ -41,6 +44,7 @@ export default function ServiceBrowser({ services, lang = "en" }: { services: Br
   const results = services.filter((service) => {
     // Searching covers every category; the category filter only applies when nothing is typed.
     if (!normaliseSearch(query)) return category === "all" || service.category === category;
+    if (isKnownRecord(records, service.slug, query)) return true;
     return matchesSearch(expandFullForms(normaliseSearch(`${service.title} ${service.description} ${service.keywords.join(" ")} ${service.category.replace(/-/g, " ")} ${searchAliases(service.title)}`)), query);
   });
 
