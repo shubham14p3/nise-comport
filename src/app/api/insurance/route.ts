@@ -47,18 +47,22 @@ export async function POST(request: NextRequest) {
       await db.update(contacts).set({ services: [...services, { service: "insurance", renewalOn: renewOn, note: form.regNo || null }].slice(0, 12), updatedAt: new Date() }).where(eq(contacts.id, existing.id));
     }
 
+    // Validation above already requires the email; this narrows the type for the account code below.
+    const email = form.email ?? "";
+    if (!email) throw new PublicError("Enter your email. We use it for your account and policy updates.", 400, { fields: { email: "Enter your email." } });
+
     // Visitors get an account too (not verified yet). We email a sign-in code; entering it verifies the email
     // and unlocks the verified-customer discount.
     const visitor = await getCurrentUser();
     let account: "created" | "unverified" | "verified" = "verified";
     if (!visitor || visitor.role === "demo") {
       account = "created";
-      const [existingAccount] = await db.select({ id: users.id, verifiedAt: users.emailVerifiedAt }).from(users).where(eq(users.email, form.email)).limit(1);
+      const [existingAccount] = await db.select({ id: users.id, verifiedAt: users.emailVerifiedAt }).from(users).where(eq(users.email, email)).limit(1);
       if (!existingAccount) {
-        await db.insert(users).values({ name: form.name, email: form.email, phone, whatsapp: whatsapp ?? null, passwordHash: await hash(randomBytes(32).toString("hex")), preferredContact: "whatsapp" }).onConflictDoNothing();
+        await db.insert(users).values({ name: form.name, email, phone, whatsapp: whatsapp ?? null, passwordHash: await hash(randomBytes(32).toString("hex")), preferredContact: "whatsapp" }).onConflictDoNothing();
       } else account = existingAccount.verifiedAt ? "verified" : "unverified";
       if (account !== "verified") {
-        try { await requestEmailOtp(form.email, "signin", clientIp(request)); } catch (error) { console.error("[insurance] could not send verification code", error); }
+        try { await requestEmailOtp(email, "signin", clientIp(request)); } catch (error) { console.error("[insurance] could not send verification code", error); }
       }
     }
 
