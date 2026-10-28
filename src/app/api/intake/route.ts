@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { PublicError } from "@/lib/errors";
 import { apiError, clientIp, readJson } from "@/lib/http";
-import { ACCOUNT_ONLY_SERVICES, openGuestRequest } from "@/lib/intake";
+import { openGuestRequest } from "@/lib/intake";
 import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
 import { resolveService } from "@/lib/site-content";
 import { cleanName, looksLikeEmail, normalizeEmail, normalizePhone } from "@/lib/validation";
@@ -28,9 +28,6 @@ export async function POST(request: NextRequest) {
     const email = normalizeEmail(input.email);
     if (!phone) throw new PublicError("Enter a valid 10-digit mobile number.", 400, { fields: { phone: "Check the number." } });
     if (!looksLikeEmail(email)) throw new PublicError("Enter a valid email address.", 400, { fields: { email: "Enter a valid email address." } });
-    if ((ACCOUNT_ONLY_SERVICES as readonly string[]).includes(input.serviceSlug)) {
-      throw new PublicError("This service needs your account. Sign in to continue.", 403, { code: "sign_in_required" });
-    }
     const service = input.serviceSlug === "other" ? null : await resolveService(input.serviceSlug);
     if (input.serviceSlug !== "other" && !service) throw new PublicError("Choose one of the listed services.", 400, { fields: { serviceSlug: "Choose one of the listed services." } });
 

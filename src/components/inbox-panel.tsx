@@ -107,7 +107,7 @@ export default function InboxPanel({ onSeen, viewer }: { onSeen?: () => void; vi
     finally{setBusy("")}
   }
 
-  async function lead(row: Lead, status: "called" | "done" | "spam" | "offline_closed" | "online_invited") {
+  async function lead(row: Lead, status: "new" | "called" | "done" | "spam" | "offline_closed" | "online_invited") {
     setBusy(row.id);
     try { await secureApi("E3h8K1tW6qZ9", { id: row.id, status }); await fetchInbox(); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not update."); }
@@ -158,6 +158,7 @@ export default function InboxPanel({ onSeen, viewer }: { onSeen?: () => void; vi
             <button type="button" className="profile-text-button" disabled={busy === row.id} onClick={() => void lead(row,"offline_closed")}>Close offline</button>
           </> : null) : <button type="button" className="profile-text-button" disabled={busy === row.id} onClick={() => void lead(row, "done")}><Check size={13}/>Done</button>)}
           {actionable && (row.source!=="service-callback" || row.handledBy===viewer?.id || viewer?.role==="admin") && <button type="button" className="profile-text-button" disabled={busy === row.id} onClick={() => void lead(row, "spam")}><X size={13}/>Spam</button>}
+          {view.tab === "spam" && (row.source!=="service-callback" || row.handledBy===viewer?.id || viewer?.role==="admin") && <button type="button" className="profile-text-button" disabled={busy === row.id} onClick={() => void lead(row, "new")}><Check size={13}/>Restore to open</button>}
         </div>
       </article>)}
       <Pager page={cb.page} total={cb.total} pageSize={cb.pageSize} onPage={(next) => changeView({ page: next })} label="Callback pages"/>

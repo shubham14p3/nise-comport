@@ -5,11 +5,9 @@ import Breadcrumbs from "@/components/breadcrumbs";
 import { LOCALE_META, type Locale } from "@/lib/i18n";
 import { serviceName } from "@/lib/i18n-forms";
 import { COLOR_PAGE_RATE } from "@/lib/print-pricing";
-import { priceList } from "@/lib/price-list";
 import { publicPrices, priceLabel } from "@/lib/service-prices";
 import { publishedServiceDetails, shortServiceName } from "@/lib/services";
 import { site, whatsappLink } from "@/lib/site";
-import { priceListBn, priceListHi } from "@/lib/translations/price-list";
 import { lp, tr } from "@/lib/tr";
 
 const blackWhite = [
@@ -22,7 +20,6 @@ export async function PricingView({ lang }: { lang: Locale }) {
   const t = tr(lang);
   const set = await publicPrices().catch(() => []);
   const named = set.map((price) => ({ price, title: publishedServiceDetails.find((service) => service.slug === price.slug)?.title })).filter((row): row is { price: (typeof set)[number]; title: string } => Boolean(row.title));
-  const groups = lang === "hi" ? priceListHi : lang === "bn" ? priceListBn : priceList;
   const home = lang === "en" ? "/" : `/${lang}`;
   const confirmed = [
     { service: t("PAN card, Aadhaar updates, certificates, voter ID", "पैन कार्ड, आधार अपडेट, प्रमाण पत्र, वोटर आईडी", "প্যান কার্ড, আধার আপডেট, সার্টিফিকেট, ভোটার আইডি"), note: t("Our assistance charge is confirmed on WhatsApp or at the desk before work starts. Government and portal fees, if any, are shown separately.", "काम शुरू होने से पहले हमारा सहायता शुल्क WhatsApp पर या डेस्क पर पक्का किया जाता है। सरकारी और पोर्टल शुल्क, यदि कोई हो, अलग दिखाए जाते हैं।", "কাজ শুরুর আগে আমাদের সহায়তা চার্জ WhatsApp-এ বা ডেস্কে নিশ্চিত করা হয়। সরকারি ও পোর্টাল ফি, যদি থাকে, আলাদা দেখানো হয়।") },
@@ -57,13 +54,6 @@ export async function PricingView({ lang }: { lang: Locale }) {
       <p>{t("Our own charge for each service. Government, portal or courier fees are separate.", "हर सेवा का हमारा अपना शुल्क। सरकारी, पोर्टल या कूरियर शुल्क अलग हैं।", "প্রতিটি পরিষেবার জন্য আমাদের নিজস্ব চার্জ। সরকারি, পোর্টাল বা কুরিয়ার ফি আলাদা।")}</p>
       <table className="price-table"><tbody>{named.map((row) => <tr key={row.price.slug}><th scope="row"><Link href={lp(lang, `/services/${row.price.slug}`)}>{serviceName(row.price.slug, shortServiceName(row.title), lang)}</Link>{row.price.note && lang === "en" && <small><br/>{row.price.note}</small>}</th><td>{labelFor(row.price)}</td></tr>)}</tbody></table>
       <p>{t("No price listed for a service? Message or call us and we will quote it before any work starts.", "किसी सेवा का दाम नहीं लिखा? हमें संदेश या कॉल कीजिए; काम शुरू होने से पहले हम दाम बता देंगे।", "কোনও পরিষেবার দাম লেখা নেই? আমাদের মেসেজ বা কল করুন; কাজ শুরুর আগে আমরা দাম জানিয়ে দেব।")}</p></>}
-
-      <h2>{t("Common charges", "सामान्य शुल्क", "সাধারণ চার্জ")}</h2>
-      <p>{t("Typical amounts for the jobs we do most. We confirm the exact figure before we start.", "हमारे सबसे आम कामों की सामान्य रकम। शुरू करने से पहले हम सही रकम पक्की करते हैं।", "আমাদের সবচেয়ে প্রচলিত কাজের সাধারণ অঙ্ক। শুরুর আগে আমরা সঠিক অঙ্ক নিশ্চিত করি।")}</p>
-      {groups.map((group) => <div key={group.title}>
-        <h3>{group.title}</h3>{group.intro && <p>{group.intro}</p>}
-        <table className="price-table"><tbody>{group.rows.map((row) => <tr key={row.item}><th scope="row">{row.item}{row.note && <small><br/>{row.note}</small>}</th><td>{row.price}</td></tr>)}</tbody></table>
-      </div>)}
 
       <h2>{t("Services quoted before work starts", "जिन सेवाओं का दाम काम शुरू होने से पहले बताया जाता है", "যেসব পরিষেবার দাম কাজ শুরুর আগে জানানো হয়")}</h2>
       <table className="price-table"><thead><tr><th>{t("Service", "सेवा", "পরিষেবা")}</th><th>{t("How it is priced", "दाम कैसे तय होता है", "দাম কীভাবে ঠিক হয়")}</th></tr></thead><tbody>
