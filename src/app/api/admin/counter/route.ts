@@ -6,6 +6,7 @@ import { PublicError } from "@/lib/errors";
 import { apiError, readJson } from "@/lib/http";
 import { publishedServiceDetails } from "@/lib/services";
 import { normalizePhone } from "@/lib/validation";
+import { hasPermission } from "@/lib/permissions";
 
 const phone = z.string().trim().min(10, "Enter a valid 10-digit mobile number.").max(20);
 const amount = z.number().positive("Enter an amount.").max(1_000_000);
@@ -22,11 +23,14 @@ function normalised(raw: string) {
   return value;
 }
 
-/** Owner-only counter desk: look up a customer, record a walk-in visit, or top up the wallet. */
+/**
+ * Counter desk: look up a customer, record a walk-in visit, or request a wallet top-up.
+ * The owner, and staff the owner has given the "counter" permission. Top-ups still need approval.
+ */
 export async function POST(request: NextRequest) {
   try {
     const actor = await getCurrentUser();
-    if (!actor || actor.role !== "admin") throw new PublicError("Only the owner can use the counter desk.", 403, { code: "forbidden" });
+    if (!actor || !hasPermission(actor, "counter")) throw new PublicError("You don’t have access to the counter desk. Ask the owner to add it to your account.", 403, { code: "forbidden" });
     const input = schema.parse(await readJson(request));
 
     if (input.action === "lookup") return NextResponse.json(await lookupCustomer(input.phone));
