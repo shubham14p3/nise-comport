@@ -130,6 +130,8 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [photo, setPhoto] = useState<File | null>(null);
+  // Visitors (not signed in): email and the two consent boxes, asked on the details step.
+  const [guest, setGuest] = useState({ email: "", terms: false, contact: false });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<{ reference: string; offerNote?: string; couponNote?: string; couponOk?: boolean; whatsappSent?: boolean; summary: string } | null>(null);
@@ -271,6 +273,8 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     if(problem && !(draft.step===1 && user===null && photoOnly)){
       setError(problem);setShowErrors(true);return;
     }
+    // Visitors send the request from the details step: an account is created and the request opens in Query.
+    if(draft.step===1 && user===null){ await submitGuest(); return; }
     if(draft.step===2 && user===null){
       const ok=await saveApplicationDraft("service-request",{draft:{...draft,step:3,consent:false}});
       if(!ok){setError("Browser storage is unavailable. Enable site storage before signing in so your answers are not lost.");return;}
@@ -284,6 +288,35 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       setError(Object.values(intakeErrors)[0]);setShowErrors(true);goTo(1);return;
     }
     goTo(Math.min(3,draft.step+1));
+  }
+
+  async function submitGuest() {
+    const emailProblem = /^\S+@\S+\.\S+$/.test(guest.email) ? "" : "Enter a valid email address.";
+    const problem = validate(1) || emailProblem || (guest.terms && guest.contact ? "" : "Please tick both boxes to send your request.");
+    if (problem) { setError(problem); setShowErrors(true); return; }
+    setBusy(true); setError("");
+    try {
+      const result = await secureApi<{ reference: string }>("G3r7M1pX5vKd", {
+        serviceSlug: draft.serviceSlug,
+        category: draft.serviceSlug === "other" && draft.category !== "all" ? draft.category : undefined,
+        description: draft.description.trim() || `${service?.name ?? "Service"} enquiry`,
+        name: draft.name.trim(),
+        phone: draft.phone.trim(),
+        email: guest.email.trim(),
+        preferredContact: draft.contact,
+        consentTerms: true,
+        consentContact: true,
+      });
+      clearDraft();
+      clearApplicationDraft("service-request");
+      setDone({
+        reference: result.reference,
+        summary: [`Service: ${service?.name ?? "Not sure"}`, `Name: ${draft.name.trim()}`, `Mobile: +91 ${draft.phone.trim()}`, `Need: ${draft.description.trim()}`].join("\n"),
+      });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not send your request.");
+    } finally { setBusy(false); }
   }
 
   async function submit(consentConfirmed = false) {
@@ -447,6 +480,11 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         {activeIntake && <DetailedIntakeFields intake={activeIntake} onChange={value=>update({intake:value})}
           errors={showErrors?intakeErrors:{}} photo={photo} onPhotoChange={user && user.role!=="demo"?setPhoto:undefined}/>}
         <div className="quick-picks"><span>{t.quickPicks}</span>{picks.map((pick) => <button key={pick} type="button" className="chip-btn chip-btn--sm" onClick={() => update({ description: draft.description.includes(pick) ? draft.description : `${draft.description ? `${draft.description.trim()} ` : ""}${pick}.`.slice(0, 1500) })}>+ {pick}</button>)}</div>
+        {user === null && <div className="guest-intake">
+          <label className="field"><span className="field__label">Email</span><input type="email" inputMode="email" autoComplete="email" value={guest.email} onChange={(event) => setGuest((current) => ({ ...current, email: event.target.value.trim() }))} required/><span className="field__hint">We’ll send a code here to confirm it.</span></label>
+          <label className="check"><input type="checkbox" checked={guest.terms} onChange={(event) => setGuest((current) => ({ ...current, terms: event.target.checked }))}/><span>I agree to the <Link href="/terms" target="_blank">terms</Link> and <Link href="/privacy" target="_blank">privacy policy</Link>.</span></label>
+          <label className="check"><input type="checkbox" checked={guest.contact} onChange={(event) => setGuest((current) => ({ ...current, contact: event.target.checked }))}/><span>NISE COMPORT may contact me about this request on WhatsApp, phone or email.</span></label>
+        </div>}
         {!uploadsAllowed(activeCategory) && <p className="field__hint">{WX.noFile[locale]}</p>}
         {uploadsAllowed(activeCategory) && <div className="field"><span className="field__label">{t.attach}</span>
           {user ? file ? <div className="file-pill"><FileText size={18}/><span>{file.name}<small>{(file.size / 1024 / 1024).toFixed(1)} MB</small></span><button type="button" className="icon-btn" onClick={() => { setFile(null); idempotencyKey.current = null; }} aria-label={t.remove}><X size={16}/></button></div>
@@ -504,7 +542,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
 
       {error && <div className="alert alert--error" role="alert">{error}</div>}
       <WizardActions locale={locale} onBack={draft.step > 0 ? () => goTo(draft.step - 1) : undefined}
-        nextLabel={draft.step===2 && user===null?"Sign in to preview":draft.step===3 && !user?"Sign in to preview":draft.step===3?t.submit:t.next}
+        nextLabel={draft.step===1 && user===null?"Send my request":draft.step===2 && user===null?"Sign in to preview":draft.step===3 && !user?"Sign in to preview":draft.step===3?t.submit:t.next}
         nextDisabled={!tabDraftReady || user===undefined || (draft.step===3 && user?.role==="demo")} busy={busy}/>
     </form>
     <ConsentModal open={showConsent} onClose={() => setShowConsent(false)} busy={busy} serviceLabel={service?.name} onConfirm={() => { setShowConsent(false); void submit(true); }}/>

@@ -25,7 +25,7 @@ const when = (iso: string) => new Date(iso).toLocaleString("en-IN", { timeZone: 
  * Owner's counter desk. Type a mobile number and press Enter to see the balance. Pick a service,
  * type the amount, and press Enter in the amount to record the visit. Top-ups and approvals are below.
  */
-export default function CounterDesk({ services }: { services: Service[] }) {
+export default function CounterDesk({ services, isOwner }: { services: Service[]; isOwner: boolean }) {
   const [phone, setPhone] = useState("");
   const [lookup, setLookup] = useState<Lookup | null>(null);
   const [newName, setNewName] = useState("");
@@ -60,6 +60,7 @@ export default function CounterDesk({ services }: { services: Service[] }) {
   }
 
   async function loadApprovals() {
+    if (!isOwner) return;
     try {
       const result = await secureApi<{ requests: CreditRequest[]; me: string }>(APPROVALS_OP, { action: "list" });
       setRequests(result.requests); setMe(result.me);
@@ -68,7 +69,7 @@ export default function CounterDesk({ services }: { services: Service[] }) {
     }
   }
 
-  useEffect(() => { void loadApprovals(); }, []);
+  useEffect(() => { void loadApprovals(); }, [isOwner]);
 
   async function findCustomer() {
     if (digits.length < 10) { setError("Enter a 10-digit mobile number."); return; }
@@ -200,6 +201,7 @@ export default function CounterDesk({ services }: { services: Service[] }) {
       </>}
     </>}
 
+    {isOwner ? <>
     <h2 style={{ marginTop: 32 }}>Wallet credits waiting for approval</h2>
     <p className="muted">A second admin approves each credit. You can’t approve your own request.</p>
     {pending.length === 0 && <p className="muted">Nothing waiting.</p>}
@@ -230,6 +232,8 @@ export default function CounterDesk({ services }: { services: Service[] }) {
         </li>)}
       </ul>
     </>}
+
+    </> : <p className="muted" style={{ marginTop: 32 }}>Top-up requests are approved by the owner. You’ll see them in the wallet once approved.</p>}
 
     {error && <p className="alert alert--error" role="alert" style={{ marginTop: 12 }}>{error}</p>}
     {notice && <p className="alert alert--info" role="status" style={{ marginTop: 12 }}>{notice}</p>}

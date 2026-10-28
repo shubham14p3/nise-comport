@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import ProfileDashboard from "@/components/profile-dashboard";
+import WelcomeCredit from "@/components/welcome-credit";
 import DemoProfile from "@/components/demo-profile";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -13,5 +14,8 @@ export default async function ProfilePage() {
   if (user.role === "demo") return <DemoProfile/>;
   // No customer record, request, wallet or identifier is serialized into the RSC payload.
   // The authenticated workspace loads its private data through the encrypted browser transport.
-  return <ProfileDashboard/>;
+  return <>
+    <WelcomeCredit/>
+    <ProfileDashboard/>
+  </>;
 }

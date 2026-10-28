@@ -10,6 +10,7 @@ import { isUniqueViolation, PublicError, RateLimitError, humanDuration } from "@
 import { clearRate, enforceRate, hitRate, identity, peekRate, RATE_RULES } from "@/lib/rate-limit";
 import { secondsUntilWindowEnds } from "@/lib/rate-limit-core";
 import { cleanName, isSixDigitCode, looksLikeEmail, normalizeEmail, normalizePhone, passwordProblem } from "@/lib/validation";
+import { grantWelcomeCredit } from "@/lib/welcome-credit";
 import { isPlaceholderEmail } from "@/lib/mobile-login-core";
 import { grantVerifyReward } from "@/lib/verify-rewards";
 import { hasPermission, type Permission } from "@/lib/permissions";
@@ -214,6 +215,7 @@ export async function verifyEmailOtp(emailInput: string, code: string, purpose: 
       if (isUniqueViolation(error)) throw new PublicError("An account already exists for this email. Please sign in instead.", 409, { code: "account_exists" });
       throw error;
     }
+    await grantWelcomeCredit(created.id).catch((error) => console.error("[welcome] credit not granted", error));
     await createSession(created.id);
     return publicUser(created);
   }
@@ -221,6 +223,7 @@ export async function verifyEmailOtp(emailInput: string, code: string, purpose: 
   const user = await findUserByEmail(email);
   if (!isActive(user)) throw new PublicError("This code has expired or a newer code was sent. Request a new code.", 400, { code: "otp_expired" });
   await db.update(users).set({ emailVerifiedAt: user.emailVerifiedAt ?? new Date() }).where(eq(users.id, user.id));
+  await grantWelcomeCredit(user.id).catch((error) => console.error("[welcome] credit not granted", error));
   await clearRate(RATE_RULES.passwordFailuresPerEmail15m, identity("email", email));
   await createSession(user.id);
   return publicUser(user);
@@ -356,6 +359,7 @@ export async function confirmEmailChange(user: User, newEmailInput: string, code
     throw error;
   }
   await grantVerifyReward(user.id, "email").catch((error) => console.error("[rewards] email reward failed", error));
+  await grantWelcomeCredit(user.id).catch((error) => console.error("[welcome] credit not granted", error));
   sendEmailChangedNotice(oldEmail, user.name, newEmail).catch((error) => console.error("[auth] email-changed notice failed", error));
   return { email: newEmail };
 }
