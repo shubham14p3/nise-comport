@@ -187,8 +187,10 @@ function targetFor(operation: string, input: Record<string, unknown>) {
       return { method: "GET", path: `/api/internal/admin-snapshot?q=${encodeURIComponent(q)}&status=${encodeURIComponent(status)}` };
     }
     case "I5x2N8kQ3wT6": {
-      const category = stringValue(input, "category", 40);
-      return { method: "GET", path: `/api/admin/inbox?category=${encodeURIComponent(category)}${input.count ? "&count=1" : ""}` };
+      const params = new URLSearchParams();
+      for (const key of ["category", "leadTab", "leadScope", "leadPage"]) { const value = stringValue(input, key, 20); if (value) params.set(key, value); }
+      if (input.count) params.set("count", "1");
+      return { method: "GET", path: `/api/admin/inbox?${params.toString()}` };
     }
     case "Z5b8N2qT6wK1": {
       const id = stringValue(input, "id", 40);
@@ -266,6 +268,7 @@ async function internalFetch(request: NextRequest, target: { method: string; pat
   if (!secret || secret.length < 32) throw new Error("Internal API transport is not configured.");
 
   // Use loopback for both modes, preserving the API token and CSRF checks.
+  // internalApiHeaders sets the server-only x-nise-internal token on this request.
   const url = new URL(target.path, internalApiOrigin(process.env));
   const headers = internalApiHeaders(secret, url);
 
