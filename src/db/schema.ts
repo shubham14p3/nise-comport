@@ -189,6 +189,17 @@ export const walletEntries = pgTable("wallet_entries", {
   kind: text("kind").notNull(), description: text("description").notNull(), reference: text("reference"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("wallet_entries_user_created_idx").on(table.userId, table.createdAt)]);
 
+/** Walk-in visits recorded at the counter. Money is stored in whole paise. */
+export const counterVisits = pgTable("counter_visits", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  staffId: uuid("staff_id").notNull().references(() => users.id),
+  serviceSlug: text("service_slug").notNull(), serviceName: text("service_name").notNull(),
+  billPaise: integer("bill_paise").notNull(), discountPaise: integer("discount_paise").notNull(),
+  walletPaise: integer("wallet_paise").notNull(), collectPaise: integer("collect_paise").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("counter_visits_user_created_idx").on(table.userId, table.createdAt)]);
+
 export const referrals = pgTable("referrals", {
   id: uuid("id").defaultRandom().primaryKey(), referrerId: uuid("referrer_id").notNull().references(() => users.id),
   referredUserId: uuid("referred_user_id").references(() => users.id), code: text("code").notNull().unique(), status: text("status").notNull().default("invited"),

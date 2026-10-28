@@ -42,6 +42,7 @@ const OPS = {
   "A4x8L1rN5vK3": { method: "POST", path: "/api/print-jobs" },
   "Z6m2C9pT4hQ7": { method: "POST", path: "/api/pan/requests" },
   "Q4s8N2kV6wLc": { method: "POST", path: "/api/pan/quick-start" },
+  "C6d1L8wN4vXs": { method: "POST", path: "/api/admin/counter" },
   "J4p9N2vC7mQ6": { method: "PATCH", path: "/api/pan/49a/edit" },
   "L5v1N7qD9kR3": { method: "POST", path: "/api/admin/pan-imports" },
   "T7s3F8mP2cX6": { method: "POST", path: "/api/admin/wallet-credit" },
