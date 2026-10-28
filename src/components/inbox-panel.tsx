@@ -134,7 +134,7 @@ export default function InboxPanel({ onSeen, viewer }: { onSeen?: () => void; vi
     {cb && <div className="inbox__leads">
       <h3><Phone size={16}/> Callbacks <span>{cb.total}</span></h3>
       <div className="inbox__callback-tabs" role="tablist" aria-label="Callback status">
-        {TABS.map((tab) => <button key={tab.id} className="btn btn--ghost btn--sm" type="button" role="tab" aria-selected={view.tab === tab.id} aria-pressed={view.tab === tab.id} onClick={() => changeView({ tab: tab.id, page: 0 })}>
+        {TABS.map((tab) => <button key={tab.id} className="btn btn--ghost btn--sm" type="button" role="tab" aria-selected={view.tab === tab.id} onClick={() => changeView({ tab: tab.id, page: 0 })}>
           {tab.label} <b>{cb.tabCounts[tab.id]}</b>
         </button>)}
         <span className="inbox__scope">

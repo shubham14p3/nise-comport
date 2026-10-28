@@ -69,7 +69,14 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
     }
   }
 
-  useEffect(() => { void loadApprovals(); }, [isOwner]);
+  useEffect(() => {
+    if (!isOwner) return;
+    let active = true;
+    secureApi<{ requests: CreditRequest[]; me: string }>(APPROVALS_OP, { action: "list" })
+      .then((result) => { if (active) { setRequests(result.requests); setMe(result.me); } })
+      .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load approvals."); });
+    return () => { active = false; };
+  }, [isOwner]);
 
   async function findCustomer() {
     if (digits.length < 10) { setError("Enter a 10-digit mobile number."); return; }
@@ -157,10 +164,10 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
 
     {lookup && <>
       <label className="field" style={{ marginTop: 14 }}><span className="field__label">Service</span>
-        <input value={serviceText} placeholder="Type to search, then Enter" autoComplete="off" role="combobox" aria-expanded={!service}
+        <input value={serviceText} placeholder="Type to search, then Enter" autoComplete="off" role="combobox" aria-controls="counter-service-options" aria-expanded={!service}
           onChange={(event) => { setServiceText(event.target.value); setService(null); setHighlight(0); }}
           onKeyDown={onServiceKey}/>
-        {!service && <ul role="listbox" className="field__hint" style={{ listStyle: "none", padding: 0, margin: "6px 0 0", maxHeight: 220, overflowY: "auto" }}>
+        {!service && <ul role="listbox" id="counter-service-options" className="field__hint" style={{ listStyle: "none", padding: 0, margin: "6px 0 0", maxHeight: 220, overflowY: "auto" }}>
           {matches.map((item, index) => <li key={item.slug} role="option" aria-selected={index === highlight}
             onMouseDown={(event) => { event.preventDefault(); pickService(item); }}
             style={{ padding: "6px 8px", cursor: "pointer", background: index === highlight ? "var(--surface-2, #eef)" : "transparent" }}>{item.title}</li>)}
