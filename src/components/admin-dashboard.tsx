@@ -478,7 +478,7 @@ export default function AdminDashboard({ me, viewAsStaff = false, services }: { 
       </section>
     </div>
     {counterOpen && <Portal><div className="record-modal" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setCounterOpen(false); }}>
-      <div className="record-modal__panel" role="dialog" aria-modal="true" aria-label="Counter desk">
+      <div className="record-modal__panel counter-modal__panel" role="dialog" aria-modal="true" aria-label="Counter desk">
         <header className="record-modal__header">
           <div><h3>Counter desk</h3></div>
           <button type="button" className="btn btn--ghost btn--sm" onClick={() => setCounterOpen(false)}>Close</button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type KeyboardEvent } from "react";
+import { Loader2 } from "lucide-react";
 import { secureApi, SecureApiError } from "@/lib/secure-api-client";
 import { COUNTER_DISCOUNT_PERCENT } from "@/lib/counter-rules";
 
@@ -22,8 +23,8 @@ const rupees = (paise: number) => `₹${(paise / 100).toFixed(2)}`;
 const when = (iso: string) => new Date(iso).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
 /**
- * Owner's counter desk. Type a mobile number and press Enter to see the balance. Pick a service,
- * type the amount, and press Enter in the amount to record the visit. Top-ups and approvals are below.
+ * Owner's counter desk, shown in a popup. Left: enter the mobile number, pick a service and the amount.
+ * Right: the customer, the live bill summary and recent visits. Top-ups and approvals are below.
  */
 export default function CounterDesk({ services, isOwner }: { services: Service[]; isOwner: boolean }) {
   const [phone, setPhone] = useState("");
@@ -39,6 +40,7 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
   const [me, setMe] = useState("");
   const [decisionNotes, setDecisionNotes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
+  const [looking, setLooking] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -80,8 +82,11 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
 
   async function findCustomer() {
     if (digits.length < 10) { setError("Enter a 10-digit mobile number."); return; }
-    const result = await run(() => secureApi<Lookup>(COUNTER_OP, { action: "lookup", phone: digits }));
-    if (result) { setLookup(result); setNotice(result.customer ? "" : "New number. Enter the customer’s name to create their profile."); }
+    setLooking(true);
+    try {
+      const result = await run(() => secureApi<Lookup>(COUNTER_OP, { action: "lookup", phone: digits }));
+      if (result) { setLookup(result); setNotice(result.customer ? "" : "New number. Add the customer’s name below to create their profile."); }
+    } finally { setLooking(false); }
   }
 
   function pickService(item: Service) {
@@ -143,73 +148,90 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
   const pending = requests.filter((item) => item.status === "pending");
   const decided = requests.filter((item) => item.status !== "pending").slice(0, 10);
 
-  return <section className="container" style={{ paddingTop: 16, maxWidth: 720 }} aria-label="Counter desk">
-    <h1>Counter desk</h1>
-    <p className="muted">Owner only. Look up a mobile number, then record the visit. Every entry is kept with its date and time.</p>
+  return <div className="record-modal__body counter-desk" aria-label="Counter desk">
+    <div className="counter-desk__grid">
+      <div className="counter-desk__entry">
+        <label className="field"><span className="field__label">Customer mobile</span>
+          <span className="counter-desk__lookup">
+            <input type="tel" inputMode="numeric" autoComplete="off" value={phone} placeholder="98765 43210"
+              onChange={(event) => setPhone(event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16))}
+              onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void findCustomer(); } }}
+              onBlur={() => { if (digits.length === 10 && lookup?.phone !== digits) void findCustomer(); }}/>
+            <button type="button" className="btn btn--ghost btn--sm" disabled={looking || digits.length < 10} onClick={() => void findCustomer()} aria-busy={looking}>
+              {looking ? <><Loader2 size={15} className="counter-desk__spin" aria-hidden="true"/> Looking up…</> : "Look up"}
+            </button>
+          </span>
+        </label>
 
-    <label className="field"><span className="field__label">Customer mobile</span>
-      <input type="tel" inputMode="numeric" autoComplete="off" value={phone} placeholder="98765 43210"
-        onChange={(event) => setPhone(event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16))}
-        onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void findCustomer(); } }}
-        onBlur={() => { if (digits.length === 10 && lookup?.phone !== digits) void findCustomer(); }}/>
-      <span className="field__hint">Press Enter to look up.</span>
-    </label>
+        {lookup && <>
+          <label className="field" style={{ marginTop: 10 }}><span className="field__label">Service</span>
+            <input value={serviceText} placeholder="Type to search, then Enter" autoComplete="off" role="combobox" aria-controls="counter-service-options" aria-expanded={!service}
+              onChange={(event) => { setServiceText(event.target.value); setService(null); setHighlight(0); }}
+              onKeyDown={onServiceKey}/>
+            {!service && <ul role="listbox" id="counter-service-options" className="counter-desk__options">
+              {matches.map((item, index) => <li key={item.slug} role="option" aria-selected={index === highlight}
+                onMouseDown={(event) => { event.preventDefault(); pickService(item); }}
+                className={index === highlight ? "is-highlight" : undefined}>{item.title}</li>)}
+              {matches.length === 0 && <li>No service matches.</li>}
+            </ul>}
+          </label>
 
-    {lookup && <div className="callout" style={{ marginTop: 12 }}>
-      {lookup.customer
-        ? <><b>{lookup.customer.name}</b><span> · balance <b>{rupees(lookup.balancePaise)}</b></span></>
-        : <label className="field"><span className="field__label">New customer’s name</span>
-          <input value={newName} onChange={(event) => setNewName(event.target.value)} autoComplete="off"/></label>}
-    </div>}
+          <label className="field" style={{ marginTop: 10 }}><span className="field__label">Amount (₹)</span>
+            <input inputMode="decimal" autoComplete="off" value={amount} onChange={(event) => setAmount(event.target.value.replace(/[^\d.]/g, ""))} onKeyDown={onAmountKey}/>
+            <span className="field__hint">Press Enter to record the visit.</span>
+          </label>
 
-    {lookup && <>
-      <label className="field" style={{ marginTop: 14 }}><span className="field__label">Service</span>
-        <input value={serviceText} placeholder="Type to search, then Enter" autoComplete="off" role="combobox" aria-controls="counter-service-options" aria-expanded={!service}
-          onChange={(event) => { setServiceText(event.target.value); setService(null); setHighlight(0); }}
-          onKeyDown={onServiceKey}/>
-        {!service && <ul role="listbox" id="counter-service-options" className="field__hint" style={{ listStyle: "none", padding: 0, margin: "6px 0 0", maxHeight: 220, overflowY: "auto" }}>
-          {matches.map((item, index) => <li key={item.slug} role="option" aria-selected={index === highlight}
-            onMouseDown={(event) => { event.preventDefault(); pickService(item); }}
-            style={{ padding: "6px 8px", cursor: "pointer", background: index === highlight ? "var(--surface-2, #eef)" : "transparent" }}>{item.title}</li>)}
-          {matches.length === 0 && <li>No service matches.</li>}
-        </ul>}
-      </label>
+          <button type="button" className="btn btn--primary" style={{ marginTop: 12 }} disabled={busy} onClick={() => void recordVisit()}>{busy ? "Recording…" : "Record visit"}</button>
 
-      <label className="field"><span className="field__label">Amount (₹)</span>
-        <input inputMode="decimal" autoComplete="off" value={amount} onChange={(event) => setAmount(event.target.value.replace(/[^\d.]/g, ""))} onKeyDown={onAmountKey}/>
-        <span className="field__hint">Press Enter to record the visit.</span>
-      </label>
+          <details style={{ marginTop: 18 }}>
+            <summary>Request a wallet top-up</summary>
+            <div className="form-grid" style={{ marginTop: 10 }}>
+              <label className="field"><span className="field__label">Amount (₹)</span><input inputMode="decimal" value={topupAmount} onChange={(event) => setTopupAmount(event.target.value.replace(/[^\d.]/g, ""))}/></label>
+              <label className="field"><span className="field__label">Reason (required)</span><input value={topupReason} onChange={(event) => setTopupReason(event.target.value)} maxLength={180} placeholder="Why is this credit being made?"/></label>
+            </div>
+            <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void requestTopUp()} style={{ marginTop: 8 }}>Send for approval</button>
+          </details>
+        </>}
+      </div>
 
-      {billPaise > 0 && <dl className="summary" style={{ marginTop: 8 }}>
-        <div><dt>Bill</dt><dd>{rupees(billPaise)}</dd></div>
-        <div><dt>{COUNTER_DISCOUNT_PERCENT}% off, from wallet</dt><dd>{rupees(previewDiscount)}</dd></div>
-        <div><dt>Customer pays</dt><dd><b>{rupees(billPaise - previewDiscount)}</b></dd></div>
-      </dl>}
+      <aside className="counter-desk__side" aria-live="polite">
+        {!lookup && <p className="muted">Enter a mobile number and press Look up. The customer, their wallet balance and the bill summary appear here.</p>}
+        {lookup && <>
+          <div className="counter-desk__card">
+            {lookup.customer
+              ? <><b>{lookup.customer.name}</b><div className="muted">{lookup.phone} · wallet <b>{rupees(lookup.balancePaise)}</b></div></>
+              : <>
+                <label className="field"><span className="field__label">Customer’s name (new number)</span>
+                  <input value={newName} onChange={(event) => setNewName(event.target.value)} autoComplete="off"/>
+                </label>
+                <span className="field__hint">New numbers get a profile. The name goes on the receipt and the customer’s record.</span>
+              </>}
+          </div>
 
-      <button type="button" className="btn btn--primary" disabled={busy} onClick={() => void recordVisit()}>{busy ? "Recording…" : "Record visit"}</button>
+          {billPaise > 0 && <dl className="summary" style={{ marginTop: 10 }}>
+            <div><dt>Bill</dt><dd>{rupees(billPaise)}</dd></div>
+            <div><dt>{COUNTER_DISCOUNT_PERCENT}% off, from wallet</dt><dd>{rupees(previewDiscount)}</dd></div>
+            <div><dt>Customer pays</dt><dd><b>{rupees(billPaise - previewDiscount)}</b></dd></div>
+          </dl>}
 
-      <details style={{ marginTop: 24 }}>
-        <summary>Request a wallet top-up</summary>
-        <div className="form-grid" style={{ marginTop: 10 }}>
-          <label className="field"><span className="field__label">Amount (₹)</span><input inputMode="decimal" value={topupAmount} onChange={(event) => setTopupAmount(event.target.value.replace(/[^\d.]/g, ""))}/></label>
-          <label className="field"><span className="field__label">Reason (required)</span><input value={topupReason} onChange={(event) => setTopupReason(event.target.value)} maxLength={180} placeholder="Why is this credit being made?"/></label>
-        </div>
-        <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => void requestTopUp()} style={{ marginTop: 8 }}>Send for approval</button>
-      </details>
+          {lookup.visits.length > 0 && <>
+            <h3 className="counter-desk__subhead">Recent visits</h3>
+            <ul className="counter-desk__visits">
+              {lookup.visits.map((visit) => <li key={visit.id}>
+                <b>{visit.serviceName}</b> · {when(visit.createdAt)}<br/>
+                <small>Bill {rupees(visit.billPaise)} · wallet {rupees(visit.walletPaise)} · paid {rupees(visit.collectPaise)}</small>
+              </li>)}
+            </ul>
+          </>}
+        </>}
+      </aside>
+    </div>
 
-      {lookup.visits.length > 0 && <>
-        <h2 style={{ marginTop: 28 }}>Recent visits</h2>
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {lookup.visits.map((visit) => <li key={visit.id} style={{ padding: "8px 0", borderBottom: "1px solid var(--line, #ddd)" }}>
-            <b>{visit.serviceName}</b> · {when(visit.createdAt)}<br/>
-            <small>Bill {rupees(visit.billPaise)} · wallet {rupees(visit.walletPaise)} · paid {rupees(visit.collectPaise)}</small>
-          </li>)}
-        </ul>
-      </>}
-    </>}
+    {error && <p className="alert alert--error" role="alert" style={{ marginTop: 12 }}>{error}</p>}
+    {notice && <p className="alert alert--info" role="status" style={{ marginTop: 12 }}>{notice}</p>}
 
     {isOwner ? <>
-    <h2 style={{ marginTop: 32 }}>Wallet credits waiting for approval</h2>
+    <h2 style={{ marginTop: 24 }}>Wallet credits waiting for approval</h2>
     <p className="muted">A second admin approves each credit. You can’t approve your own request.</p>
     {pending.length === 0 && <p className="muted">Nothing waiting.</p>}
     <ul style={{ listStyle: "none", padding: 0 }}>
@@ -240,9 +262,6 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
       </ul>
     </>}
 
-    </> : <p className="muted" style={{ marginTop: 32 }}>Top-up requests are approved by the owner. You’ll see them in the wallet once approved.</p>}
-
-    {error && <p className="alert alert--error" role="alert" style={{ marginTop: 12 }}>{error}</p>}
-    {notice && <p className="alert alert--info" role="status" style={{ marginTop: 12 }}>{notice}</p>}
-  </section>;
+    </> : <p className="muted" style={{ marginTop: 24 }}>Top-up requests are approved by the owner. You’ll see them in the wallet once approved.</p>}
+  </div>;
 }
