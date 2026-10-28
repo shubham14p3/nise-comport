@@ -43,6 +43,19 @@ export function paymentOptions() {
 }
 
 /** The customer's open (or latest) payment for a request, loaded only if the request is theirs or the viewer is staff. */
+/** Customers pay only when both their email and their mobile number are verified. Staff and owners are not checked. */
+export async function payerVerification(viewer: { id: string }) {
+  const [user] = await db.select({ role: users.role, name: users.name, emailVerifiedAt: users.emailVerifiedAt, phoneVerifiedAt: users.phoneVerifiedAt }).from(users).where(eq(users.id, viewer.id)).limit(1);
+  if (!user) return null;
+  return { name: user.name, staff: user.role === "admin" || user.role === "staff", email: Boolean(user.emailVerifiedAt), phone: Boolean(user.phoneVerifiedAt) };
+}
+async function requireVerifiedPayer(viewer: { id: string }) {
+  const who = await payerVerification(viewer);
+  if (!who) throw new PublicError("Sign in to pay.", 401, { code: "sign_in_required" });
+  if (who.staff) return;
+  if (!who.email || !who.phone) throw new PublicError("Verify your email and mobile number before paying. Open your profile to verify them.", 403, { code: "verification_required" });
+}
+
 export async function paymentForReference(reference: string, viewer: { id: string; role: string }) {
   const [request] = await db.select().from(serviceRequests).where(eq(serviceRequests.reference, reference)).limit(1);
   if (!request) return null;
@@ -73,7 +86,7 @@ export async function createPaymentRequest(input: { reference: string; amountPai
   const result=await db.transaction(async(tx)=>{
     const [request]=await tx.select().from(serviceRequests).where(eq(serviceRequests.reference,input.reference.trim().toUpperCase())).limit(1);
     if(!request)throw new PublicError("No request found with that reference.",404);
-    if(!canQuote(request.status,request.details))
+    if(!canQuote(request.status,request.details,request.serviceSlug))
       throw new PublicError("Review and approve all application details before requesting payment.",409);
     const [existing]=await tx.select({id:payments.id,status:payments.status}).from(payments)
       .where(eq(payments.requestId,request.id)).orderBy(desc(payments.createdAt)).limit(1);
@@ -146,6 +159,7 @@ export async function markPaid(id: string, details: { method: PayMethod; provide
 
 /** Customer says they paid by UPI and gives the bank reference (UTR). Staff then confirm it against the bank app. */
 export async function submitUtr(reference: string, rawUtr: string, viewer: { id: string }) {
+  await requireVerifiedPayer(viewer);
   const utr = cleanUtr(rawUtr);
   if (!utr) throw new PublicError("That reference number doesn’t look right. UPI reference numbers are usually 12 digits.", 400, { code: "invalid_input" });
   const [request] = await db.select().from(serviceRequests).where(eq(serviceRequests.reference, reference)).limit(1);
@@ -163,6 +177,7 @@ export async function submitUtr(reference: string, rawUtr: string, viewer: { id:
 
 /** Creates a gateway order for the customer's open payment, adding the online fee. */
 export async function createGatewayOrder(reference: string, provider: "razorpay" | "cashfree", viewer: { id: string }) {
+  await requireVerifiedPayer(viewer);
   const options = paymentOptions();
   if (!options[provider]) throw new PublicError("This payment option is not available yet. Please use the UPI QR.", 503);
   const [request] = await db.select().from(serviceRequests).where(eq(serviceRequests.reference, reference)).limit(1);
@@ -303,6 +318,7 @@ export async function paymentSummary() {
  * but the QR carries this payment's amount and reference, so it is only useful for paying this bill.
  */
 export async function revealUpiQr(reference: string, slot: number, viewer: { id: string; role: string }) {
+  await requireVerifiedPayer(viewer);
   const accounts = upiAccounts();
   const account = accounts.find((item) => item.slot === slot);
   if (!account) throw new PublicError("UPI payment is not available right now.", 404);

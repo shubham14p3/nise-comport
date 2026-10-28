@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePermission } from "@/lib/auth";
 import { apiError } from "@/lib/http";
-import { LEAD_STATUSES, listLeads, updateLead } from "@/lib/leads";
+import { LEAD_STATUSES, claimLead, listLeads, updateLead } from "@/lib/leads";
 
 export const runtime = "nodejs";
 
@@ -12,6 +12,15 @@ export async function GET(request: NextRequest) {
     const all = request.nextUrl.searchParams.get("all") === "1";
     return NextResponse.json({ leads: await listLeads(all ? [...LEAD_STATUSES] : undefined) });
   } catch (error) { return apiError(error); }
+}
+
+/** A one-tap Take case action, independent of marking the person contacted. */
+export async function POST(request: NextRequest) {
+  try {
+    const user=await requirePermission("requests");
+    const input=z.object({id:z.uuid(),action:z.literal("claim")}).parse(await request.json());
+    return NextResponse.json({ok:true,lead:await claimLead(input.id,user)});
+  }catch(error){return apiError(error);}
 }
 
 export async function PATCH(request: NextRequest) {

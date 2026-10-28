@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { requirePermission } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { scopeOf } from "@/lib/permissions";
 import { serviceRequests, users, payments } from "@/db/schema";
 import { PublicError } from "@/lib/errors";
 import { apiError, readJson } from "@/lib/http";
@@ -24,6 +25,8 @@ export async function POST(request:NextRequest) {
     const input=schema.parse(await readJson(request));
     const [row]=await db.select().from(serviceRequests).where(eq(serviceRequests.id,input.id)).limit(1);
     if(!row) throw new PublicError("Request not found.",404);
+    const scope=scopeOf(actor);
+    if(scope && !scope.includes(row.serviceSlug)) throw new PublicError("Request not found.",404);
     if(row.status!==input.expectedStatus) throw new PublicError("This request was changed by someone else. Reload first.",409);
     const status=nextReviewStatus(input.action,row.status);
     if(!status) throw new PublicError("This action is not available at this stage.",409);

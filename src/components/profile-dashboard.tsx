@@ -268,7 +268,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
             ) : (
               <p className="muted">Official reference: not yet submitted to the portal/insurer — we’ll add it here once it’s filed.</p>
             )}
-            <PanSavedDetails details={requestDetail.request.details}/>
+            <PanSavedDetails details={requestDetail.request.details} editReference={["submitted","reviewing","waiting_for_customer"].includes(requestDetail.request.status) && !requestDetail.request.officialReference ? requestDetail.request.reference : undefined}/>
             <RequestExtras details={requestDetail.request.details} fallback={focusRequest.description}/>
             {requestDetail.events.length > 0 && <ol className="timeline">{requestDetail.events.map((event, index) => <li key={`${event.createdAt}-${index}`}><b>{event.label}</b><small>{dateTime(event.createdAt)}</small></li>)}</ol>}
             {requestDetail.files.length > 0 && <div className="request-detail__files"><b>Supporting documents</b><ul>{requestDetail.files.map((file, index) => <li key={`${file.createdAt}-${index}`}><FileText size={16}/>{file.name} <small>· {dateLabel(file.createdAt)}</small></li>)}</ul></div>}

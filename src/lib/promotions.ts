@@ -1,3 +1,4 @@
+import { eventStateOf, type EventState } from "@/lib/promo-view";
 import { createHmac, randomInt } from "node:crypto";
 import { unstable_cache } from "next/cache";
 import { and, asc, count, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
@@ -267,7 +268,7 @@ export async function syncOffers() {
 // Admin
 // ---------------------------------------------------------------------------------------------
 
-export type AdminPromotion = PromoView & { id: string; active: boolean; locked: boolean; source: string | null; uses: number; perUserLimit: number | null; maxRedemptions: number | null; customerName: string | null };
+export type AdminPromotion = PromoView & { id: string; active: boolean; cancelled: boolean; state: EventState; locked: boolean; source: string | null; uses: number; perUserLimit: number | null; maxRedemptions: number | null; customerName: string | null };
 
 export async function adminPromotions() {
   const rows = await db.select({ coupon: coupons, customer: users.name }).from(coupons).leftJoin(users, eq(users.id, coupons.userId)).where(and(isNull(coupons.batchId), ne(coupons.kind, "welcome"))).orderBy(asc(coupons.eventStarts), asc(coupons.code)).limit(500)
@@ -280,7 +281,7 @@ export async function adminPromotions() {
   }).from(coupons).where(eq(coupons.kind, "welcome"));
   const today = istDate(new Date());
   const promotions: AdminPromotion[] = rows
-    .map((row) => ({ ...couponView(row), id: row.id, active: row.active, locked: row.locked, source: row.source, uses: useMap.get(row.id) ?? 0, perUserLimit: row.perUserLimit, maxRedemptions: row.maxRedemptions, customerName: row.customerName }))
+    .map((row) => { const view = couponView(row); return { ...view, id: row.id, active: row.active, cancelled: row.cancelled, state: eventStateOf({ active: row.active, cancelled: row.cancelled, startsOn: view.startsOn, endsOn: view.endsOn }, today), locked: row.locked, source: row.source, uses: useMap.get(row.id) ?? 0, perUserLimit: row.perUserLimit, maxRedemptions: row.maxRedemptions, customerName: row.customerName }; })
     .filter((row) => row.endsOn >= addDaysIso(today, -30));
   return { promotions, welcome: { issued: Number(welcome?.issued ?? 0), used: Number(welcome?.used ?? 0) } };
 }
@@ -380,11 +381,12 @@ export async function createPromotion(input: PromotionDetails & { code: string; 
   }
 }
 
-export async function updatePromotion(id: string, patch: PromotionDetails & { active?: boolean; startsOn?: string; endsOn?: string; eventStarts?: string; eventEnds?: string; unlock?: boolean }) {
+export async function updatePromotion(id: string, patch: PromotionDetails & { active?: boolean; cancelled?: boolean; startsOn?: string; endsOn?: string; eventStarts?: string; eventEnds?: string; unlock?: boolean }) {
   const [row] = await db.select().from(coupons).where(eq(coupons.id, id)).limit(1);
   if (!row || row.batchId || row.kind === "welcome") throw new PublicError("Promotion not found.", 404, { code: "not_found" });
   const changes: Partial<typeof coupons.$inferInsert> = { updatedAt: new Date() };
   if (patch.active !== undefined) changes.active = patch.active;
+  if (patch.cancelled !== undefined) { changes.cancelled = patch.cancelled; if (patch.cancelled) changes.active = false; }
   const datesChanged = patch.startsOn || patch.endsOn || patch.eventStarts || patch.eventEnds;
   if (datesChanged) {
     const startsOn = patch.startsOn ?? (row.startsAt ? istDate(row.startsAt) : istDate(new Date()));

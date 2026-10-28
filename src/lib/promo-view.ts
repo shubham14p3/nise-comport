@@ -286,3 +286,13 @@ export function promoCsv(views: PromoView[], options: ExportOptions & { communit
   }
   return `${rows.map((row) => row.map(csvCell).join(",")).join("\r\n")}\r\n`;
 }
+
+/** Where an event is in its life. Cancelled wins, then switched off ("closed"), then the dates. */
+export type EventState = "upcoming" | "ongoing" | "completed" | "closed" | "cancelled";
+export function eventStateOf(row: { active: boolean; cancelled: boolean; startsOn: string; endsOn: string }, today: string): EventState {
+  if (row.cancelled) return "cancelled";
+  if (!row.active) return "closed";
+  if (row.endsOn < today) return "completed";
+  if (row.startsOn > today) return "upcoming";
+  return "ongoing";
+}

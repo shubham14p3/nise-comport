@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, count, desc, eq, ilike, notInArray, or, sql, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, ilike, inArray, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { requirePermission } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
+import { hasPermission, scopeOf } from "@/lib/permissions";
 import { db } from "@/lib/db";
 import { printJobs, serviceRequests, users } from "@/db/schema";
 import { REQUEST_STATUSES } from "@/lib/requests";
@@ -10,6 +10,7 @@ import { apiError } from "@/lib/http";
 export async function GET(request: NextRequest) {
   try {
     const user = await requirePermission("requests");
+    const scope = scopeOf(user);
     const statusRaw = (request.nextUrl.searchParams.get("status") ?? "").slice(0, 40);
     const status = statusRaw === "history" ? "history" : REQUEST_STATUSES.includes(statusRaw as never) ? statusRaw : "";
     const pageSizeRaw = Number(request.nextUrl.searchParams.get("pageSize") ?? 20);
@@ -27,6 +28,8 @@ export async function GET(request: NextRequest) {
       printFilters.push(or(ilike(printJobs.reference, like), ilike(users.email, like), ilike(users.name, like), ilike(users.phone, like))!);
       requestFilters.push(or(ilike(serviceRequests.reference, like), ilike(users.email, like), ilike(users.name, like), ilike(users.phone, like), ilike(serviceRequests.serviceName, like))!);
     }
+    // Staff limited to some service categories see only those requests; print orders are not in a category, so they are hidden.
+    if (scope) { requestFilters.push(inArray(serviceRequests.serviceSlug, scope)); printFilters.push(sql`false`); }
     const [jobs, requests, [jobCount], [requestCount]] = await Promise.all([
       db.select({ id: printJobs.id, reference: printJobs.reference, name: users.name, email: users.email, phone: users.phone, whatsapp: users.whatsapp, fileName: printJobs.fileName, pageCount: printJobs.pageCount, total: printJobs.total, fulfillment: printJobs.fulfillment, status: printJobs.status, createdAt: printJobs.createdAt, scheduledAt: printJobs.scheduledAt })
         .from(printJobs).innerJoin(users, eq(printJobs.userId, users.id)).where(printFilters.length ? and(...printFilters) : undefined).orderBy(desc(printJobs.createdAt), desc(printJobs.id)).limit(pageSize).offset(jobPage * pageSize),

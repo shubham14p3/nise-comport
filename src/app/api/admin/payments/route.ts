@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requirePermission } from "@/lib/auth";
+import { requireAnyPermission } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 import { apiError, readJson } from "@/lib/http";
 import { PublicError } from "@/lib/errors";
 import { cancelPayment, createPaymentRequest, listPayments, markPaid, paymentOptions, paymentSummary, processRefund } from "@/lib/payments";
@@ -21,7 +22,7 @@ const schema = z.discriminatedUnion("action", [
 
 export async function GET(request: NextRequest) {
   try {
-    await requirePermission("requests");
+    await requireAnyPermission(["payments", "requests"]);
     const status = request.nextUrl.searchParams.get("status") ?? "";
     const options = paymentOptions();
     const page = Math.max(0, Number(request.nextUrl.searchParams.get("page")) || 0);
@@ -33,8 +34,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requirePermission("requests");
+    const user = await requireAnyPermission(["payments", "requests"]);
     const input = schema.parse(await readJson(request));
+    // Verifying a received UPI payment is open to request and payment staff. Creating, refunding or cancelling money needs the charge permission.
+    if (input.action !== "markPaid" && !hasPermission(user, "charge")) throw new PublicError("Only people with the payment-request permission can do this. Ask the owner.", 403, { code: "forbidden" });
     if (input.action === "create") {
       const fee = input.serviceFee!==undefined?Number(input.serviceFee):Number(input.amount??0);
       const ext = input.externalFee!==undefined?Number(input.externalFee):0;

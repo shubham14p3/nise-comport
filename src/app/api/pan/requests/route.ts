@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { serviceRequests } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
@@ -11,6 +11,9 @@ import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
 import { isIdempotencyConflict, notifyNewRequest, recordEvent, withUniqueReference } from "@/lib/requests";
 import { sendDbDownFallbackWhatsApp } from "@/lib/whatsapp-alerts";
 import { storeDetailedIntake } from "@/lib/detailed-intake-server";
+import { completeInvitedServiceCallback } from "@/lib/leads";
+import { createPaymentRequest } from "@/lib/payments";
+import { PAN_FIXED_RUPEES } from "@/lib/review-workflow";
 
 const envelope = z.object({ idempotencyKey: z.uuid().optional() }).passthrough();
 
@@ -32,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
     const { fileId, detailedIntake, ...panInput } = parsed.data;
     pan = panInput;
-    const securedIntake = detailedIntake && panInput.applicant==="individual" ? storeDetailedIntake(detailedIntake) : null;
+    const securedIntake = detailedIntake && (panInput.applicant==="individual" || ["pan49a","pan93"].includes(detailedIntake.kind)) ? storeDetailedIntake(detailedIntake) : null;
     if (fileId) throw new PublicError("Document attachments are arranged after review.", 400);
     // const copies so TS carries the "definitely assigned" narrowing into the closure below —
     // the hoisted `let`s above stay typed `T | undefined` inside a nested function either way.
@@ -48,15 +51,25 @@ export async function POST(request: NextRequest) {
     await enforceRate(RATE_RULES.requestsPerUserDay, userKey, "You’ve reached today’s online request limit. Please call or WhatsApp us.");
 
     const label = panServiceLabels[currentPan.service];
+    // A visitor who opened a quick-start request completes that same request, so staff see one file.
+    const [quickStart] = await db.select({ id: serviceRequests.id, reference: serviceRequests.reference }).from(serviceRequests)
+      .where(and(eq(serviceRequests.userId, currentUser.id), eq(serviceRequests.serviceSlug, "pan-card"), eq(serviceRequests.status, "submitted"), sql`${serviceRequests.details}->>'panQuickStart' = 'true'`))
+      .orderBy(desc(serviceRequests.createdAt)).limit(1);
+    const details = { kind: "pan", description: currentPan.notes || label, pan: currentPan, ...(securedIntake?{intake:securedIntake}:{}) };
     let created: { id: string; reference: string };
     try {
-      created = await withUniqueReference("PAN", async (reference) => {
-        const [row] = await db.insert(serviceRequests).values({
-          reference, userId: currentUser.id, serviceSlug: "pan-card", serviceName: label,
-          details: { kind: "pan", description: currentPan.notes || label, pan: currentPan, ...(securedIntake?{intake:securedIntake}:{}) }, serviceFee: "0.00", externalFee: "0.00", idempotencyKey: idempotencyKey ?? null,
-        }).returning({ id: serviceRequests.id, reference: serviceRequests.reference });
-        return row;
-      });
+      created = quickStart
+        ? (await db.update(serviceRequests).set({
+          serviceName: label, idempotencyKey: idempotencyKey ?? null, updatedAt: new Date(),
+          details: { ...details, contactName: currentPan.contactName, contactPhone: currentPan.phone, preferredContact: "whatsapp" },
+        }).where(eq(serviceRequests.id, quickStart.id)).returning({ id: serviceRequests.id, reference: serviceRequests.reference }))[0]
+        : await withUniqueReference("PAN", async (reference) => {
+          const [row] = await db.insert(serviceRequests).values({
+            reference, userId: currentUser.id, serviceSlug: "pan-card", serviceName: label,
+            details, serviceFee: "0.00", externalFee: "0.00", idempotencyKey: idempotencyKey ?? null,
+          }).returning({ id: serviceRequests.id, reference: serviceRequests.reference });
+          return row;
+        });
     } catch (error) {
       if (idempotencyKey && isIdempotencyConflict(error)) {
         const [existing] = await db.select({ reference: serviceRequests.reference }).from(serviceRequests).where(and(eq(serviceRequests.userId, currentUser.id), eq(serviceRequests.idempotencyKey, idempotencyKey))).limit(1);
@@ -64,11 +77,15 @@ export async function POST(request: NextRequest) {
       }
       throw error;
     }
-    await recordEvent("service", created.id, currentUser.id, null, "submitted", "PAN assistance form");
+    await recordEvent("service", created.id, currentUser.id, null, "submitted", quickStart ? "PAN full form (after quick start)" : "PAN assistance form");
+    // Same fixed charge as the request wizard: the customer can pay now, before staff review.
+    await createPaymentRequest({ reference: created.reference, amountPaise: PAN_FIXED_RUPEES * 100, serviceFeePaise: PAN_FIXED_RUPEES * 100, externalFeePaise: 0, note: "PAN charge: official fees, service, printout, courier and photo" }, { id: currentUser.id })
+      .catch((error) => console.error("[pan] could not issue the fixed payment", error));
     await notifyNewRequest(currentUser, created.reference, `PAN assistance – ${label}`, [
       `Applicant: ${currentPan.fullName}`, `Contact: ${currentPan.contactName} · ${currentPan.phone}`, `Email: ${currentPan.email}`,
       `Address: ${currentPan.address}`, `City: ${currentPan.city}`, `State / province: ${currentPan.state}`, `Country: ${currentPan.country}`, `PIN / postal code: ${currentPan.postalCode}`,
     ]);
+    await completeInvitedServiceCallback(currentPan.phone,currentUser.email,"pan-card").catch(() => undefined);
     return NextResponse.json({ reference: created.reference }, { status: 201 });
   } catch (error) {
     if (isUnavailable(error) && user) {

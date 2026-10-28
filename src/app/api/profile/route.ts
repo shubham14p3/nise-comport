@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod";
-import { users } from "@/db/schema";
+import { users,activityLog } from "@/db/schema";
+import { profileChanges,formatAuditChange } from "@/lib/customer-audit";
 import { requireUser } from "@/lib/auth";
 import { ensureClaim } from "@/lib/claims";
 import { db } from "@/lib/db";
@@ -48,11 +49,25 @@ export async function PATCH(request: NextRequest) {
     const guard = expected && Number.isFinite(expected.getTime())
       ? and(eq(users.id, user.id), sql`date_trunc('milliseconds', ${users.updatedAt}) = ${expected.toISOString()}::timestamptz`)
       : eq(users.id, user.id);
-    const [updated] = await db.update(users).set({
-      name, phone, ...(phone === user.phone ? {} : { phoneVerifiedAt: null }), whatsapp: whatsapp && whatsapp !== phone ? whatsapp : null, city: input.city || null, state: input.state || null, postalCode: input.postalCode || null,
-      profileSummary: input.profileSummary || null, preferredContact: input.preferredContact, updatedAt: new Date(),
-    }).where(guard).returning(returning);
-    if (!updated) throw new PublicError("Your profile was changed in another tab or device. Reload the page to see the latest details, then try again.", 409, { code: "stale_profile" });
+    const updated = await db.transaction(async tx=>{
+      const [before]=await tx.select().from(users).where(eq(users.id,user.id)).limit(1);
+      if(!before)throw new PublicError("Account not found.",404);
+      const [result]=await tx.update(users).set({
+        name, phone, ...(phone === before.phone ? {} : { phoneVerifiedAt: null }),
+        whatsapp:whatsapp && whatsapp !==phone ? whatsapp:null,
+        city:input.city||null,state:input.state||null,postalCode:input.postalCode||null,
+        profileSummary:input.profileSummary||null,preferredContact:input.preferredContact,updatedAt:new Date(),
+      }).where(guard).returning(returning);
+      if(!result)throw new PublicError("Your profile changed in another tab or device. Reload and try again.",409,{code:"stale_profile"});
+      const changes=profileChanges(before,result);
+      if(changes.length)await tx.insert(activityLog).values(changes.map(change=>({
+        kind:"staff" as const,permission:"team",category:"customer-profile",
+        title:`Customer changed ${change.label}`.slice(0,200),
+        detail:formatAuditChange(change),refType:"customer-profile",
+        refId:user.id,actorId:user.id,
+      })));
+      return result;
+    });
     if (phone && phone !== user.phone) ensureClaim({ ...updated, phoneVerifiedAt: null }).catch(() => undefined);
     return NextResponse.json({ ok: true, user: { ...updated, updatedAt: updated.updatedAt.toISOString() } });
   } catch (error) { return apiError(error); }

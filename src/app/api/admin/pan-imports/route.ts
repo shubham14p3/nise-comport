@@ -1,4 +1,4 @@
-import { createCipheriv, createHmac, randomBytes } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { NextRequest, NextResponse } from "next/server";
 import { and, count, desc, eq, ilike } from "drizzle-orm";
@@ -10,23 +10,10 @@ import { hasPermission } from "@/lib/permissions";
 import { db } from "@/lib/db";
 import { apiError } from "@/lib/http";
 import { privateStoragePath } from "@/lib/storage";
+import { encryptionKey, encryptPan, panIndexKey } from "@/lib/pan-store";
 
 export const runtime = "nodejs";
 const MAX_IMPORT_BYTES = 20 * 1024 * 1024;
-function encryptionKey() {
-  const encoded = process.env.PAN_ENCRYPTION_KEY;
-  if (!encoded) throw new Error("PAN import encryption is not configured.");
-  const key = Buffer.from(encoded, "base64");
-  if (key.byteLength !== 32) throw new Error("PAN_ENCRYPTION_KEY must be base64 encoding of exactly 32 random bytes.");
-  return key;
-}
-function panIndexKey(key: Buffer) { return createHmac("sha256", key).update("NISE-COMPORT-PAN-INDEX-v1").digest(); }
-function encryptPan(value: string, key: Buffer) {
-  const nonce = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", key, nonce);
-  const ciphertext = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
-  return [nonce, cipher.getAuthTag(), ciphertext].map(part => part.toString("base64url")).join(".");
-}
 function cellText(value: ExcelJS.CellValue | undefined) {
   if (value === null || value === undefined) return "";
   if (typeof value === "object" && "text" in value && typeof value.text === "string") return value.text.trim();

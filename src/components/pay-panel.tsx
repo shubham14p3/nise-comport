@@ -3,11 +3,13 @@
 import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { secureApi } from "@/lib/secure-api-client";
 import { rupees } from "@/lib/payments-core";
 import Link from "next/link";
 
 type Props = {
+  who: { name: string; email: boolean; phone: boolean } | null;
   reference: string; status: string; amountPaise: number; feePaise: number; note: string | null; paidVia: string | null;
   serviceFeePaise: number; externalFeePaise: number; couponCode: string | null; discountPaise: number;
   upiSlots: { slot: number; label: string }[]; qrSeconds: number; razorpay: boolean; cashfree: boolean; feePercent: number;
@@ -24,6 +26,21 @@ type Reveal = { svg: string; link: string; vpa: string; label: string; expiresAt
 // Request-time UPI expiry, created only in an async user action.
 function expiryFromSeconds(seconds: number) { return Date.now() + seconds * 1000; }
 const clock = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}`;
+
+/** The UPI ID is hidden (XXXX) until the customer taps the eye. Copying it from the page is blocked; the customer types or pastes it into their own UPI app. */
+function UpiIdField({ value }: { value: string }) {
+  const [show, setShow] = useState(false);
+  const [name, domain] = value.split("@");
+  const masked = `${"X".repeat(Math.max(4, (name ?? "").length))}@${domain ?? ""}`;
+  const block = (event: { preventDefault: () => void }) => event.preventDefault();
+  return <div className="pay-upi" onCopy={block} onCut={block} onContextMenu={block} onDragStart={block}>
+    <span>UPI ID: </span>
+    <b className="pay-upi__value" aria-label={show ? "UPI ID" : "UPI ID hidden"}>{show ? value : masked}</b>
+    <button type="button" className="pay-upi__eye" onClick={() => setShow((on) => !on)} aria-label={show ? "Hide UPI ID" : "Show UPI ID"} aria-pressed={show}>
+      {show ? <EyeOff size={16}/> : <Eye size={16}/>}
+    </button>
+  </div>;
+}
 
 export default function PayPanel(p: Props) {
   const router = useRouter();
@@ -115,6 +132,10 @@ export default function PayPanel(p: Props) {
   if (p.status === "cancelled") return <div className="pay-card"><h2>This payment request was cancelled</h2><p>Please contact us if you think this is a mistake.</p></div>;
 
   return <div className="pay-card">
+    {p.who && <div className="pay-who" role="status">
+      <p><b>Signed in as {p.who.name}</b> · Email {p.who.email ? "verified ✓" : "not verified"} · Mobile {p.who.phone ? "verified ✓" : "not verified"}</p>
+      {!(p.who.email && p.who.phone) && <p className="alert alert--warn">Verify your email and mobile number to pay. <Link href="/profile">Open your profile</Link> to verify them.</p>}
+    </div>}
     {p.razorpay && <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload"/>}
     {p.cashfree && <Script src="https://sdk.cashfree.com/js/v3/cashfree.js" strategy="lazyOnload"/>}
     <p className="pay-amount">{rupees(p.amountPaise)}</p>
@@ -157,7 +178,7 @@ export default function PayPanel(p: Props) {
       {p.upiSlots.length > 1 && <div className="seg" role="group" aria-label="Choose a UPI account">{p.upiSlots.map((item) => <button key={item.slot} type="button" className={slot === item.slot ? "is-active" : undefined} disabled={busy === "qr"} onClick={() => { if (reveal) void showQr(item.slot); else setSlot(item.slot); }}>{item.label}</button>)}</div>}
       {reveal ? <>
         <div className="pay-qr" dangerouslySetInnerHTML={{ __html: reveal.svg }}/>
-        <p className="pay-ref">UPI ID: {reveal.vpa}</p>
+        <UpiIdField value={reveal.vpa}/>
         <p className="pay-ref" role="timer" aria-live="off">Hides in {clock(left)}</p>
         <a className="btn btn--primary btn--block" href={reveal.link}>Open my UPI app</a>
         <button className="btn btn--ghost btn--block" type="button" onClick={() => setReveal(null)}>Hide now</button>

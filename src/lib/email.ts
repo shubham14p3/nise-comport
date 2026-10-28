@@ -210,6 +210,20 @@ export async function sendEmailChangedNotice(oldEmail: string, name: string, new
   });
 }
 
+/** Account closure initiated by the owner, without promising deletion of statutory records. */
+export async function sendAdminAccountArchivedEmail(to:string,name:string){
+  await sendMail({
+    to,subject:"Your NISE COMPORT account was closed",
+    heading:"Your account has been closed",
+    paragraphs:[
+      `Hello ${name},`,
+      "Your NISE COMPORT customer login has been closed by our service team.",
+      "Account contact details have been anonymised in the login record. We may still retain legally required service documents, payments, and audit records.",
+      `If you believe this was a mistake, please contact our office at ${site.phones.primary.display}.`
+    ],
+  });
+}
+
 export async function sendAccountDeletedEmail(to: string, name: string) {
   await sendMail({
     to, subject: "Your NISE COMPORT account was deleted", heading: "Your account was deleted",
@@ -266,6 +280,22 @@ export async function sendOfficialReferenceEmail(to: string, name: string, refer
 }
 
 /** A message to a customer (e.g. their personal promo code) with a button to their account. */
+/** Only staff can trigger this invitation after confirming the callback customer wishes to proceed online. */
+export async function sendServiceFormInvitationEmail(to: string, name: string, service: string, url: string) {
+  await sendMail({
+    to,
+    subject: `Your NISE COMPORT online form — ${service}`,
+    heading: "Continue your service request online",
+    paragraphs: [
+      `Hello ${name},`,
+      `As discussed with our team, you can now continue online with ${service}.`,
+      "Open the link below, fill in the application details, sign in to preview, and submit after verifying everything.",
+      "Do not share Aadhaar OTPs or account passwords. You may also visit our service desk instead.",
+    ],
+    action: { label: "Open my service form", href: url },
+  });
+}
+
 export async function sendCustomerMessageEmail(to: string, subject: string, lines: string[], link: string) {
   await sendMail({ to, subject, heading: subject, paragraphs: lines, action: { label: "Open my account", href: link } });
 }

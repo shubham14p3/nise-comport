@@ -1,0 +1,11 @@
+.customer-admin-detail{display:grid;gap:16px;padding:18px;border:1px solid #dde5f3;border-radius:16px;background:var(--surface,#fff)}
+.customer-admin-detail h3{display:flex;align-items:center;gap:9px;font-size:18px}
+.customer-admin-detail>p{font-size:12px;color:#61708b}
+.customer-admin-actions{display:flex;flex-wrap:wrap;gap:9px}
+.customer-admin-detail .form-grid{gap:14px}
+.customer-admin-detail textarea{resize:vertical;min-height:70px}
+.customer-admin-detail .inbox__feed{max-height:540px;overflow:auto;padding:12px;border:1px solid #e1e7f2;border-radius:12px}
+.customer-admin-detail .inbox__feed li{padding:10px;border-bottom:1px solid #ecf0f7}
+.customer-admin-detail .inbox__feed p{white-space:pre-wrap;overflow-wrap:anywhere}
+.admin-queue .admin-table-wrap{max-width:100%;overflow-x:auto}
+@media(max-width:620px){.customer-admin-detail{padding:11px}.customer-admin-actions>.btn{width:100%}}

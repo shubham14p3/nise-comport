@@ -9,10 +9,11 @@ import { secureApi } from "@/lib/secure-api-client";
 import { AdminPager, useAdminPagination } from "@/components/admin-pager";
 import type { PromoView } from "@/lib/promo-view";
 
-type Promotion = PromoView & { id: string; active: boolean; locked: boolean; source: string | null; uses: number; perUserLimit: number | null; maxRedemptions: number | null; customerName?: string | null };
+type Promotion = PromoView & { id: string; active: boolean; cancelled: boolean; state: "upcoming" | "ongoing" | "completed" | "closed" | "cancelled"; locked: boolean; source: string | null; uses: number; perUserLimit: number | null; maxRedemptions: number | null; customerName?: string | null };
 type Listing = { promotions: Promotion[]; welcome: { issued: number; used: number } };
 type SyncReport = { feed: { ok: boolean; events: number; matched: number }; promos: number; created: number; updated: number; unchanged: number; conflicts: string[] };
-type View = "live" | "upcoming" | "all";
+type View = "all" | "upcoming" | "ongoing" | "completed" | "closed" | "cancelled";
+const VIEWS: { id: View; label: string }[] = [{ id: "all", label: "All" }, { id: "upcoming", label: "Upcoming" }, { id: "ongoing", label: "Ongoing" }, { id: "completed", label: "Completed" }, { id: "closed", label: "Closed" }, { id: "cancelled", label: "Cancelled" }];
 
 const day = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
@@ -23,7 +24,7 @@ const day = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en
  */
 export default function PromotionsPanel({ canEdit }: { canEdit: boolean }) {
   const [data, setData] = useState<Listing | null>(null);
-  const [view, setView] = useState<View>("live");
+  const [view, setView] = useState<View>("ongoing");
   const [q, setQ] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -44,8 +45,7 @@ export default function PromotionsPanel({ canEdit }: { canEdit: boolean }) {
   }, []);
 
   const rows = useMemo(() => (data?.promotions ?? []).filter((row) => {
-    if (view === "live" && !(row.startsOn <= today && today <= row.endsOn)) return false;
-    if (view === "upcoming" && row.startsOn <= today) return false;
+    if (view !== "all" && row.state !== view) return false;
     const words = q.trim().toLowerCase();
     return !words || `${row.code} ${row.names.en} ${row.communities.join(" ")}`.toLowerCase().includes(words);
   }), [data, view, q, today]);
@@ -78,7 +78,7 @@ export default function PromotionsPanel({ canEdit }: { canEdit: boolean }) {
       <div><b>{data?.welcome.used ?? "…"}</b><small>welcome coupons used</small></div>
     </div>
     <div className="promo-admin__bar">
-      <div className="seg">{(["live", "upcoming", "all"] as View[]).map((id) => <button key={id} type="button" className={view === id ? "is-active" : undefined} aria-pressed={view === id} onClick={() => setView(id)}>{id === "live" ? "Live" : id === "upcoming" ? "Upcoming" : "All"}</button>)}</div>
+      <div className="seg">{VIEWS.map(({ id, label }) => <button key={id} type="button" className={view === id ? "is-active" : undefined} aria-pressed={view === id} onClick={() => setView(id)}>{label} {id === "all" ? "" : (data?.promotions ?? []).filter((row) => row.state === id).length}</button>)}</div>
       <label className="input-wrap"><Search size={16}/><input value={q} onChange={(event) => setQ(event.target.value)} placeholder="Search code or festival" aria-label="Search promotions"/></label>
       {canEdit && <button type="button" className="btn btn--primary btn--sm" onClick={() => { setEditor({}); setNotice(""); }}><Plus size={15}/>New promotion</button>}
       {canEdit && <button type="button" className="btn btn--ghost btn--sm" onClick={() => void sync()} disabled={busy === "sync"}><RefreshCw size={15} className={busy === "sync" ? "spin" : undefined}/>{busy === "sync" ? "Syncing…" : "Sync with Google calendar"}</button>}
@@ -105,6 +105,8 @@ export default function PromotionsPanel({ canEdit }: { canEdit: boolean }) {
           <span className="promo-row__tags">
             {live && row.active && <span className="status-pill status-pill--done">Live</span>}
             {!row.active && <span className="status-pill">Off</span>}
+            <span className="status-pill">{({ upcoming: "Upcoming", ongoing: "Ongoing", completed: "Completed", closed: "Closed", cancelled: "Cancelled" } as Record<string, string>)[row.state]}</span>
+            {canEdit && row.state !== "completed" && <button type="button" className="btn btn--ghost btn--sm" disabled={busy === row.id} onClick={() => void patch(row.id, { cancelled: !row.cancelled }, row.cancelled ? `Restored ${row.code}. Switch it on to use it again.` : `Cancelled ${row.code}. Customers can no longer use it.`)}>{row.cancelled ? "Restore" : "Cancel event"}</button>}
             {row.tentative && <span className="status-pill status-pill--warn"><TriangleAlert size={12}/> Dates TBC</span>}
             {row.locked && <span className="status-pill"><Lock size={12}/> Edited</span>}
             {row.source === "google" && <span className="status-pill">Google date</span>}

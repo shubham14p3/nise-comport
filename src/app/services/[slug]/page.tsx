@@ -1,4 +1,5 @@
 import SiteHeader from "@/components/site-header";
+import ServiceCallbackButton from "@/components/service-callback-button";
 import OfficialLinks from "@/components/official-links";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -112,8 +113,9 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
           <p className="page-hero__lead">{service.description}</p>
           {editorial?.audience && <p className="page-hero__audience"><b>For:</b> {editorial.audience}</p>}
           <div className="page-hero__ctas">
-            {motor ? <Link className="btn btn--primary btn--lg" href={motor}>Get insurance quotes <ArrowRight size={18}/></Link>
-              : !comingSoon && <Link className="btn btn--primary btn--lg" href={detail ? startHref : `/request?category=${service.slug}`}>Start in 4 steps <ArrowRight size={18}/></Link>}
+            {detail && <ServiceCallbackButton serviceSlug={service.slug} serviceName={title} size="lg" className="btn--primary"/>}
+            {motor ? <Link className="btn btn--glass btn--lg" href={motor}>Continue online <ArrowRight size={18}/></Link>
+              : !comingSoon && <Link className="btn btn--glass btn--lg" href={detail ? startHref : `/request?category=${service.slug}`}>Continue online <ArrowRight size={18}/></Link>}
             <a className="btn btn--wa btn--lg" href={enquiry} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> WhatsApp</a>
             <a className="btn btn--glass btn--lg" href={`tel:${site.phones.primary.e164}`}><Phone size={18}/> Call</a>
           </div>
@@ -170,7 +172,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
           <span className="eyebrow">READY WHEN YOU ARE</span>
           <h3>Start {shortServiceName(title)}</h3>
           <ol className="mini-steps"><li>Pick service</li><li>Your details</li><li>Visit time</li><li>Send</li></ol>
-          <Link className="btn btn--primary btn--block" href={startHref}>Start in 4 steps <ArrowRight size={18}/></Link>
+          <ServiceCallbackButton serviceSlug={service.slug} serviceName={title} className="btn--primary btn--block"/><Link className="btn btn--ghost btn--block" href={startHref}>Continue online <ArrowRight size={18}/></Link>
           <a className="btn btn--wa btn--block" href={enquiry} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> Ask on WhatsApp</a>
           <p className="fine"><ShieldCheck size={15}/> Fees explained before we start.</p>
         </div>
@@ -193,7 +195,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
       <div className="container">
         <div className="section-head section-head--left"><span className="eyebrow">PAN HELP</span><h2>PAN guides and tools</h2><p>Everything about PAN in one place: applying, corrections, Aadhaar linking, e-PAN, forms and fixing problems.</p></div>
         <div className="pan-grid">{panGuides.map((guide) => <Link className="pan-card" key={guide.slug} href={`/pan/${guide.slug}`}><h3>{guide.title}</h3><p>{guide.intro}</p><span>Read guide →</span></Link>)}</div>
-        <div className="page-hero__ctas" style={{ marginTop: 16 }}><Link className="btn btn--primary" href="/pan/request">Start a PAN assistance request <ArrowRight size={16}/></Link><Link className="btn btn--ghost" href="/track#pan">Track a PAN application</Link></div>
+        <div className="page-hero__ctas" style={{ marginTop: 16 }}><Link className="btn btn--primary" href="/pan/request">Start a PAN assistance request <ArrowRight size={16}/></Link><Link className="btn btn--primary" href="/pan/93">Form 93 application preview (current)</Link><Link className="btn btn--ghost" href="/pan/49a">Form 49A PDF-style preview (archived)</Link><Link className="btn btn--ghost" href="/track#pan">Track a PAN application</Link></div>
       </div>
     </section> : null}
 

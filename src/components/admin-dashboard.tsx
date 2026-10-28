@@ -2,6 +2,7 @@
 
 import { AdminPager } from "@/components/admin-pager";
 import { FormEvent, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import RequestFlow from "@/components/request-flow";
 import dynamic from "next/dynamic";
 import SiteHeader from "@/components/site-header";
 import Portal from "@/components/portal";
@@ -11,7 +12,7 @@ import { WhatsAppIcon } from "@/components/icons";
 
 import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
-import { ArrowRight, Bell, Cake, ClipboardList, Contact, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { ArrowRight, Bell, Cake, ClipboardList, Contact, UserRound, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
 
 
@@ -43,6 +44,7 @@ const PromotionsPanel = dynamic(() => import("@/components/promotions-panel"), {
 const CampaignsPanel = dynamic(() => import("@/components/campaigns-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
 const ContactsPanel = dynamic(() => import("@/components/contacts-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
 const OutreachPanel = dynamic(() => import("@/components/outreach-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const CustomerManagementPanel = dynamic(() => import("@/components/customer-management-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading customer records…</p> });
 const TeamPanel = dynamic(() => import("@/components/team-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
 const SiteTeamPanel = dynamic(() => import("@/components/site-team-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
 const PaymentsPanel = dynamic(() => import("@/components/payments-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
@@ -76,7 +78,7 @@ const options = ["submitted", "reviewing", "waiting_for_customer", "awaiting_pay
 const label = (value: string) => { const text = value.replaceAll("_", " "); return text.charAt(0).toUpperCase() + text.slice(1); };
 const when = (value: string) => new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 
-function RequestQueue() {
+function RequestQueue({ canCharge }: { canCharge: boolean }) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [status, setStatus] = useState("");
@@ -89,13 +91,6 @@ function RequestQueue() {
   const [detailBusy, setDetailBusy] = useState(false);
   const detailCloseRef = useRef<HTMLButtonElement>(null);
   const [historyPage, setHistoryPage] = useState(0);
-  const [officialRef, setOfficialRef] = useState("");
-  const [officialRefLabel, setOfficialRefLabel] = useState("");
-  const [officialRefSaving, setOfficialRefSaving] = useState(false);
-  const [reviewNote, setReviewNote] = useState("");
-  const [serviceFee, setServiceFee] = useState("");
-  const [externalFee, setExternalFee] = useState("0");
-  const [quoteNote, setQuoteNote] = useState("");
   const [workflowBusy, setWorkflowBusy] = useState(false);
   const [jobPage, setJobPage] = useState(0);
   const [requestPage, setRequestPage] = useState(0);
@@ -164,58 +159,48 @@ function RequestQueue() {
       const result = await secureApi<RequestDetail>("B6r1K8mQ3cT9", { id });
       setDetail(result);
       setHistoryPage(0);
-      setOfficialRef(result.request.officialReference ?? "");
-      setOfficialRefLabel(result.request.officialReferenceLabel ?? "");
-      setReviewNote("");
-      setServiceFee("");
-      setExternalFee("0");
-      setQuoteNote("");
     }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not open request details."); }
     finally { setDetailBusy(false); }
   }
 
-  async function saveOfficialReference() {
-    if (!detail) return;
+  async function saveOfficialReference(ref: string, label: string): Promise<boolean> {
+    if (!detail) return false;
     const id = detail.request.id;
-    setOfficialRefSaving(true); setError(""); setNotice("");
+    setWorkflowBusy(true); setError(""); setNotice("");
     try {
-      await secureApi("R1k5V8nD3sJ9", {
-        id, kind: "service", status: detail.request.status, expectedStatus: detail.request.status,
-        officialReference: officialRef.trim(), officialReferenceLabel: officialRefLabel.trim(),
-      });
-      setRequests(rows => rows.map(row => row.id === id ? { ...row, officialReference: officialRef.trim() || null, officialReferenceLabel: officialRefLabel.trim() || null } : row));
-      setNotice(officialRef.trim() ? "Official reference saved. The customer will be notified." : "Official reference cleared.");
+      await secureApi("R1k5V8nD3sJ9", { id, kind: "service", status: detail.request.status, expectedStatus: detail.request.status, officialReference: ref, officialReferenceLabel: label });
+      setRequests(rows => rows.map(row => row.id === id ? { ...row, officialReference: ref || null, officialReferenceLabel: label || null } : row));
+      setNotice(ref ? "Official reference saved. The customer will be notified." : "Official reference cleared.");
       await openDetail(id);
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save the official reference."); }
-    finally { setOfficialRefSaving(false); }
+      return true;
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save the official reference."); return false; }
+    finally { setWorkflowBusy(false); }
   }
 
-  async function reviewAction(action: "start" | "changes" | "approve") {
-    if(!detail || workflowBusy)return;
-    setWorkflowBusy(true);setError("");setNotice("");
+  async function reviewAction(action: "start" | "changes" | "approve", note: string): Promise<boolean> {
+    if (!detail || workflowBusy) return false;
+    setWorkflowBusy(true); setError(""); setNotice("");
     try {
-      await secureApi("N8q4B1tK7mD2",{id:detail.request.id,expectedStatus:detail.request.status,action,note:reviewNote.trim()});
+      await secureApi("N8q4B1tK7mD2", { id: detail.request.id, expectedStatus: detail.request.status, action, note });
       await load();
       await openDetail(detail.request.id);
-      setNotice(action==="changes"?"Customer asked for missing information.":action==="approve"?"Details approved. Enter the amount to request payment.":"Request moved to review.");
-    }catch(reason){setError(reason instanceof Error?reason.message:"Could not update review.");}
-    finally{setWorkflowBusy(false);}
+      setNotice(action === "changes" ? "Customer asked for missing information." : action === "approve" ? "Details approved. Next: send the payment request." : "Request moved to review.");
+      return true;
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not update review."); return false; }
+    finally { setWorkflowBusy(false); }
   }
-  async function issueQuote() {
-    if(!detail||workflowBusy)return;
-    const service=Number(serviceFee),external=Number(externalFee);
-    if(!Number.isFinite(service)||!Number.isFinite(external)||service<0||external<0||service+external<1||
-       !Number.isInteger(Math.round(service*100))||!Number.isInteger(Math.round(external*100))){
-      setError("Enter valid rupee amounts, including paise where needed.");return;
-    }
-    setWorkflowBusy(true);setError("");setNotice("");
-    try{
-      await secureApi("H6k2B9tW4xC7",{action:"create",reference:detail.request.reference,serviceFee:service,externalFee:external,note:quoteNote.trim()});
-      await load();await openDetail(detail.request.id);
-      setNotice("Payment request created. Customer can now pay in their account.");
-    }catch(reason){setError(reason instanceof Error?reason.message:"Unable to issue payment quote.");}
-    finally{setWorkflowBusy(false);}
+
+  async function issueQuote(service: number, external: number, note: string): Promise<boolean> {
+    if (!detail || workflowBusy) return false;
+    setWorkflowBusy(true); setError(""); setNotice("");
+    try {
+      await secureApi("H6k2B9tW4xC7", { action: "create", reference: detail.request.reference, serviceFee: service, externalFee: external, note });
+      await load(); await openDetail(detail.request.id);
+      setNotice("Payment request created. The customer can now pay in their account.");
+      return true;
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to issue payment quote."); return false; }
+    finally { setWorkflowBusy(false); }
   }
 
   async function openPrivateFile(operation: string, id: string, fileId?: string) {
@@ -280,54 +265,12 @@ function RequestQueue() {
         {error && <div className="alert alert--error" role="alert">{error}</div>}
         {notice && <div className="alert alert--success" role="status">{notice}</div>}
         <section className="case-flow" aria-label="Application review workflow">
-          <div className="case-flow__steps">{[
-            {name:"Submitted",done:true},
-            {name:"Review",done:!["submitted"].includes(detail.request.status)},
-            {name:"Payment",done:["awaiting_payment","payment_received","ready_for_pickup","out_for_delivery","completed"].includes(detail.request.status)},
-            {name:"Processing",done:["payment_received","ready_for_pickup","out_for_delivery","completed"].includes(detail.request.status)},
-            {name:"Completed",done:detail.request.status==="completed"},
-          ].map((step,i)=><div className={step.done?"is-done":""} key={step.name}><span>{i+1}</span><small>{step.name}</small></div>)}</div>
-          {["submitted","reviewing","waiting_for_customer"].includes(detail.request.status)&&<div className="case-flow__actions">
-            <h3>Review application</h3>
-            <p>Admins and staff with request access can review details, request missing information, and approve before issuing any payment quote.</p>
-            <label className="field"><span className="field__label">Missing details / review note</span><textarea rows={3} maxLength={500} value={reviewNote}
-              onChange={e=>setReviewNote(e.target.value)} placeholder="Specify what is missing, which documents are needed, or what you checked."/></label>
-            <div className="case-flow__buttons">
-              {detail.request.status!=="reviewing"&&<button type="button" className="btn btn--ghost btn--sm" disabled={workflowBusy} onClick={()=>void reviewAction("start")}>Start / resume review</button>}
-              <button type="button" className="btn btn--ghost btn--sm" disabled={workflowBusy||reviewNote.trim().length<5} onClick={()=>void reviewAction("changes")}>Request corrections</button>
-              <button type="button" className="btn btn--primary btn--sm" disabled={workflowBusy} onClick={()=>void reviewAction("approve")}>Approve details</button>
-            </div>
-            {detail.request.status==="waiting_for_customer"&&<p>Waiting for customer response. Their reply and documents will return this request to review.</p>}
-            {detail.request.status==="reviewing"&&Boolean((detail.request.details.workflow as {approvedAt?:string}|undefined)?.approvedAt)&&<div className="case-flow__quote">
-              <h3>Details approved — prepare customer payment</h3>
-              <div className="admin-filters">
-                <label>Service fee (₹)<input inputMode="decimal" type="number" step="0.01" min="0" max="500000" value={serviceFee} onChange={e=>setServiceFee(e.target.value)}/></label>
-                <label>Official / external fee (₹)<input inputMode="decimal" type="number" step="0.01" min="0" max="500000" value={externalFee} onChange={e=>setExternalFee(e.target.value)}/></label>
-              </div>
-              <label className="field"><span className="field__label">Payment note (optional)</span><input maxLength={200} value={quoteNote} onChange={e=>setQuoteNote(e.target.value)} placeholder="How charges are calculated"/></label>
-              <p><b>Amount to request: ₹{((Number(serviceFee)||0)+(Number(externalFee)||0)).toFixed(2)}</b> · Promo discounts will appear on the customer payment page.</p>
-              <button type="button" className="btn btn--primary btn--sm" disabled={workflowBusy} onClick={()=>void issueQuote()}>Issue payment request</button>
-            </div>}
-          </div>}
-          {detail.request.status==="awaiting_payment"&&<p>Quotation sent. The customer can pay by UPI or a configured gateway. Paid status is recorded after confirmation, not manually assumed.</p>}
-          {detail.request.status==="payment_received"&&<p>Payment verified. Process the official application and add the reference below when the issuing portal provides it. The usual 1–2 working day estimate is not a guarantee.</p>}
+          <RequestFlow detail={detail} busy={workflowBusy} onStart={() => reviewAction("start", "")} onReview={(action, note) => reviewAction(action, note)} onQuote={issueQuote} onOfficialRef={saveOfficialReference} canQuote={canCharge}/>
         </section>
         <p><b>{detail.request.serviceName}</b> · {detail.request.reference} · {detail.request.statusLabel} · {when(detail.request.createdAt)}</p>
         <p><b>{detail.customer.name}</b></p>
         <ContactLinks name={detail.customer.name} phone={detail.customer.phone} whatsapp={detail.customer.whatsapp} email={detail.customer.email} reference={detail.request.reference}/>
         <p>Preferred contact: {typeof detail.request.details.preferredContact === "string" ? detail.request.details.preferredContact : detail.customer.preferredContact}</p>
-        <article className="pan-card">
-          <h3>Official reference</h3>
-          <p className="admin-note" style={{ margin: "0 0 10px" }}>
-            {detail.request.reference} is our own internal tracking number. Once this is actually filed with the government portal or insurer, enter their official application/certificate/policy number here — the customer gets an email and WhatsApp with both numbers.
-          </p>
-          <div className="admin-filters" style={{ marginBottom: 0 }}>
-            <label>What is it<input value={officialRefLabel} onChange={event => setOfficialRefLabel(event.target.value)} placeholder="e.g. ServicePlus application no., EPIC no., Policy no." maxLength={60}/></label>
-            <label>Official reference<input value={officialRef} onChange={event => setOfficialRef(event.target.value)} placeholder="Leave blank to clear" maxLength={80}/></label>
-            <button type="button" className="btn btn--primary btn--sm" disabled={officialRefSaving} onClick={() => void saveOfficialReference()}>{officialRefSaving ? "Saving…" : "Save official reference"}</button>
-          </div>
-          {detail.request.officialReferenceSetAt && <small>Last set {when(detail.request.officialReferenceSetAt)}</small>}
-        </article>
         {detail.review && <article className="pan-card">
           <h3>Customer rating</h3>
           <p>{"★".repeat(detail.review.rating)}{"☆".repeat(5 - detail.review.rating)} ({detail.review.rating}/5) · {when(detail.review.createdAt)}</p>
@@ -362,8 +305,8 @@ function RequestQueue() {
   </>;
 }
 
-type Tab = "integrations" | "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "hardware" | "couponuse" | "qrscans" | "legal" | "loyalty" | "chats" | "mail" | "outreach";
-const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | "admin" | "staff" }[] = [
+type Tab = "customers" | "integrations" | "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "hardware" | "couponuse" | "qrscans" | "legal" | "loyalty" | "chats" | "mail" | "outreach";
+const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | Permission[] | "admin" | "staff" }[] = [
   { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
   { id: "mail", label: "Messages", icon: Mail, needs: "mail" },
   { id: "requests", label: "Requests", icon: ClipboardList, needs: "requests" },
@@ -375,23 +318,24 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "gallery", label: "Gallery photos", icon: Images, needs: "content" },
   { id: "testimonials", label: "Testimonials", icon: Star, needs: "content" },
   { id: "campaigns", label: "WhatsApp", icon: Megaphone, needs: "campaigns" },
-  { id: "chats", label: "WhatsApp chats", icon: Megaphone, needs: "campaigns" },
+  { id: "chats", label: "WhatsApp chats", icon: Megaphone, needs: "whatsapp" },
   { id: "contacts", label: "Contacts", icon: Contact, needs: "campaigns" },
   { id: "outreach", label: "Birthdays & renewals", icon: Cake, needs: "staff" },
   { id: "integrations", label: "System & connections", icon: ShieldCheck, needs: "admin" },
   { id: "team", label: "Team", icon: UsersRound, needs: "admin" },
+  { id: "customers", label: "Customers", icon: UserRound, needs: "admin" },
   { id: "pan", label: "PAN data", icon: Database, needs: "pan" },
   { id: "wallet", label: "Wallet", icon: WalletCards, needs: "wallet" },
   { id: "prices", label: "Service prices", icon: TicketPercent, needs: "content" },
   { id: "hardware", label: "Hardware parts", icon: Database, needs: "content" },
   { id: "loyalty", label: "Loyalty credit", icon: WalletCards, needs: "wallet" },
   { id: "legal", label: "Legal pages", icon: LayoutTemplate, needs: "content" },
-  { id: "payments", label: "Payments", icon: WalletCards, needs: "requests" },
+  { id: "payments", label: "Payments", icon: WalletCards, needs: ["payments", "requests"] },
 ];
 
 const NAV_SECTIONS = [
   { id: "work", title: "Work & messages", tabs: ["inbox", "mail", "requests", "chats", "payments"] },
-  { id: "people", title: "Customers & records", tabs: ["records", "pan", "contacts", "wallet", "loyalty", "team"] },
+  { id: "people", title: "Customers & records", tabs: ["customers", "records", "pan", "contacts", "wallet", "loyalty", "team"] },
   { id: "marketing", title: "Offers & campaigns", tabs: ["promotions", "couponuse", "campaigns", "outreach", "qrscans"] },
   { id: "website", title: "Website & setup", tabs: ["content", "gallery", "testimonials", "prices", "hardware", "legal", "integrations"] },
 ] as const;
@@ -410,7 +354,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
   // staff account viewAsStaff is always false and changes nothing.
   const isOwner = me.role === "admin" && !viewAsStaff;
   const effectivePermissions = viewAsStaff ? [...STAFF_PERMISSIONS] : me.permissions;
-  const tabs = TABS.filter((tab) => tab.needs === "staff" ? true : tab.needs === "admin" ? isOwner : isOwner || effectivePermissions.includes(tab.needs));
+  const tabs = TABS.filter((tab) => tab.needs === "staff" ? true : tab.needs === "admin" ? isOwner : isOwner || (Array.isArray(tab.needs) ? tab.needs.some((permission) => effectivePermissions.includes(permission)) : effectivePermissions.includes(tab.needs)));
   const hash = useSyncExternalStore(subscribeHash, readHash, () => "");
   const [picked, setPicked] = useState<Tab | null>(null);
   const fromHash = tabs.find((tab) => tab.id === hash)?.id;
@@ -497,10 +441,11 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
           <AdminMetric tone="violet" icon={<Bell size={22}/>} number={summary.unread} label="New in the inbox" onClick={() => document.querySelector(".inbox__feed")?.scrollIntoView({ behavior: "smooth" })}/>
           {can("records") && <AdminMetric tone="green" icon={<FolderLock size={22}/>} number="Search" label="Customer records" onClick={() => choose("records")}/>}
         </div>}
-        {active === "inbox" && <InboxPanel onSeen={clearUnread}/>}
+        {active === "inbox" && <InboxPanel onSeen={clearUnread} viewer={{id:me.id,role:me.role}}/>}
         {active === "mail" && <MailClient mode="staff" onUnread={setMailUnread}/>}
-        {active === "requests" && <RequestQueue/>}
+        {active === "requests" && <RequestQueue canCharge={isOwner || effectivePermissions.includes("charge")}/>}
         {active === "records" && <RecordsPanel/>}
+        {active === "customers" && isOwner && <CustomerManagementPanel/>}
         {active === "promotions" && <PromotionsPanel canEdit/>}
         {active === "content" && <SiteContentPanel/>}
         {active === "gallery" && <GalleryPanel/>}
@@ -515,7 +460,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
         {active === "qrscans" && <QrScansPanel/>}
         {active === "legal" && <LegalPanel/>}
         {active === "loyalty" && <LoyaltyPanel/>}
-        {active === "payments" && <PaymentsPanel/>}
+        {active === "payments" && <PaymentsPanel canCharge={isOwner || effectivePermissions.includes("charge")}/>}
         {active === "integrations" && <SystemConnectionsPanel/>}
         {active === "team" && <div className="admin-team-groups">
           <details className="admin-accordion"><summary><UsersRound size={17}/> Staff & owner login accounts</summary><TeamPanel meRole={me.role} meId={me.id}/></details>

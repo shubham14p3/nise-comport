@@ -3,7 +3,8 @@ import { cookies } from "next/headers";
 import { and, count, desc, eq, gt, inArray, isNotNull, isNull, lt, ne, notInArray, sql } from "drizzle-orm";
 import { hash, verify } from "@node-rs/argon2";
 import { db } from "@/lib/db";
-import { addresses, emailOtps, notifications, printJobs, serviceRequests, sessions, storedFiles, users } from "@/db/schema";
+import { activityLog, addresses, emailOtps, notifications, printJobs, serviceRequests, sessions, storedFiles, users } from "@/db/schema";
+import { formatAuditChange,profileChanges } from "@/lib/customer-audit";
 import { sendAccountDeletedEmail, sendAccountExistsEmail, sendEmailChangedNotice, sendOtpEmail, sendPasswordChangedEmail, type OtpPurpose } from "@/lib/email";
 import { isUniqueViolation, PublicError, RateLimitError, humanDuration } from "@/lib/errors";
 import { clearRate, enforceRate, hitRate, identity, peekRate, RATE_RULES } from "@/lib/rate-limit";
@@ -199,7 +200,16 @@ export async function verifyEmailOtp(emailInput: string, code: string, purpose: 
     const passwordHash = await hash(profile.password);
     let created: User;
     try {
-      [created] = await db.insert(users).values({ email, name, phone, passwordHash, emailVerifiedAt: new Date(), passwordChangedAt: new Date() }).returning();
+      created = await db.transaction(async tx=>{
+        const [user]=await tx.insert(users).values({email,name,phone,passwordHash,emailVerifiedAt:new Date(),passwordChangedAt:new Date()}).returning();
+        await tx.insert(activityLog).values({
+          kind:"signup",permission:"team",category:"customer-profile",
+          title:"Customer account created after email verification",
+          detail:`Name: ${name.slice(0,80)}; email: ${email.slice(0,160)}; phone: ${phone??"(none)"}`.slice(0,500),
+          refType:"customer-profile",refId:user.id,actorId:user.id,
+        });
+        return user;
+      });
     } catch (error) {
       if (isUniqueViolation(error)) throw new PublicError("An account already exists for this email. Please sign in instead.", 409, { code: "account_exists" });
       throw error;
@@ -329,7 +339,18 @@ export async function confirmEmailChange(user: User, newEmailInput: string, code
   await consumeOtp(newEmail, `email-change:${user.id}`, code, ip);
   const oldEmail = user.email;
   try {
-    await db.update(users).set({ email: newEmail, emailVerifiedAt: new Date(), updatedAt: new Date() }).where(eq(users.id, user.id));
+    await db.transaction(async tx=>{
+      const [before]=await tx.select().from(users).where(eq(users.id,user.id)).limit(1);
+      if(!before || !isActive(before))throw new PublicError("Account not found.",404);
+      const [after]=await tx.update(users).set({email:newEmail,emailVerifiedAt:new Date(),updatedAt:new Date()})
+        .where(eq(users.id,user.id)).returning();
+      const changes=profileChanges(before,after);
+      if(changes.length)await tx.insert(activityLog).values(changes.map(change=>({
+        kind:"staff" as const,permission:"team",category:"customer-profile",
+        title:`Customer verified a new ${change.label}`,
+        detail:formatAuditChange(change),refType:"customer-profile",refId:user.id,actorId:user.id
+      })));
+    });
   } catch (error) {
     if (isUniqueViolation(error)) throw new PublicError("That email is already used by another account.", 409);
     throw error;
@@ -373,6 +394,14 @@ export async function requirePermission(permission: Permission) {
   const user = await getCurrentUser();
   if (!user || !(user.role === "admin" || user.role === "staff")) throw new PublicError("Staff access is required.", 403, { code: "forbidden" });
   if (!hasPermission(user, permission)) throw new PublicError("You don’t have access to this part of the admin area. Ask the owner to add it to your account.", 403, { code: "forbidden" });
+  return user;
+}
+
+/** Admin, or a staff member who has at least one of these permissions. */
+export async function requireAnyPermission(permissions: Permission[]) {
+  const user = await getCurrentUser();
+  if (!user || !(user.role === "admin" || user.role === "staff")) throw new PublicError("Staff access is required.", 403, { code: "forbidden" });
+  if (!permissions.some((permission) => hasPermission(user, permission))) throw new PublicError("You don’t have access to this part of the admin area. Ask the owner to add it to your account.", 403, { code: "forbidden" });
   return user;
 }
 

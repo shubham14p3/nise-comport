@@ -5,18 +5,20 @@ import { db } from "@/lib/db";
 import { requestEvents, serviceRequests, serviceReviews, storedFiles, users } from "@/db/schema";
 import { statusLabel } from "@/lib/requests";
 import { apiError } from "@/lib/http";
+import { scopeOf } from "@/lib/permissions";
 import { revealRequestDetails } from "@/lib/detailed-intake-server";
 
 export async function GET(request: NextRequest) {
   try {
-    await requirePermission("requests");
+    const actor = await requirePermission("requests");
+    const scope = scopeOf(actor);
     const id = (request.nextUrl.searchParams.get("id") ?? "").slice(0, 80);
     if (!/^[a-f0-9-]{36}$/i.test(id)) return NextResponse.json({ error: "Not found." }, { status: 404 });
     const [row] = await db.select({
       request: serviceRequests,
       customer: { name: users.name, email: users.email, phone: users.phone, whatsapp: users.whatsapp, preferredContact: users.preferredContact },
     }).from(serviceRequests).innerJoin(users, eq(serviceRequests.userId, users.id)).where(eq(serviceRequests.id, id)).limit(1);
-    if (!row) return NextResponse.json({ error: "Not found." }, { status: 404 });
+    if (!row || (scope && !scope.includes(row.request.serviceSlug))) return NextResponse.json({ error: "Not found." }, { status: 404 });
     const [review] = await db.select({ rating: serviceReviews.rating, feedback: serviceReviews.feedback, postedGoogleReview: serviceReviews.postedGoogleReview, createdAt: serviceReviews.createdAt })
       .from(serviceReviews).where(eq(serviceReviews.requestId, row.request.id)).limit(1);
     const files = await db.select({ id:storedFiles.id,name:storedFiles.originalName,createdAt:storedFiles.createdAt })

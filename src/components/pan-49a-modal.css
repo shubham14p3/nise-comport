@@ -1,0 +1,98 @@
+/* Full-screen, keyboard-accessible PDF verification modal. Scoped to the PAN 49A route. */
+.pan49-modal-backdrop {
+  position:fixed;inset:0;z-index:1200;display:grid;place-items:center;
+  padding:clamp(8px,2.5vw,26px);background:rgb(12 23 45 / 76%);
+  backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);
+}
+.pan49-modal { display:flex; flex-direction:column;width:min(1080px,100%);height:min(940px,96dvh);
+  overflow:hidden;background:#fff;color:#18243c;border:1px solid #e1e6f1;
+  border-radius:20px;box-shadow:0 32px 120px rgb(0 0 0 / .4);isolation:isolate;
+}
+.pan49-modal__header {padding:18px 24px;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex:none;
+  border-bottom:1px solid #e8edf6;background:#fff;
+}
+.pan49-modal__identity {display:flex;gap:14px;align-items:center}
+.pan49-modal__identity h2 {font-size:clamp(1.2rem,2vw,1.55rem);letter-spacing:-.03em;line-height:1.2;margin:3px 0}
+.pan49-modal__identity p {color:#60718a;font-size:12px;line-height:1.5}
+.pan49-modal__icon {flex:none;width:44px;height:44px;border-radius:13px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,#2064df,#7b4ce8)}
+.pan49-modal__eyebrow {display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;letter-spacing:.09em;color:#3765b9}
+.pan49-modal__close {border:1px solid #e0e6f0;border-radius:11px;display:grid;place-items:center;background:#f5f7fb;
+  width:40px;height:40px;flex:none;transition:background .12s;color:#273a55}
+.pan49-modal__close:hover {background:#e6edfb}
+.pan49-modal__toolbar {display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 24px;border-bottom:1px solid #e5eaf4;background:#fafbff;flex:none}
+.pan49-modal__tabs {display:flex;gap:8px;flex-wrap:wrap}
+.pan49-modal__tab {display:flex;gap:6px;align-items:center;text-align:left;padding:10px 13px;background:transparent;border:1px solid #dbe3f1;
+  color:#4f627d;border-radius:11px;font-size:12px;font-weight:700}
+.pan49-modal__tab small {font-size:11px;font-weight:500;opacity:.9}
+.pan49-modal__tab.is-active {background:#e8f0ff;color:#174cc5;border-color:#adc6fc;box-shadow:inset 0 0 0 1px #adc6fc}
+.pan49-modal__page-count {font-size:12px;font-weight:700;color:#65748d;white-space:nowrap}
+.pan49-modal__viewport {min-height:0;flex:1;overflow:auto;overscroll-behavior:contain;padding:22px 16px;background:linear-gradient(135deg,#edf2f9,#e7ebf5)}
+.pan49-modal__paper {width:min(100%,940px);margin-inline:auto}
+.pan49-modal__paper .pan49-workspace {gap:0}
+.pan49-modal__paper .pan49-preview-actions {margin:0 0 14px;border:1px solid #d2def1;border-radius:12px;background:#fff}
+.pan49-modal__paper .pan49-preview-actions p {max-width:620px}
+.pan49-modal__paper .pan49-paper-wrap {background:transparent;padding:0;border-radius:0}
+.pan49-modal__paper .pan49-sheet {box-shadow:0 14px 42px rgb(27 43 82 / .17)}
+.pan49-modal__paper .pan49-source-pages {padding:0;background:transparent}
+.pan49-modal__paper .pan49-source-page {box-shadow:0 14px 42px rgb(27 43 82 / .17)}
+/* Keep the opposite page out of view while navigating. Both pages print. */
+.pan49-modal[data-page="1"] .pan49-paper-wrap .pan49-sheet:nth-child(2),
+.pan49-modal[data-page="2"] .pan49-paper-wrap .pan49-sheet:nth-child(1),
+.pan49-modal[data-page="1"] .pan49-source-pages .pan49-source-page:nth-of-type(2),
+.pan49-modal[data-page="2"] .pan49-source-pages .pan49-source-page:nth-of-type(1) {display:none}
+.pan49-modal__footer {padding:12px 24px;background:#fff;border-top:1px solid #e5eaf4;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;flex:none}
+.pan49-modal__security {display:flex;gap:6px;align-items:center;color:#687995;font-size:11px}
+.pan49-modal__footer-actions {display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.pan49-modal__secondary,.pan49-modal__primary,.pan49-modal__back {display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  min-height:38px;border-radius:10px;border:1px solid #d7e0ed;padding:8px 14px;font-size:12px;font-weight:700;background:#fff;color:#334765}
+.pan49-modal__primary {border-color:transparent;color:#fff;background:#185bce}
+.pan49-modal__primary:hover {background:#1149ac}
+.pan49-modal__secondary:hover,.pan49-modal__back:hover {background:#f0f4fd}
+.pan49-open-card {border:1px solid #cddffc;border-radius:16px;padding:17px 18px;margin:17px 0;
+  background:linear-gradient(115deg,#f1f6ff,#fff);display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap}
+.pan49-open-card__info {display:flex;gap:12px;align-items:center}
+.pan49-open-card__icon {width:44px;height:44px;background:#e2edff;border-radius:12px;color:#205ad2;display:grid;place-items:center;flex:none}
+.pan49-open-card strong {font-size:14px;color:#173862}
+.pan49-open-card p {color:#5c6f89;font-size:12px;line-height:1.6;margin-top:3px}
+.pan49-open-card__button {display:inline-flex;gap:8px;align-items:center;justify-content:center;min-height:44px;
+  padding:10px 20px;border-radius:11px;background:linear-gradient(115deg,#2268e8,#634bdc);font-size:13px;font-weight:700;color:white;border:0}
+.pan49-open-card__button:hover {filter:brightness(.96)}
+@media(max-width:720px) {
+  .pan49-modal-backdrop {padding:0}
+  .pan49-modal {width:100%;height:100dvh;border:0;border-radius:0}
+  .pan49-modal__header {padding:13px 15px}
+  .pan49-modal__identity {gap:9px}
+  .pan49-modal__icon {width:36px;height:36px}
+  .pan49-modal__identity p {font-size:11px}
+  .pan49-modal__toolbar {padding:8px 12px;align-items:start}
+  .pan49-modal__tab {padding:7px 10px;display:grid;gap:0}
+  .pan49-modal__tab small {font-size:9px}
+  .pan49-modal__page-count {padding-top:10px}
+  .pan49-modal__viewport {padding:12px 8px}
+  .pan49-modal__footer {padding:10px 12px}
+  .pan49-modal__security {display:none}
+  .pan49-modal__paper .pan49-preview-actions {padding:10px}
+  .pan49-modal__paper .pan49-sheet,.pan49-modal__paper .pan49-source-page {zoom:.8}
+}
+@media(max-width:480px) {
+  .pan49-modal__identity h2 {font-size:1.03rem}
+  .pan49-modal__page-count {display:none}
+  .pan49-modal__tabs {width:100%;display:grid;grid-template-columns:1fr 1fr}
+  .pan49-modal__tab {min-width:0}
+  .pan49-modal__footer-actions {width:100%;justify-content:flex-end}
+  .pan49-modal__back {order:-1}
+  .pan49-modal__paper .pan49-sheet,.pan49-modal__paper .pan49-source-page {zoom:.46}
+  .pan49-open-card__button {width:100%}
+}
+@media print {
+  .pan49-modal-backdrop,.pan49-modal,.pan49-modal__viewport,.pan49-modal__paper {
+    position:static!important;display:block!important;overflow:visible!important;
+    width:auto!important;max-width:none!important;height:auto!important;max-height:none!important;
+    margin:0!important;padding:0!important;background:#fff!important;border:0!important;border-radius:0!important;
+    box-shadow:none!important;zoom:1!important;transform:none!important;
+  }
+  .pan49-modal__header,.pan49-modal__toolbar,.pan49-modal__footer {display:none!important}
+  .pan49-modal__paper .pan49-sheet,.pan49-modal__paper .pan49-source-page {zoom:1!important;box-shadow:none!important}
+  .pan49-modal .pan49-paper-wrap .pan49-sheet,
+  .pan49-modal .pan49-source-pages .pan49-source-page {display:block!important}
+}

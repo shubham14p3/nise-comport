@@ -3468,3 +3468,11 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .req-results.is-searching { gap: 8px; }
 .req-results.is-searching .choice { min-height: 56px; padding: 10px 12px; border-radius: 14px; }
 .req-results.is-searching .choice__icon { width: 34px; height: 34px; border-radius: 11px; }
+
+.scope-box { margin: 4px 0 12px; }
+.scope-box .field__label { display: block; margin-bottom: 4px; }
+
+/* Payment page: UPI ID hidden until the customer taps the eye. Text is not selectable so it can't be copied from the page. */
+.pay-upi { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: .95rem; margin: 6px 0; }
+.pay-upi__value { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; user-select: none; -webkit-user-select: none; }
+.pay-upi__eye { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid currentColor; border-radius: 8px; background: transparent; color: inherit; cursor: pointer; }

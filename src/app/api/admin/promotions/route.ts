@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
 const patchSchema = z.object({
   id: z.uuid(),
   active: z.boolean().optional(),
+  cancelled: z.boolean().optional(),
   startsOn: day.optional(), endsOn: day.optional(), eventStarts: day.optional(), eventEnds: day.optional(),
   unlock: z.boolean().optional(),
   ...details,
