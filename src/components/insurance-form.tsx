@@ -98,7 +98,7 @@ export default function InsuranceForm({ initialPurpose, initialVehicle }: { init
 
     <fieldset className="ins-section"><legend>{L(T.vehicleLegend)}</legend>
       <div className="form-grid form-grid--3">
-        {field("regNo", L(T.regNo), { required: true, placeholder: "JH05AB1234", maxLength: 14, autoCapitalize: "characters" }, purpose === "new" ? L(T.regNoNew) : undefined)}
+        {field("regNo", L(T.regNo), { required: purpose !== "new", placeholder: "JH05AB1234", maxLength: 14, autoCapitalize: "characters" }, purpose === "new" ? L(T.regNoNew) : undefined)}
         {field("make", L(T.make), { placeholder: vehicle === "car" ? "Maruti, Tata, Hyundai…" : "Hero, Honda, TVS…", maxLength: 40, required: purpose === "new" })}
         {field("model", L(T.model), { placeholder: vehicle === "car" ? "Swift VXi" : "Splendor Plus", maxLength: 60, required: purpose === "new" })}
       </div>

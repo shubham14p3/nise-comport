@@ -132,7 +132,8 @@ export function checkInsuranceForm(raw: Record<string, unknown>): { form: Insura
   if (!form.email) problems.email = "Enter your email. We use it for your account and policy updates.";
   if (form.email && !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(form.email)) problems.email = "Check the email.";
   if (form.regNo && !/^[A-Z]{2}\d{1,2}[A-Z]{0,3}\d{1,4}$/.test(form.regNo) && !/^\d{2}BH\d{4}[A-Z]{1,2}$/.test(form.regNo)) problems.regNo = "Use the number plate format, e.g. JH05AB1234.";
-  if (!form.regNo) problems.regNo = "Enter the vehicle number.";
+  // A new vehicle may not be registered yet, so its number is only required for existing vehicles.
+  if (!form.regNo && purpose !== "new") problems.regNo = "Enter the vehicle number.";
   if (purpose === "new" && !form.make && !form.model) problems.model = "Tell us the vehicle make and model.";
   if (purpose === "claim" && !form.incident) problems.incident = "Choose what happened.";
   return { form, problems };
