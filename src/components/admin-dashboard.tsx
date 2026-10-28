@@ -12,7 +12,8 @@ import { WhatsAppIcon } from "@/components/icons";
 
 import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
-import { ArrowRight, Bell, Cake, ClipboardList, Contact, UserRound, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import CounterDesk from "@/components/counter-desk";
+import { ArrowRight, Bell, Cake, ClipboardList, Contact, UserRound, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images, PanelLeftClose, PanelLeftOpen, Store, X } from "lucide-react";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
 
 
@@ -305,7 +306,7 @@ function RequestQueue({ canCharge }: { canCharge: boolean }) {
   </>;
 }
 
-type Tab = "customers" | "integrations" | "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "hardware" | "couponuse" | "qrscans" | "legal" | "loyalty" | "chats" | "mail" | "outreach";
+type Tab = "counter" | "customers" | "integrations" | "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "hardware" | "couponuse" | "qrscans" | "legal" | "loyalty" | "chats" | "mail" | "outreach";
 const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | Permission[] | "admin" | "staff" }[] = [
   { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
   { id: "mail", label: "Messages", icon: Mail, needs: "mail" },
@@ -331,11 +332,13 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "loyalty", label: "Loyalty credit", icon: WalletCards, needs: "wallet" },
   { id: "legal", label: "Legal pages", icon: LayoutTemplate, needs: "content" },
   { id: "payments", label: "Payments", icon: WalletCards, needs: ["payments", "requests"] },
+  // Opens as a popup from the menu rather than a page (see counterOpen below).
+  { id: "counter", label: "Counter desk", icon: Store, needs: "counter" },
 ];
 
 const NAV_SECTIONS = [
   { id: "work", title: "Work & messages", tabs: ["inbox", "mail", "requests", "chats", "payments"] },
-  { id: "people", title: "Customers & records", tabs: ["customers", "records", "pan", "contacts", "wallet", "loyalty", "team"] },
+  { id: "people", title: "Customers & records", tabs: ["counter", "customers", "records", "pan", "contacts", "wallet", "loyalty", "team"] },
   { id: "marketing", title: "Offers & campaigns", tabs: ["promotions", "couponuse", "campaigns", "outreach", "qrscans"] },
   { id: "website", title: "Website & setup", tabs: ["content", "gallery", "testimonials", "prices", "hardware", "legal", "integrations"] },
 ] as const;
@@ -347,7 +350,7 @@ const subscribeHash = (callback: () => void) => { window.addEventListener("hashc
  * Staff workspace. Each tab needs a permission (see src/lib/permissions.ts); the owner sees all
  * of them plus Team, where staff are added and their access is set.
  */
-export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?: string; name: string; role: string; permissions: Permission[] }; viewAsStaff?: boolean }) {
+export default function AdminDashboard({ me, viewAsStaff = false, services }: { me: { id?: string; name: string; role: string; permissions: Permission[] }; viewAsStaff?: boolean; services: { slug: string; title: string }[] }) {
   // The owner can preview the desk as a staff member would see it (hides the owner-only Team
   // tab) via "Staff view" in the account menu, without actually losing any access — they can
   // always switch back to "Admin view". Only meaningful when me.role is "admin"; for a real
@@ -357,7 +360,8 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
   const tabs = TABS.filter((tab) => tab.needs === "staff" ? true : tab.needs === "admin" ? isOwner : isOwner || (Array.isArray(tab.needs) ? tab.needs.some((permission) => effectivePermissions.includes(permission)) : effectivePermissions.includes(tab.needs)));
   const hash = useSyncExternalStore(subscribeHash, readHash, () => "");
   const [picked, setPicked] = useState<Tab | null>(null);
-  const fromHash = tabs.find((tab) => tab.id === hash)?.id;
+  // The counter opens as a popup, so it is never a page to land on from the URL.
+  const fromHash = tabs.find((tab) => tab.id === hash && tab.id !== "counter")?.id;
   const active = picked ?? fromHash ?? tabs[0]?.id;
   const [summary, setSummary] = useState<{ unread: number; waiting: number; callbacks: number } | null>(null);
   const unread = summary?.unread ?? 0;
@@ -395,7 +399,10 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
   const [railOpen, setRailOpen] = useState(true);
   useEffect(() => { try { if (window.localStorage.getItem("nc-desk-rail") === "0") queueMicrotask(() => setRailOpen(false)); } catch { /* ignore */ } }, []);
   function toggleRail() { setRailOpen((open) => { try { window.localStorage.setItem("nc-desk-rail", open ? "0" : "1"); } catch { /* ignore */ } return !open; }); }
-  function choose(tab: Tab) { setPicked(tab); window.history.replaceState(null, "", `#${tab}`); window.scrollTo({ top: 0, left: 0, behavior: "instant" }); }
+  const [counterOpen, setCounterOpen] = useState(false);
+  function choose(tab: Tab) {
+    if (tab === "counter") { setCounterOpen(true); return; }
+    setPicked(tab); window.history.replaceState(null, "", `#${tab}`); window.scrollTo({ top: 0, left: 0, behavior: "instant" }); }
   const first = me.name.split(/\s+/)[0] || "there";
   const current = tabs.find((tab) => tab.id === active);
   const can = (permission: Permission) => isOwner || effectivePermissions.includes(permission);
@@ -470,6 +477,15 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
         {active === "wallet" && <WalletCreditForm canCorrect={isOwner}/>}
       </section>
     </div>
+    {counterOpen && <Portal><div className="record-modal" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setCounterOpen(false); }}>
+      <div className="record-modal__panel" role="dialog" aria-modal="true" aria-label="Counter desk">
+        <header className="record-modal__header">
+          <div><h3>Counter desk</h3></div>
+          <button type="button" className="btn btn--ghost btn--sm" onClick={() => setCounterOpen(false)}>Close</button>
+        </header>
+        <CounterDesk services={services} isOwner={isOwner}/>
+      </div>
+    </div></Portal>}
   </main>;
 }
 
