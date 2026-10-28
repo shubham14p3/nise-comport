@@ -55,7 +55,11 @@ export default function RequestFlow({ detail, busy, canQuote, onStart, onReview,
   const [problem, setProblem] = useState("");
 
   // Load the saved draft whenever another request is opened.
-  useEffect(() => { setDraft(readDraft(reference)); setProblem(""); }, [reference]);
+  useEffect(() => {
+    // Deferred one tick so no state is set synchronously inside the effect body.
+    const timer = window.setTimeout(() => { setDraft(readDraft(reference)); setProblem(""); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [reference]);
 
   // Warn before leaving with unsaved typing.
   const dirty = JSON.stringify(draft) !== JSON.stringify(EMPTY);
