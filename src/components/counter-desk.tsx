@@ -4,9 +4,9 @@ import { useEffect, useState, type KeyboardEvent } from "react";
 import { secureApi, SecureApiError } from "@/lib/secure-api-client";
 import { COUNTER_DISCOUNT_PERCENT } from "@/lib/counter-rules";
 
-/** Gateway code for POST /api/admin/counter (see src/app/api/x7q9m2/route.ts). */
+/** Opaque gateway code for the counter lookup, visit and top-up request (mapped in src/app/api/x7q9m2/route.ts). */
 const COUNTER_OP = "C6d1L8wN4vXs";
-/** Gateway code for POST /api/admin/wallet-credit/approvals. */
+/** Opaque gateway code for the second-admin approvals list and decision (mapped in the same gateway). */
 const APPROVALS_OP = "W5k2P8vN4rQd";
 
 type Service = { slug: string; title: string };

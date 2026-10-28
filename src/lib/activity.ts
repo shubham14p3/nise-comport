@@ -24,7 +24,7 @@ export async function logActivity(entry: ActivityEntry) {
   } catch (error) { console.error("[activity] could not record", error); }
 }
 
-function audiences(user: StaffLike) {
+export function audiences(user: StaffLike) {
   const list: Audience[] = [...permissionsOf(user)];
   if (user.role === "admin") list.push("team");
   return list;
@@ -46,7 +46,6 @@ export async function inbox(user: Inboxer, options: { category?: string; limit?:
   const [unread] = await db.select({ total: count() }).from(activityLog).where(and(inArray(activityLog.permission, visible), gt(activityLog.createdAt, seenAt)));
 
   let pending: { category: string; label: string; total: number }[] = [];
-  let newLeads: ((typeof leads.$inferSelect) & {ownerName?: string|null})[] = [];
   if (visible.includes("requests")) {
     const open = await db.select({ slug: serviceRequests.serviceSlug, name: serviceRequests.serviceName, total: count() }).from(serviceRequests)
       .where(notInArray(serviceRequests.status, [...CLOSED_STATUSES])).groupBy(serviceRequests.serviceSlug, serviceRequests.serviceName);
@@ -62,12 +61,9 @@ export async function inbox(user: Inboxer, options: { category?: string; limit?:
     const [prints] = await db.select({ total: count() }).from(printJobs).where(notInArray(printJobs.status, [...CLOSED_STATUSES]));
     if (prints.total) byCategory.set("print", { label: "Print orders", total: prints.total });
     pending = [...byCategory.entries()].map(([category, value]) => ({ category, ...value })).sort((a, b) => b.total - a.total);
-    const callbacks = await db.select({lead:leads,ownerName:users.name}).from(leads)
-      .leftJoin(users,eq(leads.handledBy,users.id))
-      .where(inArray(leads.status,["new","called","online_invited"])).orderBy(desc(leads.createdAt)).limit(50);
-    newLeads = callbacks.map(item=>({...item.lead,ownerName:item.ownerName}));
   }
-  return { items: rows, unread: unread.total, seenAt, pending, leads: newLeads };
+  // Callbacks are loaded separately (listCallbackPage in leads.ts), one paged tab at a time.
+  return { items: rows, unread: unread.total, seenAt, pending };
 }
 
 /** Numbers for the dashboard cards: unread activity, open requests and people waiting for a call. */

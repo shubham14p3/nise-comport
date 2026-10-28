@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FileCheck2, FileText } from "lucide-react";
 import type { PanIntake } from "@/lib/pan-validation";
+import { fetchStaticFile } from "@/lib/secure-api-client";
 import "./pan-93-exact-preview.css";
 
 /**
@@ -121,7 +122,7 @@ export default function Pan93ExactPreview({answers,pan,onEdit}:Props){
       return;
     }
     let active=true;
-    fetch("/forms/pan-93-template.pdf",{cache:"force-cache"}).then(async response=>{
+    fetchStaticFile("/forms/pan-93-template.pdf",{cache:"force-cache"}).then(async response=>{
       if(!active)return;
       if(response.status===404){setPages("missing");return;}
       if(!response.ok)throw Error("Unable to load Form 93 template");

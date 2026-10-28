@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Pan49ASourceViewer from "@/components/pan-49a-source-viewer";
 import type { PanIntake } from "@/lib/pan-validation";
+import { fetchStaticFile } from "@/lib/secure-api-client";
 import "./pan-49a-preview.css";
 
 type Answers = Record<string, string>;
@@ -64,7 +65,7 @@ export default function Pan49APreview({ answers: rawAnswers, pan, onEdit }: Prop
     // Enable only after public/forms/pan-49a.pdf has actually been committed to this branch.
     if (process.env.NEXT_PUBLIC_PAN49A_TEMPLATE_READY !== "true") return;
     let active = true;
-    fetch("/forms/pan-49a.pdf", { cache: "force-cache" }).then(async response => {
+    fetchStaticFile("/forms/pan-49a.pdf", { cache: "force-cache" }).then(async response => {
       if (!response.ok) return;
       const blob = await response.blob();
       if (active && blob.size && blob.size <= 12 * 1024 * 1024) setSourcePdf(current => current ?? new File([blob], "49A_Form_Updated.pdf", {type:"application/pdf"}));

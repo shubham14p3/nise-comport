@@ -316,7 +316,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "qrscans", label: "QR scans", icon: Megaphone, needs: "campaigns" },
   { id: "content", label: "Site content", icon: LayoutTemplate, needs: "content" },
   { id: "gallery", label: "Gallery photos", icon: Images, needs: "content" },
-  { id: "testimonials", label: "Testimonials", icon: Star, needs: "content" },
+  { id: "testimonials", label: `Testimonials`, icon: Star, needs: "content" },
   { id: "campaigns", label: "WhatsApp", icon: Megaphone, needs: "campaigns" },
   { id: "chats", label: "WhatsApp chats", icon: Megaphone, needs: "whatsapp" },
   { id: "contacts", label: "Contacts", icon: Contact, needs: "campaigns" },

@@ -1,6 +1,6 @@
 import { after } from "next/server";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
-import { contacts, leads } from "@/db/schema";
+import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { contacts, leads, users } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import { db } from "@/lib/db";
 import { sendServiceFormInvitationEmail, sendStaffAlertEmail, smtpConfigured } from "@/lib/email";
@@ -125,4 +125,32 @@ export async function updateLead(id: string, status: (typeof LEAD_STATUSES)[numb
 
 export async function listLeads(statuses: string[] = ["new", "called", "online_invited"]) {
   return db.select().from(leads).where(inArray(leads.status, statuses)).orderBy(desc(leads.createdAt)).limit(100);
+}
+
+/** Callback tabs: Open is new; Called includes online-form-sent; Closed is done or offline; Spam is kept apart. */
+export const CALLBACK_TABS = {
+  open: ["new"],
+  called: ["called", "online_invited"],
+  closed: ["done", "offline_closed"],
+  spam: ["spam"],
+} as const;
+export type CallbackTab = keyof typeof CALLBACK_TABS;
+export const CALLBACK_PAGE_SIZE = 15;
+
+/** One page of callbacks for a tab, with counts for every tab. `mine` limits it to the viewer's own callbacks. */
+export async function listCallbackPage(input: { tab: CallbackTab; mine: boolean; viewerId: string; page: number }) {
+  const scope = input.mine ? eq(leads.handledBy, input.viewerId) : undefined;
+  const page = Math.max(0, Math.floor(input.page));
+  const statuses = [...CALLBACK_TABS[input.tab]];
+  const rows = await db.select({ lead: leads, ownerName: users.name }).from(leads)
+    .leftJoin(users, eq(leads.handledBy, users.id))
+    .where(and(inArray(leads.status, statuses), scope))
+    .orderBy(desc(leads.createdAt))
+    .limit(CALLBACK_PAGE_SIZE).offset(page * CALLBACK_PAGE_SIZE);
+  const [totals] = await db.select({ total: count() }).from(leads).where(and(inArray(leads.status, statuses), scope));
+  const byStatus = await db.select({ status: leads.status, total: count() }).from(leads).where(scope).groupBy(leads.status);
+  const tabCounts = Object.fromEntries(
+    (Object.keys(CALLBACK_TABS) as CallbackTab[]).map((tab) => [tab, byStatus.filter((row) => (CALLBACK_TABS[tab] as readonly string[]).includes(row.status)).reduce((sum, row) => sum + row.total, 0)]),
+  ) as Record<CallbackTab, number>;
+  return { rows: rows.map((item) => ({ ...item.lead, ownerName: item.ownerName })), total: totals?.total ?? 0, tabCounts, tab: input.tab, mine: input.mine, page, pageSize: CALLBACK_PAGE_SIZE };
 }
