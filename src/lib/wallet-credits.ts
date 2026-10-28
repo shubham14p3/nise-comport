@@ -1,8 +1,9 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { users, walletCreditRequests, walletEntries } from "@/db/schema";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
+import { isMainOwner } from "@/lib/permissions";
 
 /**
  * Wallet credits are two steps: one admin requests with a reason, a different admin approves.
@@ -44,6 +45,11 @@ export async function decideCreditRequest(input: { actorId: string; id: string; 
     if (!request) throw new PublicError("This request no longer exists.", 404);
     if (request.status !== "pending") throw new PublicError("This request has already been decided.", 409, { code: "already_decided" });
     if (request.requestedById === input.actorId) throw new PublicError("A second admin must decide this. You can’t approve your own request.", 403, { code: "same_admin" });
+    // The main owner's requests can only be decided by the main owner.
+    const people = await tx.select({ id: users.id, role: users.role, email: users.email }).from(users).where(inArray(users.id, [request.requestedById, input.actorId]));
+    const requesterRow = people.find((person) => person.id === request.requestedById);
+    const actorRow = people.find((person) => person.id === input.actorId);
+    if (isMainOwner(requesterRow) && !isMainOwner(actorRow)) throw new PublicError("This request was raised by the main owner. Only the main owner can decide it.", 403, { code: "main_owner_only" });
     const [requester] = await tx.select({ name: users.name }).from(users).where(eq(users.id, request.requestedById)).limit(1);
     const [approver] = await tx.select({ name: users.name }).from(users).where(eq(users.id, input.actorId)).limit(1);
     let walletEntryId: string | null = null;

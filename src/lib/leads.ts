@@ -10,6 +10,7 @@ import { site } from "@/lib/site";
 import { resolveService } from "@/lib/site-content";
 import { requestHrefFor } from "@/lib/services";
 import { canTakeCallbackAction } from "@/lib/service-callback-flow";
+import { isMainOwner } from "@/lib/permissions";
 import { formatPhone, normalizePhone } from "@/lib/validation";
 
 export type LeadInput = { name?: string; phone: string; email?: string; serviceSlug?: string; topic?: string; message?: string; page?: string; locale?: string; source?: string; details?: Record<string, unknown> };
@@ -72,13 +73,21 @@ export async function closeWizardLeads(phone: string) {
   await db.update(leads).set({ status: "done", handledAt: new Date() }).where(and(eq(leads.phone, normal), eq(leads.source, "wizard"), eq(leads.status, "new")));
 }
 
+/** True when the callback is held by the main owner. Only the main owner may take it over or change it. */
+async function heldByMainOwner(handledBy: string | null) {
+  if (!handledBy) return false;
+  const [holder] = await db.select({ role: users.role, email: users.email }).from(users).where(eq(users.id, handledBy)).limit(1);
+  return isMainOwner(holder);
+}
+
 /** Claim the callback; admin can take over an existing assignment.
  * handledBy is durable owner, actorId in logActivity tracks each action. */
-export async function claimLead(id:string,actor:{id:string;name:string;role:string}) {
+export async function claimLead(id:string,actor:{id:string;name:string;role:string;email?:string|null}) {
   const [old]=await db.select().from(leads).where(eq(leads.id,id)).limit(1);
   if(!old || old.source!=="service-callback")throw new PublicError("Callback not found.",404);
   if(!["new","called","online_invited"].includes(old.status))throw new PublicError("This callback is already closed.",409);
   if(old.handledBy===actor.id)return old;
+  if(!isMainOwner(actor) && await heldByMainOwner(old.handledBy))throw new PublicError("The main owner holds this callback. Only the main owner can change it.",403);
   if(old.handledBy && actor.role!=="admin")throw new PublicError("This callback belongs to another teammate. Ask an admin to reassign it.",409);
   const [row]=await db.update(leads).set({handledBy:actor.id}).where(and(
     eq(leads.id,id),old.handledBy?eq(leads.handledBy,old.handledBy):sql`${leads.handledBy} is null`
@@ -88,13 +97,15 @@ export async function claimLead(id:string,actor:{id:string;name:string;role:stri
   return row;
 }
 
-export async function updateLead(id: string, status: (typeof LEAD_STATUSES)[number], actor: { id: string; name: string; role?: string }) {
+export async function updateLead(id: string, status: (typeof LEAD_STATUSES)[number], actor: { id: string; name: string; role?: string; email?: string | null }) {
   const [existing]=await db.select().from(leads).where(eq(leads.id,id)).limit(1);
   if(!existing)throw new PublicError("That enquiry no longer exists.",404);
   if(existing.source==="service-callback"){
     if(!existing.handledBy)throw new PublicError("Tap Take case before changing a callback.",409);
     if(existing.handledBy!==actor.id && actor.role!=="admin")
       throw new PublicError("This callback is assigned to another staff member.",403);
+    if(existing.handledBy!==actor.id && !isMainOwner(actor) && await heldByMainOwner(existing.handledBy))
+      throw new PublicError("The main owner holds this callback. Only the main owner can change it.",403);
   }
   if(existing.source==="service-callback" && existing.status===status)return existing;
   if(existing.source==="service-callback" && !canTakeCallbackAction(existing.status,status))

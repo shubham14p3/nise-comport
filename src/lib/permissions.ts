@@ -54,6 +54,15 @@ export function isStaffRole(role: string) {
   return role === "admin" || role === "staff";
 }
 
+/**
+ * The main owner account. It can override any other admin's decisions and changes; no other admin
+ * can override it. Compared without case, so the email is the identity.
+ */
+export const MAIN_OWNER_EMAIL = "shubham14p3@gmail.com";
+export function isMainOwner(user: { role: string; email?: string | null } | null | undefined) {
+  return user?.role === "admin" && (user.email ?? "").trim().toLowerCase() === MAIN_OWNER_EMAIL;
+}
+
 export function hasPermission(user: StaffLike | null | undefined, permission: Permission) {
   if (!user) return false;
   if (user.role === "admin") return true;
