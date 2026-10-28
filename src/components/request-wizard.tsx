@@ -4,7 +4,7 @@ import { FEATURES, uploadsAllowed } from "@/lib/features";
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, FileText, Headphones, House, Laptop, MapPin, PartyPopper, Search, Store, Upload, X } from "lucide-react";
+import { ArrowRight, Check, FileText, Headphones, House, Laptop, MapPin, PartyPopper, Search, Store, X } from "lucide-react";
 import AddressPicker, { addressProblem, EMPTY_ADDRESS, formatAddress, type AddressValue } from "@/components/address-picker";
 import { CategoryIcon, WhatsAppIcon } from "@/components/icons";
 import { OfferRail, OfferStrip, WizardActions, WizardFrame } from "@/components/wizard";
@@ -128,10 +128,11 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const [days] = useState(() => upcomingDays(hours));
   const [user, setUser] = useState<SessionUser | undefined>(undefined);
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
+  // Documents are not collected in the first step; setFile is kept for the signed-in flow.
   const [file, setFile] = useState<File | null>(null);
   const [photo, setPhoto] = useState<File | null>(null);
   // Visitors (not signed in): email and the two consent boxes, asked on the details step.
-  const [guest, setGuest] = useState({ email: "", terms: false, contact: false });
+  const [guest, setGuest] = useState({ email: "", whatsapp: "", terms: false, contact: false });
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<{ reference: string; offerNote?: string; couponNote?: string; couponOk?: boolean; whatsappSent?: boolean; summary: string } | null>(null);
@@ -238,7 +239,10 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     if (step === 0 && !draft.serviceSlug) return t.errChooseService;
     if (step === 1) {
       if (draft.name.trim().length < 2) return t.errName;
-      if (!validPhone(draft.phone)) return t.errPhone;
+      if (user === null && !draft.phone.trim() && !guest.email.trim()) return "Give a mobile number or an email address so we can reach you.";
+      if (draft.phone.trim() ? !validPhone(draft.phone) : user !== null) return t.errPhone;
+      if (user === null && guest.whatsapp.trim() && !validPhone(guest.whatsapp)) return "Check the WhatsApp number.";
+      if (user === null && guest.email.trim() && !/^\S+@\S+\.\S+$/.test(guest.email.trim())) return "Enter a valid email address.";
       if (!activeIntake && draft.description.trim().length < 8) return t.errDescribe;
       if (activeIntake && Object.keys(intakeErrors).length) return Object.values(intakeErrors)[0];
       if (file && file.size > MAX_FILE_BYTES) return t.errFile;
@@ -290,9 +294,17 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     goTo(Math.min(3,draft.step+1));
   }
 
+  // Guests can only pick a way to reach them that they have actually given: mobile, WhatsApp number or email.
+  const guestEmailOk = /^\S+@\S+\.\S+$/.test(guest.email.trim());
+  const mobileOk = validPhone(draft.phone);
+  const whatsappOk = guest.whatsapp.trim() ? validPhone(guest.whatsapp) : mobileOk;
+  function contactOptionAvailable(option: Contact) {
+    if (user !== null) return true;
+    return option === "email" ? guestEmailOk : option === "phone" ? mobileOk : whatsappOk;
+  }
+
   async function submitGuest() {
-    const emailProblem = /^\S+@\S+\.\S+$/.test(guest.email) ? "" : "Enter a valid email address.";
-    const problem = validate(1) || emailProblem || (guest.terms && guest.contact ? "" : "Please tick both boxes to send your request.");
+    const problem = validate(1) || (contactOptionAvailable(draft.contact) ? "" : "Choose a way to reach you that you’ve given us: mobile, WhatsApp or email.") || (guest.terms && guest.contact ? "" : "Please tick both boxes to send your request.");
     if (problem) { setError(problem); setShowErrors(true); return; }
     setBusy(true); setError("");
     try {
@@ -301,8 +313,9 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         category: draft.serviceSlug === "other" && draft.category !== "all" ? draft.category : undefined,
         description: draft.description.trim() || `${service?.name ?? "Service"} enquiry`,
         name: draft.name.trim(),
-        phone: draft.phone.trim(),
-        email: guest.email.trim(),
+        phone: draft.phone.trim() || undefined,
+        email: guest.email.trim() || undefined,
+        whatsapp: guest.whatsapp.trim() || undefined,
         preferredContact: draft.contact,
         consentTerms: true,
         consentContact: true,
@@ -311,7 +324,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       clearApplicationDraft("service-request");
       setDone({
         reference: result.reference,
-        summary: [`Service: ${service?.name ?? "Not sure"}`, `Name: ${draft.name.trim()}`, `Mobile: +91 ${draft.phone.trim()}`, `Need: ${draft.description.trim()}`].join("\n"),
+        summary: [`Service: ${service?.name ?? "Not sure"}`, `Name: ${draft.name.trim()}`, `Mobile: ${draft.phone.trim() ? `+91 ${draft.phone.trim()}` : "not given"}`, `Need: ${draft.description.trim()}`].join("\n"),
       });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (reason) {
@@ -363,7 +376,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       setDone({
         whatsappSent: Boolean(result.whatsappSent),
         // Always English: this text goes to the shop on WhatsApp.
-        summary: [`Service: ${service?.name ?? "Not sure"}`, `Name: ${draft.name.trim()}`, `Mobile: +91 ${draft.phone.trim()}`, `Need: ${draft.description.trim()}`, `Visit: ${[{ walkin: "Walk-in", callback: "Call me back", doorstep: "Doorstep", online: "Online" }[draft.mode as Mode] ?? "", draft.day, draft.slot].filter(Boolean).join(" · ")}`].join("\n"),
+        summary: [`Service: ${service?.name ?? "Not sure"}`, `Name: ${draft.name.trim()}`, `Mobile: ${draft.phone.trim() ? `+91 ${draft.phone.trim()}` : "not given"}`, `Need: ${draft.description.trim()}`, `Visit: ${[{ walkin: "Walk-in", callback: "Call me back", doorstep: "Doorstep", online: "Online" }[draft.mode as Mode] ?? "", draft.day, draft.slot].filter(Boolean).join(" · ")}`].join("\n"),
         reference: result.request.reference, offerNote: result.offer && !result.offer.applied ? result.offer.reason : undefined,
       });
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -416,7 +429,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const dayLabel = (iso: string) => { const day = days.find((item) => item.iso === iso); return day ? day.offset === 0 ? t.today : day.offset === 1 ? t.tomorrow : `${day.weekday}, ${day.date}` : iso; };
   const visitSummary = draft.mode === "walkin" ? `${t.walkin} · ${dayLabel(draft.day)}${draft.slot ? ` · ${slotLabel(draft.slot)}` : ""}` : draft.mode === "doorstep" ? `${t.doorstep} · ${savedAddress ? `${savedAddress.line1}, ${savedAddress.city}` : formatAddress(draft.address)}` : draft.mode === "callback" ? t.callback : draft.mode === "online" ? t.online : "";
   const nameBad = showErrors && draft.step === 1 && draft.name.trim().length < 2;
-  const phoneBad = showErrors && draft.step === 1 && !validPhone(draft.phone);
+  const phoneBad = showErrors && draft.step === 1 && (draft.phone.trim() ? !validPhone(draft.phone) : user !== null);
   const describeBad = showErrors && draft.step === 1 && draft.description.trim().length < 8;
   const picks = QUICK_PICKS[service?.category ?? (draft.serviceSlug === "other" ? "other" : draft.category)] ?? QUICK_PICKS.other;
 
@@ -471,25 +484,20 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
           </select></label>}
         <div className="form-grid">
           <label className="field"><span className="field__label">{t.name}</span><input value={draft.name} onChange={(event) => update({ name: event.target.value.replace(/[^\p{L}\p{M}\s.'-]/gu, "") })} onBlur={captureLead} autoComplete="name" maxLength={100} required aria-invalid={nameBad}/>{nameBad && <span className="field__error">{t.errName}</span>}</label>
-          <label className="field"><span className="field__label">{t.phone}</span><span className="input-wrap"><span className="input-prefix">+91</span><input value={draft.phone} onChange={(event) => update({ phone: event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16) })} inputMode="tel" autoComplete="tel-national" placeholder="98765 43210" required onBlur={captureLead} aria-invalid={phoneBad}/></span>{phoneBad ? <span className="field__error">{t.errPhone}</span> : <span className="field__hint">{t.phoneHint}</span>}</label>
+          <label className="field"><span className="field__label">{t.phone}</span><span className="input-wrap"><span className="input-prefix">+91</span><input value={draft.phone} onChange={(event) => update({ phone: event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16) })} inputMode="tel" autoComplete="tel-national" placeholder="98765 43210" onBlur={captureLead} aria-invalid={phoneBad}/></span>{phoneBad ? <span className="field__error">{t.errPhone}</span> : <span className="field__hint">{t.phoneHint}</span>}</label>
+          {user === null && <label className="field"><span className="field__label">WhatsApp number (optional)</span><span className="input-wrap"><span className="input-prefix">+91</span><input value={guest.whatsapp} onChange={(event) => setGuest((current) => ({ ...current, whatsapp: event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16) }))} inputMode="tel" autoComplete="off" placeholder="Same as mobile"/></span><span className="field__hint">Leave blank to use your mobile number.</span></label>}
         </div>
         <fieldset className="field"><legend className="field__label">{t.contactVia}</legend><div className="seg">
-          {(["whatsapp", "phone", "email"] as Contact[]).map((option) => <button key={option} type="button" className={draft.contact === option ? "is-active" : undefined} aria-pressed={draft.contact === option} onClick={() => update({ contact: option })}>{option === "whatsapp" ? <WhatsAppIcon size={16}/> : null}{option === "whatsapp" ? t.viaWhatsapp : option === "phone" ? t.viaPhone : t.viaEmail}</button>)}
+          {(["whatsapp", "phone", "email"] as Contact[]).map((option) => <button key={option} type="button" className={draft.contact === option ? "is-active" : undefined} aria-pressed={draft.contact === option} disabled={!contactOptionAvailable(option)} onClick={() => update({ contact: option })}>{option === "whatsapp" ? <WhatsAppIcon size={16}/> : null}{option === "whatsapp" ? t.viaWhatsapp : option === "phone" ? t.viaPhone : t.viaEmail}</button>)}
         </div></fieldset>
+        {user === null && <label className="field"><span className="field__label">Email (optional)</span><input type="email" inputMode="email" autoComplete="email" value={guest.email} onChange={(event) => setGuest((current) => ({ ...current, email: event.target.value.trim() }))}/><span className="field__hint">Give a mobile, an email, or both. We’ll send a sign-in code to this email.</span></label>}
         <label className="field"><span className="field__label">{t.describe}{activeIntake ? " (optional, extra notes)" : ""}</span><textarea value={draft.description} onChange={(event) => update({ description: event.target.value.slice(0, 1500) })} rows={4} maxLength={1500} required={!activeIntake} aria-invalid={describeBad&&!activeIntake}/>{describeBad && <span className="field__error">{t.errDescribe}</span>}<span className="field__hint">{t.describeHint} · {draft.description.length}/1500</span></label>
         {activeIntake && <DetailedIntakeFields intake={activeIntake} onChange={value=>update({intake:value})}
           errors={showErrors?intakeErrors:{}} photo={photo} onPhotoChange={user && user.role!=="demo"?setPhoto:undefined}/>}
         <div className="quick-picks"><span>{t.quickPicks}</span>{picks.map((pick) => <button key={pick} type="button" className="chip-btn chip-btn--sm" onClick={() => update({ description: draft.description.includes(pick) ? draft.description : `${draft.description ? `${draft.description.trim()} ` : ""}${pick}.`.slice(0, 1500) })}>+ {pick}</button>)}</div>
         {user === null && <div className="guest-intake">
-          <label className="field"><span className="field__label">Email</span><input type="email" inputMode="email" autoComplete="email" value={guest.email} onChange={(event) => setGuest((current) => ({ ...current, email: event.target.value.trim() }))} required/><span className="field__hint">We’ll send a code here to confirm it.</span></label>
           <label className="check"><input type="checkbox" checked={guest.terms} onChange={(event) => setGuest((current) => ({ ...current, terms: event.target.checked }))}/><span>I agree to the <Link href="/terms" target="_blank">terms</Link> and <Link href="/privacy" target="_blank">privacy policy</Link>.</span></label>
           <label className="check"><input type="checkbox" checked={guest.contact} onChange={(event) => setGuest((current) => ({ ...current, contact: event.target.checked }))}/><span>NISE COMPORT may contact me about this request on WhatsApp, phone or email.</span></label>
-        </div>}
-        {!uploadsAllowed(activeCategory) && <p className="field__hint">{WX.noFile[locale]}</p>}
-        {uploadsAllowed(activeCategory) && <div className="field"><span className="field__label">{t.attach}</span>
-          {user ? file ? <div className="file-pill"><FileText size={18}/><span>{file.name}<small>{(file.size / 1024 / 1024).toFixed(1)} MB</small></span><button type="button" className="icon-btn" onClick={() => { setFile(null); idempotencyKey.current = null; }} aria-label={t.remove}><X size={16}/></button></div>
-            : <label className="dropzone"><Upload size={22}/><b>{t.attach}</b><small>{t.attachHint}</small><input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,application/pdf" onChange={(event) => { setFile(event.target.files?.[0] ?? null); idempotencyKey.current = null; }}/></label>
-            : <p className="field__hint">{t.attachLater}</p>}
         </div>}
       </section>}
 
