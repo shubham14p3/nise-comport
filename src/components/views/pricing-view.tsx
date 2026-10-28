@@ -88,5 +88,9 @@ export async function PricingView({ lang }: { lang: Locale }) {
 
       <p>{t("Need an exact figure? ", "सही रकम चाहिए? ", "সঠিক অঙ্ক দরকার? ")}<a href={whatsappLink(t("Hello NISE COMPORT, please tell me the charge for: ", "नमस्ते NISE COMPORT, कृपया इसका शुल्क बताइए: ", "নমস্কার NISE COMPORT, অনুগ্রহ করে এর চার্জ জানান: "))} target="_blank" rel="noopener noreferrer">{t("WhatsApp us", "हमें WhatsApp कीजिए", "আমাদের WhatsApp করুন")}</a>{t(" or call ", " या कॉल कीजिए ", " বা কল করুন ")}{site.phones.primary.display}.</p>
     </section>
+    <section className="container legal-content" aria-labelledby="membership-soon">
+      <h2 id="membership-soon">{t("Membership", "सदस्यता", "সদস্যপদ")} <small>({t("coming soon", "जल्द आ रहा है", "শীঘ্রই আসছে")})</small></h2>
+      <p>{t("Membership plans are coming soon. Details will be announced here and at the shop.", "सदस्यता योजनाएँ जल्द आ रही हैं। विवरण यहाँ और दुकान पर बताया जाएगा।", "সদস্যপদ পরিকল্পনা শীঘ্রই আসছে। বিস্তারিত এখানে ও দোকানে জানানো হবে।")}</p>
+    </section>
   </main>;
 }
