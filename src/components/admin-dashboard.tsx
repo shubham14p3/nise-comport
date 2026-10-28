@@ -2,6 +2,7 @@
 
 import { AdminPager } from "@/components/admin-pager";
 import { FormEvent, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import RequestFlow from "@/components/request-flow";
 import dynamic from "next/dynamic";
 import SiteHeader from "@/components/site-header";
 import Portal from "@/components/portal";
@@ -90,13 +91,6 @@ function RequestQueue() {
   const [detailBusy, setDetailBusy] = useState(false);
   const detailCloseRef = useRef<HTMLButtonElement>(null);
   const [historyPage, setHistoryPage] = useState(0);
-  const [officialRef, setOfficialRef] = useState("");
-  const [officialRefLabel, setOfficialRefLabel] = useState("");
-  const [officialRefSaving, setOfficialRefSaving] = useState(false);
-  const [reviewNote, setReviewNote] = useState("");
-  const [serviceFee, setServiceFee] = useState("");
-  const [externalFee, setExternalFee] = useState("0");
-  const [quoteNote, setQuoteNote] = useState("");
   const [workflowBusy, setWorkflowBusy] = useState(false);
   const [jobPage, setJobPage] = useState(0);
   const [requestPage, setRequestPage] = useState(0);
@@ -165,58 +159,48 @@ function RequestQueue() {
       const result = await secureApi<RequestDetail>("B6r1K8mQ3cT9", { id });
       setDetail(result);
       setHistoryPage(0);
-      setOfficialRef(result.request.officialReference ?? "");
-      setOfficialRefLabel(result.request.officialReferenceLabel ?? "");
-      setReviewNote("");
-      setServiceFee("");
-      setExternalFee("0");
-      setQuoteNote("");
     }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not open request details."); }
     finally { setDetailBusy(false); }
   }
 
-  async function saveOfficialReference() {
-    if (!detail) return;
+  async function saveOfficialReference(ref: string, label: string): Promise<boolean> {
+    if (!detail) return false;
     const id = detail.request.id;
-    setOfficialRefSaving(true); setError(""); setNotice("");
+    setWorkflowBusy(true); setError(""); setNotice("");
     try {
-      await secureApi("R1k5V8nD3sJ9", {
-        id, kind: "service", status: detail.request.status, expectedStatus: detail.request.status,
-        officialReference: officialRef.trim(), officialReferenceLabel: officialRefLabel.trim(),
-      });
-      setRequests(rows => rows.map(row => row.id === id ? { ...row, officialReference: officialRef.trim() || null, officialReferenceLabel: officialRefLabel.trim() || null } : row));
-      setNotice(officialRef.trim() ? "Official reference saved. The customer will be notified." : "Official reference cleared.");
+      await secureApi("R1k5V8nD3sJ9", { id, kind: "service", status: detail.request.status, expectedStatus: detail.request.status, officialReference: ref, officialReferenceLabel: label });
+      setRequests(rows => rows.map(row => row.id === id ? { ...row, officialReference: ref || null, officialReferenceLabel: label || null } : row));
+      setNotice(ref ? "Official reference saved. The customer will be notified." : "Official reference cleared.");
       await openDetail(id);
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save the official reference."); }
-    finally { setOfficialRefSaving(false); }
+      return true;
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save the official reference."); return false; }
+    finally { setWorkflowBusy(false); }
   }
 
-  async function reviewAction(action: "start" | "changes" | "approve") {
-    if(!detail || workflowBusy)return;
-    setWorkflowBusy(true);setError("");setNotice("");
+  async function reviewAction(action: "start" | "changes" | "approve", note: string): Promise<boolean> {
+    if (!detail || workflowBusy) return false;
+    setWorkflowBusy(true); setError(""); setNotice("");
     try {
-      await secureApi("N8q4B1tK7mD2",{id:detail.request.id,expectedStatus:detail.request.status,action,note:reviewNote.trim()});
+      await secureApi("N8q4B1tK7mD2", { id: detail.request.id, expectedStatus: detail.request.status, action, note });
       await load();
       await openDetail(detail.request.id);
-      setNotice(action==="changes"?"Customer asked for missing information.":action==="approve"?"Details approved. Enter the amount to request payment.":"Request moved to review.");
-    }catch(reason){setError(reason instanceof Error?reason.message:"Could not update review.");}
-    finally{setWorkflowBusy(false);}
+      setNotice(action === "changes" ? "Customer asked for missing information." : action === "approve" ? "Details approved. Next: send the payment request." : "Request moved to review.");
+      return true;
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not update review."); return false; }
+    finally { setWorkflowBusy(false); }
   }
-  async function issueQuote() {
-    if(!detail||workflowBusy)return;
-    const service=Number(serviceFee),external=Number(externalFee);
-    if(!Number.isFinite(service)||!Number.isFinite(external)||service<0||external<0||service+external<1||
-       !Number.isInteger(Math.round(service*100))||!Number.isInteger(Math.round(external*100))){
-      setError("Enter valid rupee amounts, including paise where needed.");return;
-    }
-    setWorkflowBusy(true);setError("");setNotice("");
-    try{
-      await secureApi("H6k2B9tW4xC7",{action:"create",reference:detail.request.reference,serviceFee:service,externalFee:external,note:quoteNote.trim()});
-      await load();await openDetail(detail.request.id);
-      setNotice("Payment request created. Customer can now pay in their account.");
-    }catch(reason){setError(reason instanceof Error?reason.message:"Unable to issue payment quote.");}
-    finally{setWorkflowBusy(false);}
+
+  async function issueQuote(service: number, external: number, note: string): Promise<boolean> {
+    if (!detail || workflowBusy) return false;
+    setWorkflowBusy(true); setError(""); setNotice("");
+    try {
+      await secureApi("H6k2B9tW4xC7", { action: "create", reference: detail.request.reference, serviceFee: service, externalFee: external, note });
+      await load(); await openDetail(detail.request.id);
+      setNotice("Payment request created. The customer can now pay in their account.");
+      return true;
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Unable to issue payment quote."); return false; }
+    finally { setWorkflowBusy(false); }
   }
 
   async function openPrivateFile(operation: string, id: string, fileId?: string) {
@@ -281,54 +265,12 @@ function RequestQueue() {
         {error && <div className="alert alert--error" role="alert">{error}</div>}
         {notice && <div className="alert alert--success" role="status">{notice}</div>}
         <section className="case-flow" aria-label="Application review workflow">
-          <div className="case-flow__steps">{[
-            {name:"Submitted",done:true},
-            {name:"Review",done:!["submitted"].includes(detail.request.status)},
-            {name:"Payment",done:["awaiting_payment","payment_received","ready_for_pickup","out_for_delivery","completed"].includes(detail.request.status)},
-            {name:"Processing",done:["payment_received","ready_for_pickup","out_for_delivery","completed"].includes(detail.request.status)},
-            {name:"Completed",done:detail.request.status==="completed"},
-          ].map((step,i)=><div className={step.done?"is-done":""} key={step.name}><span>{i+1}</span><small>{step.name}</small></div>)}</div>
-          {["submitted","reviewing","waiting_for_customer"].includes(detail.request.status)&&<div className="case-flow__actions">
-            <h3>Review application</h3>
-            <p>Admins and staff with request access can review details, request missing information, and approve before issuing any payment quote.</p>
-            <label className="field"><span className="field__label">Missing details / review note</span><textarea rows={3} maxLength={500} value={reviewNote}
-              onChange={e=>setReviewNote(e.target.value)} placeholder="Specify what is missing, which documents are needed, or what you checked."/></label>
-            <div className="case-flow__buttons">
-              {detail.request.status!=="reviewing"&&<button type="button" className="btn btn--ghost btn--sm" disabled={workflowBusy} onClick={()=>void reviewAction("start")}>Start / resume review</button>}
-              <button type="button" className="btn btn--ghost btn--sm" disabled={workflowBusy||reviewNote.trim().length<5} onClick={()=>void reviewAction("changes")}>Request corrections</button>
-              <button type="button" className="btn btn--primary btn--sm" disabled={workflowBusy} onClick={()=>void reviewAction("approve")}>Approve details</button>
-            </div>
-            {detail.request.status==="waiting_for_customer"&&<p>Waiting for customer response. Their reply and documents will return this request to review.</p>}
-            {detail.request.status==="reviewing"&&Boolean((detail.request.details.workflow as {approvedAt?:string}|undefined)?.approvedAt)&&<div className="case-flow__quote">
-              <h3>Details approved — prepare customer payment</h3>
-              <div className="admin-filters">
-                <label>Service fee (₹)<input inputMode="decimal" type="number" step="0.01" min="0" max="500000" value={serviceFee} onChange={e=>setServiceFee(e.target.value)}/></label>
-                <label>Official / external fee (₹)<input inputMode="decimal" type="number" step="0.01" min="0" max="500000" value={externalFee} onChange={e=>setExternalFee(e.target.value)}/></label>
-              </div>
-              <label className="field"><span className="field__label">Payment note (optional)</span><input maxLength={200} value={quoteNote} onChange={e=>setQuoteNote(e.target.value)} placeholder="How charges are calculated"/></label>
-              <p><b>Amount to request: ₹{((Number(serviceFee)||0)+(Number(externalFee)||0)).toFixed(2)}</b> · Promo discounts will appear on the customer payment page.</p>
-              <button type="button" className="btn btn--primary btn--sm" disabled={workflowBusy} onClick={()=>void issueQuote()}>Issue payment request</button>
-            </div>}
-          </div>}
-          {detail.request.status==="awaiting_payment"&&<p>Quotation sent. The customer can pay by UPI or a configured gateway. Paid status is recorded after confirmation, not manually assumed.</p>}
-          {detail.request.status==="payment_received"&&<p>Payment verified. Process the official application and add the reference below when the issuing portal provides it. The usual 1–2 working day estimate is not a guarantee.</p>}
+          <RequestFlow detail={detail} busy={workflowBusy} onStart={() => reviewAction("start", "")} onReview={(action, note) => reviewAction(action, note)} onQuote={issueQuote} onOfficialRef={saveOfficialReference}/>
         </section>
         <p><b>{detail.request.serviceName}</b> · {detail.request.reference} · {detail.request.statusLabel} · {when(detail.request.createdAt)}</p>
         <p><b>{detail.customer.name}</b></p>
         <ContactLinks name={detail.customer.name} phone={detail.customer.phone} whatsapp={detail.customer.whatsapp} email={detail.customer.email} reference={detail.request.reference}/>
         <p>Preferred contact: {typeof detail.request.details.preferredContact === "string" ? detail.request.details.preferredContact : detail.customer.preferredContact}</p>
-        <article className="pan-card">
-          <h3>Official reference</h3>
-          <p className="admin-note" style={{ margin: "0 0 10px" }}>
-            {detail.request.reference} is our own internal tracking number. Once this is actually filed with the government portal or insurer, enter their official application/certificate/policy number here — the customer gets an email and WhatsApp with both numbers.
-          </p>
-          <div className="admin-filters" style={{ marginBottom: 0 }}>
-            <label>What is it<input value={officialRefLabel} onChange={event => setOfficialRefLabel(event.target.value)} placeholder="e.g. ServicePlus application no., EPIC no., Policy no." maxLength={60}/></label>
-            <label>Official reference<input value={officialRef} onChange={event => setOfficialRef(event.target.value)} placeholder="Leave blank to clear" maxLength={80}/></label>
-            <button type="button" className="btn btn--primary btn--sm" disabled={officialRefSaving} onClick={() => void saveOfficialReference()}>{officialRefSaving ? "Saving…" : "Save official reference"}</button>
-          </div>
-          {detail.request.officialReferenceSetAt && <small>Last set {when(detail.request.officialReferenceSetAt)}</small>}
-        </article>
         {detail.review && <article className="pan-card">
           <h3>Customer rating</h3>
           <p>{"★".repeat(detail.review.rating)}{"☆".repeat(5 - detail.review.rating)} ({detail.review.rating}/5) · {when(detail.review.createdAt)}</p>
