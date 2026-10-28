@@ -104,7 +104,7 @@ export const printJobs = pgTable("print_jobs", {
 export const coupons = pgTable("coupons", {
   id: uuid("id").defaultRandom().primaryKey(), code: text("code").notNull().unique(), discountType: text("discount_type").notNull(),
   discountValue: numeric("discount_value", { precision: 10, scale: 2 }).notNull(), minimumAmount: numeric("minimum_amount", { precision: 10, scale: 2 }).notNull().default("0"),
-  active: boolean("active").notNull().default(true), expiresAt: timestamp("expires_at", { withTimezone: true }),
+  active: boolean("active").notNull().default(true), cancelled: boolean("cancelled").notNull().default(false), expiresAt: timestamp("expires_at", { withTimezone: true }),
   kind: text("kind").notNull().default("public"),
   title: jsonb("title").$type<Text3>(), description: jsonb("description").$type<Text3>(),
   startsAt: timestamp("starts_at", { withTimezone: true }),
