@@ -109,7 +109,8 @@ const day = (value: unknown) => typeof value === "string" && /^\d{4}-\d{2}-\d{2}
 export function checkInsuranceForm(raw: Record<string, unknown>): { form: InsuranceForm; problems: Record<string, string> } {
   const purpose = (["new", "renew", "expired", "claim"] as const).find((item) => item === raw.purpose) ?? "renew";
   const vehicle = raw.vehicle === "car" ? "car" : raw.vehicle === "three-wheeler" ? "three-wheeler" : "bike";
-  const regNo = clip(raw.regNo, 14).toUpperCase().replace(/[^A-Z0-9]/g, "");
+  // Vehicle number is not collected for new purchases yet (shown as "Coming soon" on the form).
+  const regNo = purpose === "new" ? "" : clip(raw.regNo, 14).toUpperCase().replace(/[^A-Z0-9]/g, "");
   const chassisNo = clip(raw.chassisNo, 25).toUpperCase().replace(/[^A-Z0-9]/g, "");
   const engineNo = clip(raw.engineNo, 25).toUpperCase().replace(/[^A-Z0-9]/g, "");
   const form: InsuranceForm = {
