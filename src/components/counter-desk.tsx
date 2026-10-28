@@ -1,23 +1,29 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 import { secureApi, SecureApiError } from "@/lib/secure-api-client";
 import { COUNTER_DISCOUNT_PERCENT } from "@/lib/counter-rules";
 
 /** Gateway code for POST /api/admin/counter (see src/app/api/x7q9m2/route.ts). */
 const COUNTER_OP = "C6d1L8wN4vXs";
+/** Gateway code for POST /api/admin/wallet-credit/approvals. */
+const APPROVALS_OP = "W5k2P8vN4rQd";
 
 type Service = { slug: string; title: string };
 type Visit = { id: string; serviceName: string; billPaise: number; discountPaise: number; walletPaise: number; collectPaise: number; createdAt: string };
 type Lookup = { phone: string; customer: { id: string; name: string } | null; balancePaise: number; visits: Visit[] };
 type Recorded = { billPaise: number; discountPaise: number; collectPaise: number; balanceAfterPaise: number };
+type CreditRequest = {
+  id: string; amount: string; reason: string; status: "pending" | "approved" | "rejected"; requestedAt: string; requestedById: string;
+  decidedAt: string | null; decisionNote: string | null; customerName: string; customerPhone: string | null; requestedBy: string; decidedBy: string | null;
+};
 
 const rupees = (paise: number) => `₹${(paise / 100).toFixed(2)}`;
 const when = (iso: string) => new Date(iso).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
 /**
  * Owner's counter desk. Type a mobile number and press Enter to see the balance. Pick a service,
- * type the amount, and press Enter in the amount to record the visit. The server does the maths.
+ * type the amount, and press Enter in the amount to record the visit. Top-ups and approvals are below.
  */
 export default function CounterDesk({ services }: { services: Service[] }) {
   const [phone, setPhone] = useState("");
@@ -28,7 +34,10 @@ export default function CounterDesk({ services }: { services: Service[] }) {
   const [highlight, setHighlight] = useState(0);
   const [amount, setAmount] = useState("");
   const [topupAmount, setTopupAmount] = useState("");
-  const [topupNote, setTopupNote] = useState("");
+  const [topupReason, setTopupReason] = useState("");
+  const [requests, setRequests] = useState<CreditRequest[]>([]);
+  const [me, setMe] = useState("");
+  const [decisionNotes, setDecisionNotes] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -49,6 +58,17 @@ export default function CounterDesk({ services }: { services: Service[] }) {
       return null;
     } finally { setBusy(false); }
   }
+
+  async function loadApprovals() {
+    try {
+      const result = await secureApi<{ requests: CreditRequest[]; me: string }>(APPROVALS_OP, { action: "list" });
+      setRequests(result.requests); setMe(result.me);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not load approvals.");
+    }
+  }
+
+  useEffect(() => { void loadApprovals(); }, []);
 
   async function findCustomer() {
     if (digits.length < 10) { setError("Enter a 10-digit mobile number."); return; }
@@ -83,22 +103,37 @@ export default function CounterDesk({ services }: { services: Service[] }) {
     await findCustomer();
   }
 
-  async function topUp() {
+  async function requestTopUp() {
     const paise = Math.round((Number(topupAmount) || 0) * 100);
     if (!(paise > 0)) { setError("Enter the top-up amount."); return; }
+    if (topupReason.trim().length < 10) { setError("Write why this top-up is being made (at least 10 characters)."); return; }
     if (!lookup) { setError("Look up the mobile number first."); return; }
-    const result = await run(() => secureApi<{ balanceAfterPaise: number }>(COUNTER_OP, {
-      action: "topup", phone: digits, name: lookup.customer ? undefined : newName, amount: paise / 100, note: topupNote,
+    const result = await run(() => secureApi<{ status: string }>(COUNTER_OP, {
+      action: "topup", phone: digits, name: lookup.customer ? undefined : newName, amount: paise / 100, reason: topupReason,
     }));
     if (!result) return;
-    setNotice(`Topped up. Balance now ${rupees(result.balanceAfterPaise)}.`);
-    setTopupAmount(""); setTopupNote("");
-    await findCustomer();
+    setNotice(`Top-up of ${rupees(paise)} sent for approval. A second admin must approve it before it reaches the wallet.`);
+    setTopupAmount(""); setTopupReason("");
+    await loadApprovals();
+  }
+
+  async function decide(id: string, decision: "approve" | "reject") {
+    const note = decisionNotes[id]?.trim() ?? "";
+    if (note.length < 5) { setError("Add a short note for this decision."); return; }
+    const result = await run(() => secureApi(APPROVALS_OP, { action: "decide", id, decision, note }));
+    if (!result) return;
+    setNotice(decision === "approve" ? "Approved. The credit is now in the wallet." : "Rejected. Nothing was added to the wallet.");
+    setDecisionNotes((current) => ({ ...current, [id]: "" }));
+    await loadApprovals();
+    if (lookup) await findCustomer();
   }
 
   function onAmountKey(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Enter") { event.preventDefault(); void recordVisit(); }
   }
+
+  const pending = requests.filter((item) => item.status === "pending");
+  const decided = requests.filter((item) => item.status !== "pending").slice(0, 10);
 
   return <section className="container" style={{ paddingTop: 16, maxWidth: 720 }} aria-label="Counter desk">
     <h1>Counter desk</h1>
@@ -146,12 +181,12 @@ export default function CounterDesk({ services }: { services: Service[] }) {
       <button type="button" className="btn btn--primary" disabled={busy} onClick={() => void recordVisit()}>{busy ? "Recording…" : "Record visit"}</button>
 
       <details style={{ marginTop: 24 }}>
-        <summary>Top up wallet</summary>
+        <summary>Request a wallet top-up</summary>
         <div className="form-grid" style={{ marginTop: 10 }}>
           <label className="field"><span className="field__label">Amount (₹)</span><input inputMode="decimal" value={topupAmount} onChange={(event) => setTopupAmount(event.target.value.replace(/[^\d.]/g, ""))}/></label>
-          <label className="field"><span className="field__label">Note (optional)</span><input value={topupNote} onChange={(event) => setTopupNote(event.target.value)} maxLength={120}/></label>
+          <label className="field"><span className="field__label">Reason (required)</span><input value={topupReason} onChange={(event) => setTopupReason(event.target.value)} maxLength={180} placeholder="Why is this credit being made?"/></label>
         </div>
-        <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => void topUp()} style={{ marginTop: 8 }}>Add to wallet</button>
+        <button type="button" className="btn btn--ghost" disabled={busy} onClick={() => void requestTopUp()} style={{ marginTop: 8 }}>Send for approval</button>
       </details>
 
       {lookup.visits.length > 0 && <>
@@ -163,6 +198,37 @@ export default function CounterDesk({ services }: { services: Service[] }) {
           </li>)}
         </ul>
       </>}
+    </>}
+
+    <h2 style={{ marginTop: 32 }}>Wallet credits waiting for approval</h2>
+    <p className="muted">A second admin approves each credit. You can’t approve your own request.</p>
+    {pending.length === 0 && <p className="muted">Nothing waiting.</p>}
+    <ul style={{ listStyle: "none", padding: 0 }}>
+      {pending.map((item) => <li key={item.id} style={{ padding: "12px 0", borderBottom: "1px solid var(--line, #ddd)" }}>
+        <b>{item.customerName}</b>{item.customerPhone ? ` · ${item.customerPhone}` : ""} · <b>{rupees(Math.round(Number(item.amount) * 100))}</b><br/>
+        <small>Reason: {item.reason}</small><br/>
+        <small>Requested by {item.requestedBy} · {when(item.requestedAt)}</small>
+        {item.requestedById === me
+          ? <p className="muted" style={{ marginTop: 6 }}>Waiting for another admin to approve.</p>
+          : <div style={{ marginTop: 8, display: "grid", gap: 6, maxWidth: 480 }}>
+            <input placeholder="Note for this decision (required)" value={decisionNotes[item.id] ?? ""} maxLength={300}
+              onChange={(event) => setDecisionNotes((current) => ({ ...current, [item.id]: event.target.value }))}/>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button type="button" className="btn btn--primary btn--sm" disabled={busy} onClick={() => void decide(item.id, "approve")}>Approve</button>
+              <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void decide(item.id, "reject")}>Reject</button>
+            </div>
+          </div>}
+      </li>)}
+    </ul>
+
+    {decided.length > 0 && <>
+      <h3 style={{ marginTop: 20 }}>Recent decisions</h3>
+      <ul style={{ listStyle: "none", padding: 0 }}>
+        {decided.map((item) => <li key={item.id} style={{ padding: "6px 0" }}>
+          <small><b>{item.status === "approved" ? "Approved" : "Rejected"}</b> · {item.customerName} · {rupees(Math.round(Number(item.amount) * 100))} · {item.reason}<br/>
+          Requested by {item.requestedBy}{item.decidedBy ? `, decided by ${item.decidedBy}` : ""}{item.decidedAt ? ` · ${when(item.decidedAt)}` : ""}{item.decisionNote ? ` · “${item.decisionNote}”` : ""}</small>
+        </li>)}
+      </ul>
     </>}
 
     {error && <p className="alert alert--error" role="alert" style={{ marginTop: 12 }}>{error}</p>}
