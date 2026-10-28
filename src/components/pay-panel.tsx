@@ -9,6 +9,7 @@ import { rupees } from "@/lib/payments-core";
 import Link from "next/link";
 
 type Props = {
+  who: { name: string; email: boolean; phone: boolean } | null;
   reference: string; status: string; amountPaise: number; feePaise: number; note: string | null; paidVia: string | null;
   serviceFeePaise: number; externalFeePaise: number; couponCode: string | null; discountPaise: number;
   upiSlots: { slot: number; label: string }[]; qrSeconds: number; razorpay: boolean; cashfree: boolean; feePercent: number;
@@ -131,6 +132,10 @@ export default function PayPanel(p: Props) {
   if (p.status === "cancelled") return <div className="pay-card"><h2>This payment request was cancelled</h2><p>Please contact us if you think this is a mistake.</p></div>;
 
   return <div className="pay-card">
+    {p.who && <div className="pay-who" role="status">
+      <p><b>Signed in as {p.who.name}</b> · Email {p.who.email ? "verified ✓" : "not verified"} · Mobile {p.who.phone ? "verified ✓" : "not verified"}</p>
+      {!(p.who.email && p.who.phone) && <p className="alert alert--warn">Verify your email and mobile number to pay. <Link href="/profile">Open your profile</Link> to verify them.</p>}
+    </div>}
     {p.razorpay && <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload"/>}
     {p.cashfree && <Script src="https://sdk.cashfree.com/js/v3/cashfree.js" strategy="lazyOnload"/>}
     <p className="pay-amount">{rupees(p.amountPaise)}</p>
