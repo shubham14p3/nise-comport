@@ -11,8 +11,9 @@ const schema = z.object({
   serviceSlug: z.string().min(2).max(80),
   description: z.string().trim().min(8, "Please describe what you need in a few words (at least 8 characters).").max(1500),
   name: z.string().trim().min(2, "Enter your name.").max(100),
-  phone: z.string().trim().min(10, "Enter a valid 10-digit mobile number.").max(20),
-  email: z.string().trim().min(5, "Enter a valid email address.").max(200),
+  phone: z.string().trim().max(20).optional(),
+  whatsapp: z.string().trim().max(20).optional(),
+  email: z.string().trim().max(200).optional(),
   preferredContact: z.enum(["email", "phone", "whatsapp"]).default("whatsapp"),
   category: z.string().max(60).optional(),
   /** Both boxes must be ticked; the server refuses the request otherwise. */
@@ -24,10 +25,14 @@ const schema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const input = schema.parse(await readJson(request));
-    const phone = normalizePhone(input.phone);
-    const email = normalizeEmail(input.email);
-    if (!phone) throw new PublicError("Enter a valid 10-digit mobile number.", 400, { fields: { phone: "Check the number." } });
-    if (!looksLikeEmail(email)) throw new PublicError("Enter a valid email address.", 400, { fields: { email: "Enter a valid email address." } });
+    // A mobile number or an email is enough; the WhatsApp number is optional and defaults to the mobile.
+    const phone = input.phone ? normalizePhone(input.phone) : null;
+    const whatsapp = input.whatsapp ? normalizePhone(input.whatsapp) : null;
+    const email = input.email ? normalizeEmail(input.email) : "";
+    if (input.phone && !phone) throw new PublicError("Enter a valid 10-digit mobile number.", 400, { fields: { phone: "Check the number." } });
+    if (input.whatsapp && !whatsapp) throw new PublicError("Enter a valid WhatsApp number.", 400, { fields: { whatsapp: "Check the number." } });
+    if (email && !looksLikeEmail(email)) throw new PublicError("Enter a valid email address.", 400, { fields: { email: "Enter a valid email address." } });
+    if (!phone && !email) throw new PublicError("Give a mobile number or an email address so we can reach you.", 400, { fields: { phone: "Give a mobile number or an email.", email: "Or give an email address." } });
     const service = input.serviceSlug === "other" ? null : await resolveService(input.serviceSlug);
     if (input.serviceSlug !== "other" && !service) throw new PublicError("Choose one of the listed services.", 400, { fields: { serviceSlug: "Choose one of the listed services." } });
 
@@ -40,7 +45,8 @@ export async function POST(request: NextRequest) {
       description: input.description,
       name: cleanName(input.name),
       phone,
-      email,
+      email: email || null,
+      whatsapp,
       preferredContact: input.preferredContact,
       consentedAt: new Date(),
     });

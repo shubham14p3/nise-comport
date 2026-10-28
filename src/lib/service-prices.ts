@@ -7,17 +7,27 @@ import { publishedServiceDetails } from "@/lib/services";
 /** Our service charge per service, edited in Admin → Prices. A service with no amount shows no price anywhere. */
 export type ServicePrice = { slug: string; amount: number | null; kind: "fixed" | "from"; note: string | null };
 
+// The cached read must throw on failure. If it caught the error itself, the empty list would be
+// cached for 5 minutes and every price would stay hidden after a short database blip.
 const load = unstable_cache(async (): Promise<ServicePrice[]> => {
-  try {
-    const rows = await db.select().from(servicePrices);
-    return rows.map((row) => ({ slug: row.serviceSlug, amount: row.amount, kind: row.kind === "from" ? "from" : "fixed", note: row.note }));
-  } catch (error) { console.error("[prices] service_prices unavailable (run npm run db:migrate)", error); return []; }
+  const rows = await db.select().from(servicePrices);
+  return rows.map((row) => ({ slug: row.serviceSlug, amount: row.amount, kind: row.kind === "from" ? "from" : "fixed", note: row.note }));
 }, ["service-prices"], { revalidate: 300, tags: ["service-prices"] });
 
-export function allServicePrices() { return load(); }
+/** Prices are a nice extra on the page: if the database is unreachable, pages render without them. */
+async function loadOrEmpty(): Promise<ServicePrice[]> {
+  try { return await load(); }
+  catch (error) {
+    const cause = (error as { cause?: { code?: string; message?: string } })?.cause;
+    console.error("[prices] could not read service prices; showing pages without prices", cause?.code ?? cause?.message ?? (error instanceof Error ? error.message : error));
+    return [];
+  }
+}
+
+export function allServicePrices() { return loadOrEmpty(); }
 
 /** Only services that have an amount, ready to show. */
-export async function publicPrices() { return (await load()).filter((price) => price.amount && price.amount > 0); }
+export async function publicPrices() { return (await loadOrEmpty()).filter((price) => price.amount && price.amount > 0); }
 export async function priceFor(slug: string) { return (await publicPrices()).find((price) => price.slug === slug) ?? null; }
 
 export function priceLabel(price: ServicePrice) { return `${price.kind === "from" ? "from " : ""}₹${price.amount}`; }

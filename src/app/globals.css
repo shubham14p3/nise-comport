@@ -3264,6 +3264,23 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .admin-row--openable:hover, .admin-row--openable:focus-visible { border-color: var(--blue); box-shadow: 0 0 0 2px rgb(40 111 245 / .09); outline: none; }
 .admin-row--openable button, .admin-row--openable a, .admin-row--openable select { cursor: pointer; }
 .record-modal { isolation: isolate; }
+/* Counter desk popup: compact, scrolls inside itself, two columns on wide screens. */
+.counter-modal__panel { width: min(760px, 100%); max-height: min(86dvh, 760px); }
+.counter-desk { display: block; }
+.counter-desk__grid { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 720px) { .counter-desk__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.counter-desk__lookup { display: flex; gap: 8px; align-items: stretch; }
+.counter-desk__lookup input { flex: 1; min-width: 0; }
+.counter-desk__options { list-style: none; padding: 0; margin: 6px 0 0; max-height: 200px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; }
+.counter-desk__options li { padding: 6px 8px; cursor: pointer; }
+.counter-desk__options li.is-highlight { background: var(--surface-2, #eef); }
+.counter-desk__card { padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
+.counter-desk__subhead { margin: 18px 0 6px; font-size: 1rem; }
+.counter-desk__visits { list-style: none; padding: 0; margin: 0; }
+.counter-desk__visits li { padding: 8px 0; border-bottom: 1px solid var(--line, #ddd); font-size: .92rem; }
+.counter-desk__spin { animation: counter-desk-spin 0.9s linear infinite; vertical-align: -3px; }
+@keyframes counter-desk-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .counter-desk__spin { animation: none; } }
 .record-modal__header { position: sticky; top: 0; }
 .record-modal__panel { min-height: 0; }
 .request-modal__panel { width: min(1000px, 100%); }
