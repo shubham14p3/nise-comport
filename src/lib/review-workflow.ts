@@ -13,7 +13,12 @@ export function workflowOf(details:unknown):WorkflowMeta {
   return row && typeof row==="object" ? row as WorkflowMeta : {};
 }
 export function isReviewable(status:string) { return REVIEW_STATES.some(s=>s===status); }
-export function canQuote(status:string,details:unknown) {
+/** Every PAN service has one fixed charge (official fees, service, printout, courier and photo). */
+export const PAN_FIXED_RUPEES = 250;
+export function isPanService(slug:string) { return slug==="pan" || slug.startsWith("pan-card"); }
+/** PAN customers pay the fixed charge right after they submit, before staff review. Other services need an approved review first. */
+export function canQuote(status:string,details:unknown,serviceSlug?:string) {
+  if (serviceSlug && isPanService(serviceSlug)) return ["submitted","reviewing"].includes(status);
   return status==="reviewing" && Boolean(workflowOf(details).approvedAt);
 }
 export function nextReviewStatus(action:"start"|"changes"|"approve",current:string) {

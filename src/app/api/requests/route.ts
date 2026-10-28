@@ -18,6 +18,8 @@ import { normalizePhone } from "@/lib/validation";
 import { detailedIntakeSchema } from "@/lib/detailed-intake";
 import { storeDetailedIntake } from "@/lib/detailed-intake-server";
 import { closeWizardLeads, completeInvitedServiceCallback } from "@/lib/leads";
+import { createPaymentRequest } from "@/lib/payments";
+import { isPanService, PAN_FIXED_RUPEES } from "@/lib/review-workflow";
 import { sendDbDownFallbackWhatsApp, sendRequestWhatsApp, whatsappAlertsEnabled } from "@/lib/whatsapp-alerts";
 
 const schema = z.object({
@@ -159,6 +161,11 @@ export async function POST(request: NextRequest) {
     }
     if (coupon.applied) await recordRedemption(coupon.id, user.id, "service", created.id, coupon.value);
     await recordEvent("service", created.id, user.id, null, "submitted", "Created online");
+    if (isPanService(currentService.slug)) {
+      // One fixed charge for every PAN service, issued now so the customer can pay before staff review.
+      await createPaymentRequest({ reference: created.reference, amountPaise: PAN_FIXED_RUPEES * 100, serviceFeePaise: PAN_FIXED_RUPEES * 100, externalFeePaise: 0, note: "PAN charge: official fees, service, printout, courier and photo" }, { id: user.id })
+        .catch((error) => console.error("[pan] could not issue the fixed payment", error));
+    }
     await notifyNewRequest(user, created.reference, service.title, [
       `Note: ${input.description.slice(0, 300)}`,
       ...(input.intake ? [`Application form: ${input.intake.kind}`, "Questionnaire saved securely — open the request in staff dashboard to view"] : []),

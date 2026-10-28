@@ -73,7 +73,7 @@ export async function createPaymentRequest(input: { reference: string; amountPai
   const result=await db.transaction(async(tx)=>{
     const [request]=await tx.select().from(serviceRequests).where(eq(serviceRequests.reference,input.reference.trim().toUpperCase())).limit(1);
     if(!request)throw new PublicError("No request found with that reference.",404);
-    if(!canQuote(request.status,request.details))
+    if(!canQuote(request.status,request.details,request.serviceSlug))
       throw new PublicError("Review and approve all application details before requesting payment.",409);
     const [existing]=await tx.select({id:payments.id,status:payments.status}).from(payments)
       .where(eq(payments.requestId,request.id)).orderBy(desc(payments.createdAt)).limit(1);
