@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, like, not, notInArray, or, sql } from "drizzle-orm";
 import { hash } from "@node-rs/argon2";
 import { counterVisits, users, walletEntries } from "@/db/schema";
 import { db } from "@/lib/db";
@@ -22,12 +22,26 @@ function duplicateNumberError() {
   return new PublicError("More than one account uses this mobile number. Check with the owner before recording anything.", 409, { code: "duplicate_phone" });
 }
 
+/**
+ * Accounts that count as this customer's number. Staff and admin accounts are not customers, and
+ * placeholder profiles from imported lists (".invalid" emails) are ignored. Profiles the counter
+ * creates also use ".invalid" emails, so those (prefix "counter-") still count.
+ */
+function customerAccountsFor(phone: string) {
+  return and(
+    eq(users.phone, phone),
+    isNull(users.deletedAt),
+    notInArray(users.role, ["admin", "staff"]),
+    or(not(like(users.email, "%.invalid")), like(users.email, "counter-%")),
+  );
+}
+
 /** Looks up the customer for this number. Returns no profile for a new number. */
 export async function lookupCustomer(phoneInput: string) {
   const phone = normalizePhone(phoneInput);
   if (!phone) throw new PublicError("Enter a valid 10-digit mobile number.", 400, { fields: { phone: "Check the number." } });
   const rows = await db.select({ id: users.id, name: users.name }).from(users)
-    .where(and(eq(users.phone, phone), isNull(users.deletedAt))).limit(2);
+    .where(customerAccountsFor(phone)).limit(2);
   if (rows.length > 1) throw duplicateNumberError();
   const customer = rows[0];
   if (!customer) return { phone, customer: null, balancePaise: 0, visits: [] };
@@ -45,7 +59,7 @@ export async function lookupCustomer(phoneInput: string) {
  * The email is a placeholder (signupMethod "mobile"), as for other mobile-only profiles.
  */
 export async function customerForCounter(tx: Tx, phone: string, name: string | undefined) {
-  const rows = await tx.select({ id: users.id }).from(users).where(and(eq(users.phone, phone), isNull(users.deletedAt))).limit(2);
+  const rows = await tx.select({ id: users.id }).from(users).where(customerAccountsFor(phone)).limit(2);
   if (rows.length > 1) throw duplicateNumberError();
   if (rows[0]) return rows[0].id;
   const cleaned = cleanName(name ?? "");
