@@ -92,7 +92,7 @@ export default function Pan49APreview({ answers: rawAnswers, pan, onEdit }: Prop
             <p>Assessing officer (AO code)</p>
             <div className="pan49-ao">{[["Area code","aoArea",4],["AO type","aoType",2],["Range code","aoRange",3],["AO No.","aoNumber",3]].map(([label,key,n])=><div key={String(key)}><b>{label}</b><Cells count={Number(n)} value={pick(a,String(key))}/></div>)}</div>
           </div>
-          <div className="pan49-photo">Only 'Individuals'<br/> to affix recent photograph<br/>(3.5 × 2.5 cm)<small>Signature/Left Thumb impression</small></div>
+          <div className="pan49-photo">Only &lsquo;Individuals&rsquo;<br/> to affix recent photograph<br/>(3.5 × 2.5 cm)<small>Signature/Left Thumb impression</small></div>
         </div>
         <p className="pan49-dear">Sir, I/We hereby request that a permanent account number be allotted to me/us.<br/>I/We give below necessary particulars:</p>
         <Caption number="1" title="Full Name (Full expanded name; initials are not permitted)"/>
