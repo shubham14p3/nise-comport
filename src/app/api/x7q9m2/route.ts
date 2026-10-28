@@ -43,6 +43,7 @@ const OPS = {
   "Z6m2C9pT4hQ7": { method: "POST", path: "/api/pan/requests" },
   "Q4s8N2kV6wLc": { method: "POST", path: "/api/pan/quick-start" },
   "C6d1L8wN4vXs": { method: "POST", path: "/api/admin/counter" },
+  "G3r7M1pX5vKd": { method: "POST", path: "/api/intake" },
   "J4p9N2vC7mQ6": { method: "PATCH", path: "/api/pan/49a/edit" },
   "L5v1N7qD9kR3": { method: "POST", path: "/api/admin/pan-imports" },
   "T7s3F8mP2cX6": { method: "POST", path: "/api/admin/wallet-credit" },
