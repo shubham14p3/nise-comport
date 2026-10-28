@@ -154,7 +154,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
           </div>
         </> : <>
           {member.role === "admin" ? <p className="admin-empty">Full access to every area.</p>
-            : <p className="admin-empty">{member.permissions.map((permission) => PERMISSION_INFO[permission].label).join(" · ") || "No access"}{member.permissions.includes("requests") && (member.categories.length ? ` · Categories: ${member.categories.map((slug) => serviceCatalog.find((group) => group.slug === slug)?.title ?? slug).join(", ")}` : " · All categories")}</p>}
+            : <p className="admin-empty">{member.permissions.map((permission) => PERMISSION_INFO[permission as keyof typeof PERMISSION_INFO].label).join(" · ") || "No access"}{member.permissions.includes("requests") && (member.categories.length ? ` · Categories: ${member.categories.map((slug) => serviceCatalog.find((group) => group.slug === slug)?.title ?? slug).join(", ")}` : " · All categories")}</p>}
           <div className="staff-card__actions">
             <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => startEdit(member)}><Pencil size={15}/> Edit</button>
             {!isMe && <>

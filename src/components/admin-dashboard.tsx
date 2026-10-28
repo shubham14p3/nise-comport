@@ -78,7 +78,7 @@ const options = ["submitted", "reviewing", "waiting_for_customer", "awaiting_pay
 const label = (value: string) => { const text = value.replaceAll("_", " "); return text.charAt(0).toUpperCase() + text.slice(1); };
 const when = (value: string) => new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 
-function RequestQueue() {
+function RequestQueue({ canCharge }: { canCharge: boolean }) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [status, setStatus] = useState("");
@@ -265,7 +265,7 @@ function RequestQueue() {
         {error && <div className="alert alert--error" role="alert">{error}</div>}
         {notice && <div className="alert alert--success" role="status">{notice}</div>}
         <section className="case-flow" aria-label="Application review workflow">
-          <RequestFlow detail={detail} busy={workflowBusy} onStart={() => reviewAction("start", "")} onReview={(action, note) => reviewAction(action, note)} onQuote={issueQuote} onOfficialRef={saveOfficialReference} canQuote={isOwner || effectivePermissions.includes("charge")}/>
+          <RequestFlow detail={detail} busy={workflowBusy} onStart={() => reviewAction("start", "")} onReview={(action, note) => reviewAction(action, note)} onQuote={issueQuote} onOfficialRef={saveOfficialReference} canQuote={canCharge}/>
         </section>
         <p><b>{detail.request.serviceName}</b> · {detail.request.reference} · {detail.request.statusLabel} · {when(detail.request.createdAt)}</p>
         <p><b>{detail.customer.name}</b></p>
@@ -443,7 +443,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
         </div>}
         {active === "inbox" && <InboxPanel onSeen={clearUnread} viewer={{id:me.id,role:me.role}}/>}
         {active === "mail" && <MailClient mode="staff" onUnread={setMailUnread}/>}
-        {active === "requests" && <RequestQueue/>}
+        {active === "requests" && <RequestQueue canCharge={isOwner || effectivePermissions.includes("charge")}/>}
         {active === "records" && <RecordsPanel/>}
         {active === "customers" && isOwner && <CustomerManagementPanel/>}
         {active === "promotions" && <PromotionsPanel canEdit/>}

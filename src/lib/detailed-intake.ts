@@ -262,9 +262,9 @@ const pan93: IntakeSection[] = [
   ]},
   {title:"Part C · 12–15 Father and mother",fields:[
     select("singleMother","Single-parent application?",yesNo),
-    ...basicName("father").map(f=>({...f,required:f.id!=="fatherMiddle",show:(a)=>a.singleMother!=="Yes"})),
+    ...basicName("father").map(f=>({...f,required:f.id!=="fatherMiddle",show:(a: IntakeValue)=>a.singleMother!=="Yes"})),
     ...basicName("mother").map(f=>({...f,required:f.id!=="motherMiddle"&&f.id!=="motherSurname"})),
-    select("printedParent","Parent's name to print on PAN card",["Father","Mother"],true,{show:(a)=>a.singleMother!=="Yes"}),
+    select("printedParent","Parent's name to print on PAN card",["Father","Mother"],true,{show:(a: IntakeValue)=>a.singleMother!=="Yes"}),
   ]},
   {title:"Part D · 16 AO code (optional during intake)",fields:[
     field("aoArea","AO area code"),field("aoType","AO type"),

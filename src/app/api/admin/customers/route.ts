@@ -84,8 +84,8 @@ export async function PATCH(request:NextRequest){
         const [used]=await db.select({id:users.id}).from(users).where(and(eq(users.phone,phone),isNull(users.deletedAt))).limit(1);
         if(used)throw new PublicError("This mobile number is already registered.",409);
       }
-      if(input.action==="enable" && !user.disabledAt)throw new PublicError("This account is already active.",409);
-    if(input.action==="disable" && user.disabledAt)throw new PublicError("This account is already disabled.",409);
+      if((input.action as string)==="enable" && !user.disabledAt)throw new PublicError("This account is already active.",409);
+    if((input.action as string)==="disable" && user.disabledAt)throw new PublicError("This account is already disabled.",409);
     const result=await db.transaction(async tx=>{
         const [fresh]=await tx.select().from(users).where(eq(users.id,user.id)).limit(1);
         if(!fresh || fresh.updatedAt.getTime()!==user.updatedAt.getTime())throw new PublicError("This customer was edited elsewhere. Refresh and retry.",409);

@@ -389,7 +389,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
     form93={form93}
     open={showPreview}
     pan={data}
-    answers={data.detailedIntake.answers}
+    answers={data.detailedIntake?.answers ?? {}}
     onClose={() => setShowPreview(false)}
     onEdit={() => { setShowPreview(false); go(1); }}
   />}

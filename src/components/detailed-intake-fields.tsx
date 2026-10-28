@@ -181,7 +181,7 @@ export default function DetailedIntakeFields({ intake, onChange, errors = {}, ph
       {photo&&<small>{photo.name} · {(photo.size/1024/1024).toFixed(1)} MB</small>}
       {errors.photoFileId&&<span className="field__error" role="alert">{errors.photoFileId}</span>}
     </div>}
-    <details className="detailed-intake__section" defaultOpen>
+    <details className="detailed-intake__section" open>
       <summary><strong>Enclosures & document checklist</strong><span>Confirm what you have available</span></summary>
       <p className="field__hint">Staff will verify accepted proofs with the issuing authority.</p>
       <div className="check-grid">{intakeDocumentGuide[intake.kind].map(item=><label className="check" key={item}>

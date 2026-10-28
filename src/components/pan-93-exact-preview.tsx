@@ -141,7 +141,7 @@ export default function Pan93ExactPreview({answers,pan,onEdit}:Props){
         const fingerprint=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes)),b=>b.toString(16).padStart(2,"0")).join("");
         if(fingerprint!==TEMPLATE_SHA256) throw new Error("Incorrect background PDF");
         const pdfDocument=await pdfjs.getDocument({data:new Uint8Array(bytes)}).promise;
-        cleanupDocument=pdfDocument;
+        cleanupDocument=pdfDocument as unknown as {destroy:()=>Promise<void>};
         if(pdfDocument.numPages!==2)throw Error("Two-page source required");
         for(let i=0;i<2;i++){
           const canvas=canvases.current[i];

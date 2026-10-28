@@ -50,6 +50,7 @@ export async function PATCH(request: NextRequest) {
     const panFields = {...pan};
     delete panFields.fileId;
     delete panFields.detailedIntake;
+    if (!pan.detailedIntake) throw new PublicError("Add the form details again before saving.", 400);
     const secured = storeDetailedIntake(pan.detailedIntake);
     const [updated] = await db.update(serviceRequests).set({
       details:{...saved,kind:"pan",description:pan.notes||panServiceLabels[pan.service],pan:panFields,intake:secured},

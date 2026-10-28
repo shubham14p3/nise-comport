@@ -89,7 +89,7 @@ export default function Pan49ASourceViewer({file,answers,pan}:Props) {
        if(hash!==ORIGINAL_49A_SHA256)throw Error("This is not the original two-page Form 49A PDF. Its boxes may be in different positions. Choose the uploaded 49A_Form_Updated.pdf file.");
        const data=new Uint8Array(buffer);
        const task=pdfjs.getDocument({data});
-       doc=await task.promise as PdfDoc;
+       doc=(await task.promise) as unknown as PdfDoc;
        if(doc.numPages!==2)throw Error("This preview needs the exact two-page Form 49A source PDF.");
        if(!alive)return;
        setPages(doc.numPages);

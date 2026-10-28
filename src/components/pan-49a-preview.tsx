@@ -109,7 +109,7 @@ export default function Pan49APreview({ answers: rawAnswers, pan, onEdit }: Prop
         <div className="pan49-parent"><span>Is mother a single parent? <Ticks choices={["Yes","No"]} value={pick(a,"singleMother")}/></span></div>
         <b className="pan49-subhead">Father's name</b><Name a={a} prefix="father" title={false}/>
         <b className="pan49-subhead">Mother's name</b><Name a={a} prefix="mother" title={false}/>
-        <p className="pan49-small">Name to be printed on the card: <Ticks choices={["Father","Mother"]} value={pick(a,"printedParent",a.singleMother==="Yes"?"Mother":"Father")}/></p>
+        <p className="pan49-small">Name to be printed on the card: <Ticks choices={["Father","Mother"]} value={pick(a,"printedParent",(a as Answers).singleMother==="Yes"?"Mother":"Father")}/></p>
         <Caption number="7" title="Address"/>
         <b className="pan49-subhead">Residence Address</b>
         <Address a={a} prefix="residence"/>
@@ -132,7 +132,7 @@ export default function Pan49APreview({ answers: rawAnswers, pan, onEdit }: Prop
         <Line label="Legacy Enrollment ID" value={pick(a,"aadhaarEnrolmentId")} count={28}/>
         <Line label="Name as per Aadhaar" value={pick(a,"aadhaarName")} count={33}/>
         <Caption number="13" title="Source of Income"/>
-        <div className="pan49-income">{income.map(([key,label])=><Tick key={key} label={label} checked={a[key]==="Yes"}/>)}</div>
+        <div className="pan49-income">{income.map(([key,label])=><Tick key={key} label={label} checked={(a as Answers)[key]==="Yes"}/>)}</div>
         <Line label="Business / Profession code" value={pick(a,"professionCode")} count={2}/>
         <Caption number="14" title="Representative Assessee (RA)"/>
         <p className="pan49-small">Is a representative assessee involved? <Ticks choices={["Yes","No"]} value={pick(a,"raApplicable")}/></p>
