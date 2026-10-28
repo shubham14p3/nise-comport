@@ -59,7 +59,7 @@ export function isStaffRole(role: string) {
  * can override it. Compared without case, so the email is the identity.
  */
 export const MAIN_OWNER_EMAIL = "shubham14p3@gmail.com";
-export function isMainOwner(user: { role: string; email?: string | null } | null | undefined) {
+export function isMainOwner(user: { role?: string | null; email?: string | null } | null | undefined) {
   return user?.role === "admin" && (user.email ?? "").trim().toLowerCase() === MAIN_OWNER_EMAIL;
 }
 
