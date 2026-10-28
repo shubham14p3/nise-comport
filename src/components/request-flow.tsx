@@ -40,8 +40,8 @@ export type FlowDetail = {
   request: { reference: string; status: string; officialReference: string | null; officialReferenceLabel: string | null; officialReferenceSetAt: string | null; details: Record<string, unknown> };
 };
 
-export default function RequestFlow({ detail, busy, onStart, onReview, onQuote, onOfficialRef }: {
-  detail: FlowDetail; busy: boolean;
+export default function RequestFlow({ detail, busy, canQuote, onStart, onReview, onQuote, onOfficialRef }: {
+  detail: FlowDetail; busy: boolean; canQuote: boolean;
   onStart: () => Promise<boolean>;
   onReview: (action: "changes" | "approve", note: string) => Promise<boolean>;
   onQuote: (serviceFee: number, externalFee: number, note: string) => Promise<boolean>;
@@ -108,7 +108,11 @@ export default function RequestFlow({ detail, busy, onStart, onReview, onQuote, 
         </>}
     </div>}
 
-    {step === "quote" && <div className="case-flow__quote">
+    {step === "quote" && !canQuote && <div className="case-flow__actions">
+      <h3>Step 3 of 6 · Quote</h3>
+      <p>Waiting for someone with payment-request access to send the quote. You can still check the details and the official reference.</p>
+    </div>}
+    {step === "quote" && canQuote && <div className="case-flow__quote">
       <h3>Step 3 of 6 · Quote</h3>
       <div className="admin-filters">
         <label>Service fee (₹)<input inputMode="decimal" type="number" step="0.01" min="0" max="500000" value={draft.serviceFee} onChange={(event) => change({ serviceFee: event.target.value })}/></label>

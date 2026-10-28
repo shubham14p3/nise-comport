@@ -265,7 +265,7 @@ function RequestQueue() {
         {error && <div className="alert alert--error" role="alert">{error}</div>}
         {notice && <div className="alert alert--success" role="status">{notice}</div>}
         <section className="case-flow" aria-label="Application review workflow">
-          <RequestFlow detail={detail} busy={workflowBusy} onStart={() => reviewAction("start", "")} onReview={(action, note) => reviewAction(action, note)} onQuote={issueQuote} onOfficialRef={saveOfficialReference}/>
+          <RequestFlow detail={detail} busy={workflowBusy} onStart={() => reviewAction("start", "")} onReview={(action, note) => reviewAction(action, note)} onQuote={issueQuote} onOfficialRef={saveOfficialReference} canQuote={isOwner || effectivePermissions.includes("charge")}/>
         </section>
         <p><b>{detail.request.serviceName}</b> · {detail.request.reference} · {detail.request.statusLabel} · {when(detail.request.createdAt)}</p>
         <p><b>{detail.customer.name}</b></p>
@@ -306,7 +306,7 @@ function RequestQueue() {
 }
 
 type Tab = "customers" | "integrations" | "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "hardware" | "couponuse" | "qrscans" | "legal" | "loyalty" | "chats" | "mail" | "outreach";
-const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | "admin" | "staff" }[] = [
+const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | Permission[] | "admin" | "staff" }[] = [
   { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
   { id: "mail", label: "Messages", icon: Mail, needs: "mail" },
   { id: "requests", label: "Requests", icon: ClipboardList, needs: "requests" },
@@ -330,7 +330,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "hardware", label: "Hardware parts", icon: Database, needs: "content" },
   { id: "loyalty", label: "Loyalty credit", icon: WalletCards, needs: "wallet" },
   { id: "legal", label: "Legal pages", icon: LayoutTemplate, needs: "content" },
-  { id: "payments", label: "Payments", icon: WalletCards, needs: "payments" },
+  { id: "payments", label: "Payments", icon: WalletCards, needs: ["payments", "requests"] },
 ];
 
 const NAV_SECTIONS = [
@@ -354,7 +354,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
   // staff account viewAsStaff is always false and changes nothing.
   const isOwner = me.role === "admin" && !viewAsStaff;
   const effectivePermissions = viewAsStaff ? [...STAFF_PERMISSIONS] : me.permissions;
-  const tabs = TABS.filter((tab) => tab.needs === "staff" ? true : tab.needs === "admin" ? isOwner : isOwner || effectivePermissions.includes(tab.needs));
+  const tabs = TABS.filter((tab) => tab.needs === "staff" ? true : tab.needs === "admin" ? isOwner : isOwner || (Array.isArray(tab.needs) ? tab.needs.some((permission) => effectivePermissions.includes(permission)) : effectivePermissions.includes(tab.needs)));
   const hash = useSyncExternalStore(subscribeHash, readHash, () => "");
   const [picked, setPicked] = useState<Tab | null>(null);
   const fromHash = tabs.find((tab) => tab.id === hash)?.id;
@@ -460,7 +460,7 @@ export default function AdminDashboard({ me, viewAsStaff = false }: { me: { id?:
         {active === "qrscans" && <QrScansPanel/>}
         {active === "legal" && <LegalPanel/>}
         {active === "loyalty" && <LoyaltyPanel/>}
-        {active === "payments" && <PaymentsPanel/>}
+        {active === "payments" && <PaymentsPanel canCharge={isOwner || effectivePermissions.includes("charge")}/>}
         {active === "integrations" && <SystemConnectionsPanel/>}
         {active === "team" && <div className="admin-team-groups">
           <details className="admin-accordion"><summary><UsersRound size={17}/> Staff & owner login accounts</summary><TeamPanel meRole={me.role} meId={me.id}/></details>

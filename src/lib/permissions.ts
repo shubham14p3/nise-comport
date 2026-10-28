@@ -4,12 +4,13 @@
  *
  * Plain module (no imports) so it can be used in the browser and in tests.
  */
-export const STAFF_PERMISSIONS = ["requests", "payments", "records", "pan", "promotions", "content", "campaigns", "whatsapp", "wallet", "mail"] as const;
+export const STAFF_PERMISSIONS = ["requests", "payments", "charge", "records", "pan", "promotions", "content", "campaigns", "whatsapp", "wallet", "mail"] as const;
 export type Permission = (typeof STAFF_PERMISSIONS)[number];
 
 export const PERMISSION_INFO: Record<Permission, { label: string; detail: string }> = {
   requests: { label: "Requests & print orders", detail: "Unlocks Requests. See the queue, open customer files and update statuses. Tick service categories below to limit which requests they see." },
-  payments: { label: "Payments (check receiving)", detail: "Unlocks Payments only. See payments received and confirm them, without the rest of Requests." },
+  payments: { label: "Payments (check receiving)", detail: "Unlocks Payments. See payments received and confirm (verify) UPI payments. Cannot create, refund or cancel payments." },
+  charge: { label: "Create payment requests & refunds", detail: "Ask a customer to pay (create a payment request), process refunds and cancel payments. Off by default; only give it to people you trust with money." },
   records: { label: "Customer records", detail: "Unlocks Records. Import Excel registers (PAN, insurance, certificates…) and look up customers. Every opened record is logged." },
   pan: { label: "PAN data", detail: "Unlocks PAN data. Import PAN lists and look up records." },
   promotions: { label: "Promotions", detail: "Unlocks Promotions. Create codes, personal codes and posters, switch codes on or off." },
