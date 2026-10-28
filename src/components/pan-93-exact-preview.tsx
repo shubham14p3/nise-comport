@@ -118,8 +118,8 @@ export default function Pan93ExactPreview({answers,pan,onEdit}:Props){
     if(file)return;
     // Avoid repeated 404s until the scrubbed binary is installed in public/forms.
     if(process.env.NEXT_PUBLIC_PAN93_TEMPLATE_READY!=="true"){
-      setPages("missing");
-      return;
+      const timer=window.setTimeout(()=>setPages("missing"),0);
+      return()=>window.clearTimeout(timer);
     }
     let active=true;
     fetchStaticFile("/forms/pan-93-template.pdf",{cache:"force-cache"}).then(async response=>{

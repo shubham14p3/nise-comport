@@ -25,7 +25,7 @@ export default function Pan49AModal({ open, pan, answers, onClose, onEdit, form9
   const closeRef = useRef<HTMLButtonElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const closeCallback = useRef(onClose);
-  closeCallback.current = onClose;
+  useEffect(() => { closeCallback.current = onClose; }, [onClose]);
 
   useEffect(() => {
     if (!open) return;

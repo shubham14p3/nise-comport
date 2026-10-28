@@ -48,20 +48,24 @@ export default function DetailedIntakeFields({ intake, onChange, errors = {}, ph
 
   useEffect(()=>{
     if(!Object.keys(errors).length) return;
-    setAttempted(true);
-    const toOpen:Record<string,boolean>={};
-    const first=intakeSections(intake.kind).find(section=>section.fields.some(f=>errors[f.id]));
-    if(first) {
-      toOpen[first.title]=true;
-      setExpanded(old=>Object.entries(toOpen).every(([key,v])=>old[key]===v)?old:{...old,...toOpen});
-      const frame=requestAnimationFrame(()=>{
-        const target=Array.from(formRef.current?.querySelectorAll<HTMLElement>("[data-intake-id]")||[])
-          .find(element=>Object.keys(errors).includes(element.dataset.intakeId||""));
-        target?.scrollIntoView({behavior:"smooth",block:"center"});
-        target?.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>("input, select, textarea")?.focus({preventScroll:true});
-      });
-      return ()=>cancelAnimationFrame(frame);
-    }
+    // Deferred one tick so no state is set synchronously inside the effect body.
+    let frame=0;
+    const timer=window.setTimeout(()=>{
+      setAttempted(true);
+      const toOpen:Record<string,boolean>={};
+      const first=intakeSections(intake.kind).find(section=>section.fields.some(f=>errors[f.id]));
+      if(first) {
+        toOpen[first.title]=true;
+        setExpanded(old=>Object.entries(toOpen).every(([key,v])=>old[key]===v)?old:{...old,...toOpen});
+        frame=requestAnimationFrame(()=>{
+          const target=Array.from(formRef.current?.querySelectorAll<HTMLElement>("[data-intake-id]")||[])
+            .find(element=>Object.keys(errors).includes(element.dataset.intakeId||""));
+          target?.scrollIntoView({behavior:"smooth",block:"center"});
+          target?.querySelector<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>("input, select, textarea")?.focus({preventScroll:true});
+        });
+      }
+    },0);
+    return ()=>{window.clearTimeout(timer);cancelAnimationFrame(frame);};
   },[errors,intake.kind]);
 
   function setAnswer(field: IntakeField, value: string) {
