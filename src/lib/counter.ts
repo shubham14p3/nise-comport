@@ -4,13 +4,11 @@ import { hash } from "@node-rs/argon2";
 import { counterVisits, users, walletEntries } from "@/db/schema";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
-import { cleanName, normalizePhone } from "@/lib/validation";
 import { COUNTER_DISCOUNT_PERCENT } from "@/lib/counter-rules";
+import { cleanName, normalizePhone } from "@/lib/validation";
+import { cleanReason, createCreditRequest, toPaise, type Tx } from "@/lib/wallet-credits";
 
 export { COUNTER_DISCOUNT_PERCENT } from "@/lib/counter-rules";
-const MAX_BILL_RUPEES = 1_000_000;
-
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /** Wallet balance in paise: credits minus debits. */
 export async function walletPaise(executor: Tx, userId: string) {
@@ -18,14 +16,6 @@ export async function walletPaise(executor: Tx, userId: string) {
     balance: sql<string>`coalesce(sum(case when ${walletEntries.kind} = 'debit' then -${walletEntries.amount} else ${walletEntries.amount} end), 0)`,
   }).from(walletEntries).where(eq(walletEntries.userId, userId));
   return Math.round(Number(row?.balance ?? 0) * 100);
-}
-
-/** Rupees typed by staff → whole paise. Rejects zero, negatives, more than two decimals and silly sizes. */
-export function toPaise(rupees: number) {
-  if (!Number.isFinite(rupees) || rupees <= 0 || rupees > MAX_BILL_RUPEES) throw new PublicError("Enter an amount between ₹1 and ₹10,00,000.", 400, { fields: { amount: "Check the amount." } });
-  const paise = Math.round(rupees * 100);
-  if (Math.abs(paise - rupees * 100) > 0.001) throw new PublicError("Use at most two decimal places.", 400, { fields: { amount: "Check the amount." } });
-  return paise;
 }
 
 function duplicateNumberError() {
@@ -54,7 +44,7 @@ export async function lookupCustomer(phoneInput: string) {
  * The customer for this number, creating a profile for a new number. A new profile needs a name.
  * The email is a placeholder (signupMethod "mobile"), as for other mobile-only profiles.
  */
-async function customerForCounter(tx: Tx, phone: string, name: string | undefined) {
+export async function customerForCounter(tx: Tx, phone: string, name: string | undefined) {
   const rows = await tx.select({ id: users.id }).from(users).where(and(eq(users.phone, phone), isNull(users.deletedAt))).limit(2);
   if (rows.length > 1) throw duplicateNumberError();
   if (rows[0]) return rows[0].id;
@@ -96,17 +86,15 @@ export async function recordVisit(input: { staffId: string; phone: string; name?
   });
 }
 
-/** Adds money to a customer's wallet at the counter. Admin only (checked by the route). */
-export async function topUpWallet(input: { staffName: string; phone: string; name?: string; rupees: number; note?: string }) {
+/**
+ * A top-up at the counter is a wallet credit, so it waits for a second admin's approval.
+ * Nothing is added to the wallet here.
+ */
+export async function requestTopUp(input: { staffId: string; phone: string; name?: string; rupees: number; reason: string }) {
   const paise = toPaise(input.rupees);
+  const reason = cleanReason(input.reason);
   return db.transaction(async (tx) => {
     const userId = await customerForCounter(tx, input.phone, input.name);
-    await tx.execute(sql`select id from users where id = ${userId} for update`);
-    const note = input.note?.trim().slice(0, 120);
-    await tx.insert(walletEntries).values({
-      userId, amount: (paise / 100).toFixed(2), kind: "credit",
-      description: `Top-up at counter by ${input.staffName.slice(0, 60)}${note ? ` · ${note}` : ""}`,
-    });
-    return { balanceAfterPaise: await walletPaise(tx, userId) };
+    return createCreditRequest(tx, { userId, requestedById: input.staffId, paise, reason });
   });
 }

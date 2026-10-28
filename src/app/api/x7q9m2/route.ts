@@ -46,6 +46,7 @@ const OPS = {
   "J4p9N2vC7mQ6": { method: "PATCH", path: "/api/pan/49a/edit" },
   "L5v1N7qD9kR3": { method: "POST", path: "/api/admin/pan-imports" },
   "T7s3F8mP2cX6": { method: "POST", path: "/api/admin/wallet-credit" },
+  "W5k2P8vN4rQd": { method: "POST", path: "/api/admin/wallet-credit/approvals" },
   "L9w5A3sJ7qP2": { method: "GET", path: "/api/admin/wallet-credit" },
   "D2f6C8mR4nX1": { method: "PATCH", path: "/api/admin/wallet-credit" },
   "P8a2N5dK1vR7": { method: "GET", path: "/api/internal/profile-snapshot" },

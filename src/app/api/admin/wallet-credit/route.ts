@@ -6,6 +6,7 @@ import { and, countDistinct, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { logActivity } from "@/lib/activity";
 import { z } from "zod";
 import { walletEntries, users } from "@/db/schema";
+import { cleanReason, createCreditRequest, toPaise } from "@/lib/wallet-credits";
 import { getCurrentUser } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { db } from "@/lib/db";
@@ -13,15 +14,23 @@ import { apiError } from "@/lib/http";
 import { PublicError } from "@/lib/errors";
 
 const schema = z.object({ email: z.email().transform(value=>value.trim().toLowerCase()), amount: z.number().positive().max(100000), description: z.string().trim().min(3).max(160) });
+/**
+ * A credit is a request, not a payment: the owner asks with a reason, and a second admin approves it
+ * at /api/admin/wallet-credit/approvals. Only admins can ask; the "wallet" permission no longer adds credit.
+ */
 export async function POST(request: NextRequest) {
   try {
     const actor = await getCurrentUser();
-    if (!hasPermission(actor, "wallet")) return NextResponse.json({ error: "Wallet access is required." }, { status: 403 });
+    if (actor?.role !== "admin") return NextResponse.json({ error: "Only the owner can request wallet credits." }, { status: 403 });
     const input = schema.parse(await request.json());
-    const [customer] = await db.select({ id: users.id }).from(users).where(eq(users.email, input.email)).limit(1);
-    if (!customer) return NextResponse.json({ error: "No customer account matches this email." }, { status: 404 });
-    const [entry] = await db.insert(walletEntries).values({ userId: customer.id, amount: input.amount.toFixed(2), kind: "credit", description: input.description }).returning({ id: walletEntries.id });
-    return NextResponse.json({ ok: true, entry: entry.id }, { status: 201 });
+    const paise = toPaise(input.amount);
+    const reason = cleanReason(input.description);
+    const created = await db.transaction(async (tx) => {
+      const [customer] = await tx.select({ id: users.id }).from(users).where(eq(users.email, input.email)).limit(1);
+      if (!customer) throw new PublicError("No customer account matches this email.", 404);
+      return createCreditRequest(tx, { userId: customer.id, requestedById: actor.id, paise, reason });
+    });
+    return NextResponse.json({ ok: true, status: created.status, requestId: created.id, message: "Sent for approval. A second admin must approve it before it reaches the customer." }, { status: 201 });
   } catch (error) { return apiError(error); }
 }
 

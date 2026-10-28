@@ -200,6 +200,24 @@ export const counterVisits = pgTable("counter_visits", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("counter_visits_user_created_idx").on(table.userId, table.createdAt)]);
 
+/**
+ * Wallet credits need a second admin's approval. Nothing reaches the customer's wallet until
+ * `approved`; the wallet entry is written in the same transaction as the approval.
+ */
+export const walletCreditRequests = pgTable("wallet_credit_requests", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  reason: text("reason").notNull(),
+  requestedById: uuid("requested_by_id").notNull().references(() => users.id),
+  requestedAt: timestamp("requested_at", { withTimezone: true }).notNull().defaultNow(),
+  status: text("status").notNull().default("pending"),
+  decidedById: uuid("decided_by_id").references(() => users.id),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  decisionNote: text("decision_note"),
+  walletEntryId: uuid("wallet_entry_id"),
+}, (table) => [index("wallet_credit_requests_status_idx").on(table.status, table.requestedAt)]);
+
 export const referrals = pgTable("referrals", {
   id: uuid("id").defaultRandom().primaryKey(), referrerId: uuid("referrer_id").notNull().references(() => users.id),
   referredUserId: uuid("referred_user_id").references(() => users.id), code: text("code").notNull().unique(), status: text("status").notNull().default("invited"),

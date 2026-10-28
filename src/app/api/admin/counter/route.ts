@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
-import { lookupCustomer, recordVisit, topUpWallet } from "@/lib/counter";
+import { lookupCustomer, recordVisit, requestTopUp } from "@/lib/counter";
 import { PublicError } from "@/lib/errors";
 import { apiError, readJson } from "@/lib/http";
 import { publishedServiceDetails } from "@/lib/services";
@@ -13,7 +13,7 @@ const amount = z.number().positive("Enter an amount.").max(1_000_000);
 const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("lookup"), phone }),
   z.object({ action: z.literal("visit"), phone, name: z.string().trim().max(100).optional(), serviceSlug: z.string().min(2).max(80), amount }),
-  z.object({ action: z.literal("topup"), phone, name: z.string().trim().max(100).optional(), amount, note: z.string().max(120).optional() }),
+  z.object({ action: z.literal("topup"), phone, name: z.string().trim().max(100).optional(), amount, reason: z.string().max(180).default("") }),
 ]);
 
 function normalised(raw: string) {
@@ -41,8 +41,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, ...result }, { status: 201 });
     }
 
-    const result = await topUpWallet({ staffName: actor.name, phone: normalised(input.phone), name: input.name, rupees: input.amount, note: input.note });
-    return NextResponse.json({ ok: true, ...result }, { status: 201 });
+    // Top-ups wait for a second admin's approval (see /api/admin/wallet-credit/approvals).
+    const result = await requestTopUp({ staffId: actor.id, phone: normalised(input.phone), name: input.name, rupees: input.amount, reason: input.reason });
+    return NextResponse.json({ ok: true, status: result.status, requestId: result.id }, { status: 201 });
   } catch (error) {
     return apiError(error);
   }

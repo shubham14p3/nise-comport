@@ -54,7 +54,7 @@ export default function WalletCreditForm({ canCorrect = false }: { canCorrect?: 
     event.preventDefault(); setBusy(true); setMessage(""); setError("");
     try {
       await secureApi(CREDIT, { email, amount: Number(amount), description });
-      setMessage("Wallet credit recorded. The customer can see it in their profile.");
+      setMessage("Credit sent for approval. A second admin must approve it on the Counter desk before it reaches the customer.");
       setAmount(""); await load();
       if (customerId) await loadHistory(customerId, historyPage);
     } catch (e) { setError(e instanceof Error ? e.message : "Could not record wallet credit."); }
