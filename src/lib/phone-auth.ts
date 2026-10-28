@@ -7,6 +7,7 @@ import { generatePin } from "@/lib/mobile-login-core";
 import { seal } from "@/lib/vault";
 import { approveClaimsForVerifiedPhone } from "@/lib/claims";
 import { grantVerifyReward } from "@/lib/verify-rewards";
+import { grantWelcomeCredit } from "@/lib/welcome-credit";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { clearRate, enforceRate, hitRate, identity, RATE_RULES } from "@/lib/rate-limit";
@@ -87,6 +88,7 @@ export async function confirmPhoneVerification(userId: string, phoneInput: strin
   });
   // A proven number earns the one-time ₹20 credit and opens (or approves) the claim on any records under it.
   await grantVerifyReward(userId, "phone").catch((error) => console.error("[rewards] phone reward failed", error));
+  await grantWelcomeCredit(userId).catch((error) => console.error("[welcome] credit not granted", error));
   await approveClaimsForVerifiedPhone(userId, phone).catch((error) => console.error("[claims] approve failed", error));
   return { phone };
 }

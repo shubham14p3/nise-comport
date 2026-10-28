@@ -218,6 +218,19 @@ export const walletCreditRequests = pgTable("wallet_credit_requests", {
   walletEntryId: uuid("wallet_entry_id"),
 }, (table) => [index("wallet_credit_requests_status_idx").on(table.status, table.requestedAt)]);
 
+/**
+ * Welcome credit state per customer: when it was granted, whether the celebration was shown, and
+ * how many sign-in nudges were shown. Phone and email are the verified ones, used to block a second grant.
+ */
+export const welcomeCredits = pgTable("welcome_credits", {
+  userId: uuid("user_id").primaryKey().references(() => users.id),
+  phone: text("phone"), email: text("email"),
+  nudgeCount: integer("nudge_count").notNull().default(0),
+  grantedAt: timestamp("granted_at", { withTimezone: true }),
+  celebratedAt: timestamp("celebrated_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("welcome_credits_phone_idx").on(table.phone), index("welcome_credits_email_idx").on(table.email)]);
+
 export const referrals = pgTable("referrals", {
   id: uuid("id").defaultRandom().primaryKey(), referrerId: uuid("referrer_id").notNull().references(() => users.id),
   referredUserId: uuid("referred_user_id").references(() => users.id), code: text("code").notNull().unique(), status: text("status").notNull().default("invited"),
