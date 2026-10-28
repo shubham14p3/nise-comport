@@ -3,6 +3,7 @@
 import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { secureApi } from "@/lib/secure-api-client";
 import { rupees } from "@/lib/payments-core";
 import Link from "next/link";
@@ -24,6 +25,21 @@ type Reveal = { svg: string; link: string; vpa: string; label: string; expiresAt
 // Request-time UPI expiry, created only in an async user action.
 function expiryFromSeconds(seconds: number) { return Date.now() + seconds * 1000; }
 const clock = (ms: number) => `${Math.floor(ms / 60000)}:${String(Math.floor((ms % 60000) / 1000)).padStart(2, "0")}`;
+
+/** The UPI ID is hidden (XXXX) until the customer taps the eye. Copying it from the page is blocked; the customer types or pastes it into their own UPI app. */
+function UpiIdField({ value }: { value: string }) {
+  const [show, setShow] = useState(false);
+  const [name, domain] = value.split("@");
+  const masked = `${"X".repeat(Math.max(4, (name ?? "").length))}@${domain ?? ""}`;
+  const block = (event: { preventDefault: () => void }) => event.preventDefault();
+  return <div className="pay-upi" onCopy={block} onCut={block} onContextMenu={block} onDragStart={block}>
+    <span>UPI ID: </span>
+    <b className="pay-upi__value" aria-label={show ? "UPI ID" : "UPI ID hidden"}>{show ? value : masked}</b>
+    <button type="button" className="pay-upi__eye" onClick={() => setShow((on) => !on)} aria-label={show ? "Hide UPI ID" : "Show UPI ID"} aria-pressed={show}>
+      {show ? <EyeOff size={16}/> : <Eye size={16}/>}
+    </button>
+  </div>;
+}
 
 export default function PayPanel(p: Props) {
   const router = useRouter();
@@ -157,7 +173,7 @@ export default function PayPanel(p: Props) {
       {p.upiSlots.length > 1 && <div className="seg" role="group" aria-label="Choose a UPI account">{p.upiSlots.map((item) => <button key={item.slot} type="button" className={slot === item.slot ? "is-active" : undefined} disabled={busy === "qr"} onClick={() => { if (reveal) void showQr(item.slot); else setSlot(item.slot); }}>{item.label}</button>)}</div>}
       {reveal ? <>
         <div className="pay-qr" dangerouslySetInnerHTML={{ __html: reveal.svg }}/>
-        <p className="pay-ref">UPI ID: {reveal.vpa}</p>
+        <UpiIdField value={reveal.vpa}/>
         <p className="pay-ref" role="timer" aria-live="off">Hides in {clock(left)}</p>
         <a className="btn btn--primary btn--block" href={reveal.link}>Open my UPI app</a>
         <button className="btn btn--ghost btn--block" type="button" onClick={() => setReveal(null)}>Hide now</button>
