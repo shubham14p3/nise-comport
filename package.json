@@ -11,6 +11,7 @@
     "lint": "eslint src --max-warnings=0",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "team:migrate": "node scripts/apply-team-migrations.mjs",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types --test tests/*.test.mts",
     "seo:check": "node scripts/seo-check.mjs",
     "db:check": "node scripts/db-check.mjs",
