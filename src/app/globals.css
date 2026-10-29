@@ -3522,3 +3522,67 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .counter-approvals__list li { padding: 10px 0; border-top: 1px solid var(--line); }
 .counter-approvals__actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .counter-approvals__actions input { flex: 1; min-width: 160px; }
+
+/* ---- Admin: Find customer, counter desk, payments and wallet (mobile-friendly) ---- */
+.fc-note { margin: 0 0 10px; padding: 10px 12px; border-radius: 10px; background: #eef4ff; border: 1px solid #c9dafc; color: var(--ink-2); font-size: .9rem; line-height: 1.45; }
+
+.pay-summary { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.pay-summary div { background: var(--surface); min-width: 0; }
+.pay-summary b { font-size: 1.15rem; overflow-wrap: anywhere; }
+
+.pay-chips { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding-bottom: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.pay-chips .chip { flex: 0 0 auto; min-height: 36px; }
+
+.pay-create { margin: 12px 0; }
+.pay-create__form { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; align-items: end; padding: 12px; }
+.pay-create__form label { display: grid; gap: 6px; font-weight: 600; min-width: 0; }
+.pay-create__form label small { font-weight: 400; color: var(--muted); }
+.pay-create__form input { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--surface); font-size: 16px; }
+.pay-create__wide { grid-column: 1 / -1; }
+.pay-create__submit { min-height: 44px; }
+
+.pay-table td.pay-actions .btn { margin: 2px 4px 2px 0; }
+
+@media (max-width: 640px) {
+  .pay-table thead { display: none; }
+  .pay-table, .pay-table tbody, .pay-table tr, .pay-table td { display: block; width: 100%; }
+  .pay-table tr { margin-bottom: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  .pay-table td { border: 0; padding: 6px 0; overflow-wrap: anywhere; }
+  .pay-table td::before { content: attr(data-label); display: block; font-size: .72rem; font-weight: 650; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+  .pay-table td.pay-actions { padding-top: 8px; border-top: 1px dashed var(--line); margin-top: 4px; }
+  .pay-table td.pay-actions .btn { min-height: 40px; margin: 4px 6px 4px 0; }
+  .pay-create__form { grid-template-columns: minmax(0, 1fr); }
+  .pay-create__submit { width: 100%; }
+  .pay-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-wallet .admin-panel-title { flex-direction: column; align-items: stretch; gap: 8px; }
+  .admin-wallet .admin-form-grid, .admin-wallet__correct.admin-form-grid { grid-template-columns: minmax(0, 1fr); }
+  .admin-wallet .admin-form-grid > .btn, .admin-wallet__correct .btn { width: 100%; justify-content: center; min-height: 44px; }
+  .admin-wallet .admin-form-grid input, .admin-wallet__correct input { min-height: 44px; font-size: 16px; }
+  .admin-wallet .promo-admin__bar { flex-direction: column; align-items: stretch; }
+  .admin-wallet .promo-admin__bar .btn { width: 100%; min-height: 44px; }
+  .admin-wallet__holder, .admin-wallet__entry { flex-direction: column; align-items: stretch; }
+  .admin-wallet__holder > span:last-child, .admin-wallet__entry > span:last-child { text-align: left; }
+  .admin-wallet__entry .btn { width: 100%; justify-content: center; min-height: 40px; }
+  .admin-wallet__history { padding: 10px; }
+  .admin-wallet__correct { padding: 10px; }
+}
+
+@media (max-width: 480px) {
+  .counter-desk__entry, .counter-desk__side { padding: 14px; }
+  .counter-desk__lookup { flex-direction: column; }
+  .counter-desk__lookup .btn { width: 100%; min-height: 44px; }
+  .counter-desk__lookup input, .counter-desk__entry input, .counter-desk__side input { min-height: 44px; font-size: 16px; }
+  .counter-desk__entry .btn { width: 100%; min-height: 44px; }
+  .counter-approvals__actions { flex-wrap: wrap; }
+  .counter-approvals__actions input { flex: 1 1 100%; min-height: 44px; font-size: 16px; }
+  .counter-approvals__actions .btn { flex: 1 1 auto; min-height: 44px; }
+}
+
+@media (max-width: 640px) {
+  .fc-search { flex-direction: column; }
+  .fc-search input { min-width: 0; width: 100%; min-height: 44px; font-size: 16px; }
+  .fc-search .btn { width: 100%; min-height: 44px; justify-content: center; }
+  .fc-row .btn { flex: 1 1 auto; min-height: 40px; }
+  .fc-row input { min-height: 44px; font-size: 16px; }
+  .fc-card { padding: 14px; }
+}

@@ -101,3 +101,19 @@ export async function resendCustomerEmailCode(id: string, actor: { id: string; n
   await logActivity({ kind: "staff", permission: "records", title: `${actor.name ?? "Staff"} resent the email code to ${member.name}`, refType: "user", refId: id, actorId: actor.id });
   return { ok: true };
 }
+
+/**
+ * Manually marks a customer's email or mobile as verified (or clears it). Staff can't change the
+ * address or number itself here; they can only confirm it was checked, e.g. by phone at the counter.
+ */
+export async function setCustomerVerified(id: string, channel: "email" | "phone", verified: boolean, actor: { id: string; name?: string }) {
+  const member = await customerOrThrow(id);
+  if (channel === "email" && (!member.email || isPlaceholderEmail(member.email))) throw new PublicError("This customer has no email address on their account.", 400, { code: "no_email" });
+  if (channel === "phone" && !member.phone) throw new PublicError("This customer has no mobile number on their account.", 400, { code: "no_phone" });
+  const now = verified ? new Date() : null;
+  if (channel === "email") await db.update(users).set({ emailVerifiedAt: now, updatedAt: new Date() }).where(eq(users.id, id));
+  else await db.update(users).set({ phoneVerifiedAt: now, updatedAt: new Date() }).where(eq(users.id, id));
+  const label = channel === "email" ? "email" : "mobile";
+  await logActivity({ kind: "staff", permission: "records", title: `${actor.name ?? "Staff"} ${verified ? "marked" : "unmarked"} ${member.name}'s ${label} as verified manually`, refType: "user", refId: id, actorId: actor.id });
+  return { ok: true, verified };
+}

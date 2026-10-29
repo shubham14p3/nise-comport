@@ -63,6 +63,16 @@ export default function FindCustomerPanel() {
     await search();
   }
 
+  async function setVerified(channel: "email" | "phone", verified: boolean) {
+    if (!selected) return;
+    const label = channel === "email" ? "email" : "mobile number";
+    if (!window.confirm(`${verified ? "Mark" : "Unmark"} ${selected.name}’s ${label} as verified? This is recorded in the activity log.`)) return;
+    const result = await run(() => secureApi<{ ok: boolean }>(CUSTOMERS_OP, { action: "set-verified", id: selected.id, channel, verified }));
+    if (!result) return;
+    setNotice(`${channel === "email" ? "Email" : "Mobile"} ${verified ? "marked as verified" : "verification cleared"} for ${selected.name}.`);
+    await search();
+  }
+
   async function resendEmail() {
     if (!selected) return;
     const result = await run(() => secureApi<{ ok: boolean }>(CUSTOMERS_OP, { action: "resend-email-code", id: selected.id }));
@@ -74,7 +84,10 @@ export default function FindCustomerPanel() {
   }
 
   return <section aria-label="Find customer">
-    <div className="admin-panel-title"><div><h2>Find customer</h2><p>Search by email or mobile number. Every change here is recorded in the activity log.</p></div></div>
+    <div className="admin-panel-title"><div>
+      <p className="fc-note" role="note"><b>Note:</b> You can’t change a customer’s email or mobile number on this page. You can only confirm or clear their verification.</p>
+      <h2>Find customer</h2><p>Search by email or mobile number. Every change here is recorded in the activity log.</p>
+    </div></div>
 
     <div className="fc-search">
       <input type="text" value={query} placeholder="Email address or 10-digit mobile" autoComplete="off" aria-label="Email or mobile number"
@@ -109,6 +122,19 @@ export default function FindCustomerPanel() {
           {selected.mustChangePassword && <span className="fc-badge">Must change password at sign-in</span>}
         </div>
         <p style={{ margin: "4px 0" }}><small>Email: {selected.email ?? "—"}</small><br/><small>Mobile: {selected.phone ? `+91 ${selected.phone.replace(/^\+91/, "")}` : "—"}</small></p>
+
+        <div className="fc-section">
+          <b>Verification</b>
+          <p className="muted" style={{ margin: "4px 0 8px" }}>Use this only after you have checked the customer yourself, for example by phone or in person.</p>
+          <div className="fc-row">
+            {selected.emailVerified
+              ? <button type="button" className="btn btn--ghost btn--sm" disabled={busy || !selected.email} onClick={() => void setVerified("email", false)}>Clear email verification</button>
+              : <button type="button" className="btn btn--ghost btn--sm" disabled={busy || !selected.email} onClick={() => void setVerified("email", true)}>Mark email verified</button>}
+            {selected.phoneVerified
+              ? <button type="button" className="btn btn--ghost btn--sm" disabled={busy || !selected.phone} onClick={() => void setVerified("phone", false)}>Clear mobile verification</button>
+              : <button type="button" className="btn btn--ghost btn--sm" disabled={busy || !selected.phone} onClick={() => void setVerified("phone", true)}>Mark mobile verified</button>}
+          </div>
+        </div>
 
         <div className="fc-section">
           <b>Temporary password</b>

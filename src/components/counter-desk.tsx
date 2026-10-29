@@ -20,6 +20,13 @@ type CreditRequest = {
 };
 
 const rupees = (paise: number) => `₹${(paise / 100).toFixed(2)}`;
+
+/** Keeps only digits and stops at 10. A pasted "+91" or "91" prefix is dropped, so the number can't run past 10 digits. */
+function limitMobileDigits(raw: string) {
+  let digits = raw.replace(/\D/g, "");
+  if (digits.length > 10 && digits.startsWith("91")) digits = digits.slice(2);
+  return digits.slice(0, 10);
+}
 const when = (iso: string) => new Date(iso).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
 /**
@@ -82,7 +89,7 @@ export default function CounterDesk({ services }: { services: Service[]; isOwner
   }, []);
 
   async function findCustomer(page = 0) {
-    if (digits.length < 10) { setError("Enter a 10-digit mobile number."); return; }
+    if (digits.length !== 10) { setError("Enter a valid 10-digit mobile number."); return; }
     setLooking(true);
     try {
       const result = await run(() => secureApi<Lookup>(COUNTER_OP, { action: "lookup", phone: digits, page }));
@@ -160,14 +167,15 @@ export default function CounterDesk({ services }: { services: Service[]; isOwner
       <div className="counter-desk__entry">
         <label className="field"><span className="field__label">Customer mobile</span>
           <span className="counter-desk__lookup">
-            <input type="tel" inputMode="numeric" autoComplete="off" value={phone} placeholder="98765 43210"
-              onChange={(event) => setPhone(event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16))}
+            <input type="tel" inputMode="numeric" autoComplete="off" value={phone} placeholder="98765 43210" maxLength={14} aria-describedby="counter-phone-hint"
+              onChange={(event) => setPhone(limitMobileDigits(event.target.value))}
               onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void findCustomer(); } }}
               onBlur={() => { if (digits.length === 10 && lookup?.phone !== digits) void findCustomer(); }}/>
             <button type="button" className="btn btn--ghost btn--sm" disabled={looking || digits.length < 10} onClick={() => void findCustomer()} aria-busy={looking}>
               {looking ? <><Loader2 size={15} className="counter-desk__spin" aria-hidden="true"/> Looking up…</> : "Look up"}
             </button>
           </span>
+          <span id="counter-phone-hint" className="field__hint">Enter the 10 digits only.</span>
         </label>
 
         {lookup && <>
