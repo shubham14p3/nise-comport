@@ -1,5 +1,5 @@
 import { hash } from "@node-rs/argon2";
-import { and, eq, isNull, notInArray } from "drizzle-orm";
+import { and, eq, isNull, ne, notInArray, or } from "drizzle-orm";
 import { sessions, users } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import { requestEmailOtp } from "@/lib/auth";
@@ -116,4 +116,52 @@ export async function setCustomerVerified(id: string, channel: "email" | "phone"
   const label = channel === "email" ? "email" : "mobile";
   await logActivity({ kind: "staff", permission: "records", title: `${actor.name ?? "Staff"} ${verified ? "marked" : "unmarked"} ${member.name}'s ${label} as verified manually`, refType: "user", refId: id, actorId: actor.id });
   return { ok: true, verified };
+}
+
+/**
+ * Admin changes a customer's email and/or mobile number. The new address or number is checked
+ * for duplicates, marked unverified (verify it again once checked), logged, and the old email is told.
+ */
+export async function updateCustomerContact(id: string, input: { email: string; phone: string }, actor: { id: string; name?: string }) {
+  const member = await customerOrThrow(id);
+  const email = normalizeEmail(input.email);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw new PublicError("Enter a valid email address.", 400, { fields: { email: "Check the email." } });
+  const phone = normalizePhone(input.phone);
+  if (!phone) throw new PublicError("Enter a valid 10-digit mobile number.", 400, { fields: { phone: "Check the number." } });
+
+  const [clash] = await db.select({ id: users.id, email: users.email, phone: users.phone }).from(users)
+    .where(and(ne(users.id, id), isNull(users.deletedAt), or(eq(users.email, email), eq(users.phone, phone))))
+    .limit(1);
+  if (clash?.email === email) throw new PublicError("Another account already uses this email address.", 409, { code: "email_taken", fields: { email: "Already used." } });
+  if (clash) throw new PublicError("Another customer already uses this mobile number.", 409, { code: "phone_taken", fields: { phone: "Already used." } });
+
+  const oldEmail = member.email && !isPlaceholderEmail(member.email) ? member.email : null;
+  const emailChanged = email !== (member.email ?? "");
+  const phoneChanged = phone !== member.phone;
+  if (!emailChanged && !phoneChanged) return { ok: true, changed: false };
+
+  await db.update(users).set({
+    email,
+    phone,
+    emailVerifiedAt: emailChanged ? null : member.emailVerifiedAt,
+    phoneVerifiedAt: phoneChanged ? null : member.phoneVerifiedAt,
+    updatedAt: new Date(),
+  }).where(eq(users.id, id));
+
+  if (emailChanged && oldEmail) {
+    try {
+      const notice = await queueNotification(id, "staff_alert", {
+        email: oldEmail, subject: "Your NISE COMPORT email address was changed",
+        lines: [
+          `${actor.name ?? "Our team"} changed the email address on your NISE COMPORT account.`,
+          "If this was not expected, please contact the shop straight away.",
+        ],
+      });
+      await deliverNotifications([notice]).catch(() => undefined);
+    } catch (error) { console.error("[customers] email change notice failed", error); }
+  }
+
+  const changed = [emailChanged ? "email" : null, phoneChanged ? "mobile number" : null].filter(Boolean).join(" and ");
+  await logActivity({ kind: "staff", permission: "records", title: `${actor.name ?? "Staff"} changed the ${changed} of ${member.name}`, refType: "user", refId: id, actorId: actor.id });
+  return { ok: true, changed: true };
 }

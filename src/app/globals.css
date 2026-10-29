@@ -3586,3 +3586,8 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
   .fc-row input { min-height: 44px; font-size: 16px; }
   .fc-card { padding: 14px; }
 }
+
+.fc-edit { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-top: 8px; }
+.fc-field { display: grid; gap: 4px; font-weight: 600; font-size: .9rem; min-width: 0; }
+.fc-field input { width: 100%; min-width: 0; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--surface); }
+@media (max-width: 640px) { .fc-field input { min-height: 44px; font-size: 16px; } }

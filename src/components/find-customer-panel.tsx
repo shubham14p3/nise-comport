@@ -31,6 +31,9 @@ export default function FindCustomerPanel() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
 
   const selected = results?.find((item) => item.id === selectedId) ?? null;
 
@@ -48,6 +51,7 @@ export default function FindCustomerPanel() {
     if (!result) return;
     setResults(result.customers);
     setSelectedId(result.customers.length === 1 ? result.customers[0].id : null);
+    setEditing(false);
     setIssued(null);
     setNotice(result.customers.length === 0 ? "No customer found with that email or mobile number." : "");
   }
@@ -60,6 +64,24 @@ export default function FindCustomerPanel() {
     if (!result) return;
     setIssued({ who: selected.name, password: result.tempPassword, emailed: result.emailed });
     setPassword("");
+    await search();
+  }
+
+  function startEdit() {
+    if (!selected) return;
+    setEditEmail(selected.email ?? "");
+    setEditPhone(selected.phone ? selected.phone.replace(/^\+91/, "") : "");
+    setEditing(true);
+  }
+
+  async function saveContact() {
+    if (!selected) return;
+    const result = await run(() => secureApi<{ changed: boolean }>(CUSTOMERS_OP, {
+      action: "update-contact", id: selected.id, email: editEmail, phone: editPhone,
+    }));
+    if (!result) return;
+    setEditing(false);
+    setNotice(result.changed ? "Contact details saved. A changed email or mobile must be verified again." : "Nothing changed.");
     await search();
   }
 
@@ -85,7 +107,7 @@ export default function FindCustomerPanel() {
 
   return <section aria-label="Find customer">
     <div className="admin-panel-title"><div>
-      <p className="fc-note" role="note"><b>Note:</b> You can’t change a customer’s email or mobile number on this page. You can only confirm or clear their verification.</p>
+      <p className="fc-note" role="note"><b>Note:</b> Admins can change a customer’s email or mobile number here. Every change is logged, and a changed email or number must be verified again.</p>
       <h2>Find customer</h2><p>Search by email or mobile number. Every change here is recorded in the activity log.</p>
     </div></div>
 
@@ -105,7 +127,7 @@ export default function FindCustomerPanel() {
         <p className="muted" style={{ margin: 0 }}>{results.length} found. Pick one to see details.</p>
         <ul className="fc-list">
           {results.map((item) => <li key={item.id}>
-            <button type="button" className={`fc-item${item.id === selectedId ? " is-selected" : ""}`} aria-pressed={item.id === selectedId} onClick={() => { setSelectedId(item.id); setIssued(null); setNotice(""); }}>
+            <button type="button" className={`fc-item${item.id === selectedId ? " is-selected" : ""}`} aria-pressed={item.id === selectedId} onClick={() => { setSelectedId(item.id); setIssued(null); setNotice(""); setEditing(false); }}>
               <b>{item.name}</b><br/>
               <small className="muted">{item.email ?? "No email"} · {item.phone ? `+91 ${item.phone.replace(/^\+91/, "")}` : "No mobile"}</small>
             </button>
@@ -122,6 +144,26 @@ export default function FindCustomerPanel() {
           {selected.mustChangePassword && <span className="fc-badge">Must change password at sign-in</span>}
         </div>
         <p style={{ margin: "4px 0" }}><small>Email: {selected.email ?? "—"}</small><br/><small>Mobile: {selected.phone ? `+91 ${selected.phone.replace(/^\+91/, "")}` : "—"}</small></p>
+
+        <div className="fc-section">
+          <b>Email and mobile</b>
+          {editing ? <>
+            <div className="fc-edit">
+              <label className="fc-field"><span>Email</span>
+                <input type="email" value={editEmail} autoComplete="off" placeholder="name@example.com" onChange={(event) => setEditEmail(event.target.value.slice(0, 120))}/></label>
+              <label className="fc-field"><span>Mobile (10 digits)</span>
+                <input type="tel" inputMode="numeric" value={editPhone} autoComplete="off" placeholder="98765 43210" maxLength={10}
+                  onChange={(event) => setEditPhone(event.target.value.replace(/\D/g, "").slice(0, 10))}/></label>
+            </div>
+            <p className="muted" style={{ margin: "6px 0 8px" }}>A changed email or mobile is marked unverified. Verify it again below once you have checked it. The old email is told about the change.</p>
+            <div className="fc-row">
+              <button type="button" className="btn btn--primary btn--sm" disabled={busy} aria-busy={busy} onClick={() => void saveContact()}>Save changes</button>
+              <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => setEditing(false)}>Cancel</button>
+            </div>
+          </> : <div className="fc-row">
+            <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={startEdit}>Edit email or mobile</button>
+          </div>}
+        </div>
 
         <div className="fc-section">
           <b>Verification</b>
