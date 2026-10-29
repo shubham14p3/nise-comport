@@ -52,7 +52,7 @@ export const HELP_GUIDES: HelpGuide[] = [
     ])],
   },
   {
-    id: "dl", title: { en: "Driving licence", hi: "ड्राइविंग लाइसेंस", bn: "ড্রাইভিং লাইসেন্স" }, service: "passport-driving-licence",
+    id: "dl", title: { en: "Driving licence", hi: "ड्राइविंग लाइसेंस", bn: "ড্রাইভিং লাইসেন্স" }, service: "driving-licence",
     words: ["driving licence", "driving license", "dl", "learner", "licence", "license", "ड्राइविंग", "लाइसेंस", "লাইসেন্স"],
     intro: "Learner's licence first, then the driving test. We fill the forms and book your slot.",
     variants: [v("new", "Learner / new licence", "लर्नर / नया लाइसेंस", "লার্নার / নতুন লাইসেন্স", [

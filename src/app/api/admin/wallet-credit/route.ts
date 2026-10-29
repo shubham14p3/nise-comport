@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
 
 const correctionSchema = z.object({
   entryId: z.uuid(), amount: z.number().positive().max(100000),
-  reason: z.string().trim().min(10).max(180),
+  reason: z.string().trim().min(1).max(180),
 });
 
 /** Reversals are append-only; the original financial entry can never be overwritten. */

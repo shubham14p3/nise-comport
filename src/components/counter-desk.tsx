@@ -26,12 +26,13 @@ const when = (iso: string) => new Date(iso).toLocaleString("en-IN", { timeZone: 
  * Owner's counter desk, shown in a popup. Left: enter the mobile number, pick a service and the amount.
  * Right: the customer, the live bill summary and recent visits. Top-ups and approvals are below.
  */
-export default function CounterDesk({ services, isOwner }: { services: Service[]; isOwner: boolean }) {
+export default function CounterDesk({ services }: { services: Service[]; isOwner?: boolean }) {
   const [phone, setPhone] = useState("");
   const [lookup, setLookup] = useState<Lookup | null>(null);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [mainOwner, setMainOwner] = useState(false);
+  const [canApprove, setCanApprove] = useState(false);
   const [serviceText, setServiceText] = useState("");
   const [service, setService] = useState<Service | null>(null);
   const [highlight, setHighlight] = useState(0);
@@ -64,23 +65,21 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
   }
 
   async function loadApprovals() {
-    if (!isOwner) return;
     try {
-      const result = await secureApi<{ requests: CreditRequest[]; me: string; mainOwner?: boolean }>(APPROVALS_OP, { action: "list" });
-      setRequests(result.requests); setMe(result.me); setMainOwner(Boolean(result.mainOwner));
+      const result = await secureApi<{ requests: CreditRequest[]; me: string; mainOwner?: boolean; canApprove?: boolean }>(APPROVALS_OP, { action: "list" });
+      setRequests(result.requests); setMe(result.me); setMainOwner(Boolean(result.mainOwner)); setCanApprove(Boolean(result.canApprove));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not load approvals.");
     }
   }
 
   useEffect(() => {
-    if (!isOwner) return;
     let active = true;
-    secureApi<{ requests: CreditRequest[]; me: string; mainOwner?: boolean }>(APPROVALS_OP, { action: "list" })
-      .then((result) => { if (active) { setRequests(result.requests); setMe(result.me); setMainOwner(Boolean(result.mainOwner)); } })
+    secureApi<{ requests: CreditRequest[]; me: string; mainOwner?: boolean; canApprove?: boolean }>(APPROVALS_OP, { action: "list" })
+      .then((result) => { if (active) { setRequests(result.requests); setMe(result.me); setMainOwner(Boolean(result.mainOwner)); setCanApprove(Boolean(result.canApprove)); } })
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load approvals."); });
     return () => { active = false; };
-  }, [isOwner]);
+  }, []);
 
   async function findCustomer(page = 0) {
     if (digits.length < 10) { setError("Enter a 10-digit mobile number."); return; }
@@ -127,7 +126,7 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
   async function requestTopUp() {
     const paise = Math.round((Number(topupAmount) || 0) * 100);
     if (!(paise > 0)) { setError("Enter the top-up amount."); return; }
-    if (topupReason.trim().length < 10) { setError("Write why this top-up is being made (at least 10 characters)."); return; }
+    if (!topupReason.trim()) { setError("Write why this top-up is being made."); return; }
     if (!lookup) { setError("Look up the mobile number first."); return; }
     const result = await run(() => secureApi<{ status: string }>(COUNTER_OP, {
       action: "topup", phone: digits, name: lookup.customer ? undefined : newName, email: lookup.customer ? undefined : newEmail.trim() || undefined, amount: paise / 100, reason: topupReason,
@@ -140,7 +139,6 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
 
   async function decide(id: string, decision: "approve" | "reject") {
     const note = decisionNotes[id]?.trim() ?? "";
-    if (note.length < 5) { setError("Add a short note for this decision."); return; }
     const result = await run(() => secureApi(APPROVALS_OP, { action: "decide", id, decision, note }));
     if (!result) return;
     setNotice(decision === "approve" ? "Approved. The credit is now in the wallet." : "Rejected. Nothing was added to the wallet.");
@@ -247,21 +245,21 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
     {error && <p className="alert alert--error" role="alert" style={{ marginTop: 12 }}>{error}</p>}
     {notice && <p className="alert alert--info" role="status" style={{ marginTop: 12 }}>{notice}</p>}
 
-    {isOwner ? <section className="counter-approvals" aria-label="Wallet credit approvals">
+    {<section className="counter-approvals" aria-label="Wallet credit approvals">
     <details open={pending.length > 0}>
     <summary><b>Wallet credits to approve</b> <span className="counter-approvals__count">{pending.length}</span></summary>
-    <p className="muted counter-approvals__hint">{mainOwner ? "As the main owner you can approve any credit, including your own." : "A second admin approves each credit. You can’t approve your own request."}</p>
+    <p className="muted counter-approvals__hint">{!canApprove ? "You can reject a credit. Only an admin can approve it." : mainOwner ? "As the main owner you can approve any credit, including your own." : "A second admin approves each credit. You can’t approve your own request."}</p>
     {pending.length === 0 && <p className="muted">Nothing waiting.</p>}
     <ul className="counter-approvals__list">
       {pending.map((item) => <li key={item.id}>
         <div><b>{item.customerName}</b>{item.customerPhone ? ` · ${item.customerPhone}` : ""} · <b>{rupees(Math.round(Number(item.amount) * 100))}</b></div>
         <small className="muted">{item.reason} · by {item.requestedBy} · {when(item.requestedAt)}</small>
-        {item.requestedById === me && !mainOwner
+        {canApprove && item.requestedById === me && !mainOwner
           ? <p className="muted" style={{ margin: "6px 0 0" }}>Waiting for another admin to approve.</p>
           : <div className="counter-approvals__actions">
-            <input placeholder="Note (required)" value={decisionNotes[item.id] ?? ""} maxLength={300}
+            <input placeholder="Note (optional)" value={decisionNotes[item.id] ?? ""} maxLength={300}
               onChange={(event) => setDecisionNotes((current) => ({ ...current, [item.id]: event.target.value }))}/>
-            <button type="button" className="btn btn--primary btn--sm" disabled={busy} onClick={() => void decide(item.id, "approve")}>Approve</button>
+            {canApprove && <button type="button" className="btn btn--primary btn--sm" disabled={busy} onClick={() => void decide(item.id, "approve")}>Approve</button>}
             <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void decide(item.id, "reject")}>Reject</button>
           </div>}
       </li>)}
@@ -277,6 +275,6 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
       </ul>
     </>}
     </details>
-    </section> : <p className="muted" style={{ marginTop: 24 }}>Top-up requests are approved by the owner. You’ll see them in the wallet once approved.</p>}
+    </section>}
   </div>;
 }

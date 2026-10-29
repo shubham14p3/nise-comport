@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { PublicError } from "@/lib/errors";
 import { apiError, readJson } from "@/lib/http";
-import { isMainOwner } from "@/lib/permissions";
+import { hasPermission, isMainOwner } from "@/lib/permissions";
 import { decideCreditRequest, listCreditRequests } from "@/lib/wallet-credits";
 
 const schema = z.discriminatedUnion("action", [
@@ -15,10 +15,11 @@ const schema = z.discriminatedUnion("action", [
 export async function POST(request: NextRequest) {
   try {
     const actor = await getCurrentUser();
-    if (actor?.role !== "admin") throw new PublicError("Only the owner can approve wallet credits.", 403, { code: "forbidden" });
+    // Admins approve or reject. Staff with counter access can see and reject, never approve.
+    if (!actor || !(actor.role === "admin" || hasPermission(actor, "counter"))) throw new PublicError("You don’t have access to wallet credit approvals.", 403, { code: "forbidden" });
     const input = schema.parse(await readJson(request));
     if (input.action === "list") {
-      return NextResponse.json({ requests: await listCreditRequests(), me: actor.id, mainOwner: isMainOwner(actor) }, { headers: { "cache-control": "private, no-store" } });
+      return NextResponse.json({ requests: await listCreditRequests(), me: actor.id, mainOwner: isMainOwner(actor), canApprove: actor.role === "admin" }, { headers: { "cache-control": "private, no-store" } });
     }
     const result = await decideCreditRequest({ actorId: actor.id, id: input.id, decision: input.decision, note: input.note });
     return NextResponse.json({ ok: true, ...result });

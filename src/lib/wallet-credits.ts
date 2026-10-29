@@ -23,7 +23,7 @@ export function toPaise(rupees: number) {
 /** The comment that says why the credit is being made. Required on every request. */
 export function cleanReason(value: string) {
   const reason = value.trim();
-  if (reason.length < 10) throw new PublicError("Write why this credit is being made (at least 10 characters).", 400, { fields: { reason: "Explain why." } });
+  if (!reason) throw new PublicError("Write why this credit is being made.", 400, { fields: { reason: "Explain why." } });
   return reason.slice(0, 180);
 }
 
@@ -39,7 +39,6 @@ export async function createCreditRequest(tx: Tx, input: { userId: string; reque
 /** Approves or rejects a pending request. Approval needs a different admin than the one who asked. */
 export async function decideCreditRequest(input: { actorId: string; id: string; decision: "approve" | "reject"; note: string }) {
   const note = input.note.trim();
-  if (note.length < 5) throw new PublicError("Add a short note for this decision.", 400, { fields: { note: "Add a note." } });
   return db.transaction(async (tx) => {
     const [request] = await tx.select().from(walletCreditRequests).where(eq(walletCreditRequests.id, input.id)).limit(1).for("update");
     if (!request) throw new PublicError("This request no longer exists.", 404);
@@ -49,7 +48,8 @@ export async function decideCreditRequest(input: { actorId: string; id: string; 
     const requesterRow = people.find((person) => person.id === request.requestedById);
     const actorRow = people.find((person) => person.id === input.actorId);
     // The main owner may decide their own requests; any other admin needs a second admin.
-    if (request.requestedById === input.actorId && !isMainOwner(actorRow)) throw new PublicError("A second admin must decide this. You can’t approve your own request.", 403, { code: "same_admin" });
+    if (input.decision === "approve" && actorRow?.role !== "admin") throw new PublicError("Only an admin can approve a credit. Staff can reject it.", 403, { code: "admin_only" });
+    if (input.decision === "approve" && request.requestedById === input.actorId && !isMainOwner(actorRow)) throw new PublicError("A second admin must decide this. You can’t approve your own request.", 403, { code: "same_admin" });
     if (isMainOwner(requesterRow) && !isMainOwner(actorRow)) throw new PublicError("This request was raised by the main owner. Only the main owner can decide it.", 403, { code: "main_owner_only" });
     const [requester] = await tx.select({ name: users.name }).from(users).where(eq(users.id, request.requestedById)).limit(1);
     const [approver] = await tx.select({ name: users.name }).from(users).where(eq(users.id, input.actorId)).limit(1);
@@ -64,7 +64,7 @@ export async function decideCreditRequest(input: { actorId: string; id: string; 
     }
     const [updated] = await tx.update(walletCreditRequests).set({
       status: input.decision === "approve" ? "approved" : "rejected",
-      decidedById: input.actorId, decidedAt: new Date(), decisionNote: note, walletEntryId,
+      decidedById: input.actorId, decidedAt: new Date(), decisionNote: note || null, walletEntryId,
     }).where(eq(walletCreditRequests.id, request.id)).returning({ id: walletCreditRequests.id, status: walletCreditRequests.status });
     return updated;
   });

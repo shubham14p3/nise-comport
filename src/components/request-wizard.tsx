@@ -148,7 +148,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const service = services.find((item) => item.slug === draft.serviceSlug);
   const detailedKind: IntakeKind | null =
     draft.serviceSlug === "voter-id" ? "voter" :
-    draft.serviceSlug === "passport-driving-licence" && draft.serviceTask === "passport" ? "passport" : null;
+    draft.serviceSlug === "passport-driving-licence" ? "passport" : null;
   const activeIntake: DetailedIntake | null = detailedKind
     ? draft.intake?.kind === detailedKind ? draft.intake : { kind: detailedKind, answers: {}, documents: [] }
     : null;
@@ -481,10 +481,6 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       {draft.step === 1 && <section>
         <h2>{t.s2Title}</h2><p className="wizard-form__sub">{t.s2Sub}</p>
         {service && <div className="picked"><span>{serviceName(service.slug, service.name, locale)}</span><button type="button" onClick={() => goTo(0)}>{t.edit}</button></div>}
-        {draft.serviceSlug === "passport-driving-licence" && <label className="field"><span className="field__label">Which assistance do you need?</span>
-          <select value={draft.serviceTask} onChange={e=>update({serviceTask:e.target.value as "passport"|"driving",intake:null})}>
-            <option value="passport">Passport application / reissue</option><option value="driving">Driving licence / RTO help</option>
-          </select></label>}
         <div className="form-grid">
           <label className="field"><span className="field__label">{t.name}</span><input value={draft.name} onChange={(event) => update({ name: event.target.value.replace(/[^\p{L}\p{M}\s.'-]/gu, "") })} onBlur={captureLead} autoComplete="name" maxLength={100} required aria-invalid={nameBad}/>{nameBad && <span className="field__error">{t.errName}</span>}</label>
           <label className="field"><span className="field__label">{t.phone}</span><span className="input-wrap"><span className="input-prefix">+91</span><input value={draft.phone} onChange={(event) => update({ phone: event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16) })} inputMode="tel" autoComplete="tel-national" placeholder="98765 43210" onBlur={captureLead} aria-invalid={phoneBad}/></span>{phoneBad ? <span className="field__error">{t.errPhone}</span> : <span className="field__hint">{t.phoneHint}</span>}</label>
