@@ -3595,3 +3595,42 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .fc-approvals { margin-top: 18px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
 .fc-change { padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
 @media (max-width: 640px) { .fc-approvals .fc-row input { flex: 1 1 100%; min-height: 44px; font-size: 16px; } }
+
+/* ---- Payment page: checkout-style QR, progress steps, verifying card (mobile-first) ---- */
+.pay-steps { display: flex; gap: 8px; list-style: none; padding: 0; margin: 4px 0 0; }
+.pay-steps li { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--muted, #666); }
+.pay-steps__dot { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; display: inline-grid; place-items: center; border: 1px solid var(--line, #d8d8e4); font-weight: 700; font-size: .75rem; }
+.pay-steps .is-current { color: var(--ink, #111); font-weight: 650; }
+.pay-steps .is-current .pay-steps__dot { background: #6d3df5; border-color: #6d3df5; color: #fff; }
+.pay-steps .is-done .pay-steps__dot { background: #1a9d5c; border-color: #1a9d5c; color: #fff; }
+
+.pay-checkout { display: grid; gap: 12px; padding: 18px; border: 1px solid var(--line, #e5e5ee); border-radius: 18px; background: var(--card, #fff); box-shadow: 0 10px 30px rgb(40 30 90 / .06); }
+.pay-checkout__head { display: flex; gap: 12px; align-items: center; }
+.pay-checkout__head b { display: block; }
+.pay-checkout__head small { opacity: .75; overflow-wrap: anywhere; }
+.pay-checkout__mark { flex: 0 0 auto; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(135deg, #6d3df5, #2b6cf6); color: #fff; font-weight: 800; }
+.pay-checkout__cta { display: grid; gap: 10px; }
+.pay-checkout__cta p { margin: 0; }
+.pay-qr { width: min(240px, 78vw); padding: 12px; border: 1px solid var(--line, #e5e5ee); }
+.pay-scan { margin: 0; text-align: center; font-size: .92rem; }
+.pay-timer { margin: 0; text-align: center; font-size: .85rem; opacity: .75; }
+
+.pay-verify { display: grid; gap: 10px; padding: 18px; border-radius: 16px; border: 1px solid #f0c15a; background: #fff8e6; }
+.pay-verify h2 { margin: 0; font-size: 1.1rem; }
+.pay-verify p { margin: 0; }
+.pay-verify__head { display: flex; gap: 12px; align-items: center; }
+.pay-verify__icon { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: #fff; border: 1px solid #f0c15a; color: #8a5a00; }
+.pay-verify__utr { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; overflow-wrap: anywhere; }
+.pay-verify__actions { display: grid; gap: 10px; }
+.pay-verify__actions .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+
+.pay-summary__alert { border-color: #b32632 !important; background: #fdeaea; }
+
+@media (max-width: 640px) {
+  .pay-card { padding: 16px; border-radius: 16px; }
+  .pay-checkout { padding: 14px; }
+  .pay-steps li span:last-child { font-size: .72rem; line-height: 1.2; }
+  .pay-card .btn--block, .pay-verify .btn { min-height: 48px; font-size: 1rem; }
+  .pay-card input { min-height: 46px; font-size: 16px; }
+  .pay-verify { padding: 14px; }
+}

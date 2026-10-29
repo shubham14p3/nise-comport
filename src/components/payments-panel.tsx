@@ -6,7 +6,7 @@ import { AdminPager } from "@/components/admin-pager";
 import { customerWhatsAppLink, rupees } from "@/lib/payments-core";
 
 type Row = { id: string; reference: string; amountPaise: number; feePaise: number; status: string; method: string | null; utr: string | null; note: string | null; requestName: string; customer: string; phone: string | null; createdAt: string; failureReason: string | null; issueNote: string | null; issueRaisedAt: string | null; refundChoice: string | null; refundStatus: string | null; refundDetails: string | null; refundPaise: number | null };
-type Summary = { byMethod: { method: string; count: number; paise: number }[]; totalPaise: number; verifying: number; failed: number; due: number; attention: number };
+type Summary = { byMethod: { method: string; count: number; paise: number }[]; totalPaise: number; verifying: number; overdueVerify: number; failed: number; due: number; attention: number };
 type Data = { payments: Row[]; total: number; summary: Summary; options: { upi: number; razorpay: boolean; cashfree: boolean; feePercent: number } };
 const LIST = "A8s5L2nR7vE4";
 const ACT = "H6k2B9tW4xC7";
@@ -42,6 +42,7 @@ export default function PaymentsPanel({ canCharge }: { canCharge: boolean }) {
       <div><b>{rupees(data.summary.totalPaise)}</b><small>collected, all methods</small></div>
       {data.summary.byMethod.map((m) => <div key={m.method}><b>{rupees(m.paise)}</b><small>{({ upi_qr: "UPI QR", razorpay: "Razorpay", cashfree: "Cashfree", cash: "Cash" } as Record<string, string>)[m.method]} · {m.count}</small></div>)}
       <div><b>{data.summary.verifying}</b><small>UPI to verify</small></div>
+      <div className={data.summary.overdueVerify ? "pay-summary__alert" : undefined}><b>{data.summary.overdueVerify}</b><small>UTR waiting over 48 hours</small></div>
       <div><b>{data.summary.failed}</b><small>failed</small></div>
       <div><b>{data.summary.attention}</b><small>tickets / refunds</small></div>
     </div>}

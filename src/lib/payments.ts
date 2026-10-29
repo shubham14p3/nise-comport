@@ -309,7 +309,10 @@ export async function paymentSummary() {
   const byMethod = ["upi_qr", "razorpay", "cashfree", "cash"].map((m) => { const r = paid.filter((x) => x.method === m); return { method: m, count: r.reduce((a, x) => a + x.count, 0), paise: r.reduce((a, x) => a + Number(x.amount) + (m === "razorpay" || m === "cashfree" ? Number(x.fee) : 0), 0) }; });
   const count = (status: string) => rows.filter((r) => r.status === status).reduce((a, x) => a + x.count, 0);
   const [attention] = await db.select({ n: sql<number>`count(*)::int` }).from(payments).where(sql`${payments.issueRaisedAt} is not null and coalesce(${payments.refundStatus},'') <> 'done' or ${payments.refundStatus} = 'requested'`);
-  return { byMethod, totalPaise: byMethod.reduce((a, x) => a + x.paise, 0), verifying: count("verifying"), failed: count("failed"), due: count("due"), attention: attention?.n ?? 0 };
+  // UTRs still waiting after 48 hours: the customer was promised 24–48 working hours, so staff should look at these first.
+  const [overdue] = await db.select({ n: sql<number>`count(*)::int` }).from(payments)
+    .where(and(eq(payments.status, "verifying"), sql`${payments.updatedAt} < now() - interval '48 hours'`));
+  return { byMethod, totalPaise: byMethod.reduce((a, x) => a + x.paise, 0), verifying: count("verifying"), overdueVerify: overdue?.n ?? 0, failed: count("failed"), due: count("due"), attention: attention?.n ?? 0 };
 }
 
 /**

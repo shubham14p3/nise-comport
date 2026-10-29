@@ -3,7 +3,7 @@
 import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Clock, Eye, EyeOff, MessageCircle, Phone } from "lucide-react";
 import { secureApi } from "@/lib/secure-api-client";
 import { rupees } from "@/lib/payments-core";
 import Link from "next/link";
@@ -13,7 +13,7 @@ type Props = {
   reference: string; status: string; amountPaise: number; feePaise: number; note: string | null; paidVia: string | null;
   serviceFeePaise: number; externalFeePaise: number; couponCode: string | null; discountPaise: number;
   upiSlots: { slot: number; label: string }[]; qrSeconds: number; razorpay: boolean; cashfree: boolean; feePercent: number;
-  helpHref: string; failureReason: string | null; ticketRaised: boolean; ticketOpen: boolean; refundStatus: string | null; refundChoice: string | null; refundPaise: number | null;
+  helpHref: string; utr: string | null; submittedAt: string; shopName: string; verifyHref: string; callHref: string; failureReason: string | null; ticketRaised: boolean; ticketOpen: boolean; refundStatus: string | null; refundChoice: string | null; refundPaise: number | null;
   estimates: { choice: "wallet" | "original" | "cash"; net: number }[];
 };
 type Order =
@@ -40,6 +40,36 @@ function UpiIdField({ value }: { value: string }) {
       {show ? <EyeOff size={16}/> : <Eye size={16}/>}
     </button>
   </div>;
+}
+
+const STEP_LABELS = ["Pay", "Enter reference", "Confirmed"];
+
+/** Three steps across the top of the payment card, so the customer always sees where they are. */
+function PaySteps({ status }: { status: string }) {
+  const current = status === "paid" ? 2 : status === "verifying" ? 1 : 0;
+  return <ol className="pay-steps" aria-label="Payment progress">
+    {STEP_LABELS.map((label, index) => <li key={label} className={index < current ? "is-done" : index === current ? "is-current" : undefined} aria-current={index === current ? "step" : undefined}>
+      <span className="pay-steps__dot" aria-hidden="true">{index < current ? "✓" : index + 1}</span><span>{label}</span>
+    </li>)}
+  </ol>;
+}
+
+/** Shown after the customer sends their reference: what happens next, and fast ways to reach us. */
+function VerifyCard({ amount, utr, submittedAt, verifyHref, callHref }: { amount: string; utr: string | null; submittedAt: string; verifyHref: string; callHref: string }) {
+  const when = new Date(submittedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  return <section className="pay-verify" aria-label="Payment being verified">
+    <div className="pay-verify__head">
+      <span className="pay-verify__icon" aria-hidden="true"><Clock size={20}/></span>
+      <div><h2>Payment received, verifying</h2><p className="pay-ref">Submitted {when}</p></div>
+    </div>
+    <p>We have your reference <b className="pay-verify__utr">{utr ?? "—"}</b> for <b>{amount}</b>. We check each UPI payment against our bank account. This usually takes 24–48 working hours.</p>
+    <p className="pay-notice">Please don’t pay again while we check. The QR code stays hidden until then.</p>
+    <p>Want it confirmed sooner? Message us or call, and mention your reference.</p>
+    <div className="pay-verify__actions">
+      <a className="btn btn--primary btn--block" href={verifyHref} target="_blank" rel="noopener noreferrer"><MessageCircle size={17} aria-hidden="true"/> WhatsApp us now</a>
+      <a className="btn btn--ghost btn--block" href={callHref}><Phone size={17} aria-hidden="true"/> Call the shop</a>
+    </div>
+  </section>;
 }
 
 export default function PayPanel(p: Props) {
@@ -159,6 +189,7 @@ export default function PayPanel(p: Props) {
     </section>
     {p.note && <p>{p.note}</p>}
     <p className="pay-ref">Request {p.reference}</p>
+    {p.upiSlots.length > 0 && p.status !== "cancelled" && <PaySteps status={p.status}/>}
 
     {p.status === "failed" && <p className="pay-notice pay-notice--bad"><b>Your last payment did not go through.</b> {p.failureReason} If money was deducted from your account it is normally returned by your bank in 5 to 7 working days. You can try again below.</p>}
     {p.status !== "due" && !p.ticketRaised && (p.status === "verifying" || p.status === "failed") && <section>
@@ -170,21 +201,31 @@ export default function PayPanel(p: Props) {
     </section>}
     {p.ticketRaised && p.refundStatus !== "done" && <p className="pay-notice">Your ticket is with our team. We are checking with the payment provider.</p>}
     {p.ticketRaised && refundBox}
-    {p.status === "verifying" && <p className="pay-notice">We have your UPI reference. We will confirm it against our bank app, usually within a few hours during working time.</p>}
+    {p.status === "verifying" && <VerifyCard amount={rupees(p.amountPaise)} utr={p.utr} submittedAt={p.submittedAt} verifyHref={p.verifyHref} callHref={p.callHref}/>}
 
     {p.upiSlots.length > 0 && (p.status === "due" || p.status === "failed") && <section>
       <h2>Pay free with UPI</h2>
-      <p>No extra charge. For your safety the QR code and UPI ID are shown only after you ask, and hide again after {Math.round(p.qrSeconds / 60)} minutes. Confirmation is manual, so it can take a little while.</p>
+      <p>No extra charge. Scan the QR in your UPI app, then enter the reference number below. The QR is shown only when you ask, and hides after {Math.round(p.qrSeconds / 60)} minutes.</p>
       {p.upiSlots.length > 1 && <div className="seg" role="group" aria-label="Choose a UPI account">{p.upiSlots.map((item) => <button key={item.slot} type="button" className={slot === item.slot ? "is-active" : undefined} disabled={busy === "qr"} onClick={() => { if (reveal) void showQr(item.slot); else setSlot(item.slot); }}>{item.label}</button>)}</div>}
-      {reveal ? <>
-        <div className="pay-qr" dangerouslySetInnerHTML={{ __html: reveal.svg }}/>
-        <UpiIdField value={reveal.vpa}/>
-        <p className="pay-ref" role="timer" aria-live="off">Hides in {clock(left)}</p>
-        <a className="btn btn--primary btn--block" href={reveal.link}>Open my UPI app</a>
-        <button className="btn btn--ghost btn--block" type="button" onClick={() => setReveal(null)}>Hide now</button>
-      </> : <button className="btn btn--primary btn--block" type="button" disabled={busy === "qr"} onClick={() => void showQr(slot)}>{busy === "qr" ? "Opening…" : "Show payment QR"}</button>}
-      <label className="field-label" htmlFor="utr">After paying, enter the 12-digit UPI reference (UTR)</label>
-      <input id="utr" inputMode="text" autoComplete="off" value={utr} onChange={(e) => setUtr(e.target.value)} placeholder="e.g. 401234567890"/>
+      <div className="pay-checkout">
+        <div className="pay-checkout__head">
+          <span className="pay-checkout__mark" aria-hidden="true">{p.shopName.split(" ").map((word) => word[0]).slice(0, 2).join("")}</span>
+          <div><b>{p.shopName}</b><small>Pay {rupees(p.amountPaise)} · {p.reference}</small></div>
+        </div>
+        {reveal ? <>
+          <div className="pay-qr" role="img" aria-label={`UPI payment QR for ${rupees(p.amountPaise)}`} dangerouslySetInnerHTML={{ __html: reveal.svg }}/>
+          <p className="pay-scan">Scan with any UPI app, such as GPay, PhonePe, Paytm, BHIM or your bank app.</p>
+          <UpiIdField value={reveal.vpa}/>
+          <p className="pay-timer" role="timer" aria-live="off">Hides in {clock(left)}</p>
+          <a className="btn btn--primary btn--block" href={reveal.link}>Open my UPI app</a>
+          <button className="btn btn--ghost btn--block" type="button" onClick={() => setReveal(null)}>Hide QR</button>
+        </> : <div className="pay-checkout__cta">
+          <p>Tap below to show a QR code for this bill only. It hides again after {Math.round(p.qrSeconds / 60)} minutes.</p>
+          <button className="btn btn--primary btn--block" type="button" disabled={busy === "qr"} onClick={() => void showQr(slot)}>{busy === "qr" ? "Opening…" : "Show payment QR"}</button>
+        </div>}
+      </div>
+      <label className="field-label" htmlFor="utr">After paying, enter your 12-digit UPI reference (UTR)</label>
+      <input id="utr" inputMode="numeric" autoComplete="off" maxLength={20} value={utr} onChange={(e) => setUtr(e.target.value.replace(/\s/g, "").slice(0, 20))} placeholder="e.g. 401234567890"/>
       <button className="btn btn--ghost btn--block" type="button" disabled={!utr.trim() || busy === "utr"} onClick={() => void submitUtr()}>{busy === "utr" ? "Sending…" : "I have paid"}</button>
     </section>}
 
