@@ -1,11 +1,16 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 import { Loader2, Search } from "lucide-react";
 import { secureApi, SecureApiError } from "@/lib/secure-api-client";
 
 /** Opaque gateway code for customer search and sign-in help (mapped in src/app/api/x7q9m2/route.ts). */
 const CUSTOMERS_OP = "F8k3Q2mW9xLz";
+
+type ContactChange = {
+  id: string; status: string; newEmail: string; newPhone: string; requestedAt: string; requestedById: string; requestedBy: string;
+  customerName: string; customerEmail: string | null; customerPhone: string | null; decisionNote: string | null; decidedAt: string | null;
+};
 
 type Customer = {
   id: string; name: string; email: string | null; phone: string | null;
@@ -34,6 +39,8 @@ export default function FindCustomerPanel() {
   const [editing, setEditing] = useState(false);
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
+  const [changes, setChanges] = useState<{ requests: ContactChange[]; me: string; isAdmin: boolean } | null>(null);
+  const [decisionNotes, setDecisionNotes] = useState<Record<string, string>>({});
 
   const selected = results?.find((item) => item.id === selectedId) ?? null;
 
@@ -67,6 +74,30 @@ export default function FindCustomerPanel() {
     await search();
   }
 
+  async function loadChanges() {
+    try { setChanges(await secureApi<{ requests: ContactChange[]; me: string; isAdmin: boolean }>(CUSTOMERS_OP, { action: "list-contact-changes" })); }
+    catch { /* the list is optional; the search still works */ }
+  }
+
+  useEffect(() => {
+    let active = true;
+    secureApi<{ requests: ContactChange[]; me: string; isAdmin: boolean }>(CUSTOMERS_OP, { action: "list-contact-changes" })
+      .then((result) => { if (active) setChanges(result); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, []);
+
+  async function decideChange(id: string, decision: "approve" | "reject") {
+    const result = await run(() => secureApi<{ status: string }>(CUSTOMERS_OP, {
+      action: "decide-contact-change", requestId: id, decision, note: decisionNotes[id]?.trim() ?? "",
+    }));
+    if (!result) return;
+    setDecisionNotes((current) => ({ ...current, [id]: "" }));
+    await loadChanges();
+    if (results) await search();
+    setNotice(decision === "approve" ? "Approved. The email and mobile details are updated." : "Rejected. The customer’s details were not changed.");
+  }
+
   function startEdit() {
     if (!selected) return;
     setEditEmail(selected.email ?? "");
@@ -81,8 +112,13 @@ export default function FindCustomerPanel() {
     }));
     if (!result) return;
     setEditing(false);
-    setNotice(result.changed ? "Contact details saved. A changed email or mobile must be verified again." : "Nothing changed.");
+    if (result.pending) {
+      await loadChanges();
+      setNotice("Sent to an admin for approval. The customer’s email or mobile changes only after another admin approves it.");
+      return;
+    }
     await search();
+    setNotice(result.changed ? "Contact details saved. A changed email or mobile must be verified again." : "Nothing changed.");
   }
 
   async function setVerified(channel: "email" | "phone", verified: boolean) {
@@ -107,7 +143,7 @@ export default function FindCustomerPanel() {
 
   return <section aria-label="Find customer">
     <div className="admin-panel-title"><div>
-      <p className="fc-note" role="note"><b>Note:</b> Admins can change a customer’s email or mobile number here. Every change is logged, and a changed email or number must be verified again.</p>
+      <p className="fc-note" role="note">{" "}<b>Note:</b> Admins can change a customer’s email or mobile number here directly. Staff changes need approval from another admin. Every change is logged, and a changed email or number must be verified again.</p>
       <h2>Find customer</h2><p>Search by email or mobile number. Every change here is recorded in the activity log.</p>
     </div></div>
 
@@ -203,5 +239,26 @@ export default function FindCustomerPanel() {
         </div>
       </div> : <div className="fc-card"><p className="muted" style={{ margin: 0 }}>Pick a customer on the left to see their details and actions.</p></div>}
     </div>}
+
+    {changes && changes.requests.length > 0 && <section className="fc-approvals" aria-label="Email and mobile changes">
+      <h3 style={{ margin: "0 0 6px" }}>Email and mobile changes</h3>
+      <p className="muted" style={{ margin: "0 0 10px" }}>{changes.isAdmin ? "Staff changes apply only after another admin approves them." : "Changes you ask for wait here until an admin approves them."}</p>
+      <ul className="fc-list">
+        {changes.requests.map((item) => <li key={item.id} className="fc-change">
+          <div><b>{item.customerName}</b> · <small className="muted">asked by {item.requestedBy}, {new Date(item.requestedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</small></div>
+          <small>Email: {item.customerEmail ?? "—"} → <b>{item.newEmail}</b></small><br/>
+          <small>Mobile: {item.customerPhone ? `+91 ${item.customerPhone.replace(/^\+91/, "")}` : "—"} → <b>+91 {item.newPhone.replace(/^\+91/, "")}</b></small>
+          {item.status !== "pending" && <p className="muted" style={{ margin: "4px 0 0" }}><small>{item.status === "approved" ? "Approved" : "Rejected"}{item.decisionNote ? ` · “${item.decisionNote}”` : ""}</small></p>}
+          {item.status === "pending" && (changes.isAdmin && item.requestedById !== changes.me
+            ? <div className="fc-row" style={{ marginTop: 8 }}>
+              <input placeholder="Note (optional)" maxLength={300} value={decisionNotes[item.id] ?? ""} aria-label="Decision note"
+                onChange={(event) => setDecisionNotes((current) => ({ ...current, [item.id]: event.target.value }))}/>
+              <button type="button" className="btn btn--primary btn--sm" disabled={busy} onClick={() => void decideChange(item.id, "approve")}>Approve</button>
+              <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void decideChange(item.id, "reject")}>Reject</button>
+            </div>
+            : <p className="muted" style={{ margin: "6px 0 0" }}><small>Waiting for an admin to approve.</small></p>)}
+        </li>)}
+      </ul>
+    </section>}
   </section>;
 }

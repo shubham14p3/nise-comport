@@ -3591,3 +3591,7 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .fc-field { display: grid; gap: 4px; font-weight: 600; font-size: .9rem; min-width: 0; }
 .fc-field input { width: 100%; min-width: 0; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--surface); }
 @media (max-width: 640px) { .fc-field input { min-height: 44px; font-size: 16px; } }
+
+.fc-approvals { margin-top: 18px; padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+.fc-change { padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+@media (max-width: 640px) { .fc-approvals .fc-row input { flex: 1 1 100%; min-height: 44px; font-size: 16px; } }

@@ -219,6 +219,23 @@ export const walletCreditRequests = pgTable("wallet_credit_requests", {
 }, (table) => [index("wallet_credit_requests_status_idx").on(table.status, table.requestedAt)]);
 
 /**
+ * Email or mobile changes made by staff wait for an admin's approval. Nothing changes on the
+ * customer's account until an admin approves the request. Admin changes apply directly.
+ */
+export const contactChangeRequests = pgTable("contact_change_requests", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  newEmail: text("new_email").notNull(),
+  newPhone: text("new_phone").notNull(),
+  requestedById: uuid("requested_by_id").notNull().references(() => users.id),
+  requestedAt: timestamp("requested_at", { withTimezone: true }).notNull().defaultNow(),
+  status: text("status").notNull().default("pending"),
+  decidedById: uuid("decided_by_id").references(() => users.id),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  decisionNote: text("decision_note"),
+}, (table) => [index("contact_change_requests_status_idx").on(table.status, table.requestedAt)]);
+
+/**
  * Welcome credit state per customer: when it was granted, whether the celebration was shown, and
  * how many sign-in nudges were shown. Phone and email are the verified ones, used to block a second grant.
  */

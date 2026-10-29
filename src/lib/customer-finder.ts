@@ -1,6 +1,7 @@
 import { hash } from "@node-rs/argon2";
-import { and, eq, isNull, ne, notInArray, or } from "drizzle-orm";
-import { sessions, users } from "@/db/schema";
+import { and, desc, eq, isNull, ne, notInArray, or } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
+import { contactChangeRequests, sessions, users } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import { requestEmailOtp } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -122,8 +123,15 @@ export async function setCustomerVerified(id: string, channel: "email" | "phone"
  * Admin changes a customer's email and/or mobile number. The new address or number is checked
  * for duplicates, marked unverified (verify it again once checked), logged, and the old email is told.
  */
-export async function updateCustomerContact(id: string, input: { email: string; phone: string }, actor: { id: string; name?: string }) {
+export async function updateCustomerContact(id: string, input: { email: string; phone: string }, actor: { id: string; name?: string; role?: string | null }) {
   const member = await customerOrThrow(id);
+  const next = await checkContactInput(id, input);
+  if (actor.role !== "admin") return requestContactChange(member, next, actor);
+  return applyContactChange(member, next, actor);
+}
+
+/** Validates the email and mobile number and makes sure no other account already uses them. */
+async function checkContactInput(id: string, input: { email: string; phone: string }) {
   const email = normalizeEmail(input.email);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw new PublicError("Enter a valid email address.", 400, { fields: { email: "Check the email." } });
   const phone = normalizePhone(input.phone);
@@ -134,7 +142,24 @@ export async function updateCustomerContact(id: string, input: { email: string; 
     .limit(1);
   if (clash?.email === email) throw new PublicError("Another account already uses this email address.", 409, { code: "email_taken", fields: { email: "Already used." } });
   if (clash) throw new PublicError("Another customer already uses this mobile number.", 409, { code: "phone_taken", fields: { phone: "Already used." } });
+  return { email, phone };
+}
 
+/** Staff request: stored for an admin to approve. Nothing changes on the account yet. */
+async function requestContactChange(member: typeof users.$inferSelect, next: { email: string; phone: string }, actor: { id: string; name?: string }) {
+  if (next.email === (member.email ?? "") && next.phone === member.phone) return { ok: true, changed: false, pending: false };
+  const [open] = await db.select({ id: contactChangeRequests.id }).from(contactChangeRequests)
+    .where(and(eq(contactChangeRequests.userId, member.id), eq(contactChangeRequests.status, "pending"))).limit(1);
+  if (open) throw new PublicError("A change for this customer is already waiting for admin approval.", 409, { code: "already_pending" });
+  await db.insert(contactChangeRequests).values({ userId: member.id, newEmail: next.email, newPhone: next.phone, requestedById: actor.id });
+  await logActivity({ kind: "staff", permission: "records", title: `${actor.name ?? "Staff"} asked an admin to approve an email or mobile change for ${member.name}`, refType: "user", refId: member.id, actorId: actor.id });
+  return { ok: true, changed: false, pending: true };
+}
+
+/** Applies an email and/or mobile change to the account. Used for admin edits and approved requests. */
+async function applyContactChange(member: typeof users.$inferSelect, next: { email: string; phone: string }, actor: { id: string; name?: string }) {
+  const id = member.id;
+  const { email, phone } = next;
   const oldEmail = member.email && !isPlaceholderEmail(member.email) ? member.email : null;
   const emailChanged = email !== (member.email ?? "");
   const phoneChanged = phone !== member.phone;
@@ -164,4 +189,56 @@ export async function updateCustomerContact(id: string, input: { email: string; 
   const changed = [emailChanged ? "email" : null, phoneChanged ? "mobile number" : null].filter(Boolean).join(" and ");
   await logActivity({ kind: "staff", permission: "records", title: `${actor.name ?? "Staff"} changed the ${changed} of ${member.name}`, refType: "user", refId: id, actorId: actor.id });
   return { ok: true, changed: true };
+}
+
+export type ContactChange = {
+  id: string; status: string; newEmail: string; newPhone: string; requestedAt: string; requestedById: string; requestedBy: string;
+  customerName: string; customerEmail: string | null; customerPhone: string | null; decisionNote: string | null; decidedAt: string | null;
+};
+
+/** Staff email/mobile changes: pending first, then the latest decisions. Any staff with records access can see them. */
+export async function listContactChanges(actor: { id: string; role?: string | null }) {
+  const requester = alias(users, "contact_requester");
+  const rows = await db.select({
+    id: contactChangeRequests.id, status: contactChangeRequests.status, newEmail: contactChangeRequests.newEmail,
+    newPhone: contactChangeRequests.newPhone, requestedAt: contactChangeRequests.requestedAt, requestedById: contactChangeRequests.requestedById,
+    requestedBy: requester.name, customerName: users.name, customerEmail: users.email, customerPhone: users.phone,
+    decisionNote: contactChangeRequests.decisionNote, decidedAt: contactChangeRequests.decidedAt,
+  }).from(contactChangeRequests)
+    .innerJoin(users, eq(users.id, contactChangeRequests.userId))
+    .leftJoin(requester, eq(requester.id, contactChangeRequests.requestedById))
+    .orderBy(desc(contactChangeRequests.requestedAt))
+    .limit(40);
+  const requests: ContactChange[] = rows.map((row) => ({
+    ...row,
+    customerEmail: row.customerEmail && !isPlaceholderEmail(row.customerEmail) ? row.customerEmail : null,
+    requestedBy: row.requestedBy ?? "Staff",
+    requestedAt: row.requestedAt.toISOString(),
+    decidedAt: row.decidedAt ? row.decidedAt.toISOString() : null,
+  }));
+  return { requests, me: actor.id, isAdmin: actor.role === "admin" };
+}
+
+/** Admin approves or rejects a staff request. An admin can't approve a request they made. */
+export async function decideContactChange(requestId: string, decision: "approve" | "reject", note: string, actor: { id: string; name?: string; role?: string | null }) {
+  if (actor.role !== "admin") throw new PublicError("Only an admin can approve or reject this change.", 403, { code: "forbidden" });
+  const [request] = await db.select().from(contactChangeRequests).where(eq(contactChangeRequests.id, requestId)).limit(1);
+  if (!request) throw new PublicError("This change request was not found.", 404, { code: "not_found" });
+  if (request.status !== "pending") throw new PublicError("This change has already been decided.", 409, { code: "already_decided" });
+  if (request.requestedById === actor.id) throw new PublicError("You can’t approve a change you asked for. Another admin must approve it.", 403, { code: "own_request" });
+
+  const decisionNote = note.trim() || null;
+  if (decision === "reject") {
+    await db.update(contactChangeRequests).set({ status: "rejected", decidedById: actor.id, decidedAt: new Date(), decisionNote })
+      .where(and(eq(contactChangeRequests.id, requestId), eq(contactChangeRequests.status, "pending")));
+    await logActivity({ kind: "staff", permission: "records", title: `${actor.name ?? "Admin"} rejected an email or mobile change request`, refType: "user", refId: request.userId, actorId: actor.id });
+    return { ok: true, status: "rejected" };
+  }
+
+  const member = await customerOrThrow(request.userId);
+  const next = await checkContactInput(request.userId, { email: request.newEmail, phone: request.newPhone });
+  await applyContactChange(member, next, actor);
+  await db.update(contactChangeRequests).set({ status: "approved", decidedById: actor.id, decidedAt: new Date(), decisionNote })
+    .where(and(eq(contactChangeRequests.id, requestId), eq(contactChangeRequests.status, "pending")));
+  return { ok: true, status: "approved" };
 }
