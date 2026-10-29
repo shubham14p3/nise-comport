@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { and, desc, eq, isNull, like, not, notInArray, or, sql } from "drizzle-orm";
 import { hash } from "@node-rs/argon2";
-import { counterVisits, users, walletEntries } from "@/db/schema";
+import { contacts, counterVisits, users, walletEntries } from "@/db/schema";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { COUNTER_DISCOUNT_PERCENT } from "@/lib/counter-rules";
@@ -25,14 +25,14 @@ function duplicateNumberError() {
 /**
  * Accounts that count as this customer's number. Staff and admin accounts are not customers, and
  * placeholder profiles from imported lists (".invalid" emails) are ignored. Profiles the counter
- * creates also use ".invalid" emails, so those (prefix "counter-") still count.
+ * creates (prefix "counter-") and mobile sign-ups (@mobile.nisecomport.invalid) are real customers and still count.
  */
 function customerAccountsFor(phone: string) {
   return and(
     eq(users.phone, phone),
     isNull(users.deletedAt),
     notInArray(users.role, ["admin", "staff"]),
-    or(not(like(users.email, "%.invalid")), like(users.email, "counter-%")),
+    or(not(like(users.email, "%.invalid")), like(users.email, "counter-%"), like(users.email, "%@mobile.nisecomport.invalid")),
   );
 }
 
@@ -44,14 +44,18 @@ export async function lookupCustomer(phoneInput: string) {
     .where(customerAccountsFor(phone)).limit(2);
   if (rows.length > 1) throw duplicateNumberError();
   const customer = rows[0];
-  if (!customer) return { phone, customer: null, balancePaise: 0, visits: [] };
+  if (!customer) {
+    // No account yet: a name from the contact list (imported records, forms) still helps the counter.
+    const [known] = await db.select({ name: contacts.name }).from(contacts).where(eq(contacts.phone, phone)).limit(1);
+    return { phone, customer: null, knownName: known?.name ?? null, balancePaise: 0, visits: [] };
+  }
   const balancePaise = await db.transaction((tx) => walletPaise(tx, customer.id));
   const visits = await db.select({
     id: counterVisits.id, serviceName: counterVisits.serviceName, billPaise: counterVisits.billPaise,
     discountPaise: counterVisits.discountPaise, walletPaise: counterVisits.walletPaise, collectPaise: counterVisits.collectPaise,
     createdAt: counterVisits.createdAt,
   }).from(counterVisits).where(eq(counterVisits.userId, customer.id)).orderBy(desc(counterVisits.createdAt)).limit(8);
-  return { phone, customer: { id: customer.id, name: customer.name }, balancePaise, visits };
+  return { phone, customer: { id: customer.id, name: customer.name }, knownName: null, balancePaise, visits };
 }
 
 /**

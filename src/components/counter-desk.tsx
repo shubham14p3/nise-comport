@@ -12,7 +12,7 @@ const APPROVALS_OP = "W5k2P8vN4rQd";
 
 type Service = { slug: string; title: string };
 type Visit = { id: string; serviceName: string; billPaise: number; discountPaise: number; walletPaise: number; collectPaise: number; createdAt: string };
-type Lookup = { phone: string; customer: { id: string; name: string } | null; balancePaise: number; visits: Visit[] };
+type Lookup = { phone: string; customer: { id: string; name: string } | null; knownName: string | null; balancePaise: number; visits: Visit[] };
 type Recorded = { billPaise: number; discountPaise: number; collectPaise: number; balanceAfterPaise: number };
 type CreditRequest = {
   id: string; amount: string; reason: string; status: "pending" | "approved" | "rejected"; requestedAt: string; requestedById: string;
@@ -85,7 +85,13 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
     setLooking(true);
     try {
       const result = await run(() => secureApi<Lookup>(COUNTER_OP, { action: "lookup", phone: digits }));
-      if (result) { setLookup(result); setNotice(result.customer ? "" : "New number. Add the customer’s name below to create their profile."); }
+      if (result) {
+        setLookup(result);
+        if (!result.customer && result.knownName) setNewName((current) => current || result.knownName!);
+        setNotice(result.customer ? "" : result.knownName
+          ? result.knownName + " is in your records but has no account yet. Their profile is created when you record the visit."
+          : "New number. Add the customer’s name below to create their profile.");
+      }
     } finally { setLooking(false); }
   }
 
@@ -148,7 +154,8 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
   const pending = requests.filter((item) => item.status === "pending");
   const decided = requests.filter((item) => item.status !== "pending").slice(0, 10);
 
-  return <div className="record-modal__body counter-desk" aria-label="Counter desk">
+  return <div aria-label="Counter desk">
+    <div className="admin-panel-title"><div><h2>Counter desk</h2><p>Look up a mobile number, pick the service and enter the amount. Every visit is kept with its date and time.</p></div></div>
     <div className="counter-desk__grid">
       <div className="counter-desk__entry">
         <label className="field"><span className="field__label">Customer mobile</span>
