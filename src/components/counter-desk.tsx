@@ -154,8 +154,8 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
   const pending = requests.filter((item) => item.status === "pending");
   const decided = requests.filter((item) => item.status !== "pending").slice(0, 10);
 
-  return <div className="counter-page" aria-label="Counter desk">
-    <div className="counter-page__head"><h2>Counter desk</h2><p className="muted">Look up a mobile number, pick the service and enter the amount. Every visit is kept with its date and time.</p></div>
+  return <div aria-label="Counter desk">
+    <div className="admin-panel-title"><div><h2>Counter desk</h2><p>Look up a mobile number, pick the service and enter the amount. Every visit is kept with its date and time.</p></div></div>
     <div className="counter-desk__grid">
       <div className="counter-desk__entry">
         <label className="field"><span className="field__label">Customer mobile</span>

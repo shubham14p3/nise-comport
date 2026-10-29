@@ -3265,8 +3265,6 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .admin-row--openable button, .admin-row--openable a, .admin-row--openable select { cursor: pointer; }
 .record-modal { isolation: isolate; }
 /* Counter desk page: a full page inside the dashboard, two panels on wide screens. */
-.counter-page { max-width: 1100px; margin: 0 auto; padding: 8px 0 40px; }
-.counter-page__head h2 { margin: 0 0 4px; }
 .counter-desk__entry, .counter-desk__side { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; }
 /* Find customer page */
 .fc-grid { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }

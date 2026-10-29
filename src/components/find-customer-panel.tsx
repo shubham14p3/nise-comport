@@ -73,8 +73,8 @@ export default function FindCustomerPanel() {
     if (event.key === "Enter") { event.preventDefault(); void search(); }
   }
 
-  return <section className="counter-page" aria-label="Find customer">
-    <div className="counter-page__head"><h2>Find customer</h2><p className="muted">Search by email or mobile number. Every change here is recorded in the activity log.</p></div>
+  return <section aria-label="Find customer">
+    <div className="admin-panel-title"><div><h2>Find customer</h2><p>Search by email or mobile number. Every change here is recorded in the activity log.</p></div></div>
 
     <div className="fc-search">
       <input type="text" value={query} placeholder="Email address or 10-digit mobile" autoComplete="off" aria-label="Email or mobile number"

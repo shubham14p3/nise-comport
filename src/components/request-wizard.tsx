@@ -303,8 +303,11 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
     return option === "email" ? guestEmailOk : option === "phone" ? mobileOk : whatsappOk;
   }
 
+  // The option the visitor's details support: their choice if it works, otherwise the first one that does.
+  const contactChoice = contactOptionAvailable(draft.contact) ? draft.contact : (((["whatsapp", "phone", "email"] as Contact[]).find(contactOptionAvailable)) ?? draft.contact);
+
   async function submitGuest() {
-    const problem = validate(1) || (contactOptionAvailable(draft.contact) ? "" : "Choose a way to reach you that you’ve given us: mobile, WhatsApp or email.") || (guest.terms && guest.contact ? "" : "Please tick both boxes to send your request.");
+    const problem = validate(1) || (contactOptionAvailable(contactChoice) ? "" : "Choose a way to reach you that you’ve given us: mobile, WhatsApp or email.") || (guest.terms && guest.contact ? "" : "Please tick both boxes to send your request.");
     if (problem) { setError(problem); setShowErrors(true); return; }
     setBusy(true); setError("");
     try {
@@ -316,7 +319,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         phone: draft.phone.trim() || undefined,
         email: guest.email.trim() || undefined,
         whatsapp: guest.whatsapp.trim() || undefined,
-        preferredContact: draft.contact,
+        preferredContact: contactChoice,
         consentTerms: true,
         consentContact: true,
       });
@@ -488,7 +491,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
           {user === null && <label className="field"><span className="field__label">WhatsApp number (optional)</span><span className="input-wrap"><span className="input-prefix">+91</span><input value={guest.whatsapp} onChange={(event) => setGuest((current) => ({ ...current, whatsapp: event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16) }))} inputMode="tel" autoComplete="off" placeholder="Same as mobile"/></span><span className="field__hint">Leave blank to use your mobile number.</span></label>}
         </div>
         <fieldset className="field"><legend className="field__label">{t.contactVia}</legend><div className="seg">
-          {(["whatsapp", "phone", "email"] as Contact[]).map((option) => <button key={option} type="button" className={draft.contact === option ? "is-active" : undefined} aria-pressed={draft.contact === option} disabled={!contactOptionAvailable(option)} onClick={() => update({ contact: option })}>{option === "whatsapp" ? <WhatsAppIcon size={16}/> : null}{option === "whatsapp" ? t.viaWhatsapp : option === "phone" ? t.viaPhone : t.viaEmail}</button>)}
+          {(["whatsapp", "phone", "email"] as Contact[]).map((option) => <button key={option} type="button" className={contactChoice === option ? "is-active" : undefined} aria-pressed={contactChoice === option} disabled={!contactOptionAvailable(option)} onClick={() => update({ contact: option })}>{option === "whatsapp" ? <WhatsAppIcon size={16}/> : null}{option === "whatsapp" ? t.viaWhatsapp : option === "phone" ? t.viaPhone : t.viaEmail}</button>)}
         </div></fieldset>
         {user === null && <label className="field"><span className="field__label">Email (optional)</span><input type="email" inputMode="email" autoComplete="email" value={guest.email} onChange={(event) => setGuest((current) => ({ ...current, email: event.target.value.trim() }))}/><span className="field__hint">Give a mobile, an email, or both. We’ll send a sign-in code to this email.</span></label>}
         <label className="field"><span className="field__label">{t.describe}{activeIntake ? " (optional, extra notes)" : ""}</span><textarea value={draft.description} onChange={(event) => update({ description: event.target.value.slice(0, 1500) })} rows={4} maxLength={1500} required={!activeIntake} aria-invalid={describeBad&&!activeIntake}/>{describeBad && <span className="field__error">{t.errDescribe}</span>}<span className="field__hint">{t.describeHint} · {draft.description.length}/1500</span></label>
