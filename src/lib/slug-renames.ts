@@ -12,6 +12,7 @@ export const SERVICE_SLUG_RENAMES: Record<string, string> = {
   // merged into other pages
   "photo-print": "photo-studio",
   "a4-a3-a2-printing": "printing-scanning",
+  "xerox-photocopy": "printing-scanning",
   "aadhaar-assistance-jamshedpur": "aadhaar",
   "jharkhand-certificates-jamshedpur": "income-caste-residence-certificate",
   "voter-id-services-jamshedpur": "voter-id",

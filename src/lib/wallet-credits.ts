@@ -44,11 +44,12 @@ export async function decideCreditRequest(input: { actorId: string; id: string; 
     const [request] = await tx.select().from(walletCreditRequests).where(eq(walletCreditRequests.id, input.id)).limit(1).for("update");
     if (!request) throw new PublicError("This request no longer exists.", 404);
     if (request.status !== "pending") throw new PublicError("This request has already been decided.", 409, { code: "already_decided" });
-    if (request.requestedById === input.actorId) throw new PublicError("A second admin must decide this. You can’t approve your own request.", 403, { code: "same_admin" });
     // The main owner's requests can only be decided by the main owner.
     const people = await tx.select({ id: users.id, role: users.role, email: users.email }).from(users).where(inArray(users.id, [request.requestedById, input.actorId]));
     const requesterRow = people.find((person) => person.id === request.requestedById);
     const actorRow = people.find((person) => person.id === input.actorId);
+    // The main owner may decide their own requests; any other admin needs a second admin.
+    if (request.requestedById === input.actorId && !isMainOwner(actorRow)) throw new PublicError("A second admin must decide this. You can’t approve your own request.", 403, { code: "same_admin" });
     if (isMainOwner(requesterRow) && !isMainOwner(actorRow)) throw new PublicError("This request was raised by the main owner. Only the main owner can decide it.", 403, { code: "main_owner_only" });
     const [requester] = await tx.select({ name: users.name }).from(users).where(eq(users.id, request.requestedById)).limit(1);
     const [approver] = await tx.select({ name: users.name }).from(users).where(eq(users.id, input.actorId)).limit(1);

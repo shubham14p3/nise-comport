@@ -12,9 +12,9 @@ const phone = z.string().trim().min(10, "Enter a valid 10-digit mobile number.")
 const amount = z.number().positive("Enter an amount.").max(1_000_000);
 
 const schema = z.discriminatedUnion("action", [
-  z.object({ action: z.literal("lookup"), phone }),
-  z.object({ action: z.literal("visit"), phone, name: z.string().trim().max(100).optional(), serviceSlug: z.string().min(2).max(80), amount }),
-  z.object({ action: z.literal("topup"), phone, name: z.string().trim().max(100).optional(), amount, reason: z.string().max(180).default("") }),
+  z.object({ action: z.literal("lookup"), phone, page: z.number().int().min(0).max(10_000).optional() }),
+  z.object({ action: z.literal("visit"), phone, name: z.string().trim().max(100).optional(), email: z.string().trim().max(200).optional(), serviceSlug: z.string().min(2).max(80), amount }),
+  z.object({ action: z.literal("topup"), phone, name: z.string().trim().max(100).optional(), email: z.string().trim().max(200).optional(), amount, reason: z.string().max(180).default("") }),
 ]);
 
 function normalised(raw: string) {
@@ -33,20 +33,20 @@ export async function POST(request: NextRequest) {
     if (!actor || !hasPermission(actor, "counter")) throw new PublicError("You don’t have access to the counter desk. Ask the owner to add it to your account.", 403, { code: "forbidden" });
     const input = schema.parse(await readJson(request));
 
-    if (input.action === "lookup") return NextResponse.json(await lookupCustomer(input.phone));
+    if (input.action === "lookup") return NextResponse.json(await lookupCustomer(input.phone, input.page ?? 0));
 
     if (input.action === "visit") {
       const service = publishedServiceDetails.find((item) => item.slug === input.serviceSlug);
       if (!service) throw new PublicError("Choose a service from the list.", 400, { fields: { serviceSlug: "Choose a service from the list." } });
       const result = await recordVisit({
-        staffId: actor.id, phone: normalised(input.phone), name: input.name,
+        staffId: actor.id, phone: normalised(input.phone), name: input.name, email: input.email,
         serviceSlug: service.slug, serviceName: service.title, billRupees: input.amount,
       });
       return NextResponse.json({ ok: true, ...result }, { status: 201 });
     }
 
     // Top-ups wait for a second admin's approval (see /api/admin/wallet-credit/approvals).
-    const result = await requestTopUp({ staffId: actor.id, phone: normalised(input.phone), name: input.name, rupees: input.amount, reason: input.reason });
+    const result = await requestTopUp({ staffId: actor.id, phone: normalised(input.phone), name: input.name, email: input.email, rupees: input.amount, reason: input.reason });
     return NextResponse.json({ ok: true, status: result.status, requestId: result.id }, { status: 201 });
   } catch (error) {
     return apiError(error);

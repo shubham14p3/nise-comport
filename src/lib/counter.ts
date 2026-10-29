@@ -1,11 +1,14 @@
 import { randomBytes } from "node:crypto";
-import { and, desc, eq, isNull, like, not, notInArray, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, isNull, like, not, notInArray, or, sql } from "drizzle-orm";
 import { hash } from "@node-rs/argon2";
 import { contacts, counterVisits, users, walletEntries } from "@/db/schema";
 import { db } from "@/lib/db";
 import { PublicError } from "@/lib/errors";
 import { COUNTER_DISCOUNT_PERCENT } from "@/lib/counter-rules";
-import { cleanName, normalizePhone } from "@/lib/validation";
+import { cleanName, looksLikeEmail, normalizeEmail, normalizePhone } from "@/lib/validation";
+
+/** Recent visits shown per page on the counter. */
+export const VISITS_PAGE_SIZE = 5;
 import { cleanReason, createCreditRequest, toPaise, type Tx } from "@/lib/wallet-credits";
 
 export { COUNTER_DISCOUNT_PERCENT } from "@/lib/counter-rules";
@@ -37,7 +40,8 @@ function customerAccountsFor(phone: string) {
 }
 
 /** Looks up the customer for this number. Returns no profile for a new number. */
-export async function lookupCustomer(phoneInput: string) {
+export async function lookupCustomer(phoneInput: string, pageInput = 0) {
+  const page = Math.max(0, Math.floor(pageInput));
   const phone = normalizePhone(phoneInput);
   if (!phone) throw new PublicError("Enter a valid 10-digit mobile number.", 400, { fields: { phone: "Check the number." } });
   const rows = await db.select({ id: users.id, name: users.name }).from(users)
@@ -47,30 +51,38 @@ export async function lookupCustomer(phoneInput: string) {
   if (!customer) {
     // No account yet: a name from the contact list (imported records, forms) still helps the counter.
     const [known] = await db.select({ name: contacts.name }).from(contacts).where(eq(contacts.phone, phone)).limit(1);
-    return { phone, customer: null, knownName: known?.name ?? null, balancePaise: 0, visits: [] };
+    return { phone, customer: null, knownName: known?.name ?? null, balancePaise: 0, visits: [], visitsTotal: 0, page: 0, pageSize: VISITS_PAGE_SIZE };
   }
   const balancePaise = await db.transaction((tx) => walletPaise(tx, customer.id));
   const visits = await db.select({
     id: counterVisits.id, serviceName: counterVisits.serviceName, billPaise: counterVisits.billPaise,
     discountPaise: counterVisits.discountPaise, walletPaise: counterVisits.walletPaise, collectPaise: counterVisits.collectPaise,
     createdAt: counterVisits.createdAt,
-  }).from(counterVisits).where(eq(counterVisits.userId, customer.id)).orderBy(desc(counterVisits.createdAt)).limit(8);
-  return { phone, customer: { id: customer.id, name: customer.name }, knownName: null, balancePaise, visits };
+  }).from(counterVisits).where(eq(counterVisits.userId, customer.id)).orderBy(desc(counterVisits.createdAt)).limit(VISITS_PAGE_SIZE).offset(page * VISITS_PAGE_SIZE);
+  const [totals] = await db.select({ total: count() }).from(counterVisits).where(eq(counterVisits.userId, customer.id));
+  return { phone, customer: { id: customer.id, name: customer.name }, knownName: null, balancePaise, visits, visitsTotal: totals?.total ?? 0, page, pageSize: VISITS_PAGE_SIZE };
 }
 
 /**
  * The customer for this number, creating a profile for a new number. A new profile needs a name.
  * The email is a placeholder (signupMethod "mobile"), as for other mobile-only profiles.
  */
-export async function customerForCounter(tx: Tx, phone: string, name: string | undefined) {
+export async function customerForCounter(tx: Tx, phone: string, name: string | undefined, emailInput?: string) {
   const rows = await tx.select({ id: users.id }).from(users).where(customerAccountsFor(phone)).limit(2);
   if (rows.length > 1) throw duplicateNumberError();
   if (rows[0]) return rows[0].id;
   const cleaned = cleanName(name ?? "");
   if (cleaned.length < 2) throw new PublicError("This is a new number. Enter the customer’s name.", 400, { fields: { name: "Enter the name." } });
+  // Email is optional. When given it is saved unverified; the customer verifies it later.
+  const email = emailInput?.trim() ? normalizeEmail(emailInput) : "";
+  if (email && !looksLikeEmail(email)) throw new PublicError("Enter a valid email address, or leave it empty.", 400, { fields: { email: "Check the email." } });
+  if (email) {
+    const [taken] = await tx.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+    if (taken) throw new PublicError("This email already belongs to another account.", 409, { fields: { email: "Already in use." } });
+  }
   const passwordHash = await hash(randomBytes(32).toString("base64url"));
   const [created] = await tx.insert(users).values({
-    name: cleaned, email: `counter-${phone}@counter.invalid`, phone, passwordHash, signupMethod: "mobile", preferredContact: "whatsapp",
+    name: cleaned, email: email || `counter-${phone}@counter.invalid`, phone, passwordHash, signupMethod: "mobile", preferredContact: "whatsapp",
   }).returning({ id: users.id });
   if (!created) throw new PublicError("Could not create the profile. Please try again.", 500);
   return created.id;
@@ -81,10 +93,10 @@ export async function customerForCounter(tx: Tx, phone: string, name: string | u
  * The customer pays the rest (collectPaise). The customer row is locked so two quick
  * entries can't spend the same balance twice.
  */
-export async function recordVisit(input: { staffId: string; phone: string; name?: string; serviceSlug: string; serviceName: string; billRupees: number }) {
+export async function recordVisit(input: { staffId: string; phone: string; name?: string; email?: string; serviceSlug: string; serviceName: string; billRupees: number }) {
   const billPaise = toPaise(input.billRupees);
   return db.transaction(async (tx) => {
-    const userId = await customerForCounter(tx, input.phone, input.name);
+    const userId = await customerForCounter(tx, input.phone, input.name, input.email);
     await tx.execute(sql`select id from users where id = ${userId} for update`);
     const balance = await walletPaise(tx, userId);
     const discountPaise = Math.min(Math.floor((billPaise * COUNTER_DISCOUNT_PERCENT) / 100), balance);
@@ -108,11 +120,11 @@ export async function recordVisit(input: { staffId: string; phone: string; name?
  * A top-up at the counter is a wallet credit, so it waits for a second admin's approval.
  * Nothing is added to the wallet here.
  */
-export async function requestTopUp(input: { staffId: string; phone: string; name?: string; rupees: number; reason: string }) {
+export async function requestTopUp(input: { staffId: string; phone: string; name?: string; email?: string; rupees: number; reason: string }) {
   const paise = toPaise(input.rupees);
   const reason = cleanReason(input.reason);
   return db.transaction(async (tx) => {
-    const userId = await customerForCounter(tx, input.phone, input.name);
+    const userId = await customerForCounter(tx, input.phone, input.name, input.email);
     return createCreditRequest(tx, { userId, requestedById: input.staffId, paise, reason });
   });
 }

@@ -3511,3 +3511,14 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .pay-upi { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: .95rem; margin: 6px 0; }
 .pay-upi__value { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .04em; user-select: none; -webkit-user-select: none; }
 .pay-upi__eye { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 1px solid currentColor; border-radius: 8px; background: transparent; color: inherit; cursor: pointer; }
+
+/* Counter: visit pages and the compact approvals card */
+.counter-pager { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; font-size: .85rem; }
+.counter-approvals { margin-top: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; }
+.counter-approvals summary { cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.counter-approvals__count { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--line); font-size: .78rem; font-weight: 700; }
+.counter-approvals__hint { margin: 6px 0 0; font-size: .85rem; }
+.counter-approvals__list { list-style: none; padding: 0; margin: 8px 0 0; }
+.counter-approvals__list li { padding: 10px 0; border-top: 1px solid var(--line); }
+.counter-approvals__actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.counter-approvals__actions input { flex: 1; min-width: 160px; }

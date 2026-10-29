@@ -12,7 +12,7 @@ const APPROVALS_OP = "W5k2P8vN4rQd";
 
 type Service = { slug: string; title: string };
 type Visit = { id: string; serviceName: string; billPaise: number; discountPaise: number; walletPaise: number; collectPaise: number; createdAt: string };
-type Lookup = { phone: string; customer: { id: string; name: string } | null; knownName: string | null; balancePaise: number; visits: Visit[] };
+type Lookup = { phone: string; customer: { id: string; name: string } | null; knownName: string | null; balancePaise: number; visits: Visit[]; visitsTotal: number; page: number; pageSize: number };
 type Recorded = { billPaise: number; discountPaise: number; collectPaise: number; balanceAfterPaise: number };
 type CreditRequest = {
   id: string; amount: string; reason: string; status: "pending" | "approved" | "rejected"; requestedAt: string; requestedById: string;
@@ -30,6 +30,8 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
   const [phone, setPhone] = useState("");
   const [lookup, setLookup] = useState<Lookup | null>(null);
   const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [mainOwner, setMainOwner] = useState(false);
   const [serviceText, setServiceText] = useState("");
   const [service, setService] = useState<Service | null>(null);
   const [highlight, setHighlight] = useState(0);
@@ -64,8 +66,8 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
   async function loadApprovals() {
     if (!isOwner) return;
     try {
-      const result = await secureApi<{ requests: CreditRequest[]; me: string }>(APPROVALS_OP, { action: "list" });
-      setRequests(result.requests); setMe(result.me);
+      const result = await secureApi<{ requests: CreditRequest[]; me: string; mainOwner?: boolean }>(APPROVALS_OP, { action: "list" });
+      setRequests(result.requests); setMe(result.me); setMainOwner(Boolean(result.mainOwner));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not load approvals.");
     }
@@ -74,17 +76,17 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
   useEffect(() => {
     if (!isOwner) return;
     let active = true;
-    secureApi<{ requests: CreditRequest[]; me: string }>(APPROVALS_OP, { action: "list" })
-      .then((result) => { if (active) { setRequests(result.requests); setMe(result.me); } })
+    secureApi<{ requests: CreditRequest[]; me: string; mainOwner?: boolean }>(APPROVALS_OP, { action: "list" })
+      .then((result) => { if (active) { setRequests(result.requests); setMe(result.me); setMainOwner(Boolean(result.mainOwner)); } })
       .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load approvals."); });
     return () => { active = false; };
   }, [isOwner]);
 
-  async function findCustomer() {
+  async function findCustomer(page = 0) {
     if (digits.length < 10) { setError("Enter a 10-digit mobile number."); return; }
     setLooking(true);
     try {
-      const result = await run(() => secureApi<Lookup>(COUNTER_OP, { action: "lookup", phone: digits }));
+      const result = await run(() => secureApi<Lookup>(COUNTER_OP, { action: "lookup", phone: digits, page }));
       if (result) {
         setLookup(result);
         if (!result.customer && result.knownName) setNewName((current) => current || result.knownName!);
@@ -114,11 +116,11 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
     if (!(billPaise > 0)) { setError("Enter the amount."); return; }
     if (!lookup) { setError("Look up the mobile number first."); return; }
     const result = await run(() => secureApi<Recorded>(COUNTER_OP, {
-      action: "visit", phone: digits, name: lookup.customer ? undefined : newName, serviceSlug: service.slug, amount: billPaise / 100,
+      action: "visit", phone: digits, name: lookup.customer ? undefined : newName, email: lookup.customer ? undefined : newEmail.trim() || undefined, serviceSlug: service.slug, amount: billPaise / 100,
     }));
     if (!result) return;
     setNotice(`Recorded. Customer pays ${rupees(result.collectPaise)}${result.discountPaise ? `, wallet covers ${rupees(result.discountPaise)}` : ""}. Balance now ${rupees(result.balanceAfterPaise)}.`);
-    setService(null); setServiceText(""); setAmount(""); setNewName("");
+    setService(null); setServiceText(""); setAmount(""); setNewName(""); setNewEmail("");
     await findCustomer();
   }
 
@@ -128,7 +130,7 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
     if (topupReason.trim().length < 10) { setError("Write why this top-up is being made (at least 10 characters)."); return; }
     if (!lookup) { setError("Look up the mobile number first."); return; }
     const result = await run(() => secureApi<{ status: string }>(COUNTER_OP, {
-      action: "topup", phone: digits, name: lookup.customer ? undefined : newName, amount: paise / 100, reason: topupReason,
+      action: "topup", phone: digits, name: lookup.customer ? undefined : newName, email: lookup.customer ? undefined : newEmail.trim() || undefined, amount: paise / 100, reason: topupReason,
     }));
     if (!result) return;
     setNotice(`Top-up of ${rupees(paise)} sent for approval. A second admin must approve it before it reaches the wallet.`);
@@ -211,6 +213,9 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
                 <label className="field"><span className="field__label">Customer’s name (new number)</span>
                   <input value={newName} onChange={(event) => setNewName(event.target.value)} autoComplete="off"/>
                 </label>
+                <label className="field" style={{ marginTop: 8 }}><span className="field__label">Email (optional)</span>
+                  <input type="email" inputMode="email" value={newEmail} onChange={(event) => setNewEmail(event.target.value.trim())} autoComplete="off" placeholder="name@example.com"/>
+                </label>
                 <span className="field__hint">New numbers get a profile. The name goes on the receipt and the customer’s record.</span>
               </>}
           </div>
@@ -221,14 +226,19 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
             <div><dt>Customer pays</dt><dd><b>{rupees(billPaise - previewDiscount)}</b></dd></div>
           </dl>}
 
-          {lookup.visits.length > 0 && <>
-            <h3 className="counter-desk__subhead">Recent visits</h3>
+          {lookup.visitsTotal > 0 && <>
+            <h3 className="counter-desk__subhead">Recent visits ({lookup.visitsTotal})</h3>
             <ul className="counter-desk__visits">
               {lookup.visits.map((visit) => <li key={visit.id}>
                 <b>{visit.serviceName}</b> · {when(visit.createdAt)}<br/>
                 <small>Bill {rupees(visit.billPaise)} · wallet {rupees(visit.walletPaise)} · paid {rupees(visit.collectPaise)}</small>
               </li>)}
             </ul>
+            {lookup.visitsTotal > lookup.pageSize && <div className="counter-pager">
+              <button type="button" className="btn btn--ghost btn--sm" disabled={looking || lookup.page === 0} onClick={() => void findCustomer(lookup.page - 1)}>Newer</button>
+              <span className="muted">Page {lookup.page + 1} of {Math.ceil(lookup.visitsTotal / lookup.pageSize)}</span>
+              <button type="button" className="btn btn--ghost btn--sm" disabled={looking || (lookup.page + 1) * lookup.pageSize >= lookup.visitsTotal} onClick={() => void findCustomer(lookup.page + 1)}>Older</button>
+            </div>}
           </>}
         </>}
       </aside>
@@ -237,30 +247,28 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
     {error && <p className="alert alert--error" role="alert" style={{ marginTop: 12 }}>{error}</p>}
     {notice && <p className="alert alert--info" role="status" style={{ marginTop: 12 }}>{notice}</p>}
 
-    {isOwner ? <>
-    <h2 style={{ marginTop: 24 }}>Wallet credits waiting for approval</h2>
-    <p className="muted">A second admin approves each credit. You can’t approve your own request.</p>
+    {isOwner ? <section className="counter-approvals" aria-label="Wallet credit approvals">
+    <details open={pending.length > 0}>
+    <summary><b>Wallet credits to approve</b> <span className="counter-approvals__count">{pending.length}</span></summary>
+    <p className="muted counter-approvals__hint">{mainOwner ? "As the main owner you can approve any credit, including your own." : "A second admin approves each credit. You can’t approve your own request."}</p>
     {pending.length === 0 && <p className="muted">Nothing waiting.</p>}
-    <ul style={{ listStyle: "none", padding: 0 }}>
-      {pending.map((item) => <li key={item.id} style={{ padding: "12px 0", borderBottom: "1px solid var(--line, #ddd)" }}>
-        <b>{item.customerName}</b>{item.customerPhone ? ` · ${item.customerPhone}` : ""} · <b>{rupees(Math.round(Number(item.amount) * 100))}</b><br/>
-        <small>Reason: {item.reason}</small><br/>
-        <small>Requested by {item.requestedBy} · {when(item.requestedAt)}</small>
-        {item.requestedById === me
-          ? <p className="muted" style={{ marginTop: 6 }}>Waiting for another admin to approve.</p>
-          : <div style={{ marginTop: 8, display: "grid", gap: 6, maxWidth: 480 }}>
-            <input placeholder="Note for this decision (required)" value={decisionNotes[item.id] ?? ""} maxLength={300}
+    <ul className="counter-approvals__list">
+      {pending.map((item) => <li key={item.id}>
+        <div><b>{item.customerName}</b>{item.customerPhone ? ` · ${item.customerPhone}` : ""} · <b>{rupees(Math.round(Number(item.amount) * 100))}</b></div>
+        <small className="muted">{item.reason} · by {item.requestedBy} · {when(item.requestedAt)}</small>
+        {item.requestedById === me && !mainOwner
+          ? <p className="muted" style={{ margin: "6px 0 0" }}>Waiting for another admin to approve.</p>
+          : <div className="counter-approvals__actions">
+            <input placeholder="Note (required)" value={decisionNotes[item.id] ?? ""} maxLength={300}
               onChange={(event) => setDecisionNotes((current) => ({ ...current, [item.id]: event.target.value }))}/>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button type="button" className="btn btn--primary btn--sm" disabled={busy} onClick={() => void decide(item.id, "approve")}>Approve</button>
-              <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void decide(item.id, "reject")}>Reject</button>
-            </div>
+            <button type="button" className="btn btn--primary btn--sm" disabled={busy} onClick={() => void decide(item.id, "approve")}>Approve</button>
+            <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void decide(item.id, "reject")}>Reject</button>
           </div>}
       </li>)}
     </ul>
 
     {decided.length > 0 && <>
-      <h3 style={{ marginTop: 20 }}>Recent decisions</h3>
+      <h3 className="counter-desk__subhead">Recent decisions</h3>
       <ul style={{ listStyle: "none", padding: 0 }}>
         {decided.map((item) => <li key={item.id} style={{ padding: "6px 0" }}>
           <small><b>{item.status === "approved" ? "Approved" : "Rejected"}</b> · {item.customerName} · {rupees(Math.round(Number(item.amount) * 100))} · {item.reason}<br/>
@@ -268,7 +276,7 @@ export default function CounterDesk({ services, isOwner }: { services: Service[]
         </li>)}
       </ul>
     </>}
-
-    </> : <p className="muted" style={{ marginTop: 24 }}>Top-up requests are approved by the owner. You’ll see them in the wallet once approved.</p>}
+    </details>
+    </section> : <p className="muted" style={{ marginTop: 24 }}>Top-up requests are approved by the owner. You’ll see them in the wallet once approved.</p>}
   </div>;
 }
