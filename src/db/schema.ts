@@ -226,7 +226,7 @@ export const contactChangeRequests = pgTable("contact_change_requests", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").notNull().references(() => users.id),
   newEmail: text("new_email").notNull(),
-  newPhone: text("new_phone").notNull(),
+  newPhone: text("new_phone"),
   requestedById: uuid("requested_by_id").notNull().references(() => users.id),
   requestedAt: timestamp("requested_at", { withTimezone: true }).notNull().defaultNow(),
   status: text("status").notNull().default("pending"),

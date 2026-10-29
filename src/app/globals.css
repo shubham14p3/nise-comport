@@ -3644,3 +3644,23 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .pay-steps__dot { display: inline-flex; align-items: center; justify-content: center; line-height: 1; margin: 0; padding: 0; }
 
 .fc-subtitle { margin: 0 0 16px; }
+
+/* Find customer: inline contact lines (value, verified state, pencil; tick and cross while editing) */
+.fc-lines { display: grid; gap: 8px; margin: 12px 0 4px; }
+.fc-line { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line, #e5e5ee); border-radius: 12px; background: var(--surface, #fff); }
+.fc-line__label { font-size: .8rem; font-weight: 650; color: var(--muted, #666); }
+.fc-line__view { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; min-width: 0; }
+.fc-line__value { font-weight: 600; overflow-wrap: anywhere; min-width: 0; margin-right: auto; }
+.fc-line__edit { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.fc-line__edit input { flex: 1; min-width: 0; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line-2, #cfd3dd); border-radius: 10px; background: var(--surface, #fff); }
+.fc-icon { flex: 0 0 auto; width: 36px; height: 36px; border-radius: 10px; display: inline-grid; place-items: center; border: 1px solid var(--line, #d8d8e4); background: var(--surface, #fff); cursor: pointer; color: inherit; }
+.fc-icon--ok { background: #1a9d5c; border-color: #1a9d5c; color: #fff; }
+.fc-icon:disabled { opacity: .5; cursor: default; }
+.fc-link { background: none; border: 0; padding: 4px 2px; color: #4b3fd1; font-weight: 650; font-size: .85rem; cursor: pointer; }
+.fc-link:disabled { opacity: .5; cursor: default; }
+@media (max-width: 640px) {
+  .fc-line { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .fc-line__value { flex: 1 1 100%; }
+  .fc-line__edit input { min-height: 44px; font-size: 16px; }
+  .fc-icon { width: 44px; height: 44px; }
+}

@@ -1,5 +1,5 @@
 import { hash } from "@node-rs/argon2";
-import { and, desc, eq, isNull, ne, notInArray, or } from "drizzle-orm";
+import { and, desc, eq, isNull, ne, notInArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { contactChangeRequests, sessions, users } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
@@ -24,6 +24,9 @@ export type CustomerRow = {
   id: string; name: string; email: string | null; phone: string | null;
   emailVerified: boolean; phoneVerified: boolean; mustChangePassword: boolean; createdAt: string;
 };
+
+/** Email and mobile for a change. An empty value means "none on the account". */
+type ContactInput = { email: string | null; phone: string | null };
 
 function toRow(row: typeof users.$inferSelect): CustomerRow {
   return {
@@ -120,8 +123,8 @@ export async function setCustomerVerified(id: string, channel: "email" | "phone"
 }
 
 /**
- * Admin changes a customer's email and/or mobile number. The new address or number is checked
- * for duplicates, marked unverified (verify it again once checked), logged, and the old email is told.
+ * Admin changes a customer's email and/or mobile number. Admin changes apply straight away; staff
+ * changes wait for another admin. Either field may be left empty, but not both.
  */
 export async function updateCustomerContact(id: string, input: { email: string; phone: string }, actor: { id: string; name?: string; role?: string | null }) {
   const member = await customerOrThrow(id);
@@ -130,38 +133,62 @@ export async function updateCustomerContact(id: string, input: { email: string; 
   return applyContactChange(member, next, actor);
 }
 
-/** Validates the email and mobile number and makes sure no other account already uses them. */
-async function checkContactInput(id: string, input: { email: string; phone: string }) {
-  const email = normalizeEmail(input.email);
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) throw new PublicError("Enter a valid email address.", 400, { fields: { email: "Check the email." } });
-  const phone = normalizePhone(input.phone);
-  if (!phone) throw new PublicError("Enter a valid 10-digit mobile number.", 400, { fields: { phone: "Check the number." } });
+/** A customer with no email keeps a placeholder address. It ends in ".invalid" and is unique to the account. */
+function storedEmailFor(id: string, email: string | null, current: string | null) {
+  if (email) return email;
+  if (isPlaceholderEmail(current)) return current as string;
+  return `${id}@mobile.nisecomport.invalid`;
+}
 
-  const [clash] = await db.select({ id: users.id, email: users.email, phone: users.phone }).from(users)
-    .where(and(ne(users.id, id), isNull(users.deletedAt), or(eq(users.email, email), eq(users.phone, phone))))
-    .limit(1);
-  if (clash?.email === email) throw new PublicError("Another account already uses this email address.", 409, { code: "email_taken", fields: { email: "Already used." } });
-  if (clash) throw new PublicError("Another customer already uses this mobile number.", 409, { code: "phone_taken", fields: { phone: "Already used." } });
+/** Validates the email and/or mobile number (at least one) and makes sure no other account already uses them. */
+async function checkContactInput(id: string, input: { email: string | null; phone: string | null }): Promise<ContactInput> {
+  const rawEmail = normalizeEmail(input.email ?? "");
+  const rawPhone = (input.phone ?? "").trim();
+  if (!rawEmail && !rawPhone) throw new PublicError("Enter an email address or a mobile number. Both can’t be empty.", 400, { code: "empty_contact" });
+
+  let email: string | null = null;
+  if (rawEmail) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(rawEmail)) throw new PublicError("Enter a valid email address.", 400, { fields: { email: "Check the email." } });
+    email = rawEmail;
+  }
+  let phone: string | null = null;
+  if (rawPhone) {
+    phone = normalizePhone(rawPhone);
+    if (!phone) throw new PublicError("Enter a valid 10-digit mobile number.", 400, { fields: { phone: "Check the number." } });
+  }
+
+  if (email) {
+    const [clash] = await db.select({ id: users.id }).from(users)
+      .where(and(ne(users.id, id), isNull(users.deletedAt), eq(users.email, email))).limit(1);
+    if (clash) throw new PublicError("Another account already uses this email address.", 409, { code: "email_taken", fields: { email: "Already used." } });
+  }
+  if (phone) {
+    const [clash] = await db.select({ id: users.id }).from(users)
+      .where(and(ne(users.id, id), isNull(users.deletedAt), eq(users.phone, phone))).limit(1);
+    if (clash) throw new PublicError("Another account already uses this mobile number.", 409, { code: "phone_taken", fields: { phone: "Already used." } });
+  }
   return { email, phone };
 }
 
 /** Staff request: stored for an admin to approve. Nothing changes on the account yet. */
-async function requestContactChange(member: typeof users.$inferSelect, next: { email: string; phone: string }, actor: { id: string; name?: string }) {
-  if (next.email === (member.email ?? "") && next.phone === member.phone) return { ok: true, changed: false, pending: false };
+async function requestContactChange(member: typeof users.$inferSelect, next: ContactInput, actor: { id: string; name?: string }) {
+  const storedEmail = storedEmailFor(member.id, next.email, member.email);
+  if (storedEmail === member.email && next.phone === member.phone) return { ok: true, changed: false, pending: false };
   const [open] = await db.select({ id: contactChangeRequests.id }).from(contactChangeRequests)
     .where(and(eq(contactChangeRequests.userId, member.id), eq(contactChangeRequests.status, "pending"))).limit(1);
   if (open) throw new PublicError("A change for this customer is already waiting for admin approval.", 409, { code: "already_pending" });
-  await db.insert(contactChangeRequests).values({ userId: member.id, newEmail: next.email, newPhone: next.phone, requestedById: actor.id });
+  await db.insert(contactChangeRequests).values({ userId: member.id, newEmail: storedEmail, newPhone: next.phone, requestedById: actor.id });
   await logActivity({ kind: "staff", permission: "records", title: `${actor.name ?? "Staff"} asked an admin to approve an email or mobile change for ${member.name}`, refType: "user", refId: member.id, actorId: actor.id });
   return { ok: true, changed: false, pending: true };
 }
 
 /** Applies an email and/or mobile change to the account. Used for admin edits and approved requests. */
-async function applyContactChange(member: typeof users.$inferSelect, next: { email: string; phone: string }, actor: { id: string; name?: string }) {
+async function applyContactChange(member: typeof users.$inferSelect, next: ContactInput, actor: { id: string; name?: string }) {
   const id = member.id;
-  const { email, phone } = next;
+  const email = storedEmailFor(id, next.email, member.email);
+  const phone = next.phone;
   const oldEmail = member.email && !isPlaceholderEmail(member.email) ? member.email : null;
-  const emailChanged = email !== (member.email ?? "");
+  const emailChanged = email !== member.email;
   const phoneChanged = phone !== member.phone;
   if (!emailChanged && !phoneChanged) return { ok: true, changed: false };
 
@@ -192,7 +219,7 @@ async function applyContactChange(member: typeof users.$inferSelect, next: { ema
 }
 
 export type ContactChange = {
-  id: string; status: string; newEmail: string; newPhone: string; requestedAt: string; requestedById: string; requestedBy: string;
+  id: string; status: string; newEmail: string | null; newPhone: string | null; requestedAt: string; requestedById: string; requestedBy: string;
   customerName: string; customerEmail: string | null; customerPhone: string | null; decisionNote: string | null; decidedAt: string | null;
 };
 
@@ -211,6 +238,7 @@ export async function listContactChanges(actor: { id: string; role?: string | nu
     .limit(40);
   const requests: ContactChange[] = rows.map((row) => ({
     ...row,
+    newEmail: row.newEmail && !isPlaceholderEmail(row.newEmail) ? row.newEmail : null,
     customerEmail: row.customerEmail && !isPlaceholderEmail(row.customerEmail) ? row.customerEmail : null,
     requestedBy: row.requestedBy ?? "Staff",
     requestedAt: row.requestedAt.toISOString(),
