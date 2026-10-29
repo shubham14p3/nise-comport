@@ -25,14 +25,14 @@ function duplicateNumberError() {
 /**
  * Accounts that count as this customer's number. Staff and admin accounts are not customers, and
  * placeholder profiles from imported lists (".invalid" emails) are ignored. Profiles the counter
- * creates also use ".invalid" emails, so those (prefix "counter-") still count.
+ * creates (prefix "counter-") and mobile sign-ups (@mobile.nisecomport.invalid) are real customers and still count.
  */
 function customerAccountsFor(phone: string) {
   return and(
     eq(users.phone, phone),
     isNull(users.deletedAt),
     notInArray(users.role, ["admin", "staff"]),
-    or(not(like(users.email, "%.invalid")), like(users.email, "counter-%")),
+    or(not(like(users.email, "%.invalid")), like(users.email, "counter-%"), like(users.email, "%@mobile.nisecomport.invalid")),
   );
 }
 

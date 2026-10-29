@@ -13,6 +13,7 @@ import { WhatsAppIcon } from "@/components/icons";
 import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
 import CounterDesk from "@/components/counter-desk";
+import FindCustomerPanel from "@/components/find-customer-panel";
 import { ArrowRight, Bell, Cake, ClipboardList, Contact, UserRound, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images, PanelLeftClose, PanelLeftOpen, Store, X } from "lucide-react";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
 
@@ -306,7 +307,7 @@ function RequestQueue({ canCharge }: { canCharge: boolean }) {
   </>;
 }
 
-type Tab = "counter" | "customers" | "integrations" | "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "hardware" | "couponuse" | "qrscans" | "legal" | "loyalty" | "chats" | "mail" | "outreach";
+type Tab = "counter" | "findcustomer" | "customers" | "integrations" | "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "hardware" | "couponuse" | "qrscans" | "legal" | "loyalty" | "chats" | "mail" | "outreach";
 const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | Permission[] | "admin" | "staff" }[] = [
   { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
   { id: "mail", label: "Messages", icon: Mail, needs: "mail" },
@@ -324,6 +325,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "outreach", label: "Birthdays & renewals", icon: Cake, needs: "staff" },
   { id: "integrations", label: "System & connections", icon: ShieldCheck, needs: "admin" },
   { id: "team", label: "Team", icon: UsersRound, needs: "admin" },
+  { id: "findcustomer", label: "Find customer", icon: Search, needs: "records" },
   { id: "customers", label: "Customers", icon: UserRound, needs: "admin" },
   { id: "pan", label: "PAN data", icon: Database, needs: "pan" },
   { id: "wallet", label: "Wallet", icon: WalletCards, needs: "wallet" },
@@ -332,13 +334,13 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "loyalty", label: "Loyalty credit", icon: WalletCards, needs: "wallet" },
   { id: "legal", label: "Legal pages", icon: LayoutTemplate, needs: "content" },
   { id: "payments", label: "Payments", icon: WalletCards, needs: ["payments", "requests"] },
-  // Opens as a popup from the menu rather than a page (see counterOpen below).
+  // A full page inside the dashboard.
   { id: "counter", label: "Counter desk", icon: Store, needs: "counter" },
 ];
 
 const NAV_SECTIONS = [
   { id: "work", title: "Work & messages", tabs: ["inbox", "mail", "requests", "chats", "payments"] },
-  { id: "people", title: "Customers & records", tabs: ["counter", "customers", "records", "pan", "contacts", "wallet", "loyalty", "team"] },
+  { id: "people", title: "Customers & records", tabs: ["counter", "findcustomer", "customers", "records", "pan", "contacts", "wallet", "loyalty", "team"] },
   { id: "marketing", title: "Offers & campaigns", tabs: ["promotions", "couponuse", "campaigns", "outreach", "qrscans"] },
   { id: "website", title: "Website & setup", tabs: ["content", "gallery", "testimonials", "prices", "hardware", "legal", "integrations"] },
 ] as const;
@@ -360,8 +362,7 @@ export default function AdminDashboard({ me, viewAsStaff = false, services }: { 
   const tabs = TABS.filter((tab) => tab.needs === "staff" ? true : tab.needs === "admin" ? isOwner : isOwner || (Array.isArray(tab.needs) ? tab.needs.some((permission) => effectivePermissions.includes(permission)) : effectivePermissions.includes(tab.needs)));
   const hash = useSyncExternalStore(subscribeHash, readHash, () => "");
   const [picked, setPicked] = useState<Tab | null>(null);
-  // The counter opens as a popup, so it is never a page to land on from the URL.
-  const fromHash = tabs.find((tab) => tab.id === hash && tab.id !== "counter")?.id;
+  const fromHash = tabs.find((tab) => tab.id === hash)?.id;
   const active = picked ?? fromHash ?? tabs[0]?.id;
   const [summary, setSummary] = useState<{ unread: number; waiting: number; callbacks: number } | null>(null);
   const unread = summary?.unread ?? 0;
@@ -399,9 +400,7 @@ export default function AdminDashboard({ me, viewAsStaff = false, services }: { 
   const [railOpen, setRailOpen] = useState(true);
   useEffect(() => { try { if (window.localStorage.getItem("nc-desk-rail") === "0") queueMicrotask(() => setRailOpen(false)); } catch { /* ignore */ } }, []);
   function toggleRail() { setRailOpen((open) => { try { window.localStorage.setItem("nc-desk-rail", open ? "0" : "1"); } catch { /* ignore */ } return !open; }); }
-  const [counterOpen, setCounterOpen] = useState(false);
   function choose(tab: Tab) {
-    if (tab === "counter") { setCounterOpen(true); return; }
     setPicked(tab); window.history.replaceState(null, "", `#${tab}`); window.scrollTo({ top: 0, left: 0, behavior: "instant" }); }
   const first = me.name.split(/\s+/)[0] || "there";
   const current = tabs.find((tab) => tab.id === active);
@@ -452,6 +451,8 @@ export default function AdminDashboard({ me, viewAsStaff = false, services }: { 
         {active === "mail" && <MailClient mode="staff" onUnread={setMailUnread}/>}
         {active === "requests" && <RequestQueue canCharge={isOwner || effectivePermissions.includes("charge")}/>}
         {active === "records" && <RecordsPanel/>}
+        {active === "counter" && <CounterDesk services={services} isOwner={isOwner}/>}
+        {active === "findcustomer" && <FindCustomerPanel/>}
         {active === "customers" && isOwner && <CustomerManagementPanel/>}
         {active === "promotions" && <PromotionsPanel canEdit/>}
         {active === "content" && <SiteContentPanel/>}
@@ -477,15 +478,6 @@ export default function AdminDashboard({ me, viewAsStaff = false, services }: { 
         {active === "wallet" && <WalletCreditForm canCorrect={isOwner}/>}
       </section>
     </div>
-    {counterOpen && <Portal><div className="record-modal" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setCounterOpen(false); }}>
-      <div className="record-modal__panel counter-modal__panel" role="dialog" aria-modal="true" aria-label="Counter desk">
-        <header className="record-modal__header">
-          <div><h3>Counter desk</h3></div>
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => setCounterOpen(false)}>Close</button>
-        </header>
-        <CounterDesk services={services} isOwner={isOwner}/>
-      </div>
-    </div></Portal>}
   </main>;
 }
 
