@@ -1,6 +1,6 @@
 "use client";
 
-import { FEATURES, uploadsAllowed } from "@/lib/features";
+import { FEATURES } from "@/lib/features";
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
