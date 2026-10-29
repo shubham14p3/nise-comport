@@ -107,7 +107,7 @@ export default function FindCustomerPanel() {
 
   async function saveContact() {
     if (!selected) return;
-    const result = await run(() => secureApi<{ changed: boolean }>(CUSTOMERS_OP, {
+    const result = await run(() => secureApi<{ changed: boolean; pending?: boolean }>(CUSTOMERS_OP, {
       action: "update-contact", id: selected.id, email: editEmail, phone: editPhone,
     }));
     if (!result) return;
