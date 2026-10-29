@@ -144,7 +144,7 @@ export default function FindCustomerPanel() {
   return <section aria-label="Find customer">
     <div className="admin-panel-title"><div>
       <p className="fc-note" role="note">{" "}<b>Note:</b> Admins can change a customer’s email or mobile number here directly. Staff changes need approval from another admin. Every change is logged, and a changed email or number must be verified again.</p>
-      <h2>Find customer</h2><p>Search by email or mobile number. Every change here is recorded in the activity log.</p>
+      <h2>Find customer</h2><p className="fc-subtitle">Search by email or mobile number. Every change here is recorded in the activity log.</p>
     </div></div>
 
     <div className="fc-search">

@@ -3642,3 +3642,5 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .pay-verify__actions { grid-template-columns: minmax(0, 1fr); }
 .pay-verify__actions .btn, .pay-checkout .btn, .pay-card .btn--block { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; white-space: normal; }
 .pay-steps__dot { display: inline-flex; align-items: center; justify-content: center; line-height: 1; margin: 0; padding: 0; }
+
+.fc-subtitle { margin: 0 0 16px; }
