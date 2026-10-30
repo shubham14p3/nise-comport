@@ -3922,3 +3922,17 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .brand-lockup small { font-size: .585rem; letter-spacing: .055em; color: var(--muted); }
 .brand:hover .brand-wordmark-text { color: #3559aa; }
 @media(max-width:500px) { .brand-wordmark-text { font-size: 1.22rem; } }
+
+/* Animated lettermark: NiSE in the trademark casing, using the app's blue/violet palette. */
+.nc-lettermark { display: inline-flex; align-items: baseline; justify-content: center; gap: 1px;
+  font-family: "Cooper Black", "Cooper Std Black", Georgia, serif; font-weight: 900;
+  font-size: 1.58rem; letter-spacing: -.035em; line-height: 1; }
+.nc-lettermark span { display: inline-block; animation: nc-letter-wave 1.35s ease-in-out infinite; }
+.nc-lettermark span:nth-child(1) { color: #1758c9; animation-delay: 0ms; }
+.nc-lettermark span:nth-child(2) { color: #9051d8; animation-delay: 140ms; }
+.nc-lettermark span:nth-child(3) { color: #2476ca; animation-delay: 280ms; }
+.nc-lettermark span:nth-child(4) { color: #ab479d; animation-delay: 420ms; }
+.nc-lettermark--large { font-size: 3.3rem; }
+@keyframes nc-letter-wave { 0%,50%,100% { transform: translateY(0); opacity: .86; }
+  25% { transform: translateY(-5px); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .nc-lettermark span { animation: none; opacity: 1; } }
