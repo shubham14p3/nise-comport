@@ -7,6 +7,12 @@ import { usePathname } from "next/navigation";
 export default function ScrollToTop() {
   const pathname = usePathname();
   useEffect(() => {
+    const previous = window.history.scrollRestoration;
+    // Browser restoring the previous footer position is especially confusing after login.
+    window.history.scrollRestoration = "manual";
+    return () => { window.history.scrollRestoration = previous; };
+  }, []);
+  useEffect(() => {
     // Public pages start at the top. The dashboard uses its own hash-based tabs;
     // let those tabs handle their own scrolling.
     if (window.location.pathname === "/desk" && window.location.hash) return;
