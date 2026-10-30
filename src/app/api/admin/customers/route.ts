@@ -1,7 +1,7 @@
 import { NextRequest,NextResponse,after } from "next/server";
-import { and,desc,eq,ilike,isNull,or } from "drizzle-orm";
+import { and,count,desc,eq,ilike,isNull,ne,or } from "drizzle-orm";
 import { z } from "zod";
-import { activityLog,sessions,users } from "@/db/schema";
+import { activityLog,counterVisits,printJobs,serviceRequests,sessions,users } from "@/db/schema";
 import { requireStaff,openWorkCount } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { cleanName,looksLikeEmail,normalizeEmail,normalizePhone } from "@/lib/validation";
@@ -24,7 +24,7 @@ const editSchema=z.object({
 });
 async function owner() {return requireStaff("admin");}
 function publicCustomer(u:typeof users.$inferSelect){
-  return {id:u.id,name:u.name,email:u.email,phone:u.phone,
+  return {id:u.id,name:u.name,email:u.email,phone:u.phone,role:u.role,
     emailVerified:Boolean(u.emailVerifiedAt),phoneVerified:Boolean(u.phoneVerifiedAt),
     createdAt:u.createdAt.toISOString(),updatedAt:u.updatedAt.toISOString(),
     disabled:Boolean(u.disabledAt),archived:Boolean(u.deletedAt)};
@@ -40,23 +40,48 @@ export async function GET(request:NextRequest){
     const id=request.nextUrl.searchParams.get("id");
     if(id){
       if(!z.uuid().safeParse(id).success)throw new PublicError("Invalid customer ID.",400);
-      const [user]=await db.select().from(users).where(and(eq(users.id,id),eq(users.role,"customer"))).limit(1);
-      if(!user)throw new PublicError("Customer not found.",404);
-      const history=await db.select({
-        id:activityLog.id,when:activityLog.createdAt,title:activityLog.title,
-        detail:activityLog.detail,actorId:activityLog.actorId,actorName:users.name,
-      }).from(activityLog).leftJoin(users,eq(users.id,activityLog.actorId))
-        .where(and(eq(activityLog.refType,"customer-profile"),eq(activityLog.refId,id),
-          eq(activityLog.permission,"team")))
-        .orderBy(desc(activityLog.createdAt)).limit(150);
-      return NextResponse.json({user:publicCustomer(user),history},{headers:{"cache-control":"private, no-store"}});
+      // Customer history belongs to a user ID, regardless of their staff/owner role.
+      // Team permissions remain managed exclusively by the Team endpoint.
+      const [user]=await db.select().from(users).where(and(eq(users.id,id),ne(users.role,"demo"))).limit(1);
+      if(!user)throw new PublicError("Account not found.",404);
+      const [history,requests,prints,visits,requestCount,printCount,visitCount]=await Promise.all([
+        db.select({
+          id:activityLog.id,when:activityLog.createdAt,title:activityLog.title,
+          detail:activityLog.detail,actorId:activityLog.actorId,actorName:users.name,
+        }).from(activityLog).leftJoin(users,eq(users.id,activityLog.actorId))
+          .where(and(eq(activityLog.refType,"customer-profile"),eq(activityLog.refId,id)))
+          .orderBy(desc(activityLog.createdAt)).limit(100),
+        db.select({id:serviceRequests.id,reference:serviceRequests.reference,description:serviceRequests.serviceName,
+          status:serviceRequests.status,createdAt:serviceRequests.createdAt})
+          .from(serviceRequests).where(eq(serviceRequests.userId,id)).orderBy(desc(serviceRequests.createdAt)).limit(5),
+        db.select({id:printJobs.id,reference:printJobs.reference,description:printJobs.fileName,
+          status:printJobs.status,createdAt:printJobs.createdAt})
+          .from(printJobs).where(eq(printJobs.userId,id)).orderBy(desc(printJobs.createdAt)).limit(5),
+        db.select({id:counterVisits.id,description:counterVisits.serviceName,
+          billPaise:counterVisits.billPaise,collectPaise:counterVisits.collectPaise,createdAt:counterVisits.createdAt})
+          .from(counterVisits).where(eq(counterVisits.userId,id)).orderBy(desc(counterVisits.createdAt)).limit(5),
+        db.select({total:count()}).from(serviceRequests).where(eq(serviceRequests.userId,id)),
+        db.select({total:count()}).from(printJobs).where(eq(printJobs.userId,id)),
+        db.select({total:count()}).from(counterVisits).where(eq(counterVisits.userId,id)),
+      ]);
+      const customerActivity={
+        requests:requestCount[0]?.total??0,prints:printCount[0]?.total??0,counterVisits:visitCount[0]?.total??0,
+        recent:[
+          ...requests.map(row=>({...row,kind:"service" as const,createdAt:row.createdAt.toISOString()})),
+          ...prints.map(row=>({...row,kind:"print" as const,createdAt:row.createdAt.toISOString()})),
+          ...visits.map(row=>({...row,kind:"counter" as const,reference:null,status:"recorded",createdAt:row.createdAt.toISOString()})),
+        ].sort((left,right)=>right.createdAt.localeCompare(left.createdAt)).slice(0,12),
+      };
+      return NextResponse.json({user:publicCustomer(user),history,activity:customerActivity},
+        {headers:{"cache-control":"private, no-store"}});
     }
     const q=(request.nextUrl.searchParams.get("q")??"").trim().slice(0,80);
     const includeArchived=request.nextUrl.searchParams.get("archived")==="1";
+    const includeTeam=request.nextUrl.searchParams.get("includeTeam")!=="0";
     const pattern="%"+q.replace(/[\\%_]/g,"\\$&")+"%";
     const filter=q?or(ilike(users.name,pattern),ilike(users.email,pattern),ilike(users.phone,pattern)):undefined;
     const rows=await db.select().from(users).where(and(
-      eq(users.role,"customer"),includeArchived?undefined:isNull(users.deletedAt),filter
+      includeTeam?ne(users.role,"demo"):eq(users.role,"customer"),includeArchived?undefined:isNull(users.deletedAt),filter
     )).orderBy(desc(users.createdAt)).limit(50);
     return NextResponse.json({users:rows.map(publicCustomer)},{headers:{"cache-control":"private, no-store"}});
   }catch(error){return apiError(error);}
@@ -69,6 +94,8 @@ export async function PATCH(request:NextRequest){
     const [user]=await db.select().from(users).where(and(eq(users.id,input.id),eq(users.role,"customer"))).limit(1);
     if(!user)throw new PublicError("Customer not found.",404);
     if(user.deletedAt)throw new PublicError("Archived accounts are read-only.",409);
+    // Even an owner cannot disable, archive or alter team accounts from customer tools.
+    // Use Team management for their identity and permissions.
     if(input.action==="edit"){
       const name=input.name!==undefined?cleanName(input.name):user.name;
       const email=input.email!==undefined?normalizeEmail(input.email):user.email;
