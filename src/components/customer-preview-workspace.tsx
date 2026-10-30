@@ -31,7 +31,7 @@ export default function CustomerPreviewWorkspace() {
   const [section, setSection] = useState<Section>("overview");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [clock, setClock] = useState(Date.now());
+  const [clock, setClock] = useState(0);
   const load = useCallback(async () => {
     setError("");
     try { setData(await secureApi<Preview>(OP, { action: "state" })); }
