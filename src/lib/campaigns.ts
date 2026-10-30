@@ -400,10 +400,11 @@ export async function handleInbound(events: InboundEvent[]) {
       continue;
     }
     const statusPhone = normalizePhone(event.from);
-    if (statusPhone && await handleStatusQuery(statusPhone, event.text)) {
+    if (statusPhone && cloudApiConfigured() && /^\\s*(status|stat|track|track\\s*my\\s*(order|request))\\b/i.test(event.text)) {
+      // Preserve actual conversation order: the question is saved before the reply.
       try { await (await import("@/lib/whatsapp-bot")).logInboundOnly(statusPhone, event.text, event.name); }
       catch (error) { console.error("[whatsapp] could not log status question", error); }
-      continue;
+      if (await handleStatusQuery(statusPhone, event.text)) continue;
     }
     const intent = classifyReply(event.text);
     if (!intent) {
