@@ -430,7 +430,7 @@ export default function AdminDashboard({ me, viewAsStaff = false, services }: { 
       <aside className="profile__nav" aria-label="Admin sections">
         <button type="button" className="profile__nav-toggle" onClick={toggleRail} aria-expanded={railOpen} title={railOpen ? "Hide the menu" : "Show the menu"}>{railOpen ? <PanelLeftClose size={19}/> : <PanelLeftOpen size={19}/>}<span>Hide menu</span></button>
         {railOpen ? <nav className="admin-nav-groups">{NAV_SECTIONS.map((section) => { const visible = tabs.filter((tab) => (section.tabs as readonly string[]).includes(tab.id)); return visible.length > 0 && <details key={section.id} className="admin-nav-group" open={activeGroup === section.id}>
-          <summary onClick={(event) => { event.preventDefault(); setExpandedGroup(section.id === activeGroup ? null : section.id); }}>{section.title}<span>{visible.length}</span></summary>
+          <summary onClick={(event) => { event.preventDefault(); setExpandedGroup(section.id === activeGroup ? "" : section.id); }}>{section.title}<span>{visible.length}</span></summary>
           <div>{visible.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={active === id ? "is-active" : undefined} aria-current={active === id ? "page" : undefined} onClick={() => choose(id)} title={label}>
             <Icon size={18}/><span>{label}</span>{id === "inbox" && unread > 0 && <small aria-label={`${unread} new`}>{unread > 99 ? "99+" : unread}</small>}{id === "mail" && mailUnread > 0 && <small aria-label={`${mailUnread} unread`}>{mailUnread > 99 ? "99+" : mailUnread}</small>}
           </button>)}</div>
