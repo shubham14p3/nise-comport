@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { hash } from "@node-rs/argon2";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { activityLog, addresses, counterVisits, printJobs, serviceRequests, users, walletEntries } from "@/db/schema";
 import { requireStaff } from "@/lib/auth";
@@ -120,11 +120,8 @@ export async function POST(request: NextRequest) {
       const until = Math.min(now + PREVIEW_MS, existing.started + MAX_PREVIEW_MS);
       if (until <= now) throw new PublicError("This preview reached the maximum duration. Start a fresh preview.", 409);
       // The fresh signed grant has its own 15 minute window, but never exceeds the 30 minute cap.
-      const grant = createPreviewGrant(actor.id, target.id, now);
-      const payload = grant.split(".")[0];
-      // Do not hand-modify signed tokens. Extending starts a new audited 15-minute grant.
-      void payload;
-      jar.set(previewCookie(grant, PREVIEW_MS / 1000));
+      const grant = createPreviewGrant(actor.id, target.id, now, existing.started, until);
+      jar.set(previewCookie(grant, Math.ceil((until - now) / 1000)));
       await audit(actor.id, target.id, "Administrator extended customer preview");
       return NextResponse.json({ ok: true, expiresAt: now + PREVIEW_MS });
     }
