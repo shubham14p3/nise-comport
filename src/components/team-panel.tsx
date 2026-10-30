@@ -83,7 +83,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
   const [credentialPin, setCredentialPin] = useState("");
   const [credentialKind, setCredentialKind] = useState<"password" | "pin">("password");
   const [generateCredential, setGenerateCredential] = useState(false);
-  const [permissions, setPermissions] = useState<string[]>(["requests"]);
+  const [permissions, setPermissions] = useState<string[]>(["requests","tab:requests"]);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -124,7 +124,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
 
   function startEdit(member: Member) {
     setEditing(member.id); setError(""); setNotice("");
-    setEdit({ name: member.name, email: member.email, phone: member.phone ?? "", role: member.role === "admin" ? "admin" : "staff", permissions: member.permissions.length ? [...member.permissions, ...member.categories.map(slug => SCOPE_PREFIX + slug), ...(member.sidebar ?? []).map(id => MENU_PREFIX + id)] : ["requests"] });
+    setEdit({ name: member.name, email: member.email, phone: member.phone ?? "", role: member.role === "admin" ? "admin" : "staff", permissions: member.permissions.length ? [...member.permissions, ...member.categories.map(slug => SCOPE_PREFIX + slug), ...(member.sidebar ?? []).map(id => MENU_PREFIX + id)] : ["requests","tab:requests"] });
   }
 
   async function patch(member: Member, body: Record<string, unknown>, done: string) {
