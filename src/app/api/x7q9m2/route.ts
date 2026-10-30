@@ -154,7 +154,9 @@ function targetFor(operation: string, input: Record<string, unknown>) {
     }
     case "A8s5L2nR7vE4": {
       const status = stringValue(input, "status", 20);
-      return { method: "GET", path: `/api/admin/payments?status=${encodeURIComponent(status)}` };
+      const page = Math.max(0, Math.min(100000, Math.trunc(Number(input.page) || 0)));
+      const pageSize = [10, 20, 50].includes(Number(input.pageSize)) ? Number(input.pageSize) : 20;
+      return { method: "GET", path: `/api/admin/payments?status=${encodeURIComponent(status)}&page=${page}&pageSize=${pageSize}` };
     }
     case "X1m7C4pV8qB3": {
       const id = stringValue(input, "id", 80);
@@ -204,7 +206,8 @@ function targetFor(operation: string, input: Record<string, unknown>) {
       const params = new URLSearchParams();
       for (const key of ["q", "service", "sort", "key"]) { const value = stringValue(input, key, 80); if (value) params.set(key, value); }
       if (input.imports) params.set("imports", "1");
-      if (typeof input.page === "number") params.set("page", String(Math.max(0, Math.floor(input.page))));
+      if (typeof input.page === "number") params.set("page", String(Math.max(0, Math.min(100000, Math.floor(input.page)))));
+      if ([10, 20, 50].includes(Number(input.pageSize))) params.set("pageSize", String(input.pageSize));
       return { method: "GET", path: `/api/admin/records?${params.toString()}` };
     }
     case "B5dY8rN2cV6w": {
