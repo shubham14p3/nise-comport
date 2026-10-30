@@ -3860,3 +3860,27 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 }
 /* Brand is always rendered in the shop's prescribed case. Cooper Black is an optional local face. */
 .brand__name, .brand-text, .brand-lockup__text { font-family: "Cooper Black", "Cooper Std Black", Georgia, serif; font-weight: 900; letter-spacing: -.02em; }
+
+/* Layout polish: credential generator beside the field, with a compact stacked mobile version. */
+.team-credentials { gap: 14px; padding: clamp(14px, 2vw, 20px); }
+.team-credentials__form { gap: 12px; }
+.team-credentials__input-row { display: grid; grid-template-columns: minmax(0,1.8fr) minmax(190px,1fr); align-items: center; gap: 16px; }
+.team-credentials__input-row > .field { min-width: 0; max-width: none; }
+.team-credentials__auto { display: flex; align-items: center; gap: 10px; margin: 18px 0 0; width: 100%;
+  min-width: 0; padding: 12px; border: 1px solid #d9e4f6; border-radius: 12px; background: #f7faff; cursor: pointer; }
+.team-credentials__auto > input { flex: none; width: 20px; height: 20px; margin: 0; }
+.team-credentials__auto > span { display: grid; gap: 4px; min-width: 0; }
+.team-credentials__auto b { font-size: .85rem; color: #294879; }
+.team-credentials__auto small { font-size: .72rem; line-height: 1.35; color: #63728e; }
+.team-credentials__footer { padding-top: 12px; gap: 12px; }
+.counter-service-input { display: flex; min-width: 0; align-items: center; position: relative; }
+.counter-service-input input { width: 100%; min-width: 0; padding-right: 45px !important; }
+.counter-service-clear { position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
+  display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 8px;
+  background: #edf3fb; color: #435b81; cursor: pointer; }
+.counter-service-clear:hover { background: #dce9fb; }
+.counter-service-clear:focus-visible { outline: 2px solid #345ac8; outline-offset: 2px; }
+@media(max-width:720px) {
+  .team-credentials__input-row { grid-template-columns: minmax(0,1fr); gap: 8px; }
+  .team-credentials__auto { margin: 0; }
+}
