@@ -61,7 +61,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     try { info = JSON.parse(readFileSync(deployInfoFile, "utf8")); }
     catch { console.error("DEPLOY_INFO.json is corrupt."); process.exit(1); }
     const mode = (process.env.APP_ENV || "prod").trim().toLowerCase();
-    const port = process.env.INTERNAL_API_PORT || (mode === "prod" ? "3020" : "3000");
+    const port = process.env.INTERNAL_API_PORT || ("3020");
     const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
     if (!["prod", "local"].includes(mode) || mode !== info.mode || port !== String(info.port) || siteUrl !== info.siteUrl) {
       console.error("Build/environment mismatch. Check APP_ENV, INTERNAL_API_PORT and NEXT_PUBLIC_SITE_URL against your compiled build. No keys printed.");
