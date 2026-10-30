@@ -4,7 +4,7 @@ import { requireAnyPermission } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
 import { apiError, readJson } from "@/lib/http";
 import { PublicError } from "@/lib/errors";
-import { cancelPayment, createPaymentRequest, listPayments, markPaid, paymentOptions, paymentSummary, processRefund } from "@/lib/payments";
+import { cancelPayment, createPaymentRequest, listPayments, markPaid, paymentOptions, paymentSummary, processRefund, quotableRequests } from "@/lib/payments";
 import { parseRupeesToPaise } from "@/lib/payments-core";
 import { db } from "@/lib/db";
 import { payments } from "@/db/schema";
@@ -24,6 +24,7 @@ export async function GET(request: NextRequest) {
   try {
     await requireAnyPermission(["payments", "requests"]);
     const status = request.nextUrl.searchParams.get("status") ?? "";
+    if (status === "quotable") return NextResponse.json({ requests: await quotableRequests() }, { headers: { "cache-control": "private, no-store" } });
     const options = paymentOptions();
     const page = Math.max(0, Number(request.nextUrl.searchParams.get("page")) || 0);
     const pageSize = Number(request.nextUrl.searchParams.get("pageSize")) || 20;
