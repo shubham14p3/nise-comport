@@ -219,7 +219,7 @@ function targetFor(operation: string, input: Record<string, unknown>) {
     case "C2m7R4vN9kP6": {
       const id=stringValue(input,"id",80);
       const q=stringValue(input,"q",80);
-      return {method:"GET",path:`/api/admin/customers?${id?`id=${encodeURIComponent(id)}`:`q=${encodeURIComponent(q)}&archived=${input.archived?"1":"0"}`}`};
+      return {method:"GET",path:`/api/admin/customers?${id?`id=${encodeURIComponent(id)}`:`q=${encodeURIComponent(q)}&archived=${input.archived?"1":"0"}&includeTeam=${input.includeTeam===false?"0":"1"}`}`};
     }
     case "B6r1K8mQ3cT9": {
       const id = stringValue(input, "id", 80);
