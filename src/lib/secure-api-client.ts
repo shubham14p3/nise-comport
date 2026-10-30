@@ -27,7 +27,8 @@ export class SecureApiError extends Error {
   }
 }
 
-const JSON_TIMEOUT_MS = 30_000;
+// First Turbopack compilation on Windows can take longer than a warm production request.
+const JSON_TIMEOUT_MS = process.env.NODE_ENV === "development" ? 120_000 : 30_000;
 const FILE_TIMEOUT_MS = 120_000;
 // All UI code paths use this shared client. Identical concurrent clicks send one POST.
 const pendingRequests = new Map<string, Promise<unknown>>();
