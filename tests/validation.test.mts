@@ -41,3 +41,10 @@ test("names lose control characters and extra spaces; PIN codes are validated", 
   assert.equal(isIndianPin("031004"), false);
   assert.equal(isIndianPin("83100"), false);
 });
+
+test("person names are saved in readable Title Case, preserving intentional mixed case", () => {
+  assert.equal(cleanName("SHUBHAM RAJ"), "Shubham Raj");
+  assert.equal(cleanName("  sanjana   shree  "), "Sanjana Shree");
+  assert.equal(cleanName("McDonald DeSouza"), "McDonald DeSouza");
+  assert.equal(cleanName("  ANIL\\tKUMAR   "), "Anil Kumar");
+});
