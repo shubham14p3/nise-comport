@@ -1,6 +1,6 @@
 "use client";
 
-import {FormEvent,useEffect,useState} from "react";
+import {FormEvent,useEffect,useRef,useState} from "react";
 import {ArrowLeft,History,Search,ShieldCheck,UserRound,UserX} from "lucide-react";
 import {secureApi} from "@/lib/secure-api-client";
 import "./customer-management-panel.css";
@@ -20,14 +20,16 @@ export default function CustomerManagementPanel(){
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState("");
   const [note,setNote]=useState("");
+  const searchVersion=useRef(0);
 
   async function search(query=q,archived=showArchived){
+    const version=++searchVersion.current;
     setBusy(true);setError("");
     try{
       const data=await secureApi<{users:Customer[]}>("C2m7R4vN9kP6",{q:query,archived});
-      setList(data.users);
-    }catch(err){setError(err instanceof Error?err.message:"Unable to search customers.");}
-    finally{setBusy(false);}
+      if(version===searchVersion.current)setList(data.users);
+    }catch(err){if(version===searchVersion.current)setError(err instanceof Error?err.message:"Unable to search customers.");}
+    finally{if(version===searchVersion.current)setBusy(false);}
   }
   async function open(id:string){
     setBusy(true);setError("");setNote("");
@@ -39,9 +41,10 @@ export default function CustomerManagementPanel(){
   }
   useEffect(()=>{
     let mounted=true;
+    const version=++searchVersion.current;
     void secureApi<{users:Customer[]}>("C2m7R4vN9kP6",{q:"",archived:false})
-      .then(data=>{if(mounted)setList(data.users)})
-      .catch(err=>{if(mounted)setError(err instanceof Error?err.message:"Unable to load customers.")});
+      .then(data=>{if(mounted&&version===searchVersion.current)setList(data.users)})
+      .catch(err=>{if(mounted&&version===searchVersion.current)setError(err instanceof Error?err.message:"Unable to load customers.")});
     return()=>{mounted=false};
   },[]);
   async function act(action:"edit"|"disable"|"enable"|"archive"){
