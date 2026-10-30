@@ -129,6 +129,8 @@ export default function SiteHeader() {
     remember(null);
     setSigningOut(false);
     setMenuOpen(false);
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    router.replace("/login", { scroll: true });
     router.refresh();
   }
 
