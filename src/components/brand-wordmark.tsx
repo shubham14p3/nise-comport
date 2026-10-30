@@ -1,5 +1,4 @@
-import Image from "next/image";
-
+/** Text wordmark keeps the trademark casing exact in every language. */
 export default function BrandWordmark({ caption = "A Move Towards Digital India e-Gov Services" }: { caption?: string }) {
-  return <span className="brand-lockup"><Image className="brand-logo-image" src="/images/logo/logo-footer.png" alt="NiSE COMPORT" width={220} height={41} priority /><small>{caption}</small></span>;
+  return <span className="brand-lockup"><strong className="brand-wordmark-text">NiSE COMPORT</strong><small>{caption}</small></span>;
 }
