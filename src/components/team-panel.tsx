@@ -1,13 +1,13 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import { BadgeCheck, Copy, Crown, KeyRound, Mail, Pencil, Phone, Search, ShieldCheck, Trash2, UserMinus, UserPlus, UsersRound } from "lucide-react";
+import { FormEvent, useEffect, useRef, useState, type InputHTMLAttributes } from "react";
+import { BadgeCheck, Copy, Crown, Eye, EyeOff, KeyRound, Mail, Pencil, Phone, Search, ShieldCheck, Trash2, UserMinus, UserPlus, UsersRound } from "lucide-react";
 import { PERMISSION_INFO, STAFF_PERMISSIONS, SCOPE_PREFIX } from "@/lib/permissions";
 import { serviceCatalog } from "@/lib/services";
 import { secureApi } from "@/lib/secure-api-client";
 import { AdminPager, useAdminPagination } from "@/components/admin-pager";
 
-type Member = { id: string; name: string; email: string; phone: string | null; role: string; permissions: string[]; categories: string[]; verified: boolean; createdAt: string; disabled: boolean; tempPassword: boolean };
+type Member = { id: string; name: string; email: string; phone: string | null; role: string; permissions: string[]; categories: string[]; verified: boolean; createdAt: string; disabled: boolean; tempPassword: boolean; hasPin: boolean };
 type Role = "staff" | "admin";
 type Edit = { name: string; email: string; phone: string; role: Role; permissions: string[] };
 
@@ -39,6 +39,16 @@ function RolePick({ value, onChange, disabled }: { value: Role; onChange: (role:
     </select></label>;
 }
 
+/** Password/PIN fields in owner tools are hidden by default and remain keyboard-accessible. */
+function SecretField(props: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
+  const [visible, setVisible] = useState(false);
+  return <span className="input-wrap">
+    <input {...props} type={visible ? "text" : "password"}/>
+    <button type="button" className="icon-btn" aria-label={visible ? "Hide secret" : "Show secret"} aria-pressed={visible}
+      onClick={() => setVisible((current) => !current)}>{visible ? <EyeOff size={17}/> : <Eye size={17}/>}</button>
+  </span>;
+}
+
 /** Owner only: add staff or owners, edit them, reset passwords, remove or delete. */
 export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: string }) {
   const [members, setMembers] = useState<Member[] | null>(null);
@@ -50,11 +60,16 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<Role>("staff");
   const [password, setPassword] = useState("");
+  const [pin, setPin] = useState("");
+  const [credentialsFor, setCredentialsFor] = useState<string | null>(null);
+  const [credentialPassword, setCredentialPassword] = useState("");
+  const [credentialPin, setCredentialPin] = useState("");
   const [permissions, setPermissions] = useState<string[]>(["requests"]);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [secret, setSecret] = useState<{ who: string; password: string } | null>(null);
+  const [secret, setSecret] = useState<{ who: string; password?: string; pin?: string } | null>(null);
+  const submitting = useRef(false);
 
   async function load() {
     const result = await secureApi<{ staff: Member[] }>("K8d3N6wQ1zT4");
@@ -70,15 +85,22 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
   const fail = (reason: unknown, fallback: string) => setError(reason instanceof Error ? reason.message : fallback);
 
   async function add(event: FormEvent) {
-    event.preventDefault(); setBusy("add"); setError(""); setNotice(""); setSecret(null);
+    event.preventDefault();
+    if (submitting.current) return;
+    submitting.current = true;
+    setBusy("add"); setError(""); setNotice(""); setSecret(null);
     try {
-      const result = await secureApi<{ created: boolean; tempPassword: string | null }>("H5r9C2mV7pX1", { email, name, phone, role, permissions, password });
-      if (result.tempPassword) { setSecret({ who: email, password: result.tempPassword }); setNotice(`Added ${email}. The temporary password below has been emailed to them; they should change it after signing in.`); }
-      else setNotice(`${email} already had an account and is now ${role === "admin" ? "an owner" : "staff"}. They keep their own password and have been emailed.`);
-      setEmail(""); setName(""); setPhone(""); setPassword(""); setRole("staff"); setPermissions(["requests"]);
+      const result = await secureApi<{ created: boolean; tempPassword: string | null; tempPin: string | null }>("H5r9C2mV7pX1", { email, name, phone, role, permissions, password, pin });
+      if (result.tempPassword || result.tempPin) {
+        setSecret({ who: email, password: result.tempPassword ?? undefined, pin: result.tempPin ?? undefined });
+      }
+      setNotice(result.created
+        ? `Added ${email}. Temporary credentials were sent by email; ask them to change their password after sign-in.`
+        : `${email} now has team access. Existing customer records and password are preserved${result.tempPin ? ", and the requested PIN has been set" : ""}.`);
+      setEmail(""); setName(""); setPhone(""); setPassword(""); setPin(""); setRole("staff"); setPermissions(["requests"]);
       await load();
     } catch (reason) { fail(reason, "Could not add this person."); }
-    finally { setBusy(""); }
+    finally { submitting.current = false; setBusy(""); }
   }
 
   function startEdit(member: Member) {
@@ -87,13 +109,15 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
   }
 
   async function patch(member: Member, body: Record<string, unknown>, done: string) {
+    if (submitting.current) return false;
+    submitting.current = true;
     setBusy(member.id); setError(""); setNotice(""); setSecret(null);
     try {
-      const result = await secureApi<{ tempPassword?: string }>("B2x7T4kL9qW6", { id: member.id, ...body });
-      if (result.tempPassword) setSecret({ who: member.email, password: result.tempPassword });
+      const result = await secureApi<{ tempPassword?: string; tempPin?: string }>("B2x7T4kL9qW6", { id: member.id, ...body });
+      if (result.tempPassword || result.tempPin) setSecret({ who: member.email, password: result.tempPassword, pin: result.tempPin });
       setNotice(done); await load(); return true;
     } catch (reason) { fail(reason, "That didn’t work."); return false; }
-    finally { setBusy(""); }
+    finally { submitting.current = false; setBusy(""); }
   }
 
   async function saveEdit(member: Member) {
@@ -103,7 +127,16 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
   }
   const remove = (member: Member) => window.confirm(`Remove ${member.name} from the team? They become a normal customer account and are signed out everywhere.`)
     && patch(member, { remove: true }, `${member.name} no longer has team access.`);
-  const reset = (member: Member) => window.confirm(`Set a new temporary password for ${member.name}? They are signed out everywhere and get the new password by email.`)
+  async function saveCredential(member: Member, kind: "password" | "pin") {
+    const value = kind === "pin" ? credentialPin : credentialPassword;
+    if (kind === "pin" && !member.phone) { setError("Add a mobile number for this team member before setting their PIN."); return; }
+    if (!window.confirm(`Set a ${value ? "custom" : "generated"} ${kind} for ${member.name}? Their sessions will end, and the new credential will be emailed to them.`)) return;
+    const result = await patch(member, kind === "pin"
+      ? { resetPin: true, pin: value }
+      : { resetPassword: true, password: value }, `Updated ${kind} for ${member.name}. All previous sessions have ended.`);
+    if (result) { setCredentialPin(""); setCredentialPassword(""); setCredentialsFor(null); }
+  }
+  const reset = (member: Member) => window.confirm(`Generate a new temporary password for ${member.name}? Existing sessions will end and the password is sent by email.`)
     && patch(member, { resetPassword: true }, `New temporary password set for ${member.name}.`);
   const destroy = (member: Member) => window.confirm(`Delete ${member.name}'s account for good? Their details are erased and they can’t sign in. This cannot be undone.`)
     && patch(member, { delete: true }, `${member.name}’s account was deleted.`);
@@ -120,9 +153,13 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
     {error && <div className="alert alert--error" role="alert">{error}</div>}
     {notice && <div className="alert alert--success" role="status">{notice}</div>}
     {secret && <div className="alert alert--info" role="status">
-      <b>Temporary password for {secret.who}:</b> <code>{secret.password}</code>{" "}
-      <button type="button" className="btn btn--ghost btn--sm" onClick={() => void navigator.clipboard?.writeText(secret.password)}><Copy size={14}/> Copy</button>
-      <br/><small>Shown only now. It was also emailed to them.</small>
+      <b>One-time login credentials for {secret.who}</b>
+      {secret.password && <div><span>Temporary password:</span> <code>{secret.password}</code>{" "}
+        <button type="button" className="btn btn--ghost btn--sm" onClick={() => void navigator.clipboard?.writeText(secret.password ?? "")}><Copy size={14}/> Copy password</button></div>}
+      {secret.pin && <div><span>6-digit PIN:</span> <code>{secret.pin}</code>{" "}
+        <button type="button" className="btn btn--ghost btn--sm" onClick={() => void navigator.clipboard?.writeText(secret.pin ?? "")}><Copy size={14}/> Copy PIN</button></div>}
+      <button type="button" className="btn btn--ghost btn--sm" onClick={() => setSecret(null)}>Hide credentials</button>
+      <p><small>Shown once in the owner panel and sent to their email. Do not share publicly.</small></p>
     </div>}
     <label className="admin-team__search"><Search size={17} aria-hidden="true"/><input
       type="search" aria-label="Search staff and owners" placeholder="Find existing or new staff by name, email, mobile or permission…"
@@ -137,7 +174,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
           <span className="staff-card__avatar" aria-hidden="true">{member.name.trim().charAt(0).toUpperCase()}</span>
           <div><b>{member.name}{isMe ? " (you)" : ""}</b>
             <small><Mail size={12}/> {member.email}{member.phone ? <> · <Phone size={12}/> {member.phone}</> : " · no mobile number"}</small>
-            <small>{member.disabled ? "Disabled — can’t sign in" : member.tempPassword ? "Still using the temporary password" : member.verified ? <><BadgeCheck size={12}/> Signed in before</> : "Hasn’t signed in yet"}</small></div>
+            <small>{member.disabled ? "Disabled — can’t sign in" : member.tempPassword ? "Still using the temporary password" : member.verified ? <><BadgeCheck size={12}/> Signed in before</> : "Hasn’t signed in yet"} · PIN: {member.hasPin ? "enabled" : "not set"}</small></div>
           <span className={member.role === "admin" ? "role-pill role-pill--owner" : "role-pill"}>{member.role === "admin" ? <><Crown size={13}/> Owner</> : <><ShieldCheck size={13}/> Staff</>}</span>
         </div>
         {open ? <>
@@ -159,11 +196,29 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
             <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => startEdit(member)}><Pencil size={15}/> Edit</button>
             {!isMe && <>
               <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => void reset(member)}><KeyRound size={15}/> Reset password</button>
+              <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => {
+                setCredentialsFor(credentialsFor === member.id ? null : member.id);
+                setCredentialPassword(""); setCredentialPin(""); setError(""); setNotice("");
+              }}><KeyRound size={15}/> {credentialsFor === member.id ? "Close credentials" : "Set password / PIN"}</button>
               <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => void patch(member, { disabled: !member.disabled }, member.disabled ? `${member.name} can sign in again.` : `${member.name} is disabled.`)}>{member.disabled ? "Enable" : "Disable"}</button>
               <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => void remove(member)}><UserMinus size={15}/> Remove from team</button>
               <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => void destroy(member)}><Trash2 size={15}/> Delete account</button>
             </>}
           </div>
+          {credentialsFor === member.id && !isMe && <div className="security-card team-credentials">
+            <h3>Manage sign-in credentials for {member.name}</h3>
+            <p className="muted">Leave a field empty to generate a secure temporary value. Updating either credential signs the member out. Their customer records remain untouched.</p>
+            <div className="form-grid">
+              <label className="field"><span className="field__label">New temporary password</span>
+                <SecretField autoComplete="new-password" value={credentialPassword} maxLength={128} placeholder="Generate automatically" disabled={locked} onChange={(event) => setCredentialPassword(event.target.value)}/></label>
+              <label className="field"><span className="field__label">New 6-digit PIN {member.phone ? "" : "(mobile needed)"}</span>
+                <SecretField autoComplete="off" inputMode="numeric" value={credentialPin} maxLength={6} placeholder="Generate automatically" disabled={locked || !member.phone} onChange={(event) => setCredentialPin(event.target.value.replace(/\\D/g, "").slice(0,6))}/></label>
+            </div>
+            <div className="staff-card__actions">
+              <button type="button" className="btn btn--primary btn--sm" disabled={locked} onClick={() => void saveCredential(member, "password")}>Set password</button>
+              <button type="button" className="btn btn--primary btn--sm" disabled={locked || !member.phone} onClick={() => void saveCredential(member, "pin")}>Set PIN</button>
+            </div>
+          </div>}
         </>}
       </article>;
     })}</div>
@@ -177,12 +232,13 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
         <label className="field"><span className="field__label">Email</span><input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="employee@example.com"/></label>
         <label className="field"><span className="field__label">Name <em>if they don’t have an account yet</em></span><input value={name} onChange={(event) => setName(event.target.value)} maxLength={100} placeholder="e.g. Ravi Kumar"/></label>
         <label className="field"><span className="field__label">Mobile number <em>optional</em></span><input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="10-digit mobile"/></label>
-        <label className="field"><span className="field__label">Temporary password <em>leave empty to generate one</em></span><input value={password} onChange={(event) => setPassword(event.target.value)} maxLength={128} autoComplete="off" placeholder="auto-generated"/></label>
+        <label className="field"><span className="field__label">Temporary password <em>leave empty to generate one</em></span><SecretField value={password} onChange={(event) => setPassword(event.target.value)} maxLength={128} autoComplete="new-password" placeholder="Auto-generated"/></label>
+        <label className="field"><span className="field__label">6-digit PIN <em>optional, requires mobile</em></span><SecretField value={pin} inputMode="numeric" onChange={(event) => setPin(event.target.value.replace(/\\D/g, "").slice(0,6))} maxLength={6} autoComplete="off" placeholder="Auto-generate if mobile is entered"/></label>
       </div>
       {role === "staff" ? <><span className="field__label">What may they do?</span><PermissionBoxes value={permissions} onChange={setPermissions}/></>
         : <p className="field__hint">Owners can open every area and manage the team. Only add people you fully trust.</p>}
       <button className="btn btn--primary" disabled={busy === "add" || (role === "staff" && !permissions.length)}>{busy === "add" ? "Adding…" : role === "admin" ? "Add owner" : "Add to team"}<UserPlus size={16}/></button>
-      <p className="field__hint">New people get an email with their temporary password and must change it after signing in (Profile → Security). Existing customers keep their own password.</p>
+      <p className="field__hint">New team accounts with a mobile number get a temporary PIN and password by email. Existing customers keep their account history and password; an explicitly entered PIN is set for that account.</p>
     </form></details>
   </section>;
 }
