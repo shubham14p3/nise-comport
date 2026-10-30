@@ -17,6 +17,8 @@ export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }
   const [showPin, setShowPin] = useState(false); const [busy, setBusy] = useState(false); const [website, setWebsite] = useState("");
   const [password, setPassword] = useState("");
   const [credential, setCredential] = useState<"pin" | "password">("pin");
+  const [pinIdentity, setPinIdentity] = useState<"mobile" | "email">("mobile");
+  const [emailPin, setEmailPin] = useState("");
   const [error, setError] = useState(""); const [fields, setFields] = useState<Record<string, string>>({});
   const [created, setCreated] = useState<{ pin: string; hasRecords: boolean } | null>(null);
   const [saved, setSaved] = useState(false); const [copied, setCopied] = useState(false);
@@ -30,7 +32,11 @@ export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }
     if (submitting.current || navigating.current) return;
     setError("");
     const problems: Record<string, string> = {};
-    const mobile = checkMobile(phone); if (!mobile.ok) problems.phone = mobile.error;
+    const byEmailPin = mode === "signin" && credential === "pin" && pinIdentity === "email";
+    const mobile = byEmailPin ? null : checkMobile(phone);
+    if (byEmailPin) {
+      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(emailPin.trim())) problems.email = "Enter your account email address.";
+    } else if (mobile && !mobile.ok) problems.phone = mobile.error;
     if (mode === "signin") {
       if (credential === "pin") { const bad = pinProblem(pin); if (bad) problems.pin = bad; }
       else if (!password) problems.password = "Enter your password.";
@@ -42,17 +48,17 @@ export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }
       }
     }
     setFields(problems);
-    if (Object.keys(problems).length || !mobile.ok) return;
+    if (Object.keys(problems).length || (!byEmailPin && (!mobile || !mobile.ok))) return;
     submitting.current = true;
     setBusy(true);
     try {
       const passwordSignIn = mode === "signin" && credential === "password";
       const body = mode === "signin"
-        ? { action: "signin", phone: mobile.digits, pin, website }
-        : { action: "signup", phone: mobile.digits, name, ...(password ? { password } : {}), whatsappConsent, emailConsent, website };
+        ? { action: "signin", phone: byEmailPin ? emailPin.trim().toLowerCase() : mobile!.ok ? mobile.digits : "", pin, website }
+        : { action: "signup", phone: mobile!.ok ? mobile.digits : "", name, ...(password ? { password } : {}), whatsappConsent, emailConsent, website };
       const { ok, result } = await secureResult<Result>(
         passwordSignIn ? "Q7m4kP2vL9sD" : "K7m2Q9xV4cT8",
-        passwordSignIn ? { email: mobile.e164, password } : body,
+        passwordSignIn ? { email: mobile && mobile.ok ? mobile.e164 : "", password } : body,
       );
       if (!ok) { setFields(result.fields ?? {}); setError(result.error ?? "Something went wrong. Please try again."); return; }
       if (mode === "signup" && result.pin) { setCreated({ pin: result.pin, hasRecords: Boolean(result.hasRecords) }); return; }
@@ -84,10 +90,21 @@ export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }
   </div>;
 
   return <form onSubmit={submit} className="auth__form" aria-busy={busy} noValidate>
-    <label className="field"><span className="field__label">Mobile number</span>
-      <span className="input-wrap"><span className="input-prefix" aria-hidden="true">+91</span>
-        <input type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={14} required value={phone} onChange={(e) => setPhone(typedMobile(e.target.value))} placeholder="98765 43210" aria-invalid={Boolean(fields.phone)} autoFocus/></span>
-      <span className="field__hint">10 digits, without +91 or 0.</span>{fieldError("phone")}</label>
+    {mode === "signin" && credential === "pin" && <div className="auth__method" role="group" aria-label="PIN sign-in account identifier">
+      <button type="button" className="link-btn" aria-pressed={pinIdentity === "mobile"} disabled={busy} onClick={() => { setPinIdentity("mobile"); setFields({}); setError(""); }}>Mobile + PIN</button>
+      <span aria-hidden="true"> · </span>
+      <button type="button" className="link-btn" aria-pressed={pinIdentity === "email"} disabled={busy} onClick={() => { setPinIdentity("email"); setFields({}); setError(""); }}>Email + PIN</button>
+    </div>}
+    {mode === "signin" && credential === "pin" && pinIdentity === "email"
+      ? <label className="field"><span className="field__label">Account email</span>
+          <span className="input-wrap"><input type="email" autoComplete="username" maxLength={254} required value={emailPin} onChange={(e) => setEmailPin(e.target.value)} placeholder="you@example.com" aria-invalid={Boolean(fields.email)} autoFocus/></span>
+          <span className="field__hint">Use email + PIN when several team accounts share a contact number.</span>{fieldError("email")}
+        </label>
+      : <label className="field"><span className="field__label">Mobile number</span>
+          <span className="input-wrap"><span className="input-prefix" aria-hidden="true">+91</span>
+            <input type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={14} required value={phone} onChange={(e) => setPhone(typedMobile(e.target.value))} placeholder="98765 43210" aria-invalid={Boolean(fields.phone)} autoFocus/></span>
+          <span className="field__hint">10 digits, without +91 or 0.</span>{fieldError("phone")}
+        </label>}
     {mode === "signin" && <div className="auth__method" role="group" aria-label="Choose mobile sign-in secret">
       <button type="button" className="link-btn" aria-pressed={credential === "pin"} disabled={busy} onClick={() => { setCredential("pin"); setError(""); setFields({}); }}>6-digit PIN</button>
       <span aria-hidden="true"> · </span>
