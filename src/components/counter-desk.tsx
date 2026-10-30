@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, X } from "lucide-react";
 import { secureApi, SecureApiError } from "@/lib/secure-api-client";
 import { COUNTER_DISCOUNT_PERCENT } from "@/lib/counter-rules";
 
@@ -305,9 +305,11 @@ export default function CounterDesk({ services }: { services: Service[]; isOwner
 
         {lookup && <>
           <label className="field" style={{ marginTop: 10 }}><span className="field__label">Service</span>
-            <input value={serviceText} placeholder="Type to search, then Enter" autoComplete="off" role="combobox" aria-controls="counter-service-options" aria-expanded={!service}
+            <div className="counter-service-input"><input value={serviceText} placeholder="Type to search, then Enter" autoComplete="off" role="combobox" aria-controls="counter-service-options" aria-expanded={!service}
               onChange={(event) => { setServiceText(event.target.value); setService(null); setHighlight(0); }}
               onKeyDown={onServiceKey}/>
+              {(serviceText || service) && <button type="button" className="counter-service-clear" aria-label="Clear selected service" title="Choose another service" disabled={busy} onClick={() => { setServiceText(""); setService(null); setHighlight(0); }}><X size={16}/></button>}
+            </div>
             {!service && <ul role="listbox" id="counter-service-options" className="counter-desk__options">
               {matches.map((item, index) => <li key={item.slug} role="option" aria-selected={index === highlight}
                 onMouseDown={(event) => { event.preventDefault(); pickService(item); }}
