@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowRight, Check, Copy, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound } from "lucide-react";
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { checkMobile, pinProblem, typedMobile } from "@/lib/mobile-login-core";
 import { passwordProblem, PASSWORD_MIN } from "@/lib/validation";
 import Link from "next/link";
@@ -20,11 +20,15 @@ export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }
   const [error, setError] = useState(""); const [fields, setFields] = useState<Record<string, string>>({});
   const [created, setCreated] = useState<{ pin: string; hasRecords: boolean } | null>(null);
   const [saved, setSaved] = useState(false); const [copied, setCopied] = useState(false);
+  const submitting = useRef(false);
+  const navigating = useRef(false);
 
   const fieldError = (key: string) => fields[key] ? <span className="field__error" role="alert">{fields[key]}</span> : null;
 
   async function submit(event: FormEvent) {
-    event.preventDefault(); setError("");
+    event.preventDefault();
+    if (submitting.current || navigating.current) return;
+    setError("");
     const problems: Record<string, string> = {};
     const mobile = checkMobile(phone); if (!mobile.ok) problems.phone = mobile.error;
     if (mode === "signin") {
@@ -39,6 +43,7 @@ export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }
     }
     setFields(problems);
     if (Object.keys(problems).length || !mobile.ok) return;
+    submitting.current = true;
     setBusy(true);
     try {
       const passwordSignIn = mode === "signin" && credential === "password";
@@ -55,8 +60,12 @@ export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }
         setError("Your email address must be verified first. Choose email sign-in and enter the code we sent, or sign in with your existing PIN.");
         return;
       }
+      navigating.current = true;
       await onDone();
-    } finally { setBusy(false); }
+    } finally {
+      submitting.current = false;
+      if (!navigating.current) setBusy(false);
+    }
   }
 
   async function copyPin() {
@@ -71,18 +80,18 @@ export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }
     <div className="pin-reveal__box" aria-live="polite"><b>{created.pin}</b><button type="button" className="btn btn--ghost btn--sm" onClick={() => void copyPin()}>{copied ? <Check size={15}/> : <Copy size={15}/>}{copied ? "Copied" : "Copy"}</button></div>
     {created.hasRecords && <p className="alert alert--success" role="status">We found earlier work under this number. Our team will check it with you before showing it. Never share this PIN with anyone, including staff.</p>}
     <label className="check-row"><input type="checkbox" checked={saved} onChange={(e) => setSaved(e.target.checked)}/> I have saved my PIN</label>
-    <button type="button" className="btn btn--primary btn--lg btn--block" disabled={!saved} onClick={() => void onDone()}>Continue<ArrowRight size={18}/></button>
+    <button type="button" className="btn btn--primary btn--lg btn--block" disabled={!saved || busy} onClick={() => { if (submitting.current || navigating.current) return; navigating.current = true; setBusy(true); void onDone(); }}>Continue<ArrowRight size={18}/></button>
   </div>;
 
-  return <form onSubmit={submit} className="auth__form" noValidate>
+  return <form onSubmit={submit} className="auth__form" aria-busy={busy} noValidate>
     <label className="field"><span className="field__label">Mobile number</span>
       <span className="input-wrap"><span className="input-prefix" aria-hidden="true">+91</span>
         <input type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={14} required value={phone} onChange={(e) => setPhone(typedMobile(e.target.value))} placeholder="98765 43210" aria-invalid={Boolean(fields.phone)} autoFocus/></span>
       <span className="field__hint">10 digits, without +91 or 0.</span>{fieldError("phone")}</label>
     {mode === "signin" && <div className="auth__method" role="group" aria-label="Choose mobile sign-in secret">
-      <button type="button" className="link-btn" aria-pressed={credential === "pin"} onClick={() => { setCredential("pin"); setError(""); setFields({}); }}>6-digit PIN</button>
+      <button type="button" className="link-btn" aria-pressed={credential === "pin"} disabled={busy} onClick={() => { setCredential("pin"); setError(""); setFields({}); }}>6-digit PIN</button>
       <span aria-hidden="true"> · </span>
-      <button type="button" className="link-btn" aria-pressed={credential === "password"} onClick={() => { setCredential("password"); setError(""); setFields({}); }}>Password</button>
+      <button type="button" className="link-btn" aria-pressed={credential === "password"} disabled={busy} onClick={() => { setCredential("password"); setError(""); setFields({}); }}>Password</button>
     </div>}
     {mode === "signin"
       ? credential === "pin" ? <label className="field"><span className="field__label">6-digit PIN</span>
@@ -91,7 +100,7 @@ export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }
         {fieldError("pin")}
         <span className="field__hint">Forgot it? {recoveryEnabled && <><Link href="/forgot-password?method=mobile">Recover mobile PIN</Link> (verified numbers only), or </>}<a href={whatsappHref("Hello, I forgot my sign-in PIN. Please help me verify my identity and recover my account.")} target="_blank" rel="noopener noreferrer">contact our team</a>.</span></label>
       : <label className="field"><span className="field__label">Password</span>
-          <span className="input-wrap"><LockKeyhole size={18}/><input type={showPin ? "text" : "password"} autoComplete="current-password" required maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your account password"/></span>
+          <span className="input-wrap"><LockKeyhole size={18}/><input type={showPin ? "text" : "password"} autoComplete="current-password" required maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your account password"/><button type="button" className="icon-btn" aria-label={showPin ? "Hide password" : "Show password"} onClick={() => setShowPin((value) => !value)}>{showPin ? <EyeOff size={18}/> : <Eye size={18}/>}</button></span>
           {fieldError("password")}
           <span className="field__hint">Password works for accounts that have set one. <Link href="/forgot-password">Forgot password?</Link></span>
         </label>
@@ -100,7 +109,7 @@ export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }
         <label className="check-row"><input type="checkbox" checked={whatsappConsent} onChange={(e) => setWhatsappConsent(e.target.checked)}/> Send me WhatsApp updates and reminders (birthday wishes, renewals, offers).</label>
         <label className="check-row"><input type="checkbox" checked={emailConsent} onChange={(e) => setEmailConsent(e.target.checked)}/> Send me email reminders too, once I add my email.</label>
         <label className="field"><span className="field__label">Password <em>optional</em></span>
-          <span className="input-wrap"><LockKeyhole size={18}/><input type={showPin ? "text" : "password"} autoComplete="new-password" maxLength={128} minLength={PASSWORD_MIN} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Set a password for another sign-in option"/></span>
+          <span className="input-wrap"><LockKeyhole size={18}/><input type={showPin ? "text" : "password"} autoComplete="new-password" maxLength={128} minLength={PASSWORD_MIN} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Set a password for another sign-in option"/><button type="button" className="icon-btn" aria-label={showPin ? "Hide password" : "Show password"} onClick={() => setShowPin((value) => !value)}>{showPin ? <EyeOff size={18}/> : <Eye size={18}/>}</button></span>
           {fieldError("password")}
           <span className="field__hint">Leave blank to sign in with PIN only. A password lets you also sign in with your mobile number.</span>
         </label>
