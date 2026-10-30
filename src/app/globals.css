@@ -3776,3 +3776,51 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
   .wa-inbox__compose { flex-wrap: wrap; }
   .wa-inbox__compose button { justify-content: center; }
 }
+
+
+/* Consistent feedback for encrypted UI actions on all screens. */
+.api-activity {
+  position: fixed; z-index: 1100; right: max(16px, env(safe-area-inset-right));
+  bottom: max(18px, env(safe-area-inset-bottom)); display: inline-flex;
+  align-items: center; gap: 11px; max-width: calc(100vw - 32px);
+  padding: 13px 18px; border-radius: 15px;
+  color: #fff; background: #202a46; box-shadow: 0 12px 38px #101c3960;
+  font-size: .85rem; font-weight: 650; pointer-events: none;
+}
+.api-activity__spin { flex: none; animation: api-working-spin .9s linear infinite; }
+@keyframes api-working-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .api-activity__spin { animation-duration: 2.5s; } }
+
+/* Focused credential editing: one operation and one primary action at a time. */
+.team-credentials { margin-top: 16px; padding: clamp(16px, 3vw, 24px); border: 1px solid #d8e2f3;
+  background: #fff; border-radius: 18px; box-shadow: 0 4px 15px #0d2b6110; display: grid; gap: 18px; min-width: 0; }
+.team-credentials__heading { display: flex; gap: 12px; align-items: center; }
+.team-credentials__heading h3 { margin: 0 0 3px; font-size: 1.12rem; color: #17253e; }
+.team-credentials__heading p { margin: 0; color: #657188; font-size: .85rem; }
+.team-credentials__icon { width: 43px; height: 43px; border-radius: 13px; display: grid; place-items: center;
+  background: #eaf0ff; color: #345ac8; flex: none; }
+.team-credentials__tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px; padding: 5px; max-width: 380px; border-radius: 12px; background: #edf2f9; }
+.team-credentials__tabs button { display: flex; justify-content: center; align-items: center; gap: 7px;
+  min-height: 42px; border: 1px solid transparent; border-radius: 9px; font: inherit; font-size: .86rem;
+  font-weight: 700; color: #53627b; background: transparent; cursor: pointer; }
+.team-credentials__tabs button.is-active { color: #24489b; border-color: #d2dff5; background: #fff;
+  box-shadow: 0 2px 6px #12356713; }
+.team-credentials__tabs button:disabled { opacity: .52; cursor: not-allowed; }
+.team-credentials__form { display: grid; gap: 17px; }
+.team-credentials__form .field { max-width: 620px; }
+.team-credentials__form .field__hint { color: #68778d; }
+.team-credentials__auto { display: inline-flex; align-items: center; gap: 10px; width: fit-content; font-size: .87rem; color: #354766; cursor: pointer; }
+.team-credentials__auto input { width: 17px; height: 17px; accent-color: #345ac8; }
+.team-credentials__footer { display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 16px; border-top: 1px solid #e7edf7; padding-top: 16px; }
+.team-credentials__footer > span { display: inline-flex; align-items: flex-start; gap: 8px; color: #66738a;
+  font-size: .78rem; max-width: 470px; }
+.team-credentials__footer > span svg { flex: none; }
+.team-credentials__footer .btn { display: inline-flex; gap: 8px; align-items: center; justify-content: center; min-width: 153px; }
+.team-credentials__footer .btn:disabled { filter: grayscale(.35); opacity: .48; cursor: not-allowed; }
+@media(max-width:600px) {
+  .api-activity { right: 12px; left: 12px; justify-content: center; bottom: 12px; }
+  .team-credentials__tabs { max-width: none; }
+  .team-credentials__footer .btn { width: 100%; }
+}
