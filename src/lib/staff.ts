@@ -8,18 +8,19 @@ import { PublicError } from "@/lib/errors";
 import { deliverNotifications, queueNotification } from "@/lib/notifications";
 import { isMainOwner, sanitizePermissions, sanitizeScope, SCOPE_PREFIX, type Permission } from "@/lib/permissions";
 import { serviceCatalog } from "@/lib/services";
+import { MENU_PREFIX, sanitizedMenu, STAFF_MENU_AREAS, type StaffMenuId } from "@/lib/sidebar-permissions";
 import { site } from "@/lib/site";
 import { openWorkCount } from "@/lib/auth";
 import { cleanName, looksLikeEmail, normalizeEmail, normalizePhone, passwordProblem } from "@/lib/validation";
 import { generatePin, isWeakPin, pinProblem } from "@/lib/mobile-login-core";
 
-export type StaffMember = { id: string; name: string; email: string; phone: string | null; role: string; permissions: Permission[]; categories: string[]; verified: boolean; createdAt: string; disabled: boolean; tempPassword: boolean; hasPin: boolean };
+export type StaffMember = { id: string; name: string; email: string; phone: string | null; role: string; permissions: Permission[]; categories: string[]; sidebar: StaffMenuId[]; verified: boolean; createdAt: string; disabled: boolean; tempPassword: boolean; hasPin: boolean };
 
 export async function listStaff(): Promise<StaffMember[]> {
   const rows = await db.select().from(users).where(and(inArray(users.role, ["admin", "staff"]), isNull(users.deletedAt))).orderBy(asc(users.role), asc(users.name));
   return rows.map((row) => ({
     id: row.id, name: row.name, email: row.email, phone: row.phone, role: row.role,
-    permissions: row.role === "admin" ? [] : sanitizePermissions(row.permissions), categories: row.role === "admin" ? [] : sanitizeScope(row.permissions), verified: Boolean(row.emailVerifiedAt), createdAt: row.createdAt.toISOString(), disabled: Boolean(row.disabledAt), tempPassword: row.mustChangePassword, hasPin: Boolean(row.loginPinHash),
+    permissions: row.role === "admin" ? [] : sanitizePermissions(row.permissions), categories: row.role === "admin" ? [] : sanitizeScope(row.permissions), sidebar: row.role === "admin" ? [] : sanitizedMenu(row.permissions), verified: Boolean(row.emailVerifiedAt), createdAt: row.createdAt.toISOString(), disabled: Boolean(row.disabledAt), tempPassword: row.mustChangePassword, hasPin: Boolean(row.loginPinHash),
   }));
 }
 
@@ -85,7 +86,15 @@ function storedAccess(input: unknown) {
   if (unknown.length) throw new PublicError("One of the service categories is not recognised. Refresh the page and try again.", 400);
   // Category limits only mean something for requests, so keep them only when requests is ticked.
   const scoped = permissions.includes("requests") ? categories : [];
-  return { permissions, categories: scoped, stored: [...permissions, ...scoped.map((slug) => `${SCOPE_PREFIX}${slug}`)] };
+  const sidebar = sanitizedMenu(input);
+  const baseFromTabs = new Set(sidebar.map(id => STAFF_MENU_AREAS.find(item => item.id === id)!.base));
+  // If explicit per-menu access was configured, automatically include the minimum backend
+  // permission needed by each selected tab. An owner can separately grant charge access.
+  const effective = sidebar.length
+    ? sanitizePermissions([...baseFromTabs, ...permissions.filter(permission => permission === "charge")])
+    : permissions;
+  return { permissions: effective, categories: scoped,
+    stored: [...effective, ...scoped.map(slug => `${SCOPE_PREFIX}${slug}`), ...sidebar.map(id => `${MENU_PREFIX}${id}`)] };
 }
 
 export async function addStaff(
@@ -97,7 +106,7 @@ export async function addStaff(
   if (!looksLikeEmail(email)) throw new PublicError("Enter a valid email address.", 400, { fields: { email: "Enter a valid email address." } });
   const access = role === "admin" ? { permissions: [] as Permission[], categories: [] as string[], stored: [] as string[] } : storedAccess(input.permissions);
   const { permissions, stored } = access;
-  if (role === "staff" && !permissions.length) throw new PublicError("Tick at least one thing this person may do.", 400, { fields: { permissions: "Choose at least one." } });
+  if (role === "staff" && !permissions.length) throw new PublicError("Choose at least one staff module.", 400, { fields: { permissions: "Choose a module." } });
   const phone = cleanPhoneInput(input.phone);
   const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1);
   let userId: string;
