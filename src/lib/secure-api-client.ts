@@ -28,7 +28,7 @@ export class SecureApiError extends Error {
 const JSON_TIMEOUT_MS = 30_000;
 const FILE_TIMEOUT_MS = 120_000;
 
-/** fetch with a time limit; offline or stalled connections become a readable SecureApiError instead of "Failed to fetch". */
+/** Fetch errors can be caused by the hosting proxy, not just the visitor's internet connection. */
 async function send(init: RequestInit, timeoutMs: number): Promise<Response> {
   if (typeof navigator !== "undefined" && navigator.onLine === false) throw new SecureApiError(0, { error: networkMessage("offline"), code: "offline" });
   const controller = new AbortController();
@@ -36,8 +36,10 @@ async function send(init: RequestInit, timeoutMs: number): Promise<Response> {
   try {
     return await fetch(ROUTE, { ...init, signal: controller.signal });
   } catch (error) {
-    const timedOut = error instanceof DOMException && error.name === "AbortError";
-    throw new SecureApiError(timedOut ? 408 : 0, { error: networkMessage(timedOut ? "timeout" : "offline"), code: timedOut ? "timeout" : "offline" });
+    const timedOut = controller.signal.aborted || (error instanceof Error && error.name === "AbortError");
+    const offline = !timedOut && typeof navigator !== "undefined" && navigator.onLine === false;
+    const kind = timedOut ? "timeout" : offline ? "offline" : "unavailable";
+    throw new SecureApiError(timedOut ? 408 : 0, { error: networkMessage(kind), code: kind });
   } finally { clearTimeout(timer); }
 }
 
@@ -162,7 +164,9 @@ export async function secureResult<T>(operation: string, input: unknown = {}) {
     return { ok: true as const, status: 200, result: await secureApi<T>(operation, input) };
   } catch (error) {
     if (error instanceof SecureApiError) return { ok: false as const, status: error.status, result: error.body as T };
-    return { ok: false as const, status: 0, result: { error: networkMessage("offline") } as T };
+    // Encryption, decoding and unexpected client errors are not proof of being offline.
+    // A failed sealed-response decrypt can indicate that the browser has an old build.
+    return { ok: false as const, status: 0, result: { error: networkMessage("secure"), code: "secure_failed" } as T };
   }
 }
 
