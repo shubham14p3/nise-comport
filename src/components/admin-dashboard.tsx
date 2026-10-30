@@ -320,7 +320,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "gallery", label: "Gallery photos", icon: Images, needs: "content" },
   { id: "testimonials", label: `Testimonials`, icon: Star, needs: "content" },
   { id: "campaigns", label: "WhatsApp", icon: Megaphone, needs: "campaigns" },
-  { id: "chats", label: "WhatsApp chats", icon: Megaphone, needs: "whatsapp" },
+  { id: "chats", label: "WhatsApp chats", icon: Megaphone, needs: ["whatsapp", "campaigns"] },
   { id: "contacts", label: "Contacts", icon: Contact, needs: "campaigns" },
   { id: "outreach", label: "Birthdays & renewals", icon: Cake, needs: "staff" },
   { id: "integrations", label: "System & connections", icon: ShieldCheck, needs: "admin" },
