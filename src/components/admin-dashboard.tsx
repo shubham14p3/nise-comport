@@ -2,7 +2,6 @@
 
 import { AdminPager } from "@/components/admin-pager";
 import { FormEvent, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import RequestFlow from "@/components/request-flow";
 import dynamic from "next/dynamic";
 import SiteHeader from "@/components/site-header";
 import Portal from "@/components/portal";
@@ -10,11 +9,8 @@ import Portal from "@/components/portal";
 import { WhatsAppIcon } from "@/components/icons";
 
 
-import PanSavedDetails from "@/components/pan-saved-details";
-import RequestExtras from "@/components/request-extras";
-import CounterDesk from "@/components/counter-desk";
-import FindCustomerPanel from "@/components/find-customer-panel";
 import { ArrowRight, Bell, Cake, ClipboardList, Contact, UserRound, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images, PanelLeftClose, PanelLeftOpen, Store, X } from "lucide-react";
+import { createLatestRequest } from "@/lib/latest-request";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
 
 
@@ -38,6 +34,12 @@ import { secureApi, secureFile } from "@/lib/secure-api-client";
 
 import { STAFF_PERMISSIONS, type Permission } from "@/lib/permissions";
 import Link from "next/link";
+
+const RequestFlow = dynamic(() => import("@/components/request-flow"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const PanSavedDetails = dynamic(() => import("@/components/pan-saved-details"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const RequestExtras = dynamic(() => import("@/components/request-extras"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const CounterDesk = dynamic(() => import("@/components/counter-desk"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const FindCustomerPanel = dynamic(() => import("@/components/find-customer-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
 
 const SystemConnectionsPanel = dynamic(() => import("@/components/system-connections-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
 const PanImportPanel = dynamic(() => import("@/components/pan-import-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
@@ -81,6 +83,7 @@ const label = (value: string) => { const text = value.replaceAll("_", " "); retu
 const when = (value: string) => new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 
 function RequestQueue({ canCharge }: { canCharge: boolean }) {
+  const listRequest = useRef(createLatestRequest());
   const [jobs, setJobs] = useState<Job[]>([]);
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [status, setStatus] = useState("");
@@ -100,12 +103,15 @@ function RequestQueue({ canCharge }: { canCharge: boolean }) {
   const [counts, setCounts] = useState({ jobs: 0, requests: 0 });
 
   async function load(nextStatus = status, nextQ = q, jp = jobPage, rp = requestPage, size = pageSize) {
+    const current = listRequest.current.begin();
     setError("");
     try {
       const result = await secureApi<Snapshot>("J2w7L5pD9nV4", { status: nextStatus, q: nextQ, jobPage: jp, requestPage: rp, pageSize: size });
+      if (!current()) return;
       setJobs(result.jobs); setRequests(result.requests); setCounts(result.counts);
       setStatus(result.filters.status); setQ(result.filters.q); setLoaded(true);
     } catch (reason) {
+      if (!current()) return;
       setError(reason instanceof Error ? reason.message : "Could not load the staff queue.");
       setLoaded(true);
     }
@@ -122,18 +128,19 @@ function RequestQueue({ canCharge }: { canCharge: boolean }) {
   }, [detail]);
 
   useEffect(() => {
-    let active = true;
+    const gate = listRequest.current;
+    const current = gate.begin();
     secureApi<Snapshot>("J2w7L5pD9nV4", { status: "", q: "", jobPage: 0, requestPage: 0, pageSize: 20 })
       .then((result) => {
-        if (!active) return;
+        if (!current()) return;
         setJobs(result.jobs); setRequests(result.requests); setCounts(result.counts);
         setStatus(result.filters.status); setQ(result.filters.q); setLoaded(true);
       })
       .catch((reason) => {
-        if (!active) return;
+        if (!current()) return;
         setError(reason instanceof Error ? reason.message : "Could not load the staff queue."); setLoaded(true);
       });
-    return () => { active = false; };
+    return () => gate.invalidate();
   }, []);
 
   async function filter(event: FormEvent<HTMLFormElement>) {
@@ -345,6 +352,22 @@ const NAV_SECTIONS = [
   { id: "website", title: "Website & setup", tabs: ["content", "gallery", "testimonials", "prices", "hardware", "legal", "integrations"] },
 ] as const;
 
+/** Load each form on first open, then preserve it while its accordion is closed. */
+function TeamWorkspace({ meRole, meId }: { meRole: string; meId?: string }) {
+  const [staffMounted, setStaffMounted] = useState(false);
+  const [siteTeamMounted, setSiteTeamMounted] = useState(false);
+  return <div className="admin-team-groups">
+    <details className="admin-accordion" onToggle={(event) => { if (event.currentTarget.open) setStaffMounted(true); }}>
+      <summary><UsersRound size={17}/> Staff & owner login accounts</summary>
+      {staffMounted && <TeamPanel meRole={meRole} meId={meId}/>}
+    </details>
+    <details className="admin-accordion" onToggle={(event) => { if (event.currentTarget.open) setSiteTeamMounted(true); }}>
+      <summary><UsersRound size={17}/> Website team profiles & missing staff logins</summary>
+      {siteTeamMounted && <SiteTeamPanel/>}
+    </details>
+  </div>;
+}
+
 const readHash = () => window.location.hash.slice(1);
 const subscribeHash = (callback: () => void) => { window.addEventListener("hashchange", callback); return () => window.removeEventListener("hashchange", callback); };
 
@@ -366,37 +389,8 @@ export default function AdminDashboard({ me, viewAsStaff = false, services }: { 
   const active = picked ?? fromHash ?? tabs[0]?.id;
   const [summary, setSummary] = useState<{ unread: number; waiting: number; callbacks: number } | null>(null);
   const unread = summary?.unread ?? 0;
-  useEffect(() => {
-    if (active !== "inbox") return;
-    let alive = true;
-    const check = () => secureApi<{ unread: number; waiting: number; callbacks: number }>("I5x2N8kQ3wT6", { count: true }).then((result) => { if (alive) setSummary(result); }).catch(() => undefined);
-    void check();
-    const poll = () => { if (document.visibilityState === "visible") void check(); };
-    const timer = window.setInterval(poll, 60_000);
-    document.addEventListener("visibilitychange", poll);
-    return () => {
-      alive = false;
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", poll);
-    };
-  }, [active]);
-  const canMail = isOwner || effectivePermissions.includes("mail");
   const [mailUnread, setMailUnread] = useState(0);
-  useEffect(() => {
-    if (!canMail || active !== "mail") return;
-    let alive = true;
-    const check = () => secureApi<{ unread: number }>("Q3x8M5wT2kB7", { view: "meta" }).then((result) => { if (alive) setMailUnread(result.unread); }).catch(() => undefined);
-    void check();
-    const poll = () => { if (document.visibilityState === "visible") void check(); };
-    const timer = window.setInterval(poll, 60_000);
-    document.addEventListener("visibilitychange", poll);
-    return () => {
-      alive = false;
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", poll);
-    };
-  }, [canMail, active]);
-  const clearUnread = useCallback(() => setSummary((value) => value ? { ...value, unread: 0 } : value), []);
+  const clearUnread = useCallback(() => setSummary((value) => value ? { ...value, unread: 0 } : value), [setSummary]);
   const [railOpen, setRailOpen] = useState(true);
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
   const activeGroup = expandedGroup ?? NAV_SECTIONS.find((section) => (section.tabs as readonly string[]).includes(active))?.id ?? "work";
@@ -451,7 +445,7 @@ export default function AdminDashboard({ me, viewAsStaff = false, services }: { 
           <AdminMetric tone="violet" icon={<Bell size={22}/>} number={summary.unread} label="New in the inbox" onClick={() => document.querySelector(".inbox__feed")?.scrollIntoView({ behavior: "smooth" })}/>
           {can("records") && <AdminMetric tone="green" icon={<FolderLock size={22}/>} number="Search" label="Customer records" onClick={() => choose("records")}/>}
         </div>}
-        {active === "inbox" && <InboxPanel onSeen={clearUnread} viewer={{id:me.id,role:me.role}}/>}
+        {active === "inbox" && <InboxPanel onSummary={setSummary} onSeen={clearUnread} viewer={{id:me.id,role:me.role}}/>}
         {active === "mail" && <MailClient mode="staff" onUnread={setMailUnread}/>}
         {active === "requests" && <RequestQueue canCharge={isOwner || effectivePermissions.includes("charge")}/>}
         {active === "records" && <RecordsPanel/>}
@@ -474,10 +468,7 @@ export default function AdminDashboard({ me, viewAsStaff = false, services }: { 
         {active === "loyalty" && <LoyaltyPanel/>}
         {active === "payments" && <PaymentsPanel canCharge={isOwner || effectivePermissions.includes("charge")}/>}
         {active === "integrations" && <SystemConnectionsPanel/>}
-        {active === "team" && <div className="admin-team-groups">
-          <details className="admin-accordion"><summary><UsersRound size={17}/> Staff & owner login accounts</summary><TeamPanel meRole={me.role} meId={me.id}/></details>
-          <details className="admin-accordion"><summary><UsersRound size={17}/> Website team profiles & missing staff logins</summary><SiteTeamPanel/></details>
-        </div>}
+        {active === "team" && <TeamWorkspace meRole={me.role} meId={me.id}/>}
         {active === "pan" && <PanImportPanel/>}
         {active === "wallet" && <WalletCreditForm canCorrect={isOwner}/>}
       </section>

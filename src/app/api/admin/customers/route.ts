@@ -3,6 +3,7 @@ import { and,count,desc,eq,ilike,isNull,ne,or } from "drizzle-orm";
 import { z } from "zod";
 import { activityLog,counterVisits,printJobs,serviceRequests,sessions,users } from "@/db/schema";
 import { requireStaff,openWorkCount } from "@/lib/auth";
+import { customerPage } from "@/lib/customer-pagination";
 import { db } from "@/lib/db";
 import { cleanName,looksLikeEmail,normalizeEmail,normalizePhone } from "@/lib/validation";
 import { profileChanges,formatAuditChange } from "@/lib/customer-audit";
@@ -23,7 +24,12 @@ const editSchema=z.object({
   confirm:z.string().optional(),
 });
 async function owner() {return requireStaff("admin");}
-function publicCustomer(u:typeof users.$inferSelect){
+const customerColumns = {
+  id:users.id,name:users.name,email:users.email,phone:users.phone,role:users.role,
+  emailVerifiedAt:users.emailVerifiedAt,phoneVerifiedAt:users.phoneVerifiedAt,
+  createdAt:users.createdAt,updatedAt:users.updatedAt,disabledAt:users.disabledAt,deletedAt:users.deletedAt,
+};
+function publicCustomer(u:Pick<typeof users.$inferSelect,keyof typeof customerColumns>){
   return {id:u.id,name:u.name,email:u.email,phone:u.phone,role:u.role,
     emailVerified:Boolean(u.emailVerifiedAt),phoneVerified:Boolean(u.phoneVerifiedAt),
     createdAt:u.createdAt.toISOString(),updatedAt:u.updatedAt.toISOString(),
@@ -42,7 +48,7 @@ export async function GET(request:NextRequest){
       if(!z.uuid().safeParse(id).success)throw new PublicError("Invalid customer ID.",400);
       // Customer history belongs to a user ID, regardless of their staff/owner role.
       // Team permissions remain managed exclusively by the Team endpoint.
-      const [user]=await db.select().from(users).where(and(eq(users.id,id),ne(users.role,"demo"))).limit(1);
+      const [user]=await db.select(customerColumns).from(users).where(and(eq(users.id,id),ne(users.role,"demo"))).limit(1);
       if(!user)throw new PublicError("Account not found.",404);
       const [history,requests,prints,visits,requestCount,printCount,visitCount]=await Promise.all([
         db.select({
@@ -80,10 +86,15 @@ export async function GET(request:NextRequest){
     const includeTeam=request.nextUrl.searchParams.get("includeTeam")!=="0";
     const pattern="%"+q.replace(/[\\%_]/g,"\\$&")+"%";
     const filter=q?or(ilike(users.name,pattern),ilike(users.email,pattern),ilike(users.phone,pattern)):undefined;
-    const rows=await db.select().from(users).where(and(
+    const {page,pageSize,offset}=customerPage(request.nextUrl.searchParams);
+    const where=and(
       includeTeam?ne(users.role,"demo"):eq(users.role,"customer"),includeArchived?undefined:isNull(users.deletedAt),filter
-    )).orderBy(desc(users.createdAt)).limit(50);
-    return NextResponse.json({users:rows.map(publicCustomer)},{headers:{"cache-control":"private, no-store"}});
+    );
+    const [rows,[totals]]=await Promise.all([
+      db.select(customerColumns).from(users).where(where).orderBy(desc(users.createdAt),desc(users.id)).limit(pageSize).offset(offset),
+      db.select({total:count()}).from(users).where(where),
+    ]);
+    return NextResponse.json({users:rows.map(publicCustomer),total:totals.total,page,pageSize},{headers:{"cache-control":"private, no-store"}});
   }catch(error){return apiError(error);}
 }
 

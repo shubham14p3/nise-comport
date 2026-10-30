@@ -26,7 +26,7 @@ export const users = pgTable("users", {
   loginPinHash: text("login_pin_hash"),
   /** "mobile" when the account was created with a mobile number (its email is a placeholder until one is added). */
   signupMethod: text("signup_method").notNull().default("email"),
-}, (table) => [uniqueIndex("users_email_unique").on(table.email)]);
+}, (table) => [uniqueIndex("users_email_unique").on(table.email), index("users_phone_idx").on(table.phone), index("users_created_id_idx").on(table.createdAt.desc(), table.id.desc())]);
 
 export const emailOtps = pgTable("email_otps", {
   id: uuid("id").defaultRandom().primaryKey(), email: text("email").notNull(), codeHash: text("code_hash").notNull(),
@@ -75,7 +75,7 @@ export const storedFiles = pgTable("stored_files", {
   requestId: uuid("request_id").references(() => serviceRequests.id, { onDelete: "cascade" }), objectKey: text("object_key").notNull(),
   originalName: text("original_name").notNull(), mimeType: text("mime_type").notNull(), sizeBytes: integer("size_bytes").notNull(),
   retainUntil: timestamp("retain_until", { withTimezone: true }).notNull(), pageCount: integer("page_count"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [index("stored_files_request_created_idx").on(table.requestId, table.createdAt.desc())]);
 
 export const printJobs = pgTable("print_jobs", {
   id: uuid("id").defaultRandom().primaryKey(), reference: text("reference").notNull().unique(), userId: uuid("user_id").notNull().references(() => users.id),
@@ -429,7 +429,7 @@ export const activityLog = pgTable("activity_log", {
   refType: text("ref_type"), refId: text("ref_id"),
   actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [index("activity_log_created_idx").on(table.createdAt), index("activity_log_permission_created_idx").on(table.permission, table.createdAt)]);
+}, (table) => [index("activity_log_created_idx").on(table.createdAt), index("activity_log_permission_created_idx").on(table.permission, table.createdAt), index("activity_log_ref_created_idx").on(table.refType, table.refId, table.createdAt.desc())]);
 
 /** Separate from the 9,890 legacy register-based approvals in record_claims.
  * Modern mobile-record claims are never automatically approved by an imported
