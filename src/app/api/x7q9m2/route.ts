@@ -31,6 +31,7 @@ const OPS = {
   "R6y0D3sJ8vM2": { method: "DELETE", path: "/api/auth/session" },
   "T2f9K4pW7cL1": { method: "PATCH", path: "/api/profile" },
   "B7n3Q8xH5rV0": { method: "POST", path: "/api/account/password" },
+  "P9x4Q2wM7dK6": { method: "POST", path: "/api/account/pin" },
   "M1z6P9dS4kJ7": { method: "POST", path: "/api/account/email" },
   "F8c2L5vN0qR3": { method: "POST", path: "/api/account/email/confirm" },
   "Y4h7T1mK6pD9": { method: "DELETE", path: "/api/account/sessions" },
