@@ -38,7 +38,7 @@ export default function CustomerPreviewWorkspace() {
     catch (e) { setError(e instanceof Error ? e.message : "Unable to load preview."); }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void Promise.resolve().then(load); }, [load]);
   useEffect(() => {
     const timer = window.setInterval(() => setClock(Date.now()), 1000);
     return () => window.clearInterval(timer);
