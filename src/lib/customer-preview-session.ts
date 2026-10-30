@@ -11,8 +11,8 @@ function key() {
   if (!secret || secret.length < 32) throw new Error("Preview signing requires INTERNAL_API_TOKEN (32+ characters).");
   return secret;
 }
-export function createPreviewGrant(actor: string, target: string, now = Date.now()): string {
-  const grant: PreviewGrant = { actor, target, started: now, until: now + PREVIEW_MS };
+export function createPreviewGrant(actor: string, target: string, now = Date.now(), started = now, until = now + PREVIEW_MS): string {
+  const grant: PreviewGrant = { actor, target, started, until };
   const payload = Buffer.from(JSON.stringify(grant), "utf8").toString("base64url");
   const signature = createHmac("sha256", key()).update(payload).digest("base64url");
   return `${payload}.${signature}`;
