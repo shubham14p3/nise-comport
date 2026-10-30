@@ -1,7 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { and, count, desc, eq, isNull, like, not, or, sql } from "drizzle-orm";
 import { hash } from "@node-rs/argon2";
-import { activityLog, contacts, counterVisits, users, walletEntries } from "@/db/schema";
+import { activityLog, contacts, counterVisits, sessions, users, walletEntries } from "@/db/schema";
+import { sendEmailChangedNotice } from "@/lib/email";
 import { db } from "@/lib/db";
 import { isPlaceholderEmail } from "@/lib/mobile-login-core";
 import { PublicError } from "@/lib/errors";
@@ -92,7 +93,7 @@ export async function updateCounterCustomer(id: string, nameInput: string, email
   const name = cleanName(nameInput);
   if (name.length < 2 || name.length > 100) throw new PublicError("Enter a valid customer name.", 400);
   if (emailInput?.trim() && !looksLikeEmail(normalizeEmail(emailInput))) throw new PublicError("Enter a valid customer email address.", 400);
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     const [account] = await tx.select().from(users).where(and(eq(users.id, id), isNull(users.deletedAt))).limit(1);
     if (!account) throw new PublicError("Customer account not found.", 404);
     const email = emailInput?.trim() ? normalizeEmail(emailInput) : account.email;
@@ -113,8 +114,18 @@ export async function updateCounterCustomer(id: string, nameInput: string, email
       title: `${actor.name} updated ${change.label} at the counter`.slice(0, 200),
       detail: formatAuditChange(change), refType: "customer-profile", refId: id, actorId: actor.id,
     })));
-    return { id: saved.id, name: saved.name, email: saved.email, changed: changes.length > 0 };
+    return { id: saved.id, name: saved.name, email: saved.email, changed: changes.length > 0, previousEmail: account.email };
   });
+  if (result.email !== result.previousEmail) {
+    // Changing an account identifier invalidates existing sessions; do not silently
+    // keep logged-in browsers using the old email.
+    await db.delete(sessions).where(eq(sessions.userId, result.id));
+    if (!isPlaceholderEmail(result.previousEmail)) {
+      await sendEmailChangedNotice(result.previousEmail, result.name, result.email).catch((error) =>
+        console.error("[counter] email change notice failed", error instanceof Error ? error.message : "unknown"));
+    }
+  }
+  return { id: result.id, name: result.name, email: result.email, changed: result.changed };
 }
 
 /**
