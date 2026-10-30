@@ -3884,3 +3884,33 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
   .team-credentials__input-row { grid-template-columns: minmax(0,1fr); gap: 8px; }
   .team-credentials__auto { margin: 0; }
 }
+
+/* NiSE COMPORT animated global request status; no downloaded or proprietary fonts. */
+.api-activity--branded { top: 14px; left: 50%; right: auto; bottom: auto; transform: translateX(-50%); overflow: hidden;
+  width: min(350px,calc(100vw - 28px)); max-width: none; background: rgba(255,255,255,.98); color: #15264d;
+  border: 1px solid #d3dff5; box-shadow: 0 14px 50px #0a22572b; padding: 10px 16px 14px;
+  display: flex; align-items: center; gap: 14px; font-size: .82rem; z-index: 9999; }
+.api-activity__mark { position: relative; display: grid; place-items: center; width: 88px; height: 44px; flex: none; }
+.api-activity__logo { object-fit: contain; width: 78px; height: auto; max-height: 34px; animation: nc-logo-breathe 1.8s ease-in-out infinite; }
+.api-activity__orbit { position: absolute; left: -2px; top: 0; width: 6px; height: 6px; border-radius: 50%;
+  background: #8c4ff5; box-shadow: 0 0 0 3px #8c4ff523; animation: nc-logo-orbit 1.6s ease-in-out infinite alternate; }
+.api-activity__description { display: grid; align-content: center; gap: 2px; min-width: 0; }
+.api-activity__description strong { font-family: "Cooper Black", "Cooper Std Black", Georgia, serif; font-size: .92rem; letter-spacing: .008em; color: #182851; }
+.api-activity__description small { color: #677794; font-size: .76rem; white-space: nowrap; }
+.api-activity__track { position: absolute; bottom: 0; inset-inline: 0; height: 3px; background: #e8eafa; overflow: hidden; }
+.api-activity__track > span { display: block; height: 100%; width: 35%; border-radius: 99px;
+  background: linear-gradient(90deg,#1c72ee,#a84ad6); animation: nc-progress-move 1.25s ease-in-out infinite alternate; }
+@keyframes nc-logo-breathe { 0%,100% { transform: scale(.96); opacity: .83; } 50% { transform: scale(1.035); opacity: 1; } }
+@keyframes nc-logo-orbit { 0% { transform: translate(0,0); } 100% { transform: translate(82px,38px); } }
+@keyframes nc-progress-move { 0% { transform: translateX(-100%); } 100% { transform: translateX(295%); } }
+.nc-loading-page { min-height: 45vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  text-align: center; padding: 50px 20px; color: #182851; }
+.nc-loading-page__mark { position: relative; height: 90px; width: 176px; display: grid; place-items: center; }
+.nc-loading-page__mark img { max-width: 150px; width: auto; height: auto; animation: nc-logo-breathe 1.8s ease-in-out infinite; }
+.nc-loading-page__mark:after { content: ""; position: absolute; inset: -6px 0; border: 3px solid transparent; border-top-color: #3c69de;
+  border-right-color: #af59e7; border-radius: 50%; animation: api-working-spin 1.8s linear infinite; }
+.nc-loading-page b { font-family: "Cooper Black", "Cooper Std Black", Georgia, serif; font-size: 1.35rem; }
+.nc-loading-page p { color: #677794; margin: 0; font-size: .88rem; }
+@media(prefers-reduced-motion:reduce) {
+  .api-activity__orbit,.api-activity__logo,.api-activity__track > span,.nc-loading-page__mark img,.nc-loading-page__mark:after { animation: none; }
+}
