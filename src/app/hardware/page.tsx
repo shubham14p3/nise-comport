@@ -9,7 +9,7 @@ import { webPageLd } from "@/lib/structured-data";
 
 export const metadata: Metadata = pageMetadata(
   "Hardware, PC Build & Parts in Jamshedpur",
-  "Build a custom PC or get the latest price on RAM, SSD, graphics cards, monitors, printer ink and CCTV from NISE COMPORT, Telco. Send your list on WhatsApp or to our desk.",
+  "Build a custom PC or get the latest price on RAM, SSD, graphics cards, monitors, printer ink and CCTV from NiSE COMPORT, Telco. Send your list on WhatsApp or to our desk.",
   "/hardware",
 );
 

@@ -14,7 +14,7 @@ import { itemListLd } from "@/lib/structured-data";
 
 export const metadata: Metadata = pageMetadata(
   "All CSC & Digital Services in Jamshedpur",
-  "PAN, Aadhaar guidance, Jharkhand certificates, AEPS banking, insurance, student forms, website creation, printing and PC repair help at NISE COMPORT, Kharangajhar, Telco.",
+  "PAN, Aadhaar guidance, Jharkhand certificates, AEPS banking, insurance, student forms, website creation, printing and PC repair help at NiSE COMPORT, Kharangajhar, Telco.",
   "/services",
   { languages: { "hi-IN": "/hi", "bn-IN": "/bn" } },
 );
@@ -46,6 +46,6 @@ export default async function ServicesPage() {
         <div className="note-card"><ShieldCheck size={22}/><p><b>Independent service facilitator.</b> We help customers use official and partner services; we do not make government, banking or insurance decisions. Official and third-party fees are separate from our service charge. <Link href="/hi">हिन्दी में सेवाएँ</Link> · <Link href="/bn">বাংলায় পরিষেবা</Link></p></div>
       </div>
     </section>
-    <JsonLd data={itemListLd("NISE COMPORT services", all.map((service) => ({ name: serviceSeoTitle(service), path: `/services/${service.slug}` })))}/>
+    <JsonLd data={itemListLd("NiSE COMPORT services", all.map((service) => ({ name: serviceSeoTitle(service), path: `/services/${service.slug}` })))}/>
   </main>;
 }
