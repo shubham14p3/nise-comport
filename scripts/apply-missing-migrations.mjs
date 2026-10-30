@@ -14,6 +14,8 @@ const url = process.env.DATABASE_URL?.trim();
 if (!url) { console.error("DATABASE_URL is missing."); process.exit(1); }
 const ssl = process.env.DATABASE_SSL?.trim().toLowerCase();
 const pool = new pg.Pool({ connectionString: url, max: 1, ssl: ssl && ssl !== "false" ? { rejectUnauthorized: false } : undefined });
+// Fail after 15 s when a table is locked by another connection (for example the running app), instead of waiting forever.
+pool.on("connect", (client) => { client.query("set lock_timeout = '15s'").catch(() => undefined); });
 // 42P07 table exists, 42710 constraint/object exists, 42701 column exists, 42P16 invalid definition (already set), 42P06 schema exists
 const HARMLESS = new Set(["42P07", "42710", "42701", "42P16", "42P06"]);
 
