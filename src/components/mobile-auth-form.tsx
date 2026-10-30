@@ -55,7 +55,7 @@ export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }
       const passwordSignIn = mode === "signin" && credential === "password";
       const body = mode === "signin"
         ? { action: "signin", phone: byEmailPin ? emailPin.trim().toLowerCase() : mobile && mobile.ok ? mobile.digits : "", pin, website }
-        : { action: "signup", phone: mobile!.ok ? mobile.digits : "", name, ...(password ? { password } : {}), whatsappConsent, emailConsent, website };
+        : { action: "signup", phone: mobile && mobile.ok ? mobile.digits : "", name, ...(password ? { password } : {}), whatsappConsent, emailConsent, website };
       const { ok, result } = await secureResult<Result>(
         passwordSignIn ? "Q7m4kP2vL9sD" : "K7m2Q9xV4cT8",
         passwordSignIn ? { email: mobile && mobile.ok ? mobile.e164 : "", password } : body,
