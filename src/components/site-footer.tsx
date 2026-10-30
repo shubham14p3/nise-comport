@@ -11,6 +11,8 @@ import { site } from "@/lib/site";
 export default function SiteFooter() {
   return <FooterBody
     year={new Date().getFullYear()}
+    mapsUrl={site.mapsUrl}
+    reviewUrl={site.reviewUrl ?? null}
     partners={<PartnerStrip/>}
     hoursByLocale={{
       en: summarizeHours(site.openingHours, "en"),
