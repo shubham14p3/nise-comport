@@ -88,14 +88,14 @@ export async function lookupCounterAccount(id: string, phoneInput: string, pageI
 /** Correct the selected account's name/email without creating another account or moving records.
  * A shop visit alone never updates credentials or changes email ownership.
  */
-export async function updateCounterCustomer(id: string, nameInput: string, emailInput: string, actor: { id: string; name: string }) {
+export async function updateCounterCustomer(id: string, nameInput: string, emailInput: string | undefined, actor: { id: string; name: string }) {
   const name = cleanName(nameInput);
-  const email = normalizeEmail(emailInput);
   if (name.length < 2 || name.length > 100) throw new PublicError("Enter a valid customer name.", 400);
-  if (!looksLikeEmail(email)) throw new PublicError("Enter a valid customer email address.", 400);
+  if (emailInput?.trim() && !looksLikeEmail(normalizeEmail(emailInput))) throw new PublicError("Enter a valid customer email address.", 400);
   return db.transaction(async (tx) => {
     const [account] = await tx.select().from(users).where(and(eq(users.id, id), isNull(users.deletedAt))).limit(1);
     if (!account) throw new PublicError("Customer account not found.", 404);
+    const email = emailInput?.trim() ? normalizeEmail(emailInput) : account.email;
     if (account.role === "admin" || account.role === "staff") {
       throw new PublicError("Team account details must be edited in Team management, not the customer counter.", 403);
     }
