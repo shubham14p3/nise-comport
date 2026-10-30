@@ -45,6 +45,13 @@ export default function CustomerPreviewWorkspace() {
   }, []);
   const seconds = data ? Math.max(0, Math.ceil((data.expiresAt - clock) / 1000)) : 0;
   const expired = data !== null && seconds === 0;
+  useEffect(() => {
+    if (!expired) return;
+    void secureApi(OP, { action: "end" }).catch(() => undefined).finally(() => {
+      router.replace("/desk#customers");
+      router.refresh();
+    });
+  }, [expired, router]);
   const remaining = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 
   async function end() {
