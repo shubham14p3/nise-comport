@@ -30,9 +30,8 @@ const from = option("--from");
 const only = option("--only");
 const pause = args.includes("--pause");
 
-const pool = new pg.Pool({ connectionString: url, max: 1, ssl: ssl && ssl !== "false" ? { rejectUnauthorized: false } : undefined });
-// Fail after 15 s when a table is locked by another connection, instead of waiting forever.
-pool.on("connect", (client) => { client.query("set lock_timeout = '15s'").catch(() => undefined); });
+// Fail after 15 s when a table is locked by another connection, instead of waiting forever (set as a connection option, so no extra query overlaps).
+const pool = new pg.Pool({ connectionString: url, max: 1, options: "-c lock_timeout=15000", ssl: ssl && ssl !== "false" ? { rejectUnauthorized: false } : undefined });
 // 42P07 table exists, 42710 object exists, 42701 column exists, 42P16 already set, 42P06 schema exists
 const HARMLESS = new Set(["42P07", "42710", "42701", "42P16", "42P06"]);
 
@@ -75,7 +74,7 @@ try {
     console.log(`Batch done: ran ${batchTotal.ran}, already there ${batchTotal.skipped}, problems ${batchTotal.failed}`);
     if (rl && start + batchSize < files.length) await rl.question("Press Enter for the next batch… ");
   }
-  const wanted = ["users", "payments", "service_prices", "whatsapp_messages", "legal_pages", "loyalty_settings", "phone_otps", "mail_tickets", "mail_messages", "mail_attachments", "mail_sync", "contact_change_requests", "team_members"];
+  const wanted = ["users", "payments", "service_prices", "whatsapp_messages", "legal_pages", "loyalty_settings", "phone_otps", "mail_tickets", "mail_messages", "mail_attachments", "mail_sync", "contact_change_requests", "team_members", "mobile_record_claims"];
   const { rows } = await pool.query("select table_name from information_schema.tables where table_schema = 'public' and table_name = any($1)", [wanted]);
   const have = new Set(rows.map((row) => row.table_name));
   console.log(`\nAll done: ran ${total.ran}, already there ${total.skipped}, problems ${total.failed}`);
