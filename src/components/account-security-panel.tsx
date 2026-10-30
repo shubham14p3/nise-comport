@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
-import { KeyRound, LogOut, Mail, ShieldCheck, Trash2 } from "lucide-react";
+import { FormEvent, useState, type InputHTMLAttributes } from "react";
+import { Eye, EyeOff, KeyRound, LogOut, Mail, ShieldCheck, Trash2 } from "lucide-react";
 import { passwordProblem, PASSWORD_MIN } from "@/lib/validation";
 import { secureResult } from "@/lib/secure-api-client";
 import { invalidateSessionCache } from "@/lib/session-client";
@@ -14,6 +14,18 @@ async function call(operation: string, body?: unknown) {
 
 function Alert({ error, message }: { error: string; message: string }) {
   return <>{error && <div className="form-alert error-alert" role="alert">{error}</div>}{message && <div className="form-alert success-alert" role="status">{message}</div>}</>;
+}
+
+/** Reusable, keyboard-accessible password field; toggling never submits its form. */
+function SecretInput(props: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
+  const [visible, setVisible] = useState(false);
+  return <span className="security-secret">
+    <input {...props} type={visible ? "text" : "password"}/>
+    <button type="button" aria-label={visible ? "Hide password" : "Show password"} aria-pressed={visible}
+      onClick={() => setVisible((value) => !value)} disabled={props.disabled}>
+      {visible ? <EyeOff size={18}/> : <Eye size={18}/>}
+    </button>
+  </span>;
 }
 
 /** Profile → "Sign-in & privacy": password, email, devices and account deletion. */
@@ -89,8 +101,8 @@ export default function AccountSecurityPanel({ email, emailVerified, activeSessi
 
     <article className="security-card"><header><KeyRound size={19}/><div><h3>Change password</h3><p>Other devices are signed out after a change, and we email you a confirmation.</p></div></header>
       <form onSubmit={changePassword} className="security-form" noValidate>
-        <label>Current password<input type="password" autoComplete="current-password" required maxLength={128} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} disabled={disabled}/></label>
-        <label>New password<input type="password" autoComplete="new-password" required minLength={PASSWORD_MIN} maxLength={128} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={disabled} aria-describedby="new-password-hint"/><small id="new-password-hint" className={hint ? "field-hint field-hint-warn" : "field-hint"}>{hint || `At least ${PASSWORD_MIN} characters.`}</small></label>
+        <label>Current password<SecretInput autoComplete="current-password" required maxLength={128} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} disabled={disabled}/></label>
+        <label>New password<SecretInput autoComplete="new-password" required minLength={PASSWORD_MIN} maxLength={128} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={disabled} aria-describedby="new-password-hint"/><small id="new-password-hint" className={hint ? "field-hint field-hint-warn" : "field-hint"}>{hint || `At least ${PASSWORD_MIN} characters.`}</small></label>
         <Alert error={passwordError} message={passwordMessage}/>
         <button className="button button-green" disabled={disabled || busy === "password" || !currentPassword || !newPassword}>{busy === "password" ? "Saving…" : "Change password"}</button>
       </form>
@@ -99,7 +111,7 @@ export default function AccountSecurityPanel({ email, emailVerified, activeSessi
     <article className="security-card"><header><Mail size={19}/><div><h3>Change sign-in email</h3><p>We send a code to the new address, and tell the old address after the change.</p></div></header>
       {emailStage === "start" ? <form onSubmit={startEmailChange} className="security-form" noValidate>
         <label>New email address<input type="email" inputMode="email" autoComplete="email" required maxLength={254} value={newEmail} onChange={(e) => setNewEmail(e.target.value)} disabled={disabled}/></label>
-        <label>Your password<input type="password" autoComplete="current-password" required maxLength={128} value={emailPassword} onChange={(e) => setEmailPassword(e.target.value)} disabled={disabled}/></label>
+        <label>Your password<SecretInput autoComplete="current-password" required maxLength={128} value={emailPassword} onChange={(e) => setEmailPassword(e.target.value)} disabled={disabled}/></label>
         <Alert error={emailError} message={emailMessage}/>
         <button className="button button-outline" disabled={disabled || busy === "email" || !newEmail || !emailPassword}>{busy === "email" ? "Sending…" : "Send code to new email"}</button>
       </form> : <form onSubmit={confirmEmailChange} className="security-form" noValidate>
@@ -117,7 +129,7 @@ export default function AccountSecurityPanel({ email, emailVerified, activeSessi
     <article className="security-card security-danger"><header><Trash2 size={19}/><div><h3>Delete account</h3><p>Removes your name, email, phone and saved addresses. Records we must keep for completed services stay, without your contact details. This can’t be undone.</p></div></header>
       {openWork > 0 ? <p className="form-alert">You have {openWork} open request{openWork === 1 ? "" : "s"}. Cancel {openWork === 1 ? "it" : "them"} or wait until {openWork === 1 ? "it’s" : "they’re"} completed before deleting your account.</p> :
         <form onSubmit={deleteAccount} className="security-form" noValidate>
-          <label>Your password<input type="password" autoComplete="current-password" required maxLength={128} value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} disabled={disabled}/></label>
+          <label>Your password<SecretInput autoComplete="current-password" required maxLength={128} value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} disabled={disabled}/></label>
           <label>Type DELETE to confirm<input required maxLength={10} value={confirmation} onChange={(e) => setConfirmation(e.target.value)} disabled={disabled} autoComplete="off"/></label>
           <Alert error={deleteError} message=""/>
           <button className="button button-danger" disabled={disabled || busy === "delete" || !deletePassword}>{busy === "delete" ? "Deleting…" : "Delete my account"}</button>
