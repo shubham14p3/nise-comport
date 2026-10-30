@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState, type InputHTMLAttributes } from "react";
-import { BadgeCheck, Copy, Crown, Eye, EyeOff, KeyRound, Mail, Pencil, Phone, Search, ShieldCheck, Trash2, UserMinus, UserPlus, UsersRound } from "lucide-react";
+import { BadgeCheck, Copy, Crown, Eye, EyeOff, KeyRound, LoaderCircle, LockKeyhole, Mail, Pencil, Phone, Search, ShieldCheck, Trash2, UserMinus, UserPlus, UsersRound } from "lucide-react";
 import { PERMISSION_INFO, STAFF_PERMISSIONS, SCOPE_PREFIX } from "@/lib/permissions";
 import { serviceCatalog } from "@/lib/services";
 import { secureApi } from "@/lib/secure-api-client";
@@ -64,6 +64,8 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
   const [credentialsFor, setCredentialsFor] = useState<string | null>(null);
   const [credentialPassword, setCredentialPassword] = useState("");
   const [credentialPin, setCredentialPin] = useState("");
+  const [credentialKind, setCredentialKind] = useState<"password" | "pin">("password");
+  const [generateCredential, setGenerateCredential] = useState(false);
   const [permissions, setPermissions] = useState<string[]>(["requests"]);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -127,14 +129,17 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
   }
   const remove = (member: Member) => window.confirm(`Remove ${member.name} from the team? They become a normal customer account and are signed out everywhere.`)
     && patch(member, { remove: true }, `${member.name} no longer has team access.`);
-  async function saveCredential(member: Member, kind: "password" | "pin") {
+  async function saveCredential(member: Member) {
+    const kind = credentialKind;
     const value = kind === "pin" ? credentialPin : credentialPassword;
-    if (kind === "pin" && !member.phone) { setError("Add a mobile number for this team member before setting their PIN."); return; }
-    if (!window.confirm(`Set a ${value ? "custom" : "generated"} ${kind} for ${member.name}? Their sessions will end, and the new credential will be emailed to them.`)) return;
+    const ready = generateCredential || (kind === "pin" ? /^\\d{6}$/.test(value) : value.trim().length >= 10);
+    if (!ready || submitting.current) return;
+    if (kind === "pin" && !member.phone) { setError("Add a contact mobile before setting a PIN."); return; }
+    if (!window.confirm(`Set a ${generateCredential ? "generated" : "custom"} ${kind} for ${member.name}? Their existing sessions will end and the new credential will be emailed to them.`)) return;
     const result = await patch(member, kind === "pin"
-      ? { resetPin: true, pin: value }
-      : { resetPassword: true, password: value }, `Updated ${kind} for ${member.name}. All previous sessions have ended.`);
-    if (result) { setCredentialPin(""); setCredentialPassword(""); setCredentialsFor(null); }
+      ? { resetPin: true, pin: generateCredential ? "" : value }
+      : { resetPassword: true, password: generateCredential ? "" : value }, `Updated ${kind} for ${member.name}. Previous sessions have ended.`);
+    if (result) { setCredentialPin(""); setCredentialPassword(""); setGenerateCredential(false); setCredentialsFor(null); }
   }
   const reset = (member: Member) => window.confirm(`Generate a new temporary password for ${member.name}? Existing sessions will end and the password is sent by email.`)
     && patch(member, { resetPassword: true }, `New temporary password set for ${member.name}.`);
@@ -198,27 +203,41 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
               <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => void reset(member)}><KeyRound size={15}/> Reset password</button>
               <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => {
                 setCredentialsFor(credentialsFor === member.id ? null : member.id);
-                setCredentialPassword(""); setCredentialPin(""); setError(""); setNotice("");
+                setCredentialPassword(""); setCredentialPin(""); setCredentialKind("password"); setGenerateCredential(false); setError(""); setNotice("");
               }}><KeyRound size={15}/> {credentialsFor === member.id ? "Close credentials" : "Set password / PIN"}</button>
               <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => void patch(member, { disabled: !member.disabled }, member.disabled ? `${member.name} can sign in again.` : `${member.name} is disabled.`)}>{member.disabled ? "Enable" : "Disable"}</button>
               <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => void remove(member)}><UserMinus size={15}/> Remove from team</button>
               <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => void destroy(member)}><Trash2 size={15}/> Delete account</button>
             </>}
           </div>
-          {credentialsFor === member.id && !isMe && <div className="security-card team-credentials">
-            <h3>Manage sign-in credentials for {member.name}</h3>
-            <p className="muted">Leave a field empty to generate a secure temporary value. Updating either credential signs the member out. Their customer records remain untouched.</p>
-            <div className="form-grid">
-              <label className="field"><span className="field__label">New temporary password</span>
-                <SecretField autoComplete="new-password" value={credentialPassword} maxLength={128} placeholder="Generate automatically" disabled={locked} onChange={(event) => setCredentialPassword(event.target.value)}/></label>
-              <label className="field"><span className="field__label">New 6-digit PIN {member.phone ? "" : "(mobile needed)"}</span>
-                <SecretField autoComplete="off" inputMode="numeric" value={credentialPin} maxLength={6} placeholder="Generate automatically" disabled={locked || !member.phone} onChange={(event) => setCredentialPin(event.target.value.replace(/\D/g, "").slice(0,6))}/></label>
+          {credentialsFor === member.id && !isMe && <section className="team-credentials" aria-label={`Manage credentials for ${member.name}`} aria-busy={locked}>
+            <div className="team-credentials__heading">
+              <div className="team-credentials__icon"><LockKeyhole size={20}/></div>
+              <div><h3>Sign-in access</h3><p>Update credentials for <strong>{member.name}</strong>. Customer records stay unchanged.</p></div>
             </div>
-            <div className="staff-card__actions">
-              <button type="button" className="btn btn--primary btn--sm" disabled={locked} onClick={() => void saveCredential(member, "password")}>Set password</button>
-              <button type="button" className="btn btn--primary btn--sm" disabled={locked || !member.phone} onClick={() => void saveCredential(member, "pin")}>Set PIN</button>
+            <div className="team-credentials__tabs" role="group" aria-label="Credential to update">
+              <button type="button" className={credentialKind === "password" ? "is-active" : ""} aria-pressed={credentialKind === "password"} disabled={locked}
+                onClick={() => { setCredentialKind("password"); setGenerateCredential(false); setError(""); }}><LockKeyhole size={16}/> Password</button>
+              <button type="button" className={credentialKind === "pin" ? "is-active" : ""} aria-pressed={credentialKind === "pin"} disabled={locked || !member.phone}
+                onClick={() => { setCredentialKind("pin"); setGenerateCredential(false); setError(""); }}><KeyRound size={16}/> 6-digit PIN</button>
             </div>
-          </div>}
+            <div className="team-credentials__form">
+              <label className="field"><span className="field__label">{credentialKind === "password" ? "New temporary password" : "New 6-digit PIN"}</span>
+                {credentialKind === "password"
+                  ? <SecretField autoComplete="new-password" value={generateCredential ? "" : credentialPassword} maxLength={128} placeholder={generateCredential ? "A password will be generated securely" : "Enter a new temporary password"} disabled={locked || generateCredential} onChange={(event) => setCredentialPassword(event.target.value)}/>
+                  : <SecretField autoComplete="off" inputMode="numeric" value={generateCredential ? "" : credentialPin} maxLength={6} placeholder={generateCredential ? "A PIN will be generated securely" : "Enter exactly 6 digits"} disabled={locked || generateCredential} onChange={(event) => setCredentialPin(event.target.value.replace(/\D/g, "").slice(0, 6))}/>}
+                <span className="field__hint">{credentialKind === "password" ? "Use a strong temporary password; the member can change it from Profile → Security." : "Choose six digits that are not repeated or sequential. For shared contact numbers, sign in using Email + PIN."}</span>
+              </label>
+              <label className="team-credentials__auto"><input type="checkbox" checked={generateCredential} disabled={locked} onChange={(event) => setGenerateCredential(event.target.checked)}/>
+                Generate a secure {credentialKind === "password" ? "password" : "PIN"} instead
+              </label>
+              <div className="team-credentials__footer">
+                <span><ShieldCheck size={16}/> Existing sessions will be signed out. The new credential is emailed to the member.</span>
+                <button type="button" className="btn btn--primary btn--sm" aria-busy={locked} disabled={locked || (!generateCredential && (credentialKind === "password" ? credentialPassword.trim().length < 10 : !/^\d{6}$/.test(credentialPin)))}
+                  onClick={() => void saveCredential(member)}>{locked ? <LoaderCircle size={16} className="api-activity__spin"/> : <KeyRound size={16}/>} {locked ? "Updating…" : `Update ${credentialKind === "password" ? "password" : "PIN"}`}</button>
+              </div>
+            </div>
+          </section>}
         </>}
       </article>;
     })}</div>
@@ -237,7 +256,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
       </div>
       {role === "staff" ? <><span className="field__label">What may they do?</span><PermissionBoxes value={permissions} onChange={setPermissions}/></>
         : <p className="field__hint">Owners can open every area and manage the team. Only add people you fully trust.</p>}
-      <button className="btn btn--primary" disabled={busy === "add" || (role === "staff" && !permissions.length)}>{busy === "add" ? "Adding…" : role === "admin" ? "Add owner" : "Add to team"}<UserPlus size={16}/></button>
+      <button className="btn btn--primary" disabled={busy === "add" || (role === "staff" && !permissions.length)}>{busy === "add" ? <LoaderCircle size={16} className="api-activity__spin"/> : <UserPlus size={16}/>}{busy === "add" ? "Adding…" : role === "admin" ? "Add owner" : "Add to team"}</button>
       <p className="field__hint">New team accounts with a mobile number get a temporary PIN and password by email. Existing customers keep their account history and password; an explicitly entered PIN is set for that account.</p>
     </form></details>
   </section>;
