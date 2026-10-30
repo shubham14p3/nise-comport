@@ -5,7 +5,7 @@ import { languageAlternates } from "@/lib/tr";
 
 export const metadata: Metadata = pageMetadata(
   "Pricing & Service Charges",
-  "How NISE COMPORT charges: printing rates, service charges confirmed before work starts, and how government fees are shown separately.",
+  "How NiSE COMPORT charges: printing rates, service charges confirmed before work starts, and how government fees are shown separately.",
   "/pricing",
   { languages: languageAlternates("/pricing") },
 );

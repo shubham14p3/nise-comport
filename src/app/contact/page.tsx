@@ -6,7 +6,7 @@ import { languageAlternates } from "@/lib/tr";
 
 export const metadata: Metadata = pageMetadata(
   "Contact & Directions – Kharangajhar, Telco",
-  `Call ${site.phones.primary.display}, WhatsApp or visit NISE COMPORT at Singh Building, Hanuman Mandir Road, Kharangajhar, Telco, Jamshedpur 831004. Hours and directions.`,
+  `Call ${site.phones.primary.display}, WhatsApp or visit NiSE COMPORT at Singh Building, Hanuman Mandir Road, Kharangajhar, Telco, Jamshedpur 831004. Hours and directions.`,
   "/contact",
   { languages: languageAlternates("/contact") },
 );
