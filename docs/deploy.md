@@ -15,12 +15,12 @@ NEXT_PUBLIC_SITE_URL=https://nisecomport.com
 CANONICAL_HOST_REDIRECT=true
 ```
 
-For development on Windows use a separate `.env.local`:
+For development on Windows use a separate `.env.local` (both dev and production listen on port 3020, but they must use different databases):
 
 ```dotenv
 APP_ENV=local
-INTERNAL_API_PORT=3000
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+INTERNAL_API_PORT=3020
+NEXT_PUBLIC_SITE_URL=http://localhost:3020
 CANONICAL_HOST_REDIRECT=false
 ```
 
