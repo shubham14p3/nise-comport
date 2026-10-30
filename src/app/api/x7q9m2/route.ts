@@ -185,7 +185,10 @@ function targetFor(operation: string, input: Record<string, unknown>) {
     case "J2w7L5pD9nV4": {
       const q = stringValue(input, "q", 80);
       const status = stringValue(input, "status", 40);
-      return { method: "GET", path: `/api/internal/admin-snapshot?q=${encodeURIComponent(q)}&status=${encodeURIComponent(status)}` };
+      const pageSize = [10, 20, 50].includes(Number(input.pageSize)) ? Number(input.pageSize) : 20;
+      const jobPage = Math.max(0, Math.min(100000, Math.trunc(Number(input.jobPage) || 0)));
+      const requestPage = Math.max(0, Math.min(100000, Math.trunc(Number(input.requestPage) || 0)));
+      return { method: "GET", path: `/api/internal/admin-snapshot?q=${encodeURIComponent(q)}&status=${encodeURIComponent(status)}&pageSize=${pageSize}&jobPage=${jobPage}&requestPage=${requestPage}` };
     }
     case "I5x2N8kQ3wT6": {
       const params = new URLSearchParams();
