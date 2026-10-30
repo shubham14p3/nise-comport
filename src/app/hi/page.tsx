@@ -9,7 +9,7 @@ export const metadata: Metadata = pageMetadata(hindiHome.seoTitle, hindiHome.des
 
 export default function HindiHomePage() {
   return <>
-    <JsonLd data={[webPageLd({ name: hindiHome.h1, description: hindiHome.description, path: "/hi", inLanguage: "hi-IN" }), itemListLd("NISE COMPORT सेवाएँ", hindiServices.map((service) => ({ name: service.title, path: `/hi/services/${service.slug}` })))]}/>
+    <JsonLd data={[webPageLd({ name: hindiHome.h1, description: hindiHome.description, path: "/hi", inLanguage: "hi-IN" }), itemListLd("NiSE COMPORT सेवाएँ", hindiServices.map((service) => ({ name: service.title, path: `/hi/services/${service.slug}` })))]}/>
     <LocalizedHome lang="hi" home={hindiHome} services={hindiServices}/>
   </>;
 }

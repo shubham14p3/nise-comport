@@ -25,7 +25,7 @@ const hindSiliguri = Hind_Siliguri({ subsets: ["bengali"], weight: ["400", "500"
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
-  title: { default: "NISE COMPORT - Pragya Kendra - CSC & Digital Services in Telco, Jamshedpur", template: "NISE COMPORT - Pragya Kendra - %s" },
+  title: { default: "NiSE COMPORT - Pragya Kendra - CSC & Digital Services in Telco, Jamshedpur", template: "NiSE COMPORT - Pragya Kendra - %s" },
   description: "Independent CSC and Pragya Kendra in Kharangajhar, Telco, Jamshedpur: PAN, Aadhaar guidance, Jharkhand certificates, banking, insurance, forms, bill payments and printing.",
   applicationName: site.name,
   authors: [{ name: site.name, url: site.url }],
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   publisher: site.name,
   category: "Government & citizen services",
   formatDetection: { telephone: true, address: true, email: true },
-  openGraph: { type: "website", locale: "en_IN", siteName: site.name, images: [{ url: site.defaultOgImage, width: 1200, height: 630, alt: "NISE COMPORT – CSC & Pragya Kendra, Kharangajhar, Telco, Jamshedpur" }] },
+  openGraph: { type: "website", locale: "en_IN", siteName: site.name, images: [{ url: site.defaultOgImage, width: 1200, height: 630, alt: "NiSE COMPORT – CSC & Pragya Kendra, Kharangajhar, Telco, Jamshedpur" }] },
   twitter: { card: "summary_large_image", images: [site.defaultOgImage] },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 } },
   verification: {
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     ...(site.verification.yandex ? { yandex: site.verification.yandex } : {}),
     ...(site.verification.bing ? { other: { "msvalidate.01": site.verification.bing } } : {}),
   },
-  alternates: { types: { "application/rss+xml": [{ url: "/blog/feed.xml", title: "NISE COMPORT local guides" }] } },
+  alternates: { types: { "application/rss+xml": [{ url: "/blog/feed.xml", title: "NiSE COMPORT local guides" }] } },
   other: {
     "geo.region": "IN-JH",
     "geo.placename": "Jamshedpur",

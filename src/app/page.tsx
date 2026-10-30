@@ -35,7 +35,7 @@ export const revalidate = 43200;
 export const metadata: Metadata = {
   ...pageMetadata(
     "CSC & Digital Services in Telco, Jamshedpur",
-    "PAN card, Aadhaar update help, income/caste/residence certificates, AEPS banking, insurance, online forms, websites and printing at NISE COMPORT, Kharangajhar, Telco, Jamshedpur.",
+    "PAN card, Aadhaar update help, income/caste/residence certificates, AEPS banking, insurance, online forms, websites and printing at NiSE COMPORT, Kharangajhar, Telco, Jamshedpur.",
     "/",
     { languages: { "hi-IN": "/hi", "bn-IN": "/bn" }, keywords: ["CSC centre Jamshedpur", "Pragya Kendra Telco", "Pragya Kendra Kharangajhar", "PAN card Jamshedpur", "Aadhaar update Jamshedpur", "income certificate Jamshedpur", "caste certificate Jharkhand", "AEPS Telco", "bike insurance Jamshedpur", "online form filling Jamshedpur", "printing Telco", "प्रज्ञा केंद्र जमशेदपुर", "सीएससी सेंटर टेल्को", "জামশেদপুর প্রজ্ঞা কেন্দ্র"] },
   ),
@@ -57,8 +57,8 @@ const steps = [
 ];
 
 const homeFaqs = [
-  { question: "Where is NISE COMPORT in Jamshedpur?", answer: `${site.address.oneLine}. Tap “Get directions” to open the route in Google Maps.` },
-  { question: "Is NISE COMPORT a government office?", answer: "No. NISE COMPORT is an independent CSC / Pragya Kendra service centre. We help you use official and partner services; the relevant department, bank or provider makes the final decision." },
+  { question: "Where is NiSE COMPORT in Jamshedpur?", answer: `${site.address.oneLine}. Tap “Get directions” to open the route in Google Maps.` },
+  { question: "Is NiSE COMPORT a government office?", answer: "No. NiSE COMPORT is an independent CSC / Pragya Kendra service centre. We help you use official and partner services; the relevant department, bank or provider makes the final decision." },
   { question: "Are government fees included in your charge?", answer: "No. Official or third-party fees are separate from our service charge. We explain both before any work starts and give you a receipt." },
   { question: "Can I track my request online?", answer: "Yes. Create a free account, send a request in four quick steps and follow its status and reference number in your account. We also update you by email, phone or WhatsApp." },
   { question: "Do you help in Hindi and Bengali?", answer: "Yes. The website works in English, हिन्दी and বাংলা, and our team is happy to help you in the language you’re comfortable with." },
@@ -71,13 +71,13 @@ export default async function HomePage() {
   const place = await safely(() => getPlaceSummary(), null, "Google place summary");
   const galleryPreview = [
     ...(await safely(() => livePhotos(), [], "gallery photos")).filter((photo) => photo.tag === "shop" || photo.tag === "camps" || photo.tag === "training").slice(0, 4).map((photo) => ({ key: photo.src, src: photo.src, alt: photo.alt, title: photo.title, google: false })),
-    ...(place?.photos.slice(0, 3).map((photo) => ({ key: `g${photo.index}`, src: `/api/gallery/photo/${photo.index}`, alt: `Photo of NISE COMPORT by ${photo.author}`, title: `Photo · ${photo.author}`, google: true })) ?? []),
+    ...(place?.photos.slice(0, 3).map((photo) => ({ key: `g${photo.index}`, src: `/api/gallery/photo/${photo.index}`, alt: `Photo of NiSE COMPORT by ${photo.author}`, title: `Photo · ${photo.author}`, google: true })) ?? []),
     ...localGallery.slice(0, 6).map((item) => ({ key: item.src, src: item.src, alt: item.alt, title: item.title, google: false })),
   ].slice(0, 6);
 
   return <>
     <SiteHeader/>
-    <JsonLd data={webPageLd({ name: "NISE COMPORT – CSC & Pragya Kendra in Telco, Jamshedpur", description: site.description, path: "/" })}/>
+    <JsonLd data={webPageLd({ name: "NiSE COMPORT – CSC & Pragya Kendra in Telco, Jamshedpur", description: site.description, path: "/" })}/>
     <main className="home">
       <section className="hero">
         <div className="hero__bg" aria-hidden="true"><span className="blob blob--1"/><span className="blob blob--2"/><span className="blob blob--3"/><span className="hero__grid"/></div>
@@ -89,7 +89,7 @@ export default async function HomePage() {
             <HeroSearch popular={popular} services={publishedServiceDetails.map((item) => ({ slug: item.slug, title: item.title }))}/>
             <div className="hero__ctas">
               <Link href="/request" className="btn btn--primary btn--lg">Start a request <ArrowRight size={20}/></Link>
-              <a href={whatsappLink("Hi NISE COMPORT, I need help with a service.")} className="btn btn--glass btn--lg" target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={20}/> Chat on WhatsApp</a>
+              <a href={whatsappLink("Hi NiSE COMPORT, I need help with a service.")} className="btn btn--glass btn--lg" target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={20}/> Chat on WhatsApp</a>
             </div>
             <ul className="hero__trust">
               <li><BadgeCheck size={18}/> Serving since 1995</li>
@@ -211,12 +211,12 @@ export default async function HomePage() {
               <p className="visit-card__hours"><Clock3 size={20}/> <span><OpenStatus rules={site.openingHours}/> {hours.length ? hours.join(" · ") : "Mon–Sat · call before visiting"}</span></p>
               <div className="visit-card__ctas">
                 <a className="btn btn--light" href={site.mapsUrl} target="_blank" rel="noopener noreferrer"><MapPin size={18}/> Get directions</a>
-                <a className="btn btn--wa" href={whatsappLink("Hi NISE COMPORT, I need help with a service.")} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> WhatsApp</a>
+                <a className="btn btn--wa" href={whatsappLink("Hi NiSE COMPORT, I need help with a service.")} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> WhatsApp</a>
                 <a className="btn btn--glass" href={`tel:${site.phones.primary.e164}`}><Phone size={18}/> {site.phones.primary.display}</a>
               </div>
             </div>
             <div className="visit-card__side" aria-hidden="true">
-              <div className="map-art"><span className="map-art__road map-art__road--1"/><span className="map-art__road map-art__road--2"/><span className="map-art__road map-art__road--3"/><span className="map-art__pin"><MapPin size={28}/></span><span className="map-art__label">NISE COMPORT</span></div>
+              <div className="map-art"><span className="map-art__road map-art__road--1"/><span className="map-art__road map-art__road--2"/><span className="map-art__road map-art__road--3"/><span className="map-art__pin"><MapPin size={28}/></span><span className="map-art__label">NiSE COMPORT</span></div>
               <div className="visit-card__chips"><span><ShieldCheck size={16}/> Independent CSC</span><span><MessageCircle size={16}/> Replies on WhatsApp</span></div>
             </div>
           </div>
