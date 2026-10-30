@@ -8,7 +8,36 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 export const REQUIRED = ["BUILD_ID", "build-manifest.json", "prerender-manifest.json", "routes-manifest.json", "required-server-files.json", "server", "static"];
-export function missingBuildFiles(dir = ".next") { return REQUIRED.filter((name) => !existsSync(join(dir, name))); }
+/** Detect an incomplete upload: the manifests can exist while CSS/JS bundles are missing. */
+export function missingStaticAssets(dir = ".next") {
+  const missing = new Set();
+  for (const name of ["build-manifest.json", "app-build-manifest.json"]) {
+    const manifestPath = join(dir, name);
+    if (!existsSync(manifestPath)) continue;
+    let manifest;
+    try { manifest = JSON.parse(readFileSync(manifestPath, "utf8")); }
+    catch { missing.add(`${name} (invalid JSON)`); continue; }
+
+    const referenced = [
+      ...(Object.values(manifest.pages || {}).flat()),
+      ...(manifest.rootMainFiles || []),
+      ...(manifest.polyfillFiles || []),
+      ...(manifest.lowPriorityFiles || []),
+      ...(manifest.devFiles || []),
+    ];
+    for (const value of referenced) {
+      if (typeof value !== "string") continue;
+      const relative = value.split("?")[0].replace(/^\\/?_next\\//, "").replace(/^\\/+/, "");
+      if (!/^static\\/[a-zA-Z0-9_./@-]+\\.(?:css|js|mjs)$/.test(relative) || relative.split("/").includes("..")) continue;
+      if (!existsSync(join(dir, relative))) missing.add(relative);
+    }
+  }
+  return [...missing].map((name) => `missing asset: ${name}`);
+}
+
+export function missingBuildFiles(dir = ".next") {
+  return [...REQUIRED.filter((name) => !existsSync(join(dir, name))), ...missingStaticAssets(dir)];
+}
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const missing = missingBuildFiles();
