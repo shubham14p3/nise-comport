@@ -8,6 +8,7 @@ import JsonLd from "@/components/json-ld";
 import MobileDock from "@/components/mobile-dock";
 import OffersProvider from "@/components/offers-provider";
 import SiteFooter from "@/components/site-footer";
+import ApiActivityIndicator from "@/components/api-activity-indicator";
 import { getLivePromos } from "@/lib/promotions";
 import { liveBanners } from "@/lib/site-content";
 import { site } from "@/lib/site";
@@ -68,6 +69,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return <html lang="en-IN">
     <body className={`${poppins.variable} ${hindSiliguri.variable}`}>
       <OffersProvider promos={promos} teaser={teaser}>
+        <ApiActivityIndicator/>
         <a className="skip-link" href="#main-content">Skip to content</a>
         <SiteBanners placement="strip"/>
         <ScrollToTop/>
