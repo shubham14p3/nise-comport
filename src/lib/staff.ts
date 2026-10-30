@@ -201,7 +201,7 @@ export async function updateStaff(id: string, patch: StaffPatch, actor: { id: st
   }
   if (patch.phone !== undefined) {
     const phone = cleanPhoneInput(patch.phone);
-    if (phone !== member.phone) { set.phone = phone; set.phoneVerifiedAt = null; notes.push("mobile"); }
+    if (phone !== member.phone) { set.phone = phone; set.phoneVerifiedAt = null; set.loginPinHash = null; notes.push("mobile (reissue PIN)"); }
   }
   const nextRole = patch.role ?? (member.role as "staff" | "admin");
   if (nextRole !== member.role) {
