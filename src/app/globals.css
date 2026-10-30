@@ -3835,3 +3835,28 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 .counter-correction .field { margin: 0; }
 .counter-correction > .btn { width: fit-content; max-width: 100%; min-height: 42px; }
 @media(max-width:500px){ .counter-correction > .btn { width: 100%; } }
+
+
+/* Compact credential editing: generator belongs alongside the PIN/password entry. */
+.team-credentials { padding: clamp(14px, 2vw, 20px); gap: 13px; }
+.team-credentials__tabs { max-width: 350px; }
+.team-credentials__form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(210px, .44fr); align-items: center; column-gap: 20px; row-gap: 12px; }
+.team-credentials__form > .field { max-width: none; min-width: 0; margin: 0; }
+.team-credentials__form > .field .input-wrap { max-width: none; }
+.team-credentials__auto { display: inline-flex !important; align-items: center; gap: 11px; margin: 0; padding: 12px 14px; background: #f4f7fc; border: 1px solid #dce6f5; border-radius: 12px; white-space: normal; cursor: pointer; }
+.team-credentials__auto input[type="checkbox"] { flex: 0 0 18px; width: 18px; height: 18px; margin: 0; accent-color: #345ac8; }
+.team-credentials__auto:has(input:checked) { background: #e8f0ff; border-color: #8caeed; }
+.team-credentials__footer { grid-column: 1 / -1; padding-top: 12px; gap: 14px; }
+.team-credentials__footer > span { max-width: 700px; }
+.counter-service-input { display: flex; align-items: center; position: relative; }
+.counter-service-input > input { width: 100%; min-width: 0; padding-right: 44px !important; }
+.counter-service-clear { position: absolute; right: 9px; top: 50%; transform: translateY(-50%); width: 31px; height: 31px; border-radius: 9px; border: 1px solid #d9e2f3; display: grid; place-items: center; background: white; color: #53647e; cursor: pointer; }
+.counter-service-clear:hover { color: #153d8f; background: #edf4ff; }
+.counter-service-clear:disabled { opacity: .5; cursor: not-allowed; }
+@media(max-width:760px) {
+  .team-credentials__form { grid-template-columns: minmax(0, 1fr); }
+  .team-credentials__auto { width: 100%; }
+  .team-credentials__footer { grid-column: 1; }
+}
+/* Brand is always rendered in the shop's prescribed case. Cooper Black is an optional local face. */
+.brand__name, .brand-text, .brand-lockup__text { font-family: "Cooper Black", "Cooper Std Black", Georgia, serif; font-weight: 900; letter-spacing: -.02em; }
