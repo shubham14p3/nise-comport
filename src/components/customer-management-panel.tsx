@@ -84,8 +84,8 @@ export default function CustomerManagementPanel(){
       const result=await secureApi<{userId:string}>("V2a9N6sK4rD8",{action:"create",
         name:newCustomer.name,phone:newCustomer.phone,email:newCustomer.email||undefined});
       setCreating(false);setNewCustomer({name:"",phone:"",email:""});
-      await search(newCustomer.phone,false);
-      await previewCustomer(result.userId);
+      await secureApi("V2a9N6sK4rD8", { action: "start", userId: result.userId });
+      router.push("/customer-preview");
     }catch(err){setError(err instanceof Error?err.message:"Could not create customer account.");}
     finally{setBusy(false);}
   }
