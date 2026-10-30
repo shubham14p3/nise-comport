@@ -37,7 +37,7 @@ async function findTarget(id: string, actor: { id: string; role: string; email: 
   return target;
 }
 async function previewData(id: string, expiresAt: number) {
-  const [target, requests, jobs, visits, wallet, savedAddresses] = await Promise.all([
+  const [[target], requests, jobs, visits, wallet, savedAddresses] = await Promise.all([
     db.select().from(users).where(eq(users.id, id)).limit(1),
     db.select({ reference: serviceRequests.reference, name: serviceRequests.serviceName, status: serviceRequests.status, createdAt: serviceRequests.createdAt })
       .from(serviceRequests).where(eq(serviceRequests.userId, id)).orderBy(desc(serviceRequests.createdAt)).limit(60),
