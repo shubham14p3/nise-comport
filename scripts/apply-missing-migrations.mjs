@@ -63,7 +63,10 @@ try {
       const statements = readFileSync(`drizzle/${file}`, "utf8").split("--> statement-breakpoint").map((s) => s.trim()).filter(Boolean);
       const counts = { ran: 0, skipped: 0, failed: 0 };
       process.stdout.write(`  ${file} … `);
-      for (const statement of statements) {
+      for (const raw of statements) {
+        // Drop leading comment lines first, so a chunk that starts with "-- note" still runs.
+        const statement = raw.replace(/^(\s*--[^\n]*(\n|$))+/, "").trim();
+        if (!statement) continue;
         if (!/^(CREATE|ALTER|DO)\b/i.test(statement) || /\bDROP\b/i.test(statement)) { counts.skipped++; continue; }
         const result = await runStatement(statement, file);
         counts[result]++;
