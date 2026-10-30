@@ -16,7 +16,7 @@ const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("lookup"), phone, page: z.number().int().min(0).max(10_000).optional() }),
   z.object({ action: z.literal("lookup-email"), email: z.string().trim().max(120), page: z.number().int().min(0).max(10_000).optional() }),
   z.object({ action: z.literal("lookup-account"), userId: z.uuid(), phone, page: z.number().int().min(0).max(10_000).optional() }),
-  z.object({ action: z.literal("update-customer"), userId: z.uuid(), name: z.string().trim().min(2).max(100), email: z.email().max(254) }),
+  z.object({ action: z.literal("update-customer"), userId: z.uuid(), name: z.string().trim().min(2).max(100), email: z.string().trim().max(254).optional() }),
   z.object({ action: z.literal("confirm"), userId: z.string().uuid(), channel: z.enum(["email", "phone"]) }),
   z.object({ action: z.literal("code-send"), userId: z.string().uuid() }),
   z.object({ action: z.literal("code-check"), userId: z.string().uuid(), code: z.string().trim().length(6) }),
