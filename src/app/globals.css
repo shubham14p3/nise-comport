@@ -3914,3 +3914,11 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 @media(prefers-reduced-motion:reduce) {
   .api-activity__orbit,.api-activity__logo,.api-activity__track > span,.nc-loading-page__mark img,.nc-loading-page__mark:after { animation: none; }
 }
+
+/* Trademark wordmark: use Cooper Black only when locally licensed/installed; never ship a font file. */
+.brand-wordmark-text { display: block; white-space: nowrap; font-family: "Cooper Black", "Cooper Std Black", Georgia, serif;
+  font-weight: 900; font-size: clamp(1.25rem, 2.2vw, 1.62rem); letter-spacing: -.025em; color: #182d65; line-height: 1.04; }
+.brand-lockup { gap: 5px; }
+.brand-lockup small { font-size: .585rem; letter-spacing: .055em; color: var(--muted); }
+.brand:hover .brand-wordmark-text { color: #3559aa; }
+@media(max-width:500px) { .brand-wordmark-text { font-size: 1.22rem; } }
