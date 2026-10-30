@@ -27,8 +27,8 @@ export function missingStaticAssets(dir = ".next") {
     ];
     for (const value of referenced) {
       if (typeof value !== "string") continue;
-      const relative = value.split("?")[0].replace(/^\\/?_next\\//, "").replace(/^\\/+/, "");
-      if (!/^static\\/[a-zA-Z0-9_./@-]+\\.(?:css|js|mjs)$/.test(relative) || relative.split("/").includes("..")) continue;
+      const relative = value.split("?")[0].replace(/^\/?_next\//, "").replace(/^\/+/, "");
+      if (!/^static\/[a-zA-Z0-9_./@-]+\.(?:css|js|mjs)$/.test(relative) || relative.split("/").includes("..")) continue;
       if (!existsSync(join(dir, relative))) missing.add(relative);
     }
   }
