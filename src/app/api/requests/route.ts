@@ -14,7 +14,7 @@ import { recordRedemption, resolveCoupon } from "@/lib/promotions";
 import { resolveService } from "@/lib/site-content";
 import type { ScopeContext } from "@/lib/promo-scope";
 import { isServiceDetail, serviceCatalog, servicesInCategory } from "@/lib/services";
-import { normalizePhone } from "@/lib/validation";
+import { looksLikeEmail, normalizePhone } from "@/lib/validation";
 import { detailedIntakeSchema } from "@/lib/detailed-intake";
 import { storeDetailedIntake } from "@/lib/detailed-intake-server";
 import { closeWizardLeads, completeInvitedServiceCallback } from "@/lib/leads";
@@ -24,13 +24,14 @@ import { sendDbDownFallbackWhatsApp, sendRequestWhatsApp, whatsappAlertsEnabled 
 
 const schema = z.object({
   serviceSlug: z.string().min(2).max(80),
-  description: z.string().trim().min(8, "Please describe what you need in a few words (at least 8 characters).").max(1500, "Keep the description under 1,500 characters."),
+  description: z.string().trim().max(1500, "Keep the description under 1,500 characters.").default(""),
   preferredContact: z.enum(["email", "phone", "whatsapp"]).optional(),
   fileId: z.uuid().optional(),
   intake: detailedIntakeSchema.optional(),
   /** Step-flow extras (all optional so older clients keep working). */
   contactName: z.string().trim().min(2).max(100).optional(),
   contactPhone: z.string().trim().max(20).optional(),
+  contactEmail: z.string().trim().max(120).optional(),
   category: z.string().max(60).optional(),
   offerId: z.string().max(60).optional(),
   /** Festival / sports / welcome code; staff take it off the service charge when they bill. */
@@ -78,6 +79,12 @@ export async function POST(request: NextRequest) {
     const category: string | null = found && isServiceDetail(found) ? found.categorySlug
       : categoryCandidate && serviceCatalog.some((group) => group.slug === categoryCandidate) ? categoryCandidate : null;
 
+    let contactEmail: string | null = null;
+    if (input.contactEmail) {
+      const email = input.contactEmail.toLowerCase();
+      if (!looksLikeEmail(email)) throw new PublicError("Enter a valid email address.", 400, { fields: { contactEmail: "Enter a valid email address." } });
+      contactEmail = email;
+    }
     let contactPhone: string | null = null;
     if (input.contactPhone) {
       contactPhone = normalizePhone(input.contactPhone);
@@ -136,6 +143,7 @@ export async function POST(request: NextRequest) {
             ...(currentInput.preferredContact ? { preferredContact: currentInput.preferredContact } : {}),
             ...(currentInput.contactName ? { contactName: currentInput.contactName } : {}),
             ...(contactPhone ? { contactPhone } : {}),
+            ...(contactEmail ? { contactEmail } : {}),
             ...(category ? { category } : {}),
             ...(visit ? { visit } : {}),
             ...(offer.applied ? { offer: { id: offer.id, title: offer.title } } : {}),
@@ -167,9 +175,10 @@ export async function POST(request: NextRequest) {
         .catch((error) => console.error("[pan] could not issue the fixed payment", error));
     }
     await notifyNewRequest(user, created.reference, service.title, [
-      `Note: ${input.description.slice(0, 300)}`,
+      ...(input.description ? [`Note: ${input.description.slice(0, 300)}`] : []),
       ...(input.intake ? [`Application form: ${input.intake.kind}`, "Questionnaire saved securely — open the request in staff dashboard to view"] : []),
       ...(contactPhone ? [`Phone: ${contactPhone}${input.preferredContact ? ` (prefers ${input.preferredContact})` : ""}`] : []),
+      ...(contactEmail ? [`Email: ${contactEmail}`] : []),
       ...(visit ? [`Visit: ${[visit.mode, visit.day, visit.slot, visit.address].filter(Boolean).join(" · ")}`] : []),
       ...(offer.applied ? [`Offer claimed: ${offer.title}`] : []),
       ...(coupon.applied ? [`Coupon: ${coupon.code} (₹${coupon.value} off the service charge if it is ₹${coupon.minimum} or more)`] : []),

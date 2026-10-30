@@ -6,6 +6,7 @@ export default function RequestExtras({ details, fallback }: { details: Record<s
   const coupon = details.coupon && typeof details.coupon === "object" ? details.coupon as { code?: string; value?: number; minimum?: number; title?: string } : null;
   const rows: [string, string][] = [];
   rows.push(["Your note", typeof details.description === "string" ? details.description : fallback || "No additional note."]);
+  if (typeof details.contactEmail === "string") rows.push(["Email", details.contactEmail]);
   if (typeof details.contactPhone === "string") rows.push(["Contact", `${typeof details.contactName === "string" ? `${details.contactName} · ` : ""}${details.contactPhone}${typeof details.preferredContact === "string" ? ` · prefers ${details.preferredContact}` : ""}`]);
   if (visit) {
     const modes: Record<string, string> = { walkin: "Visit the centre", callback: "Call me back first", doorstep: "Doorstep help", online: "Mostly online" };

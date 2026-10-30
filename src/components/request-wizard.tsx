@@ -33,7 +33,7 @@ type Contact = "whatsapp" | "phone" | "email";
 type SavedAddress = { id: string; label: string; line1: string; line2: string | null; city: string; state: string; postalCode: string; isDefault: boolean };
 type Draft = {
   step: number; serviceSlug: string; category: string; query: string;
-  name: string; phone: string; contact: Contact; description: string;
+  name: string; phone: string; email: string; contact: Contact; description: string;
   mode: Mode | ""; day: string; slot: Slot | ""; addressId: string; address: AddressValue;
   offerId: string; consent: boolean; coupon: string;
   serviceTask: "passport" | "driving"; intake: DetailedIntake | null;
@@ -102,7 +102,7 @@ export default function RequestWizard(props: { services: WizardService[]; initia
 }
 
 function initialDraft(services: WizardService[], initial: Initial): Draft {
-  const blank: Draft = { step: 0, serviceSlug: "", category: "all", query: "", name: "", phone: "", contact: "whatsapp", description: "", mode: "online", day: "", slot: "", addressId: "", address: EMPTY_ADDRESS, offerId: "", consent: false, coupon: "", serviceTask: "passport", intake: null };
+  const blank: Draft = { step: 0, serviceSlug: "", category: "all", query: "", name: "", phone: "", email: "", contact: "whatsapp", description: "", mode: "online", day: "", slot: "", addressId: "", address: EMPTY_ADDRESS, offerId: "", consent: false, coupon: "", serviceTask: "passport", intake: null };
   const saved = readDraft();
   const coupon = (initial.coupon ?? "").toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 40);
   const hasUrlChoice = Boolean(initial.service || initial.category || initial.offer || initial.note);
@@ -243,7 +243,6 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       if (draft.phone.trim() ? !validPhone(draft.phone) : user !== null) return t.errPhone;
       if (user === null && guest.whatsapp.trim() && !validPhone(guest.whatsapp)) return "Check the WhatsApp number.";
       if (user === null && guest.email.trim() && !/^\S+@\S+\.\S+$/.test(guest.email.trim())) return "Enter a valid email address.";
-      if (!activeIntake && draft.description.trim().length < 8) return t.errDescribe;
       if (activeIntake && Object.keys(intakeErrors).length) return Object.values(intakeErrors)[0];
       if (file && file.size > MAX_FILE_BYTES) return t.errFile;
     }
@@ -358,11 +357,12 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       const saved = addresses.find((item) => item.id === draft.addressId);
       const result = await secureApi<{ request: { reference: string }; whatsappSent?: boolean; offer?: { applied: boolean; reason?: string }; coupon?: { applied: boolean; code?: string; reason?: string } }>("S5w2J9nF3kL7", {
         serviceSlug: draft.serviceSlug,
-        description: draft.description.trim() || (detailedKind ? `${detailedKind} application assistance request` : ""),
+        description: draft.description.trim() || (detailedKind ? `${detailedKind} application assistance request` : `${service?.name ?? "Service"} enquiry`),
         ...(activeIntake ? { intake: { ...activeIntake, ...(photoFileId ? { photoFileId } : {}) } } : {}),
         preferredContact: draft.contact,
         contactName: draft.name.trim(),
         contactPhone: draft.phone.trim(),
+        contactEmail: emailValue || undefined,
         visit: {
           mode: draft.mode,
           ...(draft.mode === "walkin" ? { day: draft.day, slot: draft.slot || undefined } : {}),
@@ -433,7 +433,9 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   const visitSummary = draft.mode === "walkin" ? `${t.walkin} · ${dayLabel(draft.day)}${draft.slot ? ` · ${slotLabel(draft.slot)}` : ""}` : draft.mode === "doorstep" ? `${t.doorstep} · ${savedAddress ? `${savedAddress.line1}, ${savedAddress.city}` : formatAddress(draft.address)}` : draft.mode === "callback" ? t.callback : draft.mode === "online" ? t.online : "";
   const nameBad = showErrors && draft.step === 1 && draft.name.trim().length < 2;
   const phoneBad = showErrors && draft.step === 1 && (draft.phone.trim() ? !validPhone(draft.phone) : user !== null);
-  const describeBad = showErrors && draft.step === 1 && draft.description.trim().length < 8;
+  const describeBad = false; // the description is optional now
+  const emailValue = user === null ? guest.email.trim() : draft.email.trim();
+  const emailBad = showErrors && draft.step === 1 && emailValue !== "" && !/^\S+@\S+\.\S+$/.test(emailValue);
   const picks = QUICK_PICKS[service?.category ?? (draft.serviceSlug === "other" ? "other" : draft.category)] ?? QUICK_PICKS.other;
 
   return <WizardFrame
@@ -484,13 +486,13 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         <div className="form-grid">
           <label className="field"><span className="field__label">{t.name}</span><input value={draft.name} onChange={(event) => update({ name: event.target.value.replace(/[^\p{L}\p{M}\s.'-]/gu, "") })} onBlur={captureLead} autoComplete="name" maxLength={100} required aria-invalid={nameBad}/>{nameBad && <span className="field__error">{t.errName}</span>}</label>
           <label className="field"><span className="field__label">{t.phone}</span><span className="input-wrap"><span className="input-prefix">+91</span><input value={draft.phone} onChange={(event) => update({ phone: event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16) })} inputMode="tel" autoComplete="tel-national" placeholder="98765 43210" onBlur={captureLead} aria-invalid={phoneBad}/></span>{phoneBad ? <span className="field__error">{t.errPhone}</span> : <span className="field__hint">{t.phoneHint}</span>}</label>
+          <label className="field"><span className="field__label">Email (optional)</span><input type="email" inputMode="email" autoComplete="email" value={user === null ? guest.email : draft.email} onChange={(event) => { const value = event.target.value.trim(); if (user === null) setGuest((current) => ({ ...current, email: value })); else update({ email: value }); }} placeholder="name@example.com" aria-invalid={emailBad}/>{emailBad && <span className="field__error">Enter a valid email address.</span>}</label>
           {user === null && <label className="field"><span className="field__label">WhatsApp number (optional)</span><span className="input-wrap"><span className="input-prefix">+91</span><input value={guest.whatsapp} onChange={(event) => setGuest((current) => ({ ...current, whatsapp: event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16) }))} inputMode="tel" autoComplete="off" placeholder="Same as mobile"/></span><span className="field__hint">Leave blank to use your mobile number.</span></label>}
         </div>
         <fieldset className="field"><legend className="field__label">{t.contactVia}</legend><div className="seg">
           {(["whatsapp", "phone", "email"] as Contact[]).map((option) => <button key={option} type="button" className={contactChoice === option ? "is-active" : undefined} aria-pressed={contactChoice === option} disabled={!contactOptionAvailable(option)} onClick={() => update({ contact: option })}>{option === "whatsapp" ? <WhatsAppIcon size={16}/> : null}{option === "whatsapp" ? t.viaWhatsapp : option === "phone" ? t.viaPhone : t.viaEmail}</button>)}
         </div></fieldset>
-        {user === null && <label className="field"><span className="field__label">Email (optional)</span><input type="email" inputMode="email" autoComplete="email" value={guest.email} onChange={(event) => setGuest((current) => ({ ...current, email: event.target.value.trim() }))}/><span className="field__hint">Give a mobile, an email, or both. We’ll send a sign-in code to this email.</span></label>}
-        <label className="field"><span className="field__label">{t.describe}{activeIntake ? " (optional, extra notes)" : ""}</span><textarea value={draft.description} onChange={(event) => update({ description: event.target.value.slice(0, 1500) })} rows={4} maxLength={1500} required={!activeIntake} aria-invalid={describeBad&&!activeIntake}/>{describeBad && <span className="field__error">{t.errDescribe}</span>}<span className="field__hint">{t.describeHint} · {draft.description.length}/1500</span></label>
+        <label className="field"><span className="field__label">{t.describe} (optional)</span><textarea value={draft.description} onChange={(event) => update({ description: event.target.value.slice(0, 1500) })} rows={4} maxLength={1500} aria-invalid={describeBad}/>{describeBad && <span className="field__error">{t.errDescribe}</span>}<span className="field__hint">{t.describeHint} · {draft.description.length}/1500</span></label>
         {activeIntake && <DetailedIntakeFields intake={activeIntake} onChange={value=>update({intake:value})}
           errors={showErrors?intakeErrors:{}} photo={photo} onPhotoChange={user && user.role!=="demo"?setPhoto:undefined}/>}
         <div className="quick-picks"><span>{t.quickPicks}</span>{picks.map((pick) => <button key={pick} type="button" className="chip-btn chip-btn--sm" onClick={() => update({ description: draft.description.includes(pick) ? draft.description : `${draft.description ? `${draft.description.trim()} ` : ""}${pick}.`.slice(0, 1500) })}>+ {pick}</button>)}</div>
