@@ -13,7 +13,7 @@ import { allServiceCatalog, allServiceItems, findService, publishedServiceDetail
 import { breadcrumbLd, faqLd, localBusinessLd, serializeJsonLd } from "../src/lib/structured-data.ts";
 import { site } from "../src/lib/site.ts";
 
-const PREFIX = "NISE COMPORT - Pragya Kendra - ";
+const PREFIX = "NiSE COMPORT - Pragya Kendra - ";
 const routes = publicRoutes();
 const routePaths = new Set(routes.map((route) => route.path));
 
@@ -47,9 +47,9 @@ test("service search titles and descriptions fit in Google results", () => {
 });
 
 test("tab titles start with the brand and Pragya Kendra", () => {
-  assert.equal(brandTitle("PAN Card Help in Jamshedpur"), "NISE COMPORT - Pragya Kendra - PAN Card Help in Jamshedpur");
-  assert.equal(brandTitle("जमशेदपुर में सेवाएँ | NISE COMPORT"), "NISE COMPORT - Pragya Kendra - जमशेदपुर में सेवाएँ");
-  assert.equal(brandTitle("NISE COMPORT"), "NISE COMPORT - Pragya Kendra");
+  assert.equal(brandTitle("PAN Card Help in Jamshedpur"), "NiSE COMPORT - Pragya Kendra - PAN Card Help in Jamshedpur");
+  assert.equal(brandTitle("जमशेदपुर में सेवाएँ | NiSE COMPORT"), "NiSE COMPORT - Pragya Kendra - जमशेदपुर में सेवाएँ");
+  assert.equal(brandTitle("NiSE COMPORT"), "NiSE COMPORT - Pragya Kendra");
 });
 
 test("old long service addresses redirect to the short ones", () => {
