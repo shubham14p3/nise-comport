@@ -164,12 +164,16 @@ export default function CounterDesk({ services }: { services: Service[]; isOwner
     if (!lookup?.customer || busy) return;
     if (!editName.trim()) { setError("Enter the customer name."); return; }
     if (!window.confirm("Update the selected customer account? Email changes require verification again. Existing service records stay attached to the same account.")) return;
-    const result = await run(() => secureApi<{ changed: boolean }>(COUNTER_OP, {
+    const result = await run(() => secureApi<{ changed: boolean; email: string }>(COUNTER_OP, {
       action: "update-customer", userId: lookup.customer!.id,
       name: editName, email: editEmail.trim() || undefined,
     }));
     if (!result) return;
-    await findCustomer(lookup.page, lookup.customer.id);
+    if (mode === "email" && result.email !== lookupText.trim().toLowerCase()) {
+      setLookupText(result.email);
+      const updated = await run(() => secureApi<Lookup>(COUNTER_OP, { action: "lookup-email", email: result.email, page: lookup.page }));
+      if (updated) { setLookup(updated); setEditName(updated.customer?.name ?? editName); setEditEmail(updated.contact?.email ?? ""); }
+    } else await findCustomer(lookup.page, lookup.customer.id);
     setNotice(result.changed ? "Customer profile updated. Their existing visits remain linked." : "No customer details changed.");
     setEditingDetails(false);
   }
