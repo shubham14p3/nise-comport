@@ -2,6 +2,7 @@
 
 import { messageForStatus, networkMessage } from "@/lib/net-messages";
 import { coalesceInFlight, requestFlightKey } from "@/lib/inflight-requests";
+import { trackApiActivity } from "@/lib/api-activity";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -163,7 +164,7 @@ async function secureApiOnce<T>(operation: string, input: unknown = {}): Promise
  * Distinct actions/filters/records do not block one another.
  */
 export function secureApi<T>(operation: string, input: unknown = {}): Promise<T> {
-  return coalesceInFlight(pendingRequests, requestFlightKey(operation, input), () => secureApiOnce<T>(operation, input));
+  return coalesceInFlight(pendingRequests, requestFlightKey(operation, input), () => trackApiActivity(secureApiOnce<T>(operation, input)));
 }
 
 /** Public static files only (for example blank PDF forms under /forms). Application data never goes through here. */
@@ -193,7 +194,7 @@ export function secureUpload<T>(operation: string, file: File, input: Record<str
     pending = new Map<string, Promise<unknown>>();
     pendingUploads.set(file, pending);
   }
-  return coalesceInFlight(pending, requestFlightKey(operation, input), () => secureUploadOnce<T>(operation, file, input));
+  return coalesceInFlight(pending, requestFlightKey(operation, input), () => trackApiActivity(secureUploadOnce<T>(operation, file, input)));
 }
 
 async function secureUploadOnce<T>(operation: string, file: File, input: Record<string, unknown> = {}): Promise<T> {
@@ -229,7 +230,7 @@ async function secureUploadOnce<T>(operation: string, file: File, input: Record<
 
 /** Avoid duplicate encrypted file fetches from repeated download clicks. */
 export function secureFile(operation: string, input: unknown = {}) {
-  return coalesceInFlight(pendingRequests, `file:${requestFlightKey(operation, input)}`, () => secureFileOnce(operation, input));
+  return coalesceInFlight(pendingRequests, `file:${requestFlightKey(operation, input)}`, () => trackApiActivity(secureFileOnce(operation, input)));
 }
 
 async function secureFileOnce(operation: string, input: unknown = {}) {
