@@ -48,15 +48,9 @@ function chooseTempPassword(custom: string | undefined, context: { email: string
   return value;
 }
 
-/** Only the owner can provision a PIN, and only for an account with a unique mobile number. */
-async function ensureUniquePinPhone(phone: string | null, userId?: string) {
-  if (!phone) throw new PublicError("Add the member's mobile number before assigning a PIN.", 400, { fields: { phone: "Mobile number is required for PIN sign-in." } });
-  const matches = await db.select({ id: users.id }).from(users).where(and(
-    eq(users.phone, phone), isNull(users.deletedAt), isNull(users.disabledAt),
-  )).limit(3);
-  if (matches.some((row) => row.id !== userId)) {
-    throw new PublicError("Another active account uses this mobile number. Resolve the duplicate before enabling PIN sign-in.", 409, { fields: { phone: "Already used by another account." } });
-  }
+/** PINs belong to accounts, not phone numbers. Shared contact phones must sign in by email + PIN. */
+function requireTeamPinPhone(phone: string | null) {
+  if (!phone) throw new PublicError("Add the member's mobile number before assigning a PIN.", 400, { fields: { phone: "A contact mobile is required for PIN setup." } });
 }
 
 function chooseTeamPin(custom?: string) {
@@ -119,7 +113,7 @@ export async function addStaff(
     // An explicitly provided PIN is an owner-authorised credential change.
     const effectivePhone = phone ?? existing.phone;
     if (input.pin?.trim()) {
-      await ensureUniquePinPhone(effectivePhone, existing.id);
+      requireTeamPinPhone(effectivePhone);
       tempPin = chooseTeamPin(input.pin);
     }
     await db.update(users).set({
@@ -137,7 +131,7 @@ export async function addStaff(
     // A mobile number gets a generated PIN unless the owner entered a custom one.
     // Without a mobile, no PIN is created.
     if (phone || input.pin?.trim()) {
-      await ensureUniquePinPhone(phone);
+      requireTeamPinPhone(phone);
       tempPin = chooseTeamPin(input.pin);
     }
     const [row] = await db.insert(users).values({
@@ -154,7 +148,7 @@ export async function addStaff(
       ? `Sign in at ${site.url}/login with your email address and this temporary password: ${tempPassword}`
       : `Sign in at ${site.url}/login with your usual password or an email code, then open the staff dashboard.`,
     ...(tempPassword ? ["For safety, change it straight away: Profile → Security → Change password."] : []),
-    ...(tempPin ? [`Your temporary mobile sign-in PIN is: ${tempPin}. Keep it private and change or recover it as soon as practical.`] : []),
+    ...(tempPin ? [`Your temporary PIN is: ${tempPin}. Sign in using your email address + PIN if the mobile number is shared. Keep it private.`] : []),
     "If you weren’t expecting this, please tell the shop owner.",
   ]);
   await logActivity({ kind: "staff", permission: "team", title: `${actor.name} added ${displayName} to the team as ${role === "admin" ? "an owner" : "staff"}`, detail: permissions.join(", ") || null, refType: "user", refId: userId, actorId: actor.id });
@@ -252,13 +246,13 @@ export async function resetStaffPin(id: string, custom: string | undefined, acto
   if (!member || member.deletedAt || member.disabledAt || (member.role !== "staff" && member.role !== "admin")) {
     throw new PublicError("Active team member not found.", 404, { code: "not_found" });
   }
-  await ensureUniquePinPhone(member.phone, member.id);
+  requireTeamPinPhone(member.phone);
   const pin = chooseTeamPin(custom);
   await db.update(users).set({ loginPinHash: await hash(pin), updatedAt: new Date() }).where(eq(users.id, id));
   await db.delete(sessions).where(eq(sessions.userId, id));
   await sendAccessEmail(id, member.email, "Your NISE COMPORT mobile sign-in PIN was updated", [
     `${actor.name ?? "The owner"} has set a new mobile sign-in PIN for your team account.`,
-    `Sign in at ${site.url}/login using ${member.phone} and this temporary six-digit PIN: ${pin}`,
+    `Sign in at ${site.url}/login using your email address (${member.email}) and this temporary six-digit PIN: ${pin}. Choose Email + PIN if the contact number is shared.`,
     "Keep this PIN private. If it was not requested, contact the owner immediately.",
   ]);
   await logActivity({ kind: "staff", permission: "team", title: `${actor.name ?? "Owner"} updated ${member.name}'s sign-in PIN`, refType: "user", refId: id, actorId: actor.id });
