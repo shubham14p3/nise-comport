@@ -141,8 +141,6 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
       : { resetPassword: true, password: generateCredential ? "" : value }, `Updated ${kind} for ${member.name}. Previous sessions have ended.`);
     if (result) { setCredentialPin(""); setCredentialPassword(""); setGenerateCredential(false); setCredentialsFor(null); }
   }
-  const reset = (member: Member) => window.confirm(`Generate a new temporary password for ${member.name}? Existing sessions will end and the password is sent by email.`)
-    && patch(member, { resetPassword: true }, `New temporary password set for ${member.name}.`);
   const destroy = (member: Member) => window.confirm(`Delete ${member.name}'s account for good? Their details are erased and they can’t sign in. This cannot be undone.`)
     && patch(member, { delete: true }, `${member.name}’s account was deleted.`);
 
@@ -200,11 +198,11 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
           <div className="staff-card__actions">
             <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => startEdit(member)}><Pencil size={15}/> Edit</button>
             {!isMe && <>
-              <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => void reset(member)}><KeyRound size={15}/> Reset password</button>
+              
               <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => {
                 setCredentialsFor(credentialsFor === member.id ? null : member.id);
                 setCredentialPassword(""); setCredentialPin(""); setCredentialKind("password"); setGenerateCredential(false); setError(""); setNotice("");
-              }}><KeyRound size={15}/> {credentialsFor === member.id ? "Close credentials" : "Set password / PIN"}</button>
+              }}><KeyRound size={15}/> {credentialsFor === member.id ? "Close sign-in settings" : "Manage sign-in"}</button>
               <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => void patch(member, { disabled: !member.disabled }, member.disabled ? `${member.name} can sign in again.` : `${member.name} is disabled.`)}>{member.disabled ? "Enable" : "Disable"}</button>
               <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => void remove(member)}><UserMinus size={15}/> Remove from team</button>
               <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => void destroy(member)}><Trash2 size={15}/> Delete account</button>
