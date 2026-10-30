@@ -238,15 +238,18 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
                 onClick={() => { setCredentialKind("pin"); setGenerateCredential(false); setError(""); }}><KeyRound size={16}/> 6-digit PIN</button>
             </div>
             <div className="team-credentials__form">
+              <div className="team-credentials__input-row">
               <label className="field"><span className="field__label">{credentialKind === "password" ? "New temporary password" : "New 6-digit PIN"}</span>
                 {credentialKind === "password"
                   ? <SecretField autoComplete="new-password" value={generateCredential ? "" : credentialPassword} maxLength={128} placeholder={generateCredential ? "A password will be generated securely" : "Enter a new temporary password"} disabled={locked || generateCredential} onChange={(event) => setCredentialPassword(event.target.value)}/>
                   : <SecretField autoComplete="off" inputMode="numeric" value={generateCredential ? "" : credentialPin} maxLength={6} placeholder={generateCredential ? "A PIN will be generated securely" : "Enter exactly 6 digits"} disabled={locked || generateCredential} onChange={(event) => setCredentialPin(event.target.value.replace(/\D/g, "").slice(0, 6))}/>}
                 <span className="field__hint">{credentialKind === "password" ? "Use a strong temporary password; the member can change it from Profile → Security." : "Choose six digits that are not repeated or sequential. For shared contact numbers, sign in using Email + PIN."}</span>
               </label>
-              <label className="team-credentials__auto"><input type="checkbox" checked={generateCredential} disabled={locked} onChange={(event) => setGenerateCredential(event.target.checked)}/>
-                Generate a secure {credentialKind === "password" ? "password" : "PIN"} instead
+              <label className="team-credentials__auto">
+                <input type="checkbox" checked={generateCredential} disabled={locked} onChange={(event) => setGenerateCredential(event.target.checked)}/>
+                <span><b>Generate securely</b><small>Create a strong {credentialKind === "password" ? "password" : "PIN"} automatically</small></span>
               </label>
+              </div>
               <div className="team-credentials__footer">
                 <span><ShieldCheck size={16}/> Existing sessions will be signed out. The new credential is emailed to the member.</span>
                 <button type="button" className="btn btn--primary btn--sm" aria-busy={locked} disabled={locked || (!generateCredential && (credentialKind === "password" ? credentialPassword.trim().length < 10 : !/^\d{6}$/.test(credentialPin)))}
