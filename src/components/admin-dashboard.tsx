@@ -352,14 +352,14 @@ const subscribeHash = (callback: () => void) => { window.addEventListener("hashc
  * Staff workspace. Each tab needs a permission (see src/lib/permissions.ts); the owner sees all
  * of them plus Team, where staff are added and their access is set.
  */
-export default function AdminDashboard({ me, viewAsStaff = false, services }: { me: { id?: string; name: string; role: string; permissions: Permission[] }; viewAsStaff?: boolean; services: { slug: string; title: string }[] }) {
+export default function AdminDashboard({ me, viewAsStaff = false, services }: { me: { id?: string; name: string; role: string; permissions: Permission[]; sidebar?: string[] }; viewAsStaff?: boolean; services: { slug: string; title: string }[] }) {
   // The owner can preview the desk as a staff member would see it (hides the owner-only Team
   // tab) via "Staff view" in the account menu, without actually losing any access — they can
   // always switch back to "Admin view". Only meaningful when me.role is "admin"; for a real
   // staff account viewAsStaff is always false and changes nothing.
   const isOwner = me.role === "admin" && !viewAsStaff;
   const effectivePermissions = viewAsStaff ? [...STAFF_PERMISSIONS] : me.permissions;
-  const tabs = TABS.filter((tab) => tab.needs === "staff" ? true : tab.needs === "admin" ? isOwner : isOwner || (Array.isArray(tab.needs) ? tab.needs.some((permission) => effectivePermissions.includes(permission)) : effectivePermissions.includes(tab.needs)));
+  const tabs = TABS.filter((tab) => (isOwner || viewAsStaff || !(me.sidebar?.length) || me.sidebar.includes(tab.id)) && (tab.needs === "staff" ? true : tab.needs === "admin" ? isOwner : isOwner || (Array.isArray(tab.needs) ? tab.needs.some((permission) => effectivePermissions.includes(permission)) : effectivePermissions.includes(tab.needs))));
   const hash = useSyncExternalStore(subscribeHash, readHash, () => "");
   const [picked, setPicked] = useState<Tab | null>(null);
   const fromHash = tabs.find((tab) => tab.id === hash)?.id;
