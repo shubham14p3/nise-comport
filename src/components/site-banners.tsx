@@ -7,7 +7,7 @@ type Lang = "en" | "hi" | "bn";
 
 function BannerImage({ src }: { src: string }) {
   // eslint-disable-next-line @next/next/no-img-element -- poster from the admin library or uploads (any size)
-  return <img src={src} alt="" loading="lazy"/>;
+  return <img src={src} alt="" loading="lazy" decoding="async"/>;
 }
 
 function BannerLink({ banner, children, className }: { banner: Banner; children: React.ReactNode; className: string }) {
