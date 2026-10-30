@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --hostname 0.0.0.0",
+    "dev": "next dev --hostname 0.0.0.0 -p 3020",
     "build": "next build --webpack",
     "release": "node scripts/release-build.mjs",
     "init": "node scripts/check-build.mjs && npm start",
