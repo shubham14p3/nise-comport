@@ -28,7 +28,7 @@ const POPULAR: [string, string, string, string][] = [
  * Shared footer on every page: the same name, address and phone (NAP) as the Google Business
  * Profile, plus links to the most important pages so every page passes link value to them.
  */
-export default function FooterBody({ year, partners, hoursByLocale, mapsUrl, reviewUrl }: { year: number; partners: ReactNode; hoursByLocale: Record<"en" | "hi" | "bn", string[]>; mapsUrl: string; reviewUrl: string | null }) {
+export default function FooterBody({ year, partners, hoursByLocale, mapsUrl, reviewUrl, whatsappPrimary, contactEmail }: { year: number; partners: ReactNode; hoursByLocale: Record<"en" | "hi" | "bn", string[]>; mapsUrl: string; reviewUrl: string | null; whatsappPrimary: string; contactEmail: string }) {
   const lc = useLocale();
   const t = tr(lc);
   // Use the server-rendered hours snapshot on both SSR and hydration.
@@ -42,7 +42,7 @@ export default function FooterBody({ year, partners, hoursByLocale, mapsUrl, rev
         <Link prefetch={false} className="brand brand--on-dark" href={href("/")} aria-label={`${site.name} home`}><BrandWordmark/></Link>
         <p>{t("Your neighbourhood CSC & Pragya Kendra in Kharangajhar, Telco. Sarkari & digital kaam, sorted with a human touch.", "खरंगाझार, टेल्को में आपका अपना CSC व प्रज्ञा केंद्र। सरकारी और डिजिटल काम, अपनेपन के साथ।", "খরংগাঝাড়, টেলকোতে আপনার নিজের CSC ও প্রজ্ঞা কেন্দ্র। সরকারি ও ডিজিটাল কাজ, আপন করে।")}</p>
         <div className="footer-cta">
-          <a className="btn btn--wa btn--sm" href={whatsappLink(t("Hello NISE COMPORT, I need help with a service.", "नमस्ते NISE COMPORT, मुझे एक सेवा में मदद चाहिए।", "নমস্কার NISE COMPORT, একটি পরিষেবায় আমার সাহায্য দরকার।"))} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={17}/> WhatsApp</a>
+          <a className="btn btn--wa btn--sm" href={whatsappLink(t("Hello NISE COMPORT, I need help with a service.", "नमस्ते NISE COMPORT, मुझे एक सेवा में मदद चाहिए।", "নমস্কার NISE COMPORT, একটি পরিষেবায় আমার সাহায্য দরকার।"), whatsappPrimary)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={17}/> WhatsApp</a>
           <a className="btn btn--glass btn--sm" href={`tel:${site.phones.primary.e164}`}><Phone size={16}/> {t("Call", "फ़ोन करें", "ফোন করুন")}</a>
         </div>
         <div className="footer-langs" aria-label="Languages">
@@ -88,7 +88,7 @@ export default function FooterBody({ year, partners, hoursByLocale, mapsUrl, rev
         </address>
         <p><Clock3 size={16} aria-hidden="true"/><span>{hours.length ? hours.join(" · ") : t("Mon–Sat · call before visiting for today’s timings", "सोम–शनि · आने से पहले आज के समय के लिए फ़ोन करें", "সোম–শনি · আসার আগে আজকের সময় জানতে ফোন করুন")}</span></p>
         <p><Phone size={16} aria-hidden="true"/><span><a href={`tel:${site.phones.primary.e164}`}>{site.phones.primary.display}</a><br/><a href={`tel:${site.phones.secondary.e164}`}>{site.phones.secondary.display}</a><br/><a href={`tel:${site.phones.landline.e164}`}>{site.phones.landline.display}</a></span></p>
-        <p><Mail size={16} aria-hidden="true"/><a href={`mailto:${site.email}`}>{site.email}</a></p>
+        <p><Mail size={16} aria-hidden="true"/><a href={`mailto:${contactEmail}`}>{contactEmail}</a></p>
         <a className="footer-directions" href={mapsUrl} target="_blank" rel="noopener noreferrer">{t("Get directions", "रास्ता देखें", "দিকনির্দেশ দেখুন")} <ArrowUpRight size={15} aria-hidden="true"/></a>
         {reviewUrl && <a className="footer-directions" href={reviewUrl} target="_blank" rel="noopener noreferrer">{t("Review us on Google", "Google पर रिव्यू दें", "Google-এ রিভিউ দিন")} <ArrowUpRight size={15} aria-hidden="true"/></a>}
       </div>
