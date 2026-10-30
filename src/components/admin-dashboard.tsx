@@ -398,10 +398,12 @@ export default function AdminDashboard({ me, viewAsStaff = false, services }: { 
   }, [canMail, active]);
   const clearUnread = useCallback(() => setSummary((value) => value ? { ...value, unread: 0 } : value), []);
   const [railOpen, setRailOpen] = useState(true);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const activeGroup = expandedGroup ?? NAV_SECTIONS.find((section) => (section.tabs as readonly string[]).includes(active))?.id ?? "work";
   useEffect(() => { try { if (window.localStorage.getItem("nc-desk-rail") === "0") queueMicrotask(() => setRailOpen(false)); } catch { /* ignore */ } }, []);
   function toggleRail() { setRailOpen((open) => { try { window.localStorage.setItem("nc-desk-rail", open ? "0" : "1"); } catch { /* ignore */ } return !open; }); }
   function choose(tab: Tab) {
-    setPicked(tab); window.history.replaceState(null, "", `#${tab}`); window.scrollTo({ top: 0, left: 0, behavior: "instant" }); }
+    setPicked(tab); setExpandedGroup(NAV_SECTIONS.find((section) => (section.tabs as readonly string[]).includes(tab))?.id ?? null); window.history.replaceState(null, "", `#${tab}`); window.scrollTo({ top: 0, left: 0, behavior: "instant" }); }
   const first = me.name.split(/\s+/)[0] || "there";
   const current = tabs.find((tab) => tab.id === active);
   const can = (permission: Permission) => isOwner || effectivePermissions.includes(permission);
@@ -427,8 +429,8 @@ export default function AdminDashboard({ me, viewAsStaff = false, services }: { 
     <div className={railOpen ? "container profile__layout" : "container profile__layout profile__layout--rail"}>
       <aside className="profile__nav" aria-label="Admin sections">
         <button type="button" className="profile__nav-toggle" onClick={toggleRail} aria-expanded={railOpen} title={railOpen ? "Hide the menu" : "Show the menu"}>{railOpen ? <PanelLeftClose size={19}/> : <PanelLeftOpen size={19}/>}<span>Hide menu</span></button>
-        {railOpen ? <nav className="admin-nav-groups">{NAV_SECTIONS.map((section) => { const visible = tabs.filter((tab) => (section.tabs as readonly string[]).includes(tab.id)); return visible.length > 0 && <details key={section.id} className="admin-nav-group" open={(section.tabs as readonly string[]).includes(active)}>
-          <summary>{section.title}<span>{visible.length}</span></summary>
+        {railOpen ? <nav className="admin-nav-groups">{NAV_SECTIONS.map((section) => { const visible = tabs.filter((tab) => (section.tabs as readonly string[]).includes(tab.id)); return visible.length > 0 && <details key={section.id} className="admin-nav-group" open={activeGroup === section.id}>
+          <summary onClick={(event) => { event.preventDefault(); setExpandedGroup(section.id === activeGroup ? null : section.id); }}>{section.title}<span>{visible.length}</span></summary>
           <div>{visible.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={active === id ? "is-active" : undefined} aria-current={active === id ? "page" : undefined} onClick={() => choose(id)} title={label}>
             <Icon size={18}/><span>{label}</span>{id === "inbox" && unread > 0 && <small aria-label={`${unread} new`}>{unread > 99 ? "99+" : unread}</small>}{id === "mail" && mailUnread > 0 && <small aria-label={`${mailUnread} unread`}>{mailUnread > 99 ? "99+" : mailUnread}</small>}
           </button>)}</div>
