@@ -2,12 +2,13 @@
 
 import { FormEvent, useEffect, useRef, useState, type InputHTMLAttributes } from "react";
 import { BadgeCheck, Copy, Crown, Eye, EyeOff, KeyRound, LoaderCircle, LockKeyhole, Mail, Pencil, Phone, Search, ShieldCheck, Trash2, UserMinus, UserPlus, UsersRound } from "lucide-react";
-import { PERMISSION_INFO, STAFF_PERMISSIONS, SCOPE_PREFIX } from "@/lib/permissions";
+import { PERMISSION_INFO, SCOPE_PREFIX } from "@/lib/permissions";
+import { MENU_PREFIX, OWNER_MENU_AREAS, STAFF_MENU_AREAS } from "@/lib/sidebar-permissions";
 import { serviceCatalog } from "@/lib/services";
 import { secureApi } from "@/lib/secure-api-client";
 import { AdminPager, useAdminPagination } from "@/components/admin-pager";
 
-type Member = { id: string; name: string; email: string; phone: string | null; role: string; permissions: string[]; categories: string[]; verified: boolean; createdAt: string; disabled: boolean; tempPassword: boolean; hasPin: boolean };
+type Member = { id: string; name: string; email: string; phone: string | null; role: string; permissions: string[]; categories: string[]; sidebar: string[]; verified: boolean; createdAt: string; disabled: boolean; tempPassword: boolean; hasPin: boolean };
 type Role = "staff" | "admin";
 type Edit = { name: string; email: string; phone: string; role: Role; permissions: string[] };
 
@@ -107,7 +108,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
 
   function startEdit(member: Member) {
     setEditing(member.id); setError(""); setNotice("");
-    setEdit({ name: member.name, email: member.email, phone: member.phone ?? "", role: member.role === "admin" ? "admin" : "staff", permissions: member.permissions.length ? [...member.permissions, ...member.categories.map((slug) => SCOPE_PREFIX + slug)] : ["requests"] });
+    setEdit({ name: member.name, email: member.email, phone: member.phone ?? "", role: member.role === "admin" ? "admin" : "staff", permissions: member.permissions.length ? [...member.permissions, ...member.categories.map(slug => SCOPE_PREFIX + slug), ...(member.sidebar ?? []).map(id => MENU_PREFIX + id)] : ["requests"] });
   }
 
   async function patch(member: Member, body: Record<string, unknown>, done: string) {
