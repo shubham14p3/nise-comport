@@ -212,7 +212,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
               <label className="field"><span className="field__label">New temporary password</span>
                 <SecretField autoComplete="new-password" value={credentialPassword} maxLength={128} placeholder="Generate automatically" disabled={locked} onChange={(event) => setCredentialPassword(event.target.value)}/></label>
               <label className="field"><span className="field__label">New 6-digit PIN {member.phone ? "" : "(mobile needed)"}</span>
-                <SecretField autoComplete="off" inputMode="numeric" value={credentialPin} maxLength={6} placeholder="Generate automatically" disabled={locked || !member.phone} onChange={(event) => setCredentialPin(event.target.value.replace(/\\D/g, "").slice(0,6))}/></label>
+                <SecretField autoComplete="off" inputMode="numeric" value={credentialPin} maxLength={6} placeholder="Generate automatically" disabled={locked || !member.phone} onChange={(event) => setCredentialPin(event.target.value.replace(/\D/g, "").slice(0,6))}/></label>
             </div>
             <div className="staff-card__actions">
               <button type="button" className="btn btn--primary btn--sm" disabled={locked} onClick={() => void saveCredential(member, "password")}>Set password</button>
@@ -233,7 +233,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
         <label className="field"><span className="field__label">Name <em>if they don’t have an account yet</em></span><input value={name} onChange={(event) => setName(event.target.value)} maxLength={100} placeholder="e.g. Ravi Kumar"/></label>
         <label className="field"><span className="field__label">Mobile number <em>optional</em></span><input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="10-digit mobile"/></label>
         <label className="field"><span className="field__label">Temporary password <em>leave empty to generate one</em></span><SecretField value={password} onChange={(event) => setPassword(event.target.value)} maxLength={128} autoComplete="new-password" placeholder="Auto-generated"/></label>
-        <label className="field"><span className="field__label">6-digit PIN <em>optional, requires mobile</em></span><SecretField value={pin} inputMode="numeric" onChange={(event) => setPin(event.target.value.replace(/\\D/g, "").slice(0,6))} maxLength={6} autoComplete="off" placeholder="Auto-generate if mobile is entered"/></label>
+        <label className="field"><span className="field__label">6-digit PIN <em>optional, requires mobile</em></span><SecretField value={pin} inputMode="numeric" onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0,6))} maxLength={6} autoComplete="off" placeholder="Auto-generate if mobile is entered"/></label>
       </div>
       {role === "staff" ? <><span className="field__label">What may they do?</span><PermissionBoxes value={permissions} onChange={setPermissions}/></>
         : <p className="field__hint">Owners can open every area and manage the team. Only add people you fully trust.</p>}
