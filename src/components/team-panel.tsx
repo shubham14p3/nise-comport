@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState, type InputHTMLAttributes } from "react";
+import Link from "next/link";
 import { BadgeCheck, Copy, Crown, Eye, EyeOff, KeyRound, LoaderCircle, LockKeyhole, Mail, Pencil, Phone, Search, ShieldCheck, Trash2, UserMinus, UserPlus, UsersRound } from "lucide-react";
 import { PERMISSION_INFO, SCOPE_PREFIX } from "@/lib/permissions";
 import { MENU_PREFIX, OWNER_MENU_AREAS, STAFF_MENU_AREAS } from "@/lib/sidebar-permissions";
@@ -214,7 +215,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
             : <p className="admin-empty">{member.permissions.map((permission) => PERMISSION_INFO[permission as keyof typeof PERMISSION_INFO].label).join(" · ") || "No access"}{member.permissions.includes("requests") && (member.categories.length ? ` · Categories: ${member.categories.map((slug) => serviceCatalog.find((group) => group.slug === slug)?.title ?? slug).join(", ")}` : " · All categories")}</p>}
           <div className="staff-card__actions">
             <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => startEdit(member)}><Pencil size={15}/> Edit</button>
-            {isMe && <a className="btn btn--ghost btn--sm" href="/profile#security"><KeyRound size={15}/> Set my PIN / password</a>}
+            {isMe && <Link className="btn btn--ghost btn--sm" href="/profile#security"><KeyRound size={15}/> Set my PIN / password</Link>}
             {!isMe && <>
               
               <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => {
