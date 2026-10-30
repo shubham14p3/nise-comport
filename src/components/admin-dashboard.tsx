@@ -12,8 +12,8 @@ import { WhatsAppIcon } from "@/components/icons";
 
 import PanSavedDetails from "@/components/pan-saved-details";
 import RequestExtras from "@/components/request-extras";
-import CounterDesk from "@/components/counter-desk";
-import FindCustomerPanel from "@/components/find-customer-panel";
+const CounterDesk = dynamic(() => import("@/components/counter-desk"), { ssr: false, loading: () => <p className="admin-loading">Loading counter desk…</p> });
+const FindCustomerPanel = dynamic(() => import("@/components/find-customer-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading customer search…</p> });
 import { ArrowRight, Bell, Cake, ClipboardList, Contact, UserRound, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images, PanelLeftClose, PanelLeftOpen, Store, X } from "lucide-react";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
 
