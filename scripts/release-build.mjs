@@ -15,7 +15,7 @@ if (mode !== "prod" && mode !== "local") {
   console.error("APP_ENV must be 'prod' or 'local'.");
   process.exit(1);
 }
-const SITE = (process.env.NEXT_PUBLIC_SITE_URL || (mode === "prod" ? "https://nisecomport.com" : "http://localhost:3000")).trim();
+const SITE = (process.env.NEXT_PUBLIC_SITE_URL || (mode === "prod" ? "https://nisecomport.com" : "http://localhost:3020")).trim();
 try {
   const url = new URL(SITE);
   if (!["http:", "https:"].includes(url.protocol)) throw new Error("Unsupported protocol");
@@ -82,7 +82,7 @@ try { commit = execSync("git rev-parse --short HEAD", { encoding: "utf8" }).trim
 writeFileSync(join(".next", "BUILT_FROM"), `${commit} at ${new Date().toISOString().replace("T", " ").slice(0, 16)} UTC\n`);
 writeFileSync(join(".next", "DEPLOY_INFO.json"), JSON.stringify({
   mode, siteUrl: SITE, publicKeyFingerprint: publicFingerprint,
-  port: process.env.INTERNAL_API_PORT || (mode === "prod" ? "3020" : "3000"),
+  port: process.env.INTERNAL_API_PORT || ("3020"),
 }, null, 2) + "\n");
 
 
