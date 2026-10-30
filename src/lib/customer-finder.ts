@@ -225,6 +225,16 @@ export type ContactChange = {
 
 /** Staff email/mobile changes: pending first, then the latest decisions. Any staff with records access can see them. */
 export async function listContactChanges(actor: { id: string; role?: string | null }) {
+  try {
+    return await loadContactChanges(actor);
+  } catch (error) {
+    // Until migration 0039 (contact_change_requests) is applied, search must still work: show an empty list.
+    if ((error as { cause?: { code?: string } })?.cause?.code === "42P01") return { requests: [] as ContactChange[], me: actor.id, isAdmin: actor.role === "admin" };
+    throw error;
+  }
+}
+
+async function loadContactChanges(actor: { id: string; role?: string | null }) {
   const requester = alias(users, "contact_requester");
   const rows = await db.select({
     id: contactChangeRequests.id, status: contactChangeRequests.status, newEmail: contactChangeRequests.newEmail,
