@@ -28,7 +28,7 @@ const POPULAR: [string, string, string, string][] = [
  * Shared footer on every page: the same name, address and phone (NAP) as the Google Business
  * Profile, plus links to the most important pages so every page passes link value to them.
  */
-export default function FooterBody({ year, partners, hoursByLocale }: { year: number; partners: ReactNode; hoursByLocale: Record<"en" | "hi" | "bn", string[]> }) {
+export default function FooterBody({ year, partners, hoursByLocale, mapsUrl, reviewUrl }: { year: number; partners: ReactNode; hoursByLocale: Record<"en" | "hi" | "bn", string[]>; mapsUrl: string; reviewUrl: string | null }) {
   const lc = useLocale();
   const t = tr(lc);
   // Use the server-rendered hours snapshot on both SSR and hydration.
@@ -89,8 +89,8 @@ export default function FooterBody({ year, partners, hoursByLocale }: { year: nu
         <p><Clock3 size={16} aria-hidden="true"/><span>{hours.length ? hours.join(" · ") : t("Mon–Sat · call before visiting for today’s timings", "सोम–शनि · आने से पहले आज के समय के लिए फ़ोन करें", "সোম–শনি · আসার আগে আজকের সময় জানতে ফোন করুন")}</span></p>
         <p><Phone size={16} aria-hidden="true"/><span><a href={`tel:${site.phones.primary.e164}`}>{site.phones.primary.display}</a><br/><a href={`tel:${site.phones.secondary.e164}`}>{site.phones.secondary.display}</a><br/><a href={`tel:${site.phones.landline.e164}`}>{site.phones.landline.display}</a></span></p>
         <p><Mail size={16} aria-hidden="true"/><a href={`mailto:${site.email}`}>{site.email}</a></p>
-        <a className="footer-directions" href={site.mapsUrl} target="_blank" rel="noopener noreferrer">{t("Get directions", "रास्ता देखें", "দিকনির্দেশ দেখুন")} <ArrowUpRight size={15} aria-hidden="true"/></a>
-        {site.reviewUrl && <a className="footer-directions" href={site.reviewUrl} target="_blank" rel="noopener noreferrer">{t("Review us on Google", "Google पर रिव्यू दें", "Google-এ রিভিউ দিন")} <ArrowUpRight size={15} aria-hidden="true"/></a>}
+        <a className="footer-directions" href={mapsUrl} target="_blank" rel="noopener noreferrer">{t("Get directions", "रास्ता देखें", "দিকনির্দেশ দেখুন")} <ArrowUpRight size={15} aria-hidden="true"/></a>
+        {reviewUrl && <a className="footer-directions" href={reviewUrl} target="_blank" rel="noopener noreferrer">{t("Review us on Google", "Google पर रिव्यू दें", "Google-এ রিভিউ দিন")} <ArrowUpRight size={15} aria-hidden="true"/></a>}
       </div>
     </div>
     <div className="container footer-trust">
