@@ -46,5 +46,5 @@ test("person names are saved in readable Title Case, preserving intentional mixe
   assert.equal(cleanName("SHUBHAM RAJ"), "Shubham Raj");
   assert.equal(cleanName("  sanjana   shree  "), "Sanjana Shree");
   assert.equal(cleanName("McDonald DeSouza"), "McDonald DeSouza");
-  assert.equal(cleanName("  ANIL\\tKUMAR   "), "Anil Kumar");
+  assert.equal(cleanName("  ANIL\tKUMAR   "), "Anil Kumar");
 });
