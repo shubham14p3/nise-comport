@@ -9,8 +9,8 @@ test("production uses MilesWeb loopback, independent of public domain", () => {
 });
 
 test("local mode uses localhost listener and supports port overrides", () => {
-  assert.equal(internalApiOrigin({ APP_ENV: "local" }), "http://127.0.0.1:3000");
-  assert.equal(internalApiOrigin({ NODE_ENV: "development" }), "http://127.0.0.1:3000");
+  assert.equal(internalApiOrigin({ APP_ENV: "local" }), "http://127.0.0.1:3020");
+  assert.equal(internalApiOrigin({ NODE_ENV: "development" }), "http://127.0.0.1:3020");
   assert.equal(internalApiOrigin({ APP_ENV: "local", INTERNAL_API_PORT: "3005" }), "http://127.0.0.1:3005");
 });
 
@@ -44,7 +44,7 @@ test("local browser and loopback headers share the same origin", () => {
   const target = new URL("/api/auth/request-otp", internalApiOrigin({ APP_ENV: "local" }));
   const headers = internalApiHeaders("b".repeat(40), target);
   assert.equal(headers.get("origin"), target.origin);
-  assert.equal(isCrossSiteApiRequest("127.0.0.1:3000", "localhost:3000", headers.get("origin"), null), false);
+  assert.equal(isCrossSiteApiRequest("127.0.0.1:3020", "localhost:3020", headers.get("origin"), null), false);
 });
 
 test("current, requested and future domain variants redirect to the configured canonical host", () => {
