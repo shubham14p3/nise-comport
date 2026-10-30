@@ -7,8 +7,12 @@ import { usePathname } from "next/navigation";
 export default function ScrollToTop() {
   const pathname = usePathname();
   useEffect(() => {
-    if (window.location.hash && document.getElementById(window.location.hash.slice(1))) return;
+    // Public pages start at the top. The dashboard uses its own hash-based tabs;
+    // let those tabs handle their own scrolling.
+    if (window.location.pathname === "/desk" && window.location.hash) return;
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    const frame = window.requestAnimationFrame(() => window.scrollTo({ top: 0, left: 0, behavior: "instant" }));
+    return () => window.cancelAnimationFrame(frame);
   }, [pathname]);
   return null;
 }
