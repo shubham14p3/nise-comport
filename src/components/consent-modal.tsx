@@ -22,7 +22,7 @@ export default function ConsentModal({ open, onClose, onConfirm, busy, serviceLa
           <li>Extra information or a clarification on something you&apos;ve shared.</li>
           <li>Documents we don&apos;t have yet, including hard-copy originals where the government portal or insurer requires one in person.</li>
         </ol>
-        <p>By sending this request, you&apos;re giving NISE COMPORT consent to collect and use the details and documents you share, solely to provide this service on your behalf. We will never ask you for OTPs, PINs or passwords.</p>
+        <p>By sending this request, you&apos;re giving NiSE COMPORT consent to collect and use the details and documents you share, solely to provide this service on your behalf. We will never ask you for OTPs, PINs or passwords.</p>
         <p style={{ marginBottom: 0 }}>If anything about your request needs sorting out, we&apos;ll get back to you directly — and you&apos;re always welcome to reach us the same way.</p>
       </div>
       <div className="form-actions">

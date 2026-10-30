@@ -42,7 +42,7 @@ export default function FooterBody({ year, partners, hoursByLocale, mapsUrl, rev
         <Link prefetch={false} className="brand brand--on-dark" href={href("/")} aria-label={`${site.name} home`}><BrandWordmark/></Link>
         <p>{t("Your neighbourhood CSC & Pragya Kendra in Kharangajhar, Telco. Sarkari & digital kaam, sorted with a human touch.", "खरंगाझार, टेल्को में आपका अपना CSC व प्रज्ञा केंद्र। सरकारी और डिजिटल काम, अपनेपन के साथ।", "খরংগাঝাড়, টেলকোতে আপনার নিজের CSC ও প্রজ্ঞা কেন্দ্র। সরকারি ও ডিজিটাল কাজ, আপন করে।")}</p>
         <div className="footer-cta">
-          <a className="btn btn--wa btn--sm" href={whatsappLink(t("Hello NISE COMPORT, I need help with a service.", "नमस्ते NISE COMPORT, मुझे एक सेवा में मदद चाहिए।", "নমস্কার NISE COMPORT, একটি পরিষেবায় আমার সাহায্য দরকার।"), whatsappPrimary)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={17}/> WhatsApp</a>
+          <a className="btn btn--wa btn--sm" href={whatsappLink(t("Hello NiSE COMPORT, I need help with a service.", "नमस्ते NiSE COMPORT, मुझे एक सेवा में मदद चाहिए।", "নমস্কার NiSE COMPORT, একটি পরিষেবায় আমার সাহায্য দরকার।"), whatsappPrimary)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={17}/> WhatsApp</a>
           <a className="btn btn--glass btn--sm" href={`tel:${site.phones.primary.e164}`}><Phone size={16}/> {t("Call", "फ़ोन करें", "ফোন করুন")}</a>
         </div>
         <div className="footer-langs" aria-label="Languages">
@@ -107,7 +107,7 @@ export default function FooterBody({ year, partners, hoursByLocale, mapsUrl, rev
       </nav> */}
     </div>
     <div className="container footer-bottom">
-      <p>{t("NISE COMPORT is an independent CSC / Pragya Kendra service centre, not a government office, bank or insurer. Official and third-party fees are separate from our service charge; final approvals rest with the relevant authority.", "NISE COMPORT एक स्वतंत्र CSC / प्रज्ञा केंद्र है, सरकारी कार्यालय, बैंक या बीमा कंपनी नहीं। सरकारी और तीसरे पक्ष का शुल्क हमारे सेवा शुल्क से अलग है; अंतिम मंज़ूरी संबंधित प्राधिकरण की होती है।", "NISE COMPORT একটি স্বাধীন CSC / প্রজ্ঞা কেন্দ্র, সরকারি অফিস, ব্যাংক বা বিমা কোম্পানি নয়। সরকারি ও তৃতীয় পক্ষের ফি আমাদের সার্ভিস চার্জ থেকে আলাদা; চূড়ান্ত অনুমোদন সংশ্লিষ্ট কর্তৃপক্ষের।")}</p>
+      <p>{t("NiSE COMPORT is an independent CSC / Pragya Kendra service centre, not a government office, bank or insurer. Official and third-party fees are separate from our service charge; final approvals rest with the relevant authority.", "NiSE COMPORT एक स्वतंत्र CSC / प्रज्ञा केंद्र है, सरकारी कार्यालय, बैंक या बीमा कंपनी नहीं। सरकारी और तीसरे पक्ष का शुल्क हमारे सेवा शुल्क से अलग है; अंतिम मंज़ूरी संबंधित प्राधिकरण की होती है।", "NiSE COMPORT একটি স্বাধীন CSC / প্রজ্ঞা কেন্দ্র, সরকারি অফিস, ব্যাংক বা বিমা কোম্পানি নয়। সরকারি ও তৃতীয় পক্ষের ফি আমাদের সার্ভিস চার্জ থেকে আলাদা; চূড়ান্ত অনুমোদন সংশ্লিষ্ট কর্তৃপক্ষের।")}</p>
       <div className="footer-bottom__row"><span>© {year} {site.name}. {t("All rights reserved.", "सर्वाधिकार सुरक्षित।", "সর্বস্বত্ব সংরক্ষিত।")}</span><span><Link prefetch={false} href={href("/contact")}>{t("Contact", "संपर्क", "যোগাযোগ")}</Link><Link prefetch={false} href="/login">{t("Admin login", "एडमिन लॉगिन", "অ্যাডমিন লগইন")}</Link><Link prefetch={false} href={MAIL_PATH}>{t("Mail login", "मेल लॉगिन", "মেল লগইন")}</Link></span></div>
     </div>
   </footer>;

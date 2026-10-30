@@ -60,9 +60,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const hindi = findHindiService(slug);
   const detail = isServiceDetail(service);
   return pageMetadata(serviceSeoTitle(service), serviceSeoDescription(service), `/services/${service.slug}`, {
-    keywords: [...service.keywords, "NISE COMPORT", "Kharangajhar", "Telco", "Telco Colony", "Jamshedpur", "East Singhbhum", "Jharkhand", "Barinagar", "Jyoti Nagar", "Sakchi", "Bistupur", "Bisanagar", "Golmuri", "Mango", "Jugsalai", "Karandih", "near me"],
+    keywords: [...service.keywords, "NiSE COMPORT", "Kharangajhar", "Telco", "Telco Colony", "Jamshedpur", "East Singhbhum", "Jharkhand", "Barinagar", "Jyoti Nagar", "Sakchi", "Bistupur", "Bisanagar", "Golmuri", "Mango", "Jugsalai", "Karandih", "near me"],
     image: detail && findService(slug) ? `/og/services/${service.slug}.png` : undefined,
-    imageAlt: `${service.title} – NISE COMPORT, Telco, Jamshedpur`,
+    imageAlt: `${service.title} – NiSE COMPORT, Telco, Jamshedpur`,
     ...(hindi ? { languages: { "hi-IN": `/hi/services/${service.slug}`, ...(translatedSlugs.bn.includes(service.slug) ? { "bn-IN": `/bn/services/${service.slug}` } : {}) } } : {}),
   });
 }
@@ -90,7 +90,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
   const path = `/services/${service.slug}`;
   const crumbs = [{ name: "Home", path: "/" }, { name: "Services", path: "/services" }, ...(category ? [{ name: category.title, path: `/services/${category.slug}` }] : []), { name: title, path }];
   const checklist = detail?.documents?.length ? `\n\nPlease confirm whether I should prepare these documents:\n${detail.documents.map((item, index) => `${index + 1}. ${item}`).join("\n")}` : "";
-  const enquiry = whatsappLink(`Hi NISE COMPORT, I need help with ${title}.${checklist}\n\nI can attach the relevant documents here after you confirm what is safe and necessary to share.`);
+  const enquiry = whatsappLink(`Hi NiSE COMPORT, I need help with ${title}.${checklist}\n\nI can attach the relevant documents here after you confirm what is safe and necessary to share.`);
 
   const categorySlug = detail ? detail.categorySlug : service.slug;
   const meta = categoryMetaFor(categorySlug);
@@ -159,7 +159,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
         </section> : null}
         {photos.length > 0 && <section className="detail__block">
           <span className="eyebrow">FROM OUR DESK</span>
-          <h2>Photos: {shortServiceName(title)} at NISE COMPORT</h2>
+          <h2>Photos: {shortServiceName(title)} at NiSE COMPORT</h2>
           <div className="photo-strip">{photos.slice(0, 6).map((photo) => <Link key={photo.src} href={`/gallery?service=${service.slug}`} className="photo-strip__item">
             <Image src={photo.src} alt={photo.alt} width={photo.width} height={photo.height} sizes="(max-width: 700px) 50vw, 240px"/>
           </Link>)}</div>
@@ -212,7 +212,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
     </div></section> : null}
     <section className="section section--flush"><div className="container">
       <h2>Serving Jamshedpur, East Singhbhum and Jharkhand</h2>
-      <p>Customers visit NISE COMPORT from across Jamshedpur and East Singhbhum. Find your area below, or call or WhatsApp us if you are not sure how to reach our desk in Kharangajhar, Telco.</p>
+      <p>Customers visit NiSE COMPORT from across Jamshedpur and East Singhbhum. Find your area below, or call or WhatsApp us if you are not sure how to reach our desk in Kharangajhar, Telco.</p>
       <div className="related-links">{areas.map((area) => <Link key={area.slug} href={`/areas-we-serve#${area.slug}`}>{area.name}</Link>)}</div>
     </div></section>
     <FaqSection faqs={faqs}/>
@@ -224,7 +224,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
       </div>
     </section> : null}
     <section className="section section--flush">
-      <div className="container"><div className="note-card"><ShieldCheck size={22}/><p>NISE COMPORT is an independent service facilitator, not a government authority, bank or insurer. The applicant is responsible for accurate information. Approval, issuance, processing times and decisions rest with the relevant authority or provider. Our service charge is separate from any official or third-party fee.</p></div></div>
+      <div className="container"><div className="note-card"><ShieldCheck size={22}/><p>NiSE COMPORT is an independent service facilitator, not a government authority, bank or insurer. The applicant is responsible for accurate information. Approval, issuance, processing times and decisions rest with the relevant authority or provider. Our service charge is separate from any official or third-party fee.</p></div></div>
     </section>
     {!comingSoon && <FloatingStart href={motor ?? (detail ? startHref : `/request?category=${service.slug}`)} label={motor ? "Get quotes" : "Start now"}/>}
   </main>;
