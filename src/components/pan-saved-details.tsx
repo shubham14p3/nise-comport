@@ -34,7 +34,7 @@ export default function PanSavedDetails({details,editReference}:{details:Record<
         </div>
       </div>
       <button type="button" className="pan49-open-card__button" onClick={()=>setShowPreview(true)}><Eye size={17}/> Open saved preview</button>
-      {editReference&&<Link className="btn btn--ghost btn--sm" href={`${form93 ? "/pan/93" : "/pan/49a"}?edit=${encodeURIComponent(editReference)}`}><Pencil size={15}/> Edit and re-verify</Link>}
+      {editReference&&<Link prefetch={false} className="btn btn--ghost btn--sm" href={`${form93 ? "/pan/93" : "/pan/49a"}?edit=${encodeURIComponent(editReference)}`}><Pencil size={15}/> Edit and re-verify</Link>}
     </div>}
     <dl className="pan-review">
       {Object.entries(labels).map(([key,label])=>{

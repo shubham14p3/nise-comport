@@ -88,7 +88,7 @@ export default async function HomePage() {
             <p className="hero__lead">PAN, Aadhaar help, certificates, AEPS banking, insurance, forms, websites and printing. Start online in 4 quick steps, track it live, and walk in only when you need to.</p>
             <HeroSearch popular={popular} services={publishedServiceDetails.map((item) => ({ slug: item.slug, title: item.title }))}/>
             <div className="hero__ctas">
-              <Link href="/request" className="btn btn--primary btn--lg">Start a request <ArrowRight size={20}/></Link>
+              <Link prefetch={false} href="/request" className="btn btn--primary btn--lg">Start a request <ArrowRight size={20}/></Link>
               <a href={whatsappLink("Hi NiSE COMPORT, I need help with a service.")} className="btn btn--glass btn--lg" target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={20}/> Chat on WhatsApp</a>
             </div>
             <ul className="hero__trust">
@@ -117,7 +117,7 @@ export default async function HomePage() {
             <p>Pick a category to see every service inside it, with documents to prepare and a 4-step request.</p>
           </div>
           <CategoryGrid/>
-          <div className="section-foot"><Link className="btn btn--ghost" href="/services">Browse all {publishedServiceDetails.length} services <ArrowRight size={18}/></Link></div>
+          <div className="section-foot"><Link prefetch={false} className="btn btn--ghost" href="/services">Browse all {publishedServiceDetails.length} services <ArrowRight size={18}/></Link></div>
         </div>
       </section>
 
@@ -130,7 +130,7 @@ export default async function HomePage() {
             <p>Claim them right inside your request. Offers apply to our service charge, never to government fees.</p>
           </div>
           <LoopScroller className="loop-scroller--offers" label="Live offers" arrows gap={18}>{offers.map((offer) => <div role="listitem" key={offer.id}><OfferCard offer={offer}/></div>)}</LoopScroller>
-          <div className="section-foot"><Link className="btn btn--glass" href="/offers">See all offers <ArrowRight size={18}/></Link></div>
+          <div className="section-foot"><Link prefetch={false} className="btn btn--glass" href="/offers">See all offers <ArrowRight size={18}/></Link></div>
         </div>
       </section>}
 
@@ -146,7 +146,7 @@ export default async function HomePage() {
             <span className="step-card__icon"><Icon size={26}/></span>
             <h3>{title}</h3><p>{text}</p>
           </li>)}</ol>
-          <div className="section-foot"><Link className="btn btn--primary" href="/request">Try it now <ArrowRight size={18}/></Link></div>
+          <div className="section-foot"><Link prefetch={false} className="btn btn--primary" href="/request">Try it now <ArrowRight size={18}/></Link></div>
         </div>
       </section>
 
@@ -161,7 +161,7 @@ export default async function HomePage() {
             <article className="bento__item tone-green"><Clock3 size={28}/><h3>Track it live</h3><p>Every request gets a reference number and status updates in your account.</p></article>
             <article className="bento__item tone-violet"><Languages size={28}/><h3>Your language</h3><p>English, हिन्दी or বাংলা, on the site and at the counter.</p></article>
             <article className="bento__item tone-pink"><LockKeyhole size={28}/><h3>Private by design</h3><p>Encrypted connections. We never ask for your OTP, PIN or password.</p></article>
-            <article className="bento__item tone-cyan"><Truck size={28}/><h3>Printing, photos &amp; websites</h3><p>Printing, photocopy, passport photos and business websites from our Kharangajhar counter. Ask us for the price.</p><Link className="text-link" href="/print">Ask for a printing price <ArrowRight size={16}/></Link></article>
+            <article className="bento__item tone-cyan"><Truck size={28}/><h3>Printing, photos &amp; websites</h3><p>Printing, photocopy, passport photos and business websites from our Kharangajhar counter. Ask us for the price.</p><Link prefetch={false} className="text-link" href="/print">Ask for a printing price <ArrowRight size={16}/></Link></article>
           </div>
         </div>
       </section>
@@ -170,13 +170,13 @@ export default async function HomePage() {
         <div className="container">
           <div className="section-head section-head--split">
             <div><span className="eyebrow">GALLERY</span><h2>A peek at <span className="grad-text">our desk &amp; services.</span></h2></div>
-            <Link className="btn btn--ghost" href="/gallery">Open gallery <ArrowUpRight size={18}/></Link>
+            <Link prefetch={false} className="btn btn--ghost" href="/gallery">Open gallery <ArrowUpRight size={18}/></Link>
           </div>
-          <div className="gallery-strip only-desktop">{galleryPreview.map((item) => <Link key={item.key} href="/gallery" className="gallery-strip__item">
+          <div className="gallery-strip only-desktop">{galleryPreview.map((item) => <Link prefetch={false} key={item.key} href="/gallery" className="gallery-strip__item">
             <SafeImage src={item.src} alt={item.alt} width={600} height={450} sizes="(max-width: 700px) 80vw, 33vw" unoptimized={item.google} fallbackSrc={localGallery[0]?.src}/>
             <span>{item.title}</span>
           </Link>)}</div>
-          <div className="only-mobile"><LoopScroller label="Gallery" gap={12}>{galleryPreview.map((item) => <Link key={item.key} href="/gallery" className="gallery-strip__item gallery-strip__item--loop">
+          <div className="only-mobile"><LoopScroller label="Gallery" gap={12}>{galleryPreview.map((item) => <Link prefetch={false} key={item.key} href="/gallery" className="gallery-strip__item gallery-strip__item--loop">
             <SafeImage src={item.src} alt={item.alt} width={600} height={450} sizes="(max-width: 700px) 80vw, 33vw" unoptimized={item.google} fallbackSrc={localGallery[0]?.src}/>
             <span>{item.title}</span>
           </Link>)}</LoopScroller></div>
@@ -187,11 +187,11 @@ export default async function HomePage() {
         <div className="container">
           <div className="section-head section-head--split">
             <div><span className="eyebrow">LOCAL GUIDES</span><h2>Know what to bring <span className="grad-text">before you visit.</span></h2></div>
-            <Link className="btn btn--ghost" href="/blog">All guides <ArrowUpRight size={18}/></Link>
+            <Link prefetch={false} className="btn btn--ghost" href="/blog">All guides <ArrowUpRight size={18}/></Link>
           </div>
           <div className="guide-grid">{articles.slice(0, 3).map((article) => <article key={article.slug} className="guide-card">
-            <Link href={`/blog/${article.slug}`} className="guide-card__media" tabIndex={-1} aria-hidden="true"><Image src={article.image} alt="" width={420} height={260} sizes="(max-width: 700px) 100vw, 33vw"/></Link>
-            <div className="guide-card__body"><span className="chip">{article.category}</span><h3><Link href={`/blog/${article.slug}`}>{article.title}</Link></h3><p>{article.excerpt}</p><Link className="text-link" href={`/blog/${article.slug}`} aria-label={`Read: ${article.title}`}>Read guide <ArrowRight size={16}/></Link></div>
+            <Link prefetch={false} href={`/blog/${article.slug}`} className="guide-card__media" tabIndex={-1} aria-hidden="true"><Image src={article.image} alt="" width={420} height={260} sizes="(max-width: 700px) 100vw, 33vw"/></Link>
+            <div className="guide-card__body"><span className="chip">{article.category}</span><h3><Link prefetch={false} href={`/blog/${article.slug}`}>{article.title}</Link></h3><p>{article.excerpt}</p><Link prefetch={false} className="text-link" href={`/blog/${article.slug}`} aria-label={`Read: ${article.title}`}>Read guide <ArrowRight size={16}/></Link></div>
           </article>)}</div>
         </div>
       </section>

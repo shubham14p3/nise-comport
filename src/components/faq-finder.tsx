@@ -49,12 +49,12 @@ export default function FaqFinder({ faqs, topics, lang = "en" }: { faqs: FinderF
       {[ALL, ...topics].map((item) => <button key={item} type="button" aria-pressed={topic === item} onClick={() => setTopic(item)}>{item === ALL ? t("All", "सभी", "সব") : item}</button>)}
     </div>
     <p className="faq-finder__count" role="status" aria-live="polite">{lang === "en" ? (results.length === faqs.length ? `${faqs.length} questions` : `${results.length} of ${faqs.length} questions`) : lang === "hi" ? (results.length === faqs.length ? `${faqs.length} सवाल` : `${faqs.length} में से ${results.length} सवाल`) : (results.length === faqs.length ? `${faqs.length}টি প্রশ্ন` : `${faqs.length}টির মধ্যে ${results.length}টি প্রশ্ন`)}</p>
-    {!results.length && <div className="faq-finder__empty"><b>{t("No matching question.", "कोई मिलता-जुलता सवाल नहीं।", "মেলে এমন কোনও প্রশ্ন নেই।")}</b><p>{t("Try fewer words, or ask us directly: ", "कम शब्द आज़माइए, या सीधे पूछिए: ", "কম শব্দ চেষ্টা করুন, বা সরাসরি জিজ্ঞাসা করুন: ")}<Link href={lp(lang, "/contact")}>{t("contact the service desk", "सर्विस डेस्क से संपर्क करें", "সার্ভিস ডেস্কে যোগাযোগ করুন")}</Link>.</p></div>}
+    {!results.length && <div className="faq-finder__empty"><b>{t("No matching question.", "कोई मिलता-जुलता सवाल नहीं।", "মেলে এমন কোনও প্রশ্ন নেই।")}</b><p>{t("Try fewer words, or ask us directly: ", "कम शब्द आज़माइए, या सीधे पूछिए: ", "কম শব্দ চেষ্টা করুন, বা সরাসরি জিজ্ঞাসা করুন: ")}<Link prefetch={false} href={lp(lang, "/contact")}>{t("contact the service desk", "सर्विस डेस्क से संपर्क करें", "সার্ভিস ডেস্কে যোগাযোগ করুন")}</Link>.</p></div>}
     {grouped.map(([group, items]) => <section className="faq-finder__group" key={group}>
       <h2>{group}</h2>
       <div className="faq-list">{items.map((faq) => <details key={faq.id} open={Boolean(query.trim()) && items.length <= 6 ? true : undefined}>
         <summary><span><Highlight text={faq.question} query={query}/></span><i aria-hidden="true"><Plus size={18}/></i></summary>
-        <p><Highlight text={faq.answer} query={query}/>{faq.serviceHref ? <> <Link className="arrow-link" href={faq.serviceHref}>{faq.serviceTitle}</Link></> : null}</p>
+        <p><Highlight text={faq.answer} query={query}/>{faq.serviceHref ? <> <Link prefetch={false} className="arrow-link" href={faq.serviceHref}>{faq.serviceTitle}</Link></> : null}</p>
       </details>)}</div>
     </section>)}
   </div>;

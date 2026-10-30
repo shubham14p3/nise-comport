@@ -50,7 +50,7 @@ export default async function PayPage({ params }: { params: Promise<{ reference:
         paidVia={payment.method} upiSlots={(options.upi ?? []).map((item) => ({ slot: item.slot, label: item.label }))} qrSeconds={upiQrSeconds()}
         helpHref={whatsappLink(`Hello NiSE COMPORT, I want to pay ${payment.reference}. Please share the payment details.`)} failureReason={payment.failureReason} ticketRaised={Boolean(payment.issueRaisedAt)} ticketOpen={ticketOpen} refundStatus={payment.refundStatus} refundChoice={payment.refundChoice} refundPaise={payment.refundPaise} estimates={estimates}
         razorpay={options.razorpay} cashfree={options.cashfree} feePercent={options.feePercent}/>
-      <p className="legal-updated">Questions? See <Link href="/refund-policy">refunds</Link> or call us from the <Link href="/contact">contact page</Link>.</p>
+      <p className="legal-updated">Questions? See <Link prefetch={false} href="/refund-policy">refunds</Link> or call us from the <Link prefetch={false} href="/contact">contact page</Link>.</p>
     </section>
   </main>;
 }

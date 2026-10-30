@@ -116,7 +116,7 @@ export default function ForgotPasswordPanel({ channels = [], initialMethod = "em
           <div className="auth__links"><button type="button" className="link-btn" disabled={busy || resendIn > 0} onClick={() => void sendCode()}>{resendIn > 0 ? fill(t.resendIn, { s: resendIn }) : t.resend}</button><button type="button" className="link-btn" onClick={() => { setStage("email"); setCode(""); setError(""); setNotice(""); }}>{t.differentEmail}</button></div>
         </form>}
         {channels.length === 0 && <p className="field__hint">Mobile PIN recovery by SMS/WhatsApp is coming soon. For a lost PIN, <a href={whatsappHref("Hello, I need to recover access to my NISE COMPORT account. Please help me verify my identity.")} target="_blank" rel="noopener noreferrer">contact the service desk</a> for identity-checked help.</p>}
-        <p className="auth__switch"><Link href="/login">{t.backToSignin}</Link> · <Link href="/signup">{t.createAccount}</Link></p>
+        <p className="auth__switch"><Link prefetch={false} href="/login">{t.backToSignin}</Link> · <Link prefetch={false} href="/signup">{t.createAccount}</Link></p>
       </section>
     </div>
   </main>;

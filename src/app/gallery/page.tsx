@@ -53,7 +53,7 @@ export default async function GalleryPage() {
       <div className="container">
         <GalleryGrid items={items}/>
         {!googleItems.length && !mine.length && <p className="note-card"><MapPin size={20}/><span>Shop photos from our Google Business Profile appear here automatically once Google Maps is connected. Meanwhile, <a href={site.mapsUrl} target="_blank" rel="noopener noreferrer">see us on Google Maps</a>.</span></p>}
-        <div className="section-foot"><Link className="btn btn--primary" href="/request">Start a request <ArrowRight size={18}/></Link></div>
+        <div className="section-foot"><Link prefetch={false} className="btn btn--primary" href="/request">Start a request <ArrowRight size={18}/></Link></div>
       </div>
     </section>
   </main>;

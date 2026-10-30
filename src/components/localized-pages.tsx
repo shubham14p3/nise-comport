@@ -67,12 +67,12 @@ export async function LocalizedHome({ lang, home, services }: { lang: Lang; home
           <h1 className="hero__title"><span className="hero__kicker">{home.h1}</span><span className="grad-text">{l.tagline}</span></h1>
           <p className="hero__lead">{home.lead}</p>
           <div className="hero__ctas">
-            <Link href="/request" className="btn btn--primary btn--lg">{t.nav.startRequest}<ArrowRight size={20}/></Link>
+            <Link prefetch={false} href="/request" className="btn btn--primary btn--lg">{t.nav.startRequest}<ArrowRight size={20}/></Link>
             <a href={whatsappLink(l.waHome)} className="btn btn--glass btn--lg" target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={20}/>{t.nav.whatsapp}</a>
             <a href={`tel:${site.phones.primary.e164}`} className="btn btn--glass btn--lg"><Phone size={18}/>{l.call}</a>
           </div>
           <ul className="hero__trust">{home.trust.map((item) => <li key={item}><CircleCheck size={18}/>{item}</li>)}</ul>
-          <p className="hero__lang"><Link href="/" hrefLang="en-IN" lang="en">{l.english}</Link></p>
+          <p className="hero__lang"><Link prefetch={false} href="/" hrefLang="en-IN" lang="en">{l.english}</Link></p>
         </div>
       </div>
     </section>
@@ -87,9 +87,9 @@ export async function LocalizedHome({ lang, home, services }: { lang: Lang; home
         <div className="section-head"><h2>{l.translated}</h2><p>{l.translatedSub}</p></div>
         <div className="svc-grid">{services.filter((service) => findService(service.slug)).map((service) => {
           return <article key={service.slug} className="svc-card tone-blue">
-            <h3><Link href={`/${lang}/services/${service.slug}`}>{service.title}</Link></h3>
+            <h3><Link prefetch={false} href={`/${lang}/services/${service.slug}`}>{service.title}</Link></h3>
             <p>{service.description}</p>
-            <div className="svc-card__actions"><Link className="btn btn--primary btn--sm" href={requestHrefFor(service.slug)}>{t.nav.startRequest}<ArrowRight size={16}/></Link><Link className="btn btn--ghost btn--sm" href={`/${lang}/services/${service.slug}`}>{l.read}</Link></div>
+            <div className="svc-card__actions"><Link prefetch={false} className="btn btn--primary btn--sm" href={requestHrefFor(service.slug)}>{t.nav.startRequest}<ArrowRight size={16}/></Link><Link prefetch={false} className="btn btn--ghost btn--sm" href={`/${lang}/services/${service.slug}`}>{l.read}</Link></div>
           </article>;
         })}</div>
       </div>
@@ -145,11 +145,11 @@ export async function LocalizedService({ lang, service }: { lang: Lang; service:
           <h1>{service.title}</h1>
           <p className="page-hero__lead">{service.description}</p>
           <div className="page-hero__ctas">
-            <Link className="btn btn--primary btn--lg" href={requestHrefFor(service.slug)}>{l.start}<ArrowRight size={18}/></Link>
+            <Link prefetch={false} className="btn btn--primary btn--lg" href={requestHrefFor(service.slug)}>{l.start}<ArrowRight size={18}/></Link>
             <a className="btn btn--wa btn--lg" href={enquiry} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/>{l.ask}</a>
             <a className="btn btn--glass btn--lg" href={`tel:${site.phones.primary.e164}`}><Phone size={18}/>{l.call}</a>
           </div>
-          <p className="page-hero__meta"><MapPin size={16}/> {l.address} · <Link href={`/services/${service.slug}`} hrefLang="en-IN" lang="en">{l.english}</Link></p>
+          <p className="page-hero__meta"><MapPin size={16}/> {l.address} · <Link prefetch={false} href={`/services/${service.slug}`} hrefLang="en-IN" lang="en">{l.english}</Link></p>
         </div>
         <div className="page-hero__art"><Image src={posterFor(service.slug, category)} alt="" width={1200} height={900} priority sizes="(max-width: 900px) 100vw, 44vw"/></div>
       </div>
@@ -164,7 +164,7 @@ export async function LocalizedService({ lang, service }: { lang: Lang; service:
         <div className="start-card">
           <h3>{l.ready}</h3>
           <ol className="mini-steps">{l.steps.map((step) => <li key={step}>{step}</li>)}</ol>
-          <Link className="btn btn--primary btn--block" href={requestHrefFor(service.slug)}>{l.start}<ArrowRight size={18}/></Link>
+          <Link prefetch={false} className="btn btn--primary btn--block" href={requestHrefFor(service.slug)}>{l.start}<ArrowRight size={18}/></Link>
           <a className="btn btn--wa btn--block" href={enquiry} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/>{l.ask}</a>
         </div>
         {offers.map((offer) => <OfferCard key={offer.id} offer={offer} locale={lang} variant="rail"/>)}

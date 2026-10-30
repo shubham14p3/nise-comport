@@ -10,8 +10,8 @@ import { getSessionUser, SESSION_CHANGED } from "@/lib/session-client";
 
 /** Festival and sports codes that are live today, loaded once by the root layout. Visitors only ever get masked codes. */
 const OffersContext = createContext<PromoView[]>([]);
-type Reveal = { signedIn: boolean; codes: Record<string, string>; openGate: () => void };
-const RevealContext = createContext<Reveal>({ signedIn: false, codes: {}, openGate: () => {} });
+type Reveal = { signedIn: boolean; codes: Record<string, string>; openGate: () => void; requestCodes: () => void };
+const RevealContext = createContext<Reveal>({ signedIn: false, codes: {}, openGate: () => {}, requestCodes: () => {} });
 
 const GATE_TEXT = {
   en: { title: "Sign in to see the code", body: "Offer codes are for our registered customers. Sign in or create a free account and every live code unlocks.", signIn: "Sign in", signUp: "Create free account", close: "Close" },
@@ -26,6 +26,8 @@ export const useSignedIn = () => useContext(RevealContext).signedIn;
 
 export default function OffersProvider({ promos, teaser = null, children }: { promos: PromoView[]; teaser?: Teaser | null; children: ReactNode }) {
   const [reveal, setReveal] = useState<{ signedIn: boolean; codes: Record<string, string> }>({ signedIn: false, codes: {} });
+  const [codesRequested, setCodesRequested] = useState(false);
+  const requestCodes = useCallback(() => setCodesRequested(true), []);
   const [gate, setGate] = useState(false);
   const [lang, setLang] = useState<"en" | "hi" | "bn">("en");
 
@@ -44,6 +46,7 @@ export default function OffersProvider({ promos, teaser = null, children }: { pr
         const user = await getSessionUser();
         if (!active || current !== sequence) return;
         if (!user) { setReveal({ signedIn: false, codes: {} }); return; }
+        if (!codesRequested) { setReveal({ signedIn: true, codes: {} }); return; }
         const result = await secureApi<{ signedIn: boolean; codes: Record<string, string> }>("H3d8Y5qN2sW7");
         if (active && current === sequence) setReveal(result.signedIn
           ? { signedIn: true, codes: result.codes ?? {} }
@@ -54,15 +57,17 @@ export default function OffersProvider({ promos, teaser = null, children }: { pr
     };
 
     void refresh();
-    window.addEventListener(SESSION_CHANGED, refresh);
+    const authChanged = () => { setReveal({ signedIn: false, codes: {} }); void refresh(); };
+    window.addEventListener(SESSION_CHANGED, authChanged);
     return () => {
       active = false;
-      window.removeEventListener(SESSION_CHANGED, refresh);
+      sequence += 1;
+      window.removeEventListener(SESSION_CHANGED, authChanged);
     };
-  }, []);
+  }, [codesRequested]);
 
   const openGate = useCallback(() => setGate(true), []);
-  const value = useMemo(() => ({ ...reveal, openGate }), [reveal, openGate]);
+  const value = useMemo(() => ({ ...reveal, openGate, requestCodes }), [reveal, openGate, requestCodes]);
   const text = GATE_TEXT[lang];
   return <OffersContext.Provider value={promos}><TeaserContext.Provider value={teaser}><RevealContext.Provider value={value}>
     {children}
@@ -72,7 +77,7 @@ export default function OffersProvider({ promos, teaser = null, children }: { pr
         <span className="gate__lock" aria-hidden="true"><Lock size={26}/></span>
         <h2 id="gate-title">{text.title}</h2>
         <p>{text.body}</p>
-        <div className="gate__actions"><Link className="btn btn--primary" href="/login">{text.signIn}</Link><Link className="btn btn--ghost" href="/signup">{text.signUp}</Link></div>
+        <div className="gate__actions"><Link prefetch={false} className="btn btn--primary" href="/login">{text.signIn}</Link><Link prefetch={false} className="btn btn--ghost" href="/signup">{text.signUp}</Link></div>
       </div>
     </div>}
   </RevealContext.Provider></TeaserContext.Provider></OffersContext.Provider>;
@@ -85,16 +90,20 @@ export function useLivePromos() {
 /** Live codes as offer cards, soonest-ending first. */
 export function useLiveCodes(): Offer[] {
   const promos = useContext(OffersContext);
-  const { codes } = useContext(RevealContext);
-  return useMemo(() => liveOfferCodes(promos).map((offer) => {
+  const { codes, requestCodes } = useContext(RevealContext);
+  const offers = useMemo(() => liveOfferCodes(promos), [promos]);
+  const needsCodes = offers.some((offer) => offer.masked);
+  useEffect(() => { if (needsCodes) requestCodes(); }, [needsCodes, requestCodes]);
+  return useMemo(() => offers.map((offer) => {
     const real = offer.masked && offer.code ? codes[offer.code] : undefined;
     return real ? { ...offer, code: real, masked: false, href: offer.kind === "welcome" ? "/profile#vouchers" : `/request?coupon=${encodeURIComponent(real)}` } : offer;
-  }), [promos, codes]);
+  }), [offers, codes]);
 }
 
 /** The code to show for a possibly masked token: the real code once signed in, otherwise XXXXXX and `locked`. */
 export function useCode(code: string | undefined, masked?: boolean) {
-  const { codes, openGate } = useContext(RevealContext);
+  const { codes, openGate, requestCodes } = useContext(RevealContext);
+  useEffect(() => { if (code && masked) requestCodes(); }, [code, masked, requestCodes]);
   if (!code) return { text: "", locked: false, real: undefined as string | undefined, openGate };
   if (!masked) return { text: code, locked: false, real: code, openGate };
   const real = codes[code];

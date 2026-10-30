@@ -28,8 +28,8 @@ export default function OfferTicker({ locale }: { locale: Locale }) {
   const cta = offer ? t.viewAll : teaser?.cta ? teaser.cta[locale] || teaser.cta.en : fallback.cta;
   return <div className="ticker ticker--single" role="region" aria-label={t.live}>
     <div className="container ticker__inner">
-      <Link href={href} className="ticker__one"><Sparkles size={14} aria-hidden="true"/><span>{text}</span></Link>
-      <Link className="ticker__all" href={signedIn ? "/offers" : href}>{cta}<ArrowRight size={14}/></Link>
+      <Link prefetch={false} href={href} className="ticker__one"><Sparkles size={14} aria-hidden="true"/><span>{text}</span></Link>
+      <Link prefetch={false} className="ticker__all" href={signedIn ? "/offers" : href}>{cta}<ArrowRight size={14}/></Link>
     </div>
   </div>;
 }

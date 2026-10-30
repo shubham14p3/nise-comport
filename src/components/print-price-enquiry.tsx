@@ -17,11 +17,11 @@ export default function PrintPriceEnquiry() {
       <h1>{P.title[locale]}</h1>
       <p>{P.body[locale]}</p>
       <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 20 }}>
-        <Link className="btn btn--primary" href="/request?service=printing-scanning">{P.ask[locale]}<ArrowRight size={18}/></Link>
+        <Link prefetch={false} className="btn btn--primary" href="/request?service=printing-scanning">{P.ask[locale]}<ArrowRight size={18}/></Link>
         <a className="btn btn--ghost" href={whatsappLink(P.message[locale])} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> {P.whatsapp[locale]}</a>
         <a className="btn btn--ghost" href={`tel:${site.phones.primary.e164}`}><Phone size={18}/> {P.call[locale]}</a>
       </div>
-      <p style={{ marginTop: 20 }}><Link href="/pricing">{P.pricing[locale]}</Link></p>
+      <p style={{ marginTop: 20 }}><Link prefetch={false} href="/pricing">{P.pricing[locale]}</Link></p>
     </section>
   </main>;
 }

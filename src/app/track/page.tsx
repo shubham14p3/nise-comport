@@ -105,7 +105,7 @@ export default function TrackPage() {
           <div className="svc-card__actions">
             {external
               ? <a className="btn btn--primary btn--sm" href={item.href} target="_blank" rel="noopener noreferrer">{item.hrefLabel} <ArrowUpRight size={16}/></a>
-              : <Link className="btn btn--primary btn--sm" href={item.href}>{item.hrefLabel} <ArrowUpRight size={16}/></Link>}
+              : <Link prefetch={false} className="btn btn--primary btn--sm" href={item.href}>{item.hrefLabel} <ArrowUpRight size={16}/></Link>}
             {"href2" in item && item.href2 ? <a className="btn btn--ghost btn--sm" href={item.href2} target="_blank" rel="noopener noreferrer">{item.hrefLabel2} <ArrowUpRight size={16}/></a> : null}
           </div>
         </article>;

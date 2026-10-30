@@ -102,7 +102,7 @@ export default function MobileRecoveryPanel({ channels }: { channels: Channel[] 
       void navigator.clipboard.writeText(newPin).then(() => setCopied(true)).catch(() => setCopied(false));
     }}>{copied ? <Check size={15}/> : <Copy size={15}/>} {copied ? "Copied" : "Copy PIN"}</button></div>}
     {newPin && <p className="field__hint">Your new PIN appears only once. Never share it with anyone, including staff.</p>}
-    <Link className="btn btn--primary btn--lg btn--block" href="/login">Sign in with your new {kind === "pin" ? "PIN" : "password"}</Link>
+    <Link prefetch={false} className="btn btn--primary btn--lg btn--block" href="/login">Sign in with your new {kind === "pin" ? "PIN" : "password"}</Link>
   </div>;
 
   return <div className="auth__form">

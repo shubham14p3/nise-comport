@@ -9,6 +9,7 @@ import { fillText, INSURANCE_TEXT as T } from "@/lib/i18n-forms";
 import { useLocale } from "@/lib/use-locale";
 import { WHATSAPP_NUMBER } from "@/lib/public-contact";
 import { rememberReturn } from "@/lib/after-login";
+import { getSessionUser } from "@/lib/session-client";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
 
 type Upload = { id: string; name: string };
@@ -36,7 +37,7 @@ export default function InsuranceForm({ initialPurpose, initialVehicle }: { init
 
   useEffect(() => {
     let active = true;
-    secureApi<{ user: { role: string } | null }>("C4w7G2hN6kP9").then((result) => { if (active) setSignedIn(Boolean(result.user && result.user.role !== "demo")); }).catch(() => undefined);
+    getSessionUser().then((user) => { const result = { user }; if (active) setSignedIn(Boolean(result.user && result.user.role !== "demo")); }).catch(() => undefined);
     return () => { active = false; };
   }, []);
 
@@ -75,9 +76,9 @@ export default function InsuranceForm({ initialPurpose, initialVehicle }: { init
     <CircleCheck size={42}/>
     <h2>{L(T.thanks)}{f.name?.split(/\s+/)[0] ? `, ${f.name.split(/\s+/)[0]}` : ""}!</h2>
     <p>{done.kind === "request" ? fillText(L(T.doneRequest), { ref: done.reference ?? "" }) : fillText(L(T.doneLead), { phone: f.phone ?? "" })}</p>
-    {done.account && done.account !== "verified" && <p className="field__hint">We emailed you a sign-in code. Enter it on the <Link href="/login">sign-in page</Link> to verify your email and unlock your extra discount.</p>}
+    {done.account && done.account !== "verified" && <p className="field__hint">We emailed you a sign-in code. Enter it on the <Link prefetch={false} href="/login">sign-in page</Link> to verify your email and unlock your extra discount.</p>}
     <div className="ins-done__actions">
-      {done.kind === "request" && <Link className="btn btn--primary" href="/profile#requests">{L(T.track)}</Link>}
+      {done.kind === "request" && <Link prefetch={false} className="btn btn--primary" href="/profile#requests">{L(T.track)}</Link>}
       <a className="btn btn--wa" href={WA(`Hi NISE COMPORT, I just sent the ${vehicle} insurance form (${PURPOSES[purpose]}).`)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={17}/>{L(T.waUs)}</a>
     </div>
   </div>;
@@ -158,7 +159,7 @@ export default function InsuranceForm({ initialPurpose, initialVehicle }: { init
         <span className="field__label">{L(T.files)}{purpose === "claim" ? L(T.filesClaim) : ""} <em> {L(T.filesHint)}</em></span>
         <label className="btn btn--ghost btn--sm"><Paperclip size={15}/>{uploading ? L(T.attaching) : L(T.attach)}<input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" hidden disabled={uploading || uploads.length >= 4} onChange={(event) => { void attach(event.target.files?.[0]); event.target.value = ""; }}/></label>
         {uploads.map((item) => <span key={item.id} className="ins-file"><FileText size={14}/>{item.name}<button type="button" onClick={() => setUploads(uploads.filter((upload) => upload.id !== item.id))} aria-label={`Remove ${item.name}`}><X size={13}/></button></span>)}
-      </div> : <p className="field__hint"><Link href="/login" onClick={() => rememberReturn("/insurance")}>{L(T.signIn)}</Link> {L(T.signInNote)}</p>}
+      </div> : <p className="field__hint"><Link prefetch={false} href="/login" onClick={() => rememberReturn("/insurance")}>{L(T.signIn)}</Link> {L(T.signInNote)}</p>}
     </fieldset>
 
     <p className="ins-note"><ShieldCheck size={16}/>{L(T.facilitator)}</p>

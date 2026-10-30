@@ -91,8 +91,7 @@ export default function SiteHeader() {
     window.addEventListener(SESSION_CHANGED, load);
     const onOtherTab = (event: StorageEvent) => {
       if (event.key !== REMEMBER_KEY) return;
-      invalidateSessionCache(false);
-      load();
+      invalidateSessionCache();
     };
     window.addEventListener("storage", onOtherTab);
     return () => {

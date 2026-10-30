@@ -30,7 +30,7 @@ export default async function WelcomePage({ searchParams }: { searchParams: Prom
         </article>)}
       </section>
       <WelcomeLeadForm source={src}/>
-      <p className="welcome__hint">For our own records we count QR scans and button taps, with your device type. We do not record your name or number from a scan, only if you fill in the call-back box above. See our <Link href="/privacy">privacy policy</Link>.</p>
+      <p className="welcome__hint">For our own records we count QR scans and button taps, with your device type. We do not record your name or number from a scan, only if you fill in the call-back box above. See our <Link prefetch={false} href="/privacy">privacy policy</Link>.</p>
       <p className="welcome__hint">Sign in with your email and mobile number to get a ₹50 welcome balance (₹30 + ₹20) for bike and car insurance.</p>
     </section>
   </main>;

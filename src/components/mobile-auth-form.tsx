@@ -115,11 +115,11 @@ export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }
         <span className="input-wrap"><LockKeyhole size={18}/><input type={showPin ? "text" : "password"} inputMode="numeric" autoComplete="current-password" maxLength={6} required value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="••••••" aria-invalid={Boolean(fields.pin)}/>
           <button type="button" className="icon-btn" aria-label={showPin ? "Hide PIN" : "Show PIN"} onClick={() => setShowPin((value) => !value)}>{showPin ? <EyeOff size={18}/> : <Eye size={18}/>}</button></span>
         {fieldError("pin")}
-        <span className="field__hint">Forgot it? {recoveryEnabled && <><Link href="/forgot-password?method=mobile">Recover mobile PIN</Link> (verified numbers only), or </>}<a href={whatsappHref("Hello, I forgot my sign-in PIN. Please help me verify my identity and recover my account.")} target="_blank" rel="noopener noreferrer">contact our team</a>.</span></label>
+        <span className="field__hint">Forgot it? {recoveryEnabled && <><Link prefetch={false} href="/forgot-password?method=mobile">Recover mobile PIN</Link> (verified numbers only), or </>}<a href={whatsappHref("Hello, I forgot my sign-in PIN. Please help me verify my identity and recover my account.")} target="_blank" rel="noopener noreferrer">contact our team</a>.</span></label>
       : <label className="field"><span className="field__label">Password</span>
           <span className="input-wrap"><LockKeyhole size={18}/><input type={showPin ? "text" : "password"} autoComplete="current-password" required maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Your account password"/><button type="button" className="icon-btn" aria-label={showPin ? "Hide password" : "Show password"} onClick={() => setShowPin((value) => !value)}>{showPin ? <EyeOff size={18}/> : <Eye size={18}/>}</button></span>
           {fieldError("password")}
-          <span className="field__hint">Password works for accounts that have set one. <Link href="/forgot-password">Forgot password?</Link></span>
+          <span className="field__hint">Password works for accounts that have set one. <Link prefetch={false} href="/forgot-password">Forgot password?</Link></span>
         </label>
       : <>
         <label className="field"><span className="field__label">Your name</span><span className="input-wrap"><UserRound size={18}/><input autoComplete="name" required minLength={2} maxLength={100} value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" aria-invalid={Boolean(fields.name)}/></span>{fieldError("name")}</label>
