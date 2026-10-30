@@ -14,14 +14,30 @@ type Edit = { name: string; email: string; phone: string; role: Role; permission
 
 /** Permissions and service categories share one list: "requests", "payments", … and "scope:<category>". */
 function PermissionBoxes({ value, onChange, disabled }: { value: string[]; onChange: (next: string[]) => void; disabled?: boolean }) {
-  const scoped = value.includes("requests");
+  const manual = value.some(x => x.startsWith(MENU_PREFIX));
+  const chosen = STAFF_MENU_AREAS.filter(item => manual ? value.includes(MENU_PREFIX + item.id) : value.includes(item.base)).map(item => item.id);
+  const scoped = chosen.includes("requests");
+  function toggle(ids: string[], charge = value.includes("charge")) {
+    const grants = [...new Set(ids.map(id => STAFF_MENU_AREAS.find(item => item.id === id)?.base).filter((base): base is typeof STAFF_MENU_AREAS[number]["base"] => Boolean(base)))];
+    onChange([...grants,...(charge && ids.includes("payments") ? ["charge"] : []),
+      ...(ids.includes("requests") ? value.filter(x => x.startsWith(SCOPE_PREFIX)) : []),
+      ...ids.map(id => MENU_PREFIX + id)]);
+  }
   return <>
-    <div className="perm-grid">{STAFF_PERMISSIONS.map((permission) => <label key={permission} className={value.includes(permission) ? "perm is-on" : "perm"}>
-      <input type="checkbox" checked={value.includes(permission)} disabled={disabled} onChange={(event) => onChange(event.target.checked
-        ? [...value, permission]
-        : value.filter((item) => item !== permission && !(permission === "requests" && item.startsWith(SCOPE_PREFIX))))}/>
-      <span><b>{PERMISSION_INFO[permission].label}</b><small>{PERMISSION_INFO[permission].detail}</small></span>
-    </label>)}</div>
+    <div className="staff-module-controls"><b>Staff desk modules · {chosen.length} selected</b>
+      <button type="button" disabled={disabled} className="btn btn--ghost btn--sm" onClick={() => toggle(STAFF_MENU_AREAS.map(item => item.id),false)}>Select all</button>
+      <button type="button" disabled={disabled} className="btn btn--ghost btn--sm" onClick={() => toggle([],false)}>Clear</button></div>
+    {Array.from(new Set(STAFF_MENU_AREAS.map(item => item.group))).map(group => <section key={group} className="staff-module-group">
+      <h4>{group}</h4><div className="perm-grid">{STAFF_MENU_AREAS.filter(item => item.group === group).map(item => <label key={item.id} className={chosen.includes(item.id) ? "perm is-on" : "perm"}>
+        <input type="checkbox" checked={chosen.includes(item.id)} disabled={disabled} onChange={e => toggle(e.target.checked ? [...chosen,item.id] : chosen.filter(id => id !== item.id))}/>
+        <span><b>{item.label}</b><small>{PERMISSION_INFO[item.base].detail}</small></span>
+      </label>)}</div>
+    </section>)}
+    <section className="staff-module-group"><h4>Owner-only modules</h4><div className="perm-grid">{OWNER_MENU_AREAS.map(id => <label className="perm" key={id}><input type="checkbox" checked={false} disabled/>
+      <span><b>{id === "team" ? "Team management" : id === "customers" ? "Customers / customer preview" : "System & connections"}</b><small>Available only to admins</small></span>
+    </label>)}</div></section>
+    <label className="perm"><input type="checkbox" checked={value.includes("charge") && chosen.includes("payments")} disabled={disabled || !chosen.includes("payments")}
+      onChange={e => toggle(chosen,e.target.checked)}/><span><b>Create charges and refunds</b><small>Sensitive financial permission, separate from Payments</small></span></label>
     {scoped && <div className="scope-box">
       <span className="field__label">Which service categories? <em>leave all unticked for every category</em></span>
       <div className="perm-grid">{serviceCatalog.map((group) => { const key = SCOPE_PREFIX + group.slug; const on = value.includes(key); return <label key={group.slug} className={on ? "perm is-on" : "perm"}>
