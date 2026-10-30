@@ -415,11 +415,13 @@ export default function AdminDashboard({ me, viewAsStaff = false, services }: { 
           <h1>Hi {first}, <span className="grad-text grad-text--warm">here’s the desk.</span></h1>
           <p>Private data travels over the encrypted staff channel. You see only the areas the owner has given you.</p>
         </div>
-        {me.role === "admin" && <div className="profile__hero-switch">
+        <div className="profile__hero-switch">
+          <Link className="btn btn--ghost btn--sm" href="/profile"><UserRound size={15}/> My customer profile</Link>
+          {me.role === "admin" && <>
           {viewAsStaff
             ? <><span className="chip chip--soft">Viewing as staff</span><Link className="btn btn--ghost btn--sm" href="/desk">Switch to admin view</Link></>
-            : <Link className="btn btn--ghost btn--sm" href="/desk?view=staff">Preview staff view</Link>}
-        </div>}
+            : <Link className="btn btn--ghost btn--sm" href="/desk?view=staff">Preview staff view</Link>}</>}
+        </div>
       </div>
     </section>
     <div className={railOpen ? "container profile__layout" : "container profile__layout profile__layout--rail"}>
