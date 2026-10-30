@@ -124,7 +124,7 @@ export async function addStaff(
     }
     await db.update(users).set({
       role, permissions: stored, ...(phone ? { phone } : {}),
-      ...(tempPin ? { loginPinHash: await hash(tempPin) } : {}),
+      ...(tempPin ? { loginPinHash: await hash(tempPin) } : (phone && phone !== existing.phone ? { loginPinHash: null } : {})),
       updatedAt: new Date(),
     }).where(eq(users.id, existing.id));
     userId = existing.id;
