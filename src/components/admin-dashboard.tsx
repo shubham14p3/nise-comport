@@ -98,14 +98,19 @@ function RequestQueue({ canCharge }: { canCharge: boolean }) {
   const [requestPage, setRequestPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
   const [counts, setCounts] = useState({ jobs: 0, requests: 0 });
+  // Ignore stale filter responses when users switch pages or search quickly.
+  const requestSequence = useRef(0);
 
   async function load(nextStatus = status, nextQ = q, jp = jobPage, rp = requestPage, size = pageSize) {
+    const sequence = ++requestSequence.current;
     setError("");
     try {
       const result = await secureApi<Snapshot>("J2w7L5pD9nV4", { status: nextStatus, q: nextQ, jobPage: jp, requestPage: rp, pageSize: size });
+      if (sequence !== requestSequence.current) return;
       setJobs(result.jobs); setRequests(result.requests); setCounts(result.counts);
       setStatus(result.filters.status); setQ(result.filters.q); setLoaded(true);
     } catch (reason) {
+      if (sequence !== requestSequence.current) return;
       setError(reason instanceof Error ? reason.message : "Could not load the staff queue.");
       setLoaded(true);
     }
@@ -123,14 +128,15 @@ function RequestQueue({ canCharge }: { canCharge: boolean }) {
 
   useEffect(() => {
     let active = true;
+    const sequence = ++requestSequence.current;
     secureApi<Snapshot>("J2w7L5pD9nV4", { status: "", q: "", jobPage: 0, requestPage: 0, pageSize: 20 })
       .then((result) => {
-        if (!active) return;
+        if (!active || sequence !== requestSequence.current) return;
         setJobs(result.jobs); setRequests(result.requests); setCounts(result.counts);
         setStatus(result.filters.status); setQ(result.filters.q); setLoaded(true);
       })
       .catch((reason) => {
-        if (!active) return;
+        if (!active || sequence !== requestSequence.current) return;
         setError(reason instanceof Error ? reason.message : "Could not load the staff queue."); setLoaded(true);
       });
     return () => { active = false; };
