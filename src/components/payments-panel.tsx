@@ -33,7 +33,7 @@ export default function PaymentsPanel({ canCharge }: { canCharge: boolean }) {
     try { const result = await secureApi<{ requests: Quotable[] }>(LIST, { status: "quotable" }); setQuotable(result.requests); }
     catch { setQuotable([]); }
   }, []);
-  useEffect(() => { if (canCharge) void loadQuotable(); }, [canCharge, loadQuotable]);
+  useEffect(() => { if (canCharge) void Promise.resolve().then(() => loadQuotable()); }, [canCharge, loadQuotable]);
   const search = pickFilter.trim().toLowerCase();
   const visibleQuotable = (quotable ?? []).filter((item) => !search || `${item.reference} ${item.customerName} ${item.serviceName}`.toLowerCase().includes(search));
 
