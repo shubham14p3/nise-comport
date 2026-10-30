@@ -1,5 +1,7 @@
 import { NextRequest } from "next/server";
 import { clientIp } from "@/lib/http";
+import { getCurrentUser } from "@/lib/auth";
+import { canSeeDeskMenu, sidebarPermissionForPath } from "@/lib/sidebar-permissions";
 import { internalApiHeaders, internalApiOrigin } from "@/lib/api-routing";
 import {
   emptySecureFailure, openSecureBinaryRequest, openSecureRequest,
@@ -326,6 +328,15 @@ async function handleJson(request: NextRequest, context: SecureApiContext<Payloa
 
   const target = targetFor(operation, input);
   if (!target) return secureJson(context, { error: "Unsupported request." }, { status: 400 });
+  // Only the encrypted gateway is exposed to browsers. Restrict staff to their
+  // explicitly selected menu modules before forwarding to privileged internal APIs.
+  const requiredMenu = sidebarPermissionForPath(target.path.split("?")[0]);
+  if (requiredMenu) {
+    const actor = await getCurrentUser();
+    if (actor?.role === "staff" && !canSeeDeskMenu(actor.role, actor.permissions, requiredMenu)) {
+      return secureJson(context, { error: "This staff module was not granted to your account.", code: "forbidden" }, { status: 403 });
+    }
+  }
 
   const body = "body" in target ? target.body : input;
   const response = await internalFetch(request, { method: target.method, path: target.path, body });
