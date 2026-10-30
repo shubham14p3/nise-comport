@@ -37,19 +37,24 @@ export default function RecordsPanel() {
   const [detailPage, setDetailPage] = useState(0);
   const [detailPageSize, setDetailPageSize] = useState(1);
   const modalCloseRef = useRef<HTMLButtonElement>(null);
+  const latestRecordsRequest = useRef(0);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
 
   async function load(next: { q?: string; service?: string; sort?: string; page?: number; pageSize?: number } = {}) {
     const params = { q, service, sort, page, pageSize, ...next };
-    try { setData(await secureApi<Listing>("W8r2T5yN1cF6", params)); setError(""); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load records."); }
+    const requestId = ++latestRecordsRequest.current;
+    try {
+      const result = await secureApi<Listing>("W8r2T5yN1cF6", params);
+      if (requestId === latestRecordsRequest.current) { setData(result); setError(""); }
+    } catch (reason) { if (requestId === latestRecordsRequest.current) setError(reason instanceof Error ? reason.message : "Could not load records."); }
   }
 
   useEffect(() => {
     let active = true;
-    secureApi<Listing>("W8r2T5yN1cF6", { sort: "repeat", page: 0, pageSize: 20 }).then((value) => { if (active) setData(value); })
-      .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load records."); });
+    const requestId = ++latestRecordsRequest.current;
+    secureApi<Listing>("W8r2T5yN1cF6", { sort: "repeat", page: 0, pageSize: 20 }).then((value) => { if (active && requestId === latestRecordsRequest.current) setData(value); })
+      .catch((reason) => { if (active && requestId === latestRecordsRequest.current) setError(reason instanceof Error ? reason.message : "Could not load records."); });
     return () => { active = false; };
   }, []);
 
