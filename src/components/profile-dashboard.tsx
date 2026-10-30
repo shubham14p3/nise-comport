@@ -26,6 +26,7 @@ import type { CustomerVoucher } from "@/lib/promo-view";
 type RequestItem = { reference: string; serviceSlug: string; serviceName: string; status: string; description: string; createdAt: string; officialReference: string | null; officialReferenceLabel: string | null };
 type WalletItem = { amount: string; kind: string; description: string; reference: string | null; createdAt: string };
 type PrintItem = { reference: string; status: string; total: string; fulfillment: string; createdAt: string };
+type CounterVisit = { id: string; serviceName: string; billPaise: number; discountPaise: number; collectPaise: number; createdAt: string };
 type ProfileUser = {
   name: string; email: string; phone: string | null; whatsapp?: string | null; emailVerified: boolean; phoneVerified?: boolean; smsEnabled?: boolean;
   city: string; state: string; postalCode: string; profileSummary: string;
@@ -34,7 +35,7 @@ type ProfileUser = {
 };
 type Coupon = CustomerVoucher;
 type Snapshot = {
-  user: ProfileUser; requests: RequestItem[]; jobs: PrintItem[]; wallet: WalletItem[];
+  user: ProfileUser; requests: RequestItem[]; jobs: PrintItem[]; wallet: WalletItem[]; counterHistory?: CounterVisit[];
   coupons: Coupon[]; activeSessions: number; openWork: number;
 };
 const DEMO_SNAPSHOT: Snapshot = {
@@ -42,7 +43,7 @@ const DEMO_SNAPSHOT: Snapshot = {
     name: "Demo Customer", email: "demo@nisecomport.test", phone: null, emailVerified: false,
     city: "", state: "", postalCode: "", profileSummary: "", preferredContact: "email", updatedAt: "",
   },
-  requests: [], jobs: [], wallet: [], coupons: [], activeSessions: 1, openWork: 0,
+  requests: [], jobs: [], wallet: [], counterHistory: [], coupons: [], activeSessions: 1, openWork: 0,
 };
 type RequestDetail = {
   request: {
@@ -68,6 +69,19 @@ const navigation: { id: Section; label: string; icon: typeof UserRound }[] = [
   { id: "security", label: "Sign-in & privacy", icon: ShieldCheck },
   { id: "help", label: "Get help", icon: CircleHelp },
 ];
+function CounterVisitHistory({ visits, phoneVerified }: { visits: CounterVisit[]; phoneVerified: boolean }) {
+  return <section className="panel" aria-label="Counter visit history">
+    <h2>Shop counter history</h2>
+    <p className="muted">Services recorded when you visited NiSE COMPORT in person. These entries are separate from online requests.</p>
+    {visits.length ? <div className="record-list">{visits.map((visit) => <article className="record" key={visit.id}>
+      <span className="record__icon"><History size={20}/></span>
+      <div className="record__body"><b>{visit.serviceName}</b><small>{dateTime(visit.createdAt)} · Counter visit</small>
+        <small>Bill {rupees(visit.billPaise / 100)} · Wallet discount {rupees(visit.discountPaise / 100)} · Paid {rupees(visit.collectPaise / 100)}</small>
+      </div><span className="chip chip--soft">Recorded</span>
+    </article>)}</div> : <p className="muted">No counter visits are linked to this account yet.{!phoneVerified ? " If a visit was recorded under your mobile number, verify that number in Profile details to find it." : " Ask the counter team to check the mobile number used for your visit."}</p>}
+  </section>;
+}
+
 const closedStatuses = new Set(["completed", "rejected", "cancelled", "closed"]);
 const dateLabel = (value: string) => new Date(value).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 const dateTime = (value: string) => new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
@@ -118,7 +132,7 @@ function sectionFromUrl(): Section {
 
 function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; reload: () => Promise<void>; demoMode: boolean }) {
   const locale = useLocale();
-  const { user, requests, jobs, wallet, coupons, activeSessions, openWork } = snapshot;
+  const { user, requests, jobs, wallet, coupons, activeSessions, openWork, counterHistory = [] } = snapshot;
   const urlSection = useSyncExternalStore(subscribeHash, sectionFromUrl, () => "overview" as Section);
   const [chosenSection, setSection] = useState<Section | null>(null);
   const section = chosenSection ?? urlSection;
@@ -224,7 +238,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
 
   const content = (() => {
     switch (section) {
-      case "records": return <MyRecordsPanel/>;
+      case "records": return <><MyRecordsPanel/><CounterVisitHistory visits={counterHistory} phoneVerified={Boolean(user.phoneVerified)}/></>;
       case "overview": return <>
         <div className="metric-grid">
           <Metric icon={<FileText size={20}/>} number={activeRequests.length} label="Open requests" tone="blue" onClick={() => openSection("requests")}/>
@@ -276,7 +290,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
           </>}
         </article>}
         <RequestRows rows={activeRequests}/></div>;
-      case "history": return <div className="panel"><SectionHeading eyebrow="COMPLETED & CLOSED" title="Request history" text="Completed, cancelled and otherwise closed requests."/><RequestRows rows={historyRequests}/>{!historyRequests.length && requests.length > 0 && <p className="muted">Your requests are still in progress. They move here once the team closes them.</p>}</div>;
+      case "history": return <><div className="panel"><SectionHeading eyebrow="COMPLETED & CLOSED" title="Request history" text="Completed, cancelled and otherwise closed online requests."/><RequestRows rows={historyRequests}/>{!historyRequests.length && requests.length > 0 && <p className="muted">Your requests are still in progress. They move here once the team closes them.</p>}</div><CounterVisitHistory visits={counterHistory} phoneVerified={Boolean(user.phoneVerified)}/></>;
       case "prints": return <div className="panel"><SectionHeading eyebrow="DOCUMENT SERVICES" title="Print orders" text="Your print requests, pickup or delivery choice, the estimate and the latest status." />{jobs.length ? <div className="record-list">{jobs.map((job) => <article className="record" key={job.reference}><span className="record__icon"><Printer size={20}/></span><div className="record__body"><b>Print order · {job.fulfillment}</b><small>{job.reference} · {dateLabel(job.createdAt)}</small><p>Estimate: {rupees(Number(job.total))}</p></div><span className={statusClass(job.status)}>{statusText(job.status, locale)}</span></article>)}</div> : <EmptyState icon={<Printer size={22}/>} title="No print orders yet" text="Upload a document, choose options and request an estimate. The team confirms the final cost before printing." action={<Link href="/print" className="btn btn--primary">Start a print request <ArrowRight size={16}/></Link>}/>}</div>;
       case "wallet": return <div className="panel"><SectionHeading eyebrow="CUSTOMER REWARDS" title="Wallet & credits" text="Credits and adjustments posted by the team, with date and reference."/><div className="wallet-hero"><span>AVAILABLE BALANCE</span><strong>{rupees(balance)}</strong><small>Top-up and online wallet payment are not enabled.</small></div>{wallet.length ? <div className="ledger">{wallet.map((entry, index) => <article key={`${entry.createdAt}-${index}`}><div><b>{entry.description}</b><small>{dateLabel(entry.createdAt)}{entry.reference ? ` · ${entry.reference}` : ""}</small></div><strong className={entry.kind.toLowerCase() === "debit" ? "is-debit" : "is-credit"}>{entry.kind.toLowerCase() === "debit" ? "−" : "+"}{rupees(Number(entry.amount))}</strong></article>)}</div> : <EmptyState icon={<WalletCards size={22}/>} title="No wallet activity yet" text="Eligible promotional credits or adjustments will appear here."/>}</div>;
       case "vouchers": return <div className="panel"><SectionHeading eyebrow="SAVINGS" title="Vouchers & offers" text="Your ₹50 welcome coupon and the festival and Team India codes live today. Each code can be used once." /><VoucherBoard vouchers={coupons}/></div>;
