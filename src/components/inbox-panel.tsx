@@ -1,6 +1,7 @@
 "use client";
 
-import ClaimsPanel from "@/components/claims-panel";
+import dynamic from "next/dynamic";
+const ClaimsPanel = dynamic(() => import("@/components/claims-panel"), { loading: () => <p className="admin-loading">Loading claims…</p> });
 import { useEffect, useRef, useState } from "react";
 import { Bell, Check, Eye, Phone, RefreshCw, UserRound, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
