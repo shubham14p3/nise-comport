@@ -3664,3 +3664,42 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
   .fc-line__edit input { min-height: 44px; font-size: 16px; }
   .fc-icon { width: 44px; height: 44px; }
 }
+
+/* Counter desk: email/mobile switch and contact checks */
+.counter-desk__modes { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--line, #d8d8e4); border-radius: 12px; margin-bottom: 10px; }
+.counter-desk__modes button { border: 0; background: transparent; padding: 7px 14px; border-radius: 9px; font-weight: 650; color: var(--muted, #666); cursor: pointer; }
+.counter-desk__modes button.is-active { background: #6d3df5; color: #fff; }
+.counter-contact { display: grid; gap: 8px; margin-top: 12px; }
+.counter-contact__row { padding: 12px; border: 1px solid var(--line, #e5e5ee); border-radius: 12px; background: var(--surface, #fff); }
+.counter-contact__top { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.counter-contact__label { font-size: .78rem; font-weight: 650; color: var(--muted, #666); min-width: 52px; }
+.counter-contact__value { font-weight: 600; overflow-wrap: anywhere; margin-right: auto; }
+.counter-contact__ok { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 999px; background: #e7f7ee; color: #0b7a3e; font-size: .8rem; font-weight: 650; }
+.counter-contact__no { padding: 2px 9px; border-radius: 999px; background: #fff4df; color: #8a5a00; font-size: .8rem; font-weight: 650; }
+.counter-contact__actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.counter-contact__actions input { min-height: 40px; padding: 8px 10px; border: 1px solid var(--line-2, #cfd3dd); border-radius: 10px; width: 150px; letter-spacing: .2em; }
+.counter-contact__confirm { margin-top: 10px; padding: 10px; border: 1px dashed var(--line-2, #cfd3dd); border-radius: 10px; display: grid; gap: 8px; }
+.counter-contact__confirm p { margin: 0; font-size: .92rem; }
+.counter-contact__tick { display: flex; gap: 8px; align-items: flex-start; font-size: .92rem; }
+.counter-contact__tick input { margin-top: 3px; width: 18px; height: 18px; }
+@media (max-width: 480px) {
+  .counter-contact__actions .btn { flex: 1 1 100%; min-height: 44px; }
+  .counter-contact__actions input { width: 100%; min-height: 44px; font-size: 16px; }
+  .counter-desk__modes { display: flex; width: 100%; }
+  .counter-desk__modes button { flex: 1; min-height: 40px; }
+}
+
+/* Approvals (admin): tabs and status pills */
+.fc-approvals__head { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+.fc-approvals__head h3 { margin: 0; }
+.fc-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.fc-tabs button { border: 1px solid var(--line, #d8d8e4); background: var(--surface, #fff); padding: 7px 12px; border-radius: 999px; font-weight: 650; cursor: pointer; color: inherit; }
+.fc-tabs button.is-active { background: #6d3df5; border-color: #6d3df5; color: #fff; }
+.fc-tabs__count { opacity: .75; margin-left: 2px; }
+.fc-change__head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.fc-change__what { display: grid; gap: 2px; margin: 6px 0; }
+.fc-pill { padding: 2px 10px; border-radius: 999px; font-size: .78rem; font-weight: 650; }
+.fc-pill--pending { background: #fff4df; color: #8a5a00; }
+.fc-pill--approved { background: #e7f7ee; color: #0b7a3e; }
+.fc-pill--rejected { background: #fdeaea; color: #b32632; }
+@media (max-width: 640px) { .fc-tabs button { flex: 1 1 auto; min-height: 40px; } }

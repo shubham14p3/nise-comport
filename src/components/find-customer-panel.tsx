@@ -8,8 +8,8 @@ import { secureApi, SecureApiError } from "@/lib/secure-api-client";
 const CUSTOMERS_OP = "F8k3Q2mW9xLz";
 
 type ContactChange = {
-  id: string; status: string; newEmail: string | null; newPhone: string | null; requestedAt: string; requestedById: string; requestedBy: string;
-  customerName: string; customerEmail: string | null; customerPhone: string | null; decisionNote: string | null; decidedAt: string | null;
+  id: string; kind: string; status: string; newEmail: string | null; newPhone: string | null; requestedAt: string; requestedById: string; requestedBy: string;
+  customerName: string; customerEmail: string | null; customerPhone: string | null; decisionNote: string | null; decidedAt: string | null; decidedBy: string | null;
 };
 
 type Customer = {
@@ -22,6 +22,7 @@ type Field = "email" | "phone";
 const when = (iso: string) => new Date(iso).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" });
 const tenDigits = (phone: string | null) => (phone ? phone.replace(/^\+91/, "") : "");
 const showPhone = (phone: string | null) => (phone ? `+91 ${tenDigits(phone)}` : null);
+const kindLabel = (kind: string) => (kind === "verify-email" ? "Verify email" : kind === "verify-phone" ? "Verify mobile" : "Change email or mobile");
 
 /** One contact line: value, verified state, and a pencil. While editing it shows the input with a tick and a cross. */
 function ContactLine(props: {
@@ -67,6 +68,7 @@ export default function FindCustomerPanel() {
   const [editValue, setEditValue] = useState("");
   const [changes, setChanges] = useState<{ requests: ContactChange[]; me: string; isAdmin: boolean } | null>(null);
   const [decisionNotes, setDecisionNotes] = useState<Record<string, string>>({});
+  const [approvalTab, setApprovalTab] = useState<"pending" | "approved" | "rejected" | "all">("pending");
 
   const selected = results?.find((item) => item.id === selectedId) ?? null;
 
@@ -248,25 +250,52 @@ export default function FindCustomerPanel() {
       </div> : <div className="fc-card"><p className="muted" style={{ margin: 0 }}>Pick a customer on the left to see their details and actions.</p></div>}
     </div>}
 
-    {changes && changes.requests.length > 0 && <section className="fc-approvals" aria-label="Email and mobile changes">
-      <h3 style={{ margin: "0 0 6px" }}>Email and mobile changes</h3>
-      <p className="muted" style={{ margin: "0 0 10px" }}>{changes.isAdmin ? "Staff changes apply only after another admin approves them." : "Changes you ask for wait here until an admin approves them."}</p>
-      <ul className="fc-list">
-        {changes.requests.map((item) => <li key={item.id} className="fc-change">
-          <div><b>{item.customerName}</b> · <small className="muted">asked by {item.requestedBy}, {new Date(item.requestedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</small></div>
-          <small>Email: {item.customerEmail ?? "—"} → <b>{item.newEmail ?? "none"}</b></small><br/>
-          <small>Mobile: {showPhone(item.customerPhone) ?? "—"} → <b>{showPhone(item.newPhone) ?? "none"}</b></small>
-          {item.status !== "pending" && <p className="muted" style={{ margin: "4px 0 0" }}><small>{item.status === "approved" ? "Approved" : "Rejected"}{item.decisionNote ? ` · “${item.decisionNote}”` : ""}</small></p>}
-          {item.status === "pending" && (changes.isAdmin && item.requestedById !== changes.me
-            ? <div className="fc-row" style={{ marginTop: 8 }}>
-              <input placeholder="Note (optional)" maxLength={300} value={decisionNotes[item.id] ?? ""} aria-label="Decision note"
-                onChange={(event) => setDecisionNotes((current) => ({ ...current, [item.id]: event.target.value }))}/>
-              <button type="button" className="btn btn--primary btn--sm" disabled={busy} onClick={() => void decideChange(item.id, "approve")}>Approve</button>
-              <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void decideChange(item.id, "reject")}>Reject</button>
+    {changes && <section className="fc-approvals" aria-label="Approvals">
+      <div className="fc-approvals__head">
+        <h3>Approvals</h3>
+        <span className="muted">{changes.isAdmin ? "Staff requests wait here for an admin to decide." : "Requests you asked for wait here until an admin decides."}</span>
+      </div>
+      <div className="fc-tabs" role="tablist" aria-label="Filter approvals">
+        {(["pending", "approved", "rejected", "all"] as const).map((tab) => {
+          const count = tab === "all" ? changes.requests.length : changes.requests.filter((item) => item.status === tab).length;
+          return <button key={tab} type="button" role="tab" aria-selected={approvalTab === tab} className={approvalTab === tab ? "is-active" : undefined} onClick={() => setApprovalTab(tab)}>
+            {tab === "all" ? "All" : tab.charAt(0).toUpperCase() + tab.slice(1)} <span className="fc-tabs__count">{count}</span>
+          </button>;
+        })}
+      </div>
+      {(() => {
+        const shown = changes.requests.filter((item) => approvalTab === "all" || item.status === approvalTab);
+        if (!shown.length) return <p className="muted">Nothing here.</p>;
+        return <ul className="fc-list">
+          {shown.map((item) => <li key={item.id} className="fc-change">
+            <div className="fc-change__head">
+              <b>{item.customerName}</b>
+              <span className={`fc-pill fc-pill--${item.status}`}>{item.status === "pending" ? "Pending" : item.status === "approved" ? "Approved" : "Rejected"}</span>
             </div>
-            : <p className="muted" style={{ margin: "6px 0 0" }}><small>Waiting for an admin to approve.</small></p>)}
-        </li>)}
-      </ul>
+            <small className="muted">{kindLabel(item.kind)} · asked by {item.requestedBy}, {new Date(item.requestedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</small>
+            <div className="fc-change__what">
+              {item.kind === "change"
+                ? <>
+                  <small>Email: {item.customerEmail ?? "—"} → <b>{item.newEmail ?? "none"}</b></small>
+                  <small>Mobile: {showPhone(item.customerPhone) ?? "—"} → <b>{showPhone(item.newPhone) ?? "none"}</b></small>
+                </>
+                : <small>{item.kind === "verify-email" ? `Email ${item.customerEmail ?? ""}` : `Mobile ${showPhone(item.customerPhone) ?? ""}`} to be confirmed as verified</small>}
+            </div>
+            {item.status !== "pending" && <small className="muted">
+              {item.status === "approved" ? "Approved" : "Rejected"}{item.decidedBy ? ` by ${item.decidedBy}` : ""}{item.decidedAt ? `, ${new Date(item.decidedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}
+              {item.decisionNote ? <> · <i>“{item.decisionNote}”</i></> : null}
+            </small>}
+            {item.status === "pending" && (changes.isAdmin && item.requestedById !== changes.me
+              ? <div className="fc-row" style={{ marginTop: 8 }}>
+                <input placeholder="Comment (optional)" maxLength={300} value={decisionNotes[item.id] ?? ""} aria-label="Decision comment"
+                  onChange={(event) => setDecisionNotes((current) => ({ ...current, [item.id]: event.target.value }))}/>
+                <button type="button" className="btn btn--primary btn--sm" disabled={busy} onClick={() => void decideChange(item.id, "approve")}>Approve</button>
+                <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void decideChange(item.id, "reject")}>Reject</button>
+              </div>
+              : <p className="muted" style={{ margin: "6px 0 0" }}><small>Waiting for an admin to decide.</small></p>)}
+          </li>)}
+        </ul>;
+      })()}
     </section>}
   </section>;
 }

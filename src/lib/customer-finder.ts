@@ -175,7 +175,7 @@ async function requestContactChange(member: typeof users.$inferSelect, next: Con
   const storedEmail = storedEmailFor(member.id, next.email, member.email);
   if (storedEmail === member.email && next.phone === member.phone) return { ok: true, changed: false, pending: false };
   const [open] = await db.select({ id: contactChangeRequests.id }).from(contactChangeRequests)
-    .where(and(eq(contactChangeRequests.userId, member.id), eq(contactChangeRequests.status, "pending"))).limit(1);
+    .where(and(eq(contactChangeRequests.userId, member.id), eq(contactChangeRequests.kind, "change"), eq(contactChangeRequests.status, "pending"))).limit(1);
   if (open) throw new PublicError("A change for this customer is already waiting for admin approval.", 409, { code: "already_pending" });
   await db.insert(contactChangeRequests).values({ userId: member.id, newEmail: storedEmail, newPhone: next.phone, requestedById: actor.id });
   await logActivity({ kind: "staff", permission: "records", title: `${actor.name ?? "Staff"} asked an admin to approve an email or mobile change for ${member.name}`, refType: "user", refId: member.id, actorId: actor.id });
@@ -219,8 +219,8 @@ async function applyContactChange(member: typeof users.$inferSelect, next: Conta
 }
 
 export type ContactChange = {
-  id: string; status: string; newEmail: string | null; newPhone: string | null; requestedAt: string; requestedById: string; requestedBy: string;
-  customerName: string; customerEmail: string | null; customerPhone: string | null; decisionNote: string | null; decidedAt: string | null;
+  id: string; kind: string; status: string; newEmail: string | null; newPhone: string | null; requestedAt: string; requestedById: string; requestedBy: string;
+  customerName: string; customerEmail: string | null; customerPhone: string | null; decisionNote: string | null; decidedAt: string | null; decidedBy: string | null;
 };
 
 /** Staff email/mobile changes: pending first, then the latest decisions. Any staff with records access can see them. */
@@ -236,14 +236,16 @@ export async function listContactChanges(actor: { id: string; role?: string | nu
 
 async function loadContactChanges(actor: { id: string; role?: string | null }) {
   const requester = alias(users, "contact_requester");
+  const decider = alias(users, "contact_decider");
   const rows = await db.select({
-    id: contactChangeRequests.id, status: contactChangeRequests.status, newEmail: contactChangeRequests.newEmail,
+    id: contactChangeRequests.id, kind: contactChangeRequests.kind, status: contactChangeRequests.status, newEmail: contactChangeRequests.newEmail,
     newPhone: contactChangeRequests.newPhone, requestedAt: contactChangeRequests.requestedAt, requestedById: contactChangeRequests.requestedById,
-    requestedBy: requester.name, customerName: users.name, customerEmail: users.email, customerPhone: users.phone,
+    requestedBy: requester.name, decidedBy: decider.name, customerName: users.name, customerEmail: users.email, customerPhone: users.phone,
     decisionNote: contactChangeRequests.decisionNote, decidedAt: contactChangeRequests.decidedAt,
   }).from(contactChangeRequests)
     .innerJoin(users, eq(users.id, contactChangeRequests.userId))
     .leftJoin(requester, eq(requester.id, contactChangeRequests.requestedById))
+    .leftJoin(decider, eq(decider.id, contactChangeRequests.decidedById))
     .orderBy(desc(contactChangeRequests.requestedAt))
     .limit(40);
   const requests: ContactChange[] = rows.map((row) => ({
@@ -251,6 +253,7 @@ async function loadContactChanges(actor: { id: string; role?: string | null }) {
     newEmail: row.newEmail && !isPlaceholderEmail(row.newEmail) ? row.newEmail : null,
     customerEmail: row.customerEmail && !isPlaceholderEmail(row.customerEmail) ? row.customerEmail : null,
     requestedBy: row.requestedBy ?? "Staff",
+    decidedBy: row.decidedBy ?? null,
     requestedAt: row.requestedAt.toISOString(),
     decidedAt: row.decidedAt ? row.decidedAt.toISOString() : null,
   }));
@@ -271,6 +274,18 @@ export async function decideContactChange(requestId: string, decision: "approve"
       .where(and(eq(contactChangeRequests.id, requestId), eq(contactChangeRequests.status, "pending")));
     await logActivity({ kind: "staff", permission: "records", title: `${actor.name ?? "Admin"} rejected an email or mobile change request`, refType: "user", refId: request.userId, actorId: actor.id });
     return { ok: true, status: "rejected" };
+  }
+
+  if (request.kind !== "change") {
+    // Verification request: confirm the existing email or mobile, without changing the value.
+    const verifyChannel = request.kind === "verify-email" ? "email" : "phone";
+    await db.update(users)
+      .set(verifyChannel === "email" ? { emailVerifiedAt: new Date(), updatedAt: new Date() } : { phoneVerifiedAt: new Date(), updatedAt: new Date() })
+      .where(eq(users.id, request.userId));
+    await db.update(contactChangeRequests).set({ status: "approved", decidedById: actor.id, decidedAt: new Date(), decisionNote })
+      .where(and(eq(contactChangeRequests.id, requestId), eq(contactChangeRequests.status, "pending")));
+    await logActivity({ kind: "staff", permission: "records", title: `${actor.name ?? "Admin"} approved a ${verifyChannel} verification request`, refType: "user", refId: request.userId, actorId: actor.id });
+    return { ok: true, status: "approved" };
   }
 
   const member = await customerOrThrow(request.userId);

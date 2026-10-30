@@ -476,3 +476,14 @@ export async function deleteAccount(user: User, password: string, confirmation: 
   (await cookies()).delete(SESSION_COOKIE);
   sendAccountDeletedEmail(fresh.email, fresh.name).catch((error) => console.error("[auth] deletion email failed", error));
 }
+
+/** Sends a 6-digit code to a customer's email so they can read it out at the counter (purpose "counter-verify"). */
+export async function sendContactVerifyCode(email: string, staffId: string) {
+  await limitCodeRequests(email, `counter:${staffId}`);
+  await issueCode(email, "counter-verify", "counter-verify");
+}
+
+/** Checks the code the customer read out at the counter. Wrong, expired or used codes are refused. */
+export async function checkContactVerifyCode(email: string, code: string, staffId: string) {
+  await consumeOtp(email, "counter-verify", code, `counter:${staffId}`);
+}

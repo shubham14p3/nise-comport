@@ -1,25 +1,30 @@
 "use client";
 
-import { useEffect, useState, type KeyboardEvent } from "react";
-import { Loader2 } from "lucide-react";
+import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
+import { Check, Loader2 } from "lucide-react";
 import { secureApi, SecureApiError } from "@/lib/secure-api-client";
 import { COUNTER_DISCOUNT_PERCENT } from "@/lib/counter-rules";
 
-/** Opaque gateway code for the counter lookup, visit and top-up request (mapped in src/app/api/x7q9m2/route.ts). */
+/** Opaque gateway code for the counter lookup, visits, top-ups and contact checks (mapped in src/app/api/x7q9m2/route.ts). */
 const COUNTER_OP = "C6d1L8wN4vXs";
 /** Opaque gateway code for the second-admin approvals list and decision (mapped in the same gateway). */
 const APPROVALS_OP = "W5k2P8vN4rQd";
 
 type Service = { slug: string; title: string };
 type Visit = { id: string; serviceName: string; billPaise: number; discountPaise: number; walletPaise: number; collectPaise: number; createdAt: string };
-type Lookup = { phone: string; customer: { id: string; name: string } | null; knownName: string | null; balancePaise: number; visits: Visit[]; visitsTotal: number; page: number; pageSize: number };
+type Contact = { email: string | null; emailVerified: boolean; phone: string | null; phoneVerified: boolean };
+type Lookup = { phone: string; customer: { id: string; name: string } | null; knownName: string | null; contact: Contact | null; balancePaise: number; visits: Visit[]; visitsTotal: number; page: number; pageSize: number };
 type Recorded = { billPaise: number; discountPaise: number; collectPaise: number; balanceAfterPaise: number };
 type CreditRequest = {
   id: string; amount: string; reason: string; status: "pending" | "approved" | "rejected"; requestedAt: string; requestedById: string;
   decidedAt: string | null; decisionNote: string | null; customerName: string; customerPhone: string | null; requestedBy: string; decidedBy: string | null;
 };
+type Channel = "email" | "phone";
+type Mode = "mobile" | "email";
 
 const rupees = (paise: number) => `₹${(paise / 100).toFixed(2)}`;
+const when = (iso: string) => new Date(iso).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+const shownPhone = (phone: string | null) => (phone ? `+91 ${phone.replace(/^\+91/, "")}` : null);
 
 /** Keeps only digits and stops at 10. A pasted "+91" or "91" prefix is dropped, so the number can't run past 10 digits. */
 function limitMobileDigits(raw: string) {
@@ -27,14 +32,26 @@ function limitMobileDigits(raw: string) {
   if (digits.length > 10 && digits.startsWith("91")) digits = digits.slice(2);
   return digits.slice(0, 10);
 }
-const when = (iso: string) => new Date(iso).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+/** One contact line with its verified tick. The actions appear under it only while it is not verified. */
+function ContactCheck({ label, value, verified, children }: { label: string; value: string | null; verified: boolean; children?: ReactNode }) {
+  return <div className="counter-contact__row">
+    <div className="counter-contact__top">
+      <span className="counter-contact__label">{label}</span>
+      <span className="counter-contact__value">{value ?? <em>Not added. Add it in Find customer.</em>}</span>
+      {value && <span className={verified ? "counter-contact__ok" : "counter-contact__no"}>{verified ? <><Check size={14} aria-hidden="true"/> Verified</> : "Not verified"}</span>}
+    </div>
+    {value && !verified && children}
+  </div>;
+}
 
 /**
- * Owner's counter desk, shown in a popup. Left: enter the mobile number, pick a service and the amount.
- * Right: the customer, the live bill summary and recent visits. Top-ups and approvals are below.
+ * Owner's counter desk, shown in a popup. Left: search by mobile (default) or email, pick the service and
+ * the amount. Right: the customer, their email and mobile with verified ticks, the live bill summary and recent visits.
  */
 export default function CounterDesk({ services }: { services: Service[]; isOwner?: boolean }) {
-  const [phone, setPhone] = useState("");
+  const [mode, setMode] = useState<Mode>("mobile");
+  const [lookupText, setLookupText] = useState("");
   const [lookup, setLookup] = useState<Lookup | null>(null);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
@@ -53,8 +70,11 @@ export default function CounterDesk({ services }: { services: Service[]; isOwner
   const [looking, setLooking] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [confirmChannel, setConfirmChannel] = useState<Channel | null>(null);
+  const [confirmTicked, setConfirmTicked] = useState(false);
+  const [codeSentTo, setCodeSentTo] = useState<string | null>(null);
+  const [codeValue, setCodeValue] = useState("");
 
-  const digits = phone.replace(/\D/g, "");
   const matches = serviceText.trim()
     ? services.filter((item) => item.title.toLowerCase().includes(serviceText.trim().toLowerCase())).slice(0, 8)
     : services.slice(0, 8);
@@ -88,17 +108,36 @@ export default function CounterDesk({ services }: { services: Service[]; isOwner
     return () => { active = false; };
   }, []);
 
+  function resetContact() { setConfirmChannel(null); setConfirmTicked(false); setCodeSentTo(null); setCodeValue(""); }
+
+  function switchMode(next: Mode) {
+    setMode(next); setLookupText(""); setLookup(null); setNotice(""); setError(""); resetContact();
+  }
+
+  /** In mobile mode, typing "@" switches to email, so the customer's address can be pasted straight in. */
+  function changeLookup(raw: string) {
+    if (mode === "mobile" && raw.includes("@")) { setMode("email"); setLookupText(raw.slice(0, 120)); return; }
+    setLookupText(mode === "mobile" ? limitMobileDigits(raw) : raw.slice(0, 120));
+  }
+
   async function findCustomer(page = 0) {
-    if (digits.length !== 10) { setError("Enter a valid 10-digit mobile number."); return; }
+    if (mode === "mobile" && lookupText.length !== 10) { setError("Enter a valid 10-digit mobile number."); return; }
+    if (mode === "email" && !lookupText.includes("@")) { setError("Enter a valid email address."); return; }
     setLooking(true);
     try {
-      const result = await run(() => secureApi<Lookup>(COUNTER_OP, { action: "lookup", phone: digits, page }));
+      const body = mode === "email"
+        ? { action: "lookup-email", email: lookupText.trim(), page }
+        : { action: "lookup", phone: lookupText, page };
+      const result = await run(() => secureApi<Lookup>(COUNTER_OP, body));
       if (result) {
         setLookup(result);
+        resetContact();
         if (!result.customer && result.knownName) setNewName((current) => current || result.knownName!);
-        setNotice(result.customer ? "" : result.knownName
-          ? result.knownName + " is in your records but has no account yet. Their profile is created when you record the visit."
-          : "New number. Add the customer’s name below to create their profile.");
+        setNotice(result.customer ? "" : mode === "email"
+          ? "No customer has this email. Search by mobile to add a new customer."
+          : result.knownName
+            ? result.knownName + " is in your records but has no account yet. Their profile is created when you record the visit."
+            : "New number. Add the customer’s name below to create their profile.");
       }
     } finally { setLooking(false); }
   }
@@ -117,41 +156,86 @@ export default function CounterDesk({ services }: { services: Service[]; isOwner
     }
   }
 
+  /** A contact action for the open customer. Refreshes the card afterwards, then shows the message. */
+  async function contactAction(body: Record<string, unknown>, done: string) {
+    if (!lookup?.customer) return;
+    const result = await run(() => secureApi(COUNTER_OP, { ...body, userId: lookup.customer!.id }));
+    if (!result) return;
+    resetContact();
+    await findCustomer(lookup.page);
+    setNotice(done);
+  }
+
+  async function sendCode() {
+    if (!lookup?.customer) return;
+    const result = await run(() => secureApi<{ sentTo: string | null }>(COUNTER_OP, { action: "code-send", userId: lookup.customer!.id }));
+    if (!result) return;
+    setCodeSentTo(result.sentTo);
+    setCodeValue("");
+    setNotice("Code sent. Ask the customer to read it out.");
+  }
+
+  async function checkCode() {
+    if (!lookup?.customer) return;
+    const result = await run(() => secureApi(COUNTER_OP, { action: "code-check", userId: lookup.customer!.id, code: codeValue.trim() }));
+    if (!result) return;
+    resetContact();
+    await findCustomer(lookup.page);
+    setNotice("Email verified with the customer’s code.");
+  }
+
+  /** "The customer confirmed this in front of me" must be ticked before staff can verify on the spot. */
+  function confirmBox(channel: Channel) {
+    const label = channel === "email" ? "email" : "mobile number";
+    return <div className="counter-contact__confirm">
+      <label className="counter-contact__tick">
+        <input type="checkbox" checked={confirmTicked} onChange={(event) => setConfirmTicked(event.target.checked)}/> The customer confirmed this {label} in front of me.
+      </label>
+      <div className="counter-contact__actions">
+        <button type="button" className="btn btn--primary btn--sm" disabled={!confirmTicked || busy}
+          onClick={() => void contactAction({ action: "confirm", channel }, `${label.charAt(0).toUpperCase()}${label.slice(1)} verified and recorded with your name.`)}>Verify now</button>
+        <button type="button" className="btn btn--ghost btn--sm" onClick={() => resetContact()}>Cancel</button>
+      </div>
+    </div>;
+  }
+
   async function recordVisit() {
     if (!service) { setError("Choose a service first."); return; }
     if (!(billPaise > 0)) { setError("Enter the amount."); return; }
-    if (!lookup) { setError("Look up the mobile number first."); return; }
+    if (!lookup) { setError("Look up the customer first."); return; }
+    if (!lookup.phone) { setError("This customer has no mobile number. Add one in Find customer before recording a visit."); return; }
     const result = await run(() => secureApi<Recorded>(COUNTER_OP, {
-      action: "visit", phone: digits, name: lookup.customer ? undefined : newName, email: lookup.customer ? undefined : newEmail.trim() || undefined, serviceSlug: service.slug, amount: billPaise / 100,
+      action: "visit", phone: lookup.phone, name: lookup.customer ? undefined : newName, email: lookup.customer ? undefined : newEmail.trim() || undefined, serviceSlug: service.slug, amount: billPaise / 100,
     }));
     if (!result) return;
-    setNotice(`Recorded. Customer pays ${rupees(result.collectPaise)}${result.discountPaise ? `, wallet covers ${rupees(result.discountPaise)}` : ""}. Balance now ${rupees(result.balanceAfterPaise)}.`);
     setService(null); setServiceText(""); setAmount(""); setNewName(""); setNewEmail("");
-    await findCustomer();
+    await findCustomer(0);
+    setNotice(`Recorded. Customer pays ${rupees(result.collectPaise)}${result.discountPaise ? `, wallet covers ${rupees(result.discountPaise)}` : ""}. Balance now ${rupees(result.balanceAfterPaise)}.`);
   }
 
   async function requestTopUp() {
     const paise = Math.round((Number(topupAmount) || 0) * 100);
     if (!(paise > 0)) { setError("Enter the top-up amount."); return; }
     if (!topupReason.trim()) { setError("Write why this top-up is being made."); return; }
-    if (!lookup) { setError("Look up the mobile number first."); return; }
+    if (!lookup) { setError("Look up the customer first."); return; }
+    if (!lookup.phone) { setError("This customer has no mobile number. Add one in Find customer first."); return; }
     const result = await run(() => secureApi<{ status: string }>(COUNTER_OP, {
-      action: "topup", phone: digits, name: lookup.customer ? undefined : newName, email: lookup.customer ? undefined : newEmail.trim() || undefined, amount: paise / 100, reason: topupReason,
+      action: "topup", phone: lookup.phone, name: lookup.customer ? undefined : newName, email: lookup.customer ? undefined : newEmail.trim() || undefined, amount: paise / 100, reason: topupReason,
     }));
     if (!result) return;
-    setNotice(`Top-up of ${rupees(paise)} sent for approval. A second admin must approve it before it reaches the wallet.`);
     setTopupAmount(""); setTopupReason("");
     await loadApprovals();
+    setNotice(`Top-up of ${rupees(paise)} sent for approval. A second admin must approve it before it reaches the wallet.`);
   }
 
   async function decide(id: string, decision: "approve" | "reject") {
     const note = decisionNotes[id]?.trim() ?? "";
     const result = await run(() => secureApi(APPROVALS_OP, { action: "decide", id, decision, note }));
     if (!result) return;
-    setNotice(decision === "approve" ? "Approved. The credit is now in the wallet." : "Rejected. Nothing was added to the wallet.");
     setDecisionNotes((current) => ({ ...current, [id]: "" }));
     await loadApprovals();
-    if (lookup) await findCustomer();
+    if (lookup) await findCustomer(lookup.page);
+    setNotice(decision === "approve" ? "Approved. The credit is now in the wallet." : "Rejected. Nothing was added to the wallet.");
   }
 
   function onAmountKey(event: KeyboardEvent<HTMLInputElement>) {
@@ -160,22 +244,27 @@ export default function CounterDesk({ services }: { services: Service[]; isOwner
 
   const pending = requests.filter((item) => item.status === "pending");
   const decided = requests.filter((item) => item.status !== "pending").slice(0, 10);
+  const lookupReady = mode === "mobile" ? lookupText.length === 10 : lookupText.includes("@");
 
   return <div aria-label="Counter desk">
-    <div className="admin-panel-title"><div><h2>Counter desk</h2><p>Look up a mobile number, pick the service and enter the amount. Every visit is kept with its date and time.</p></div></div>
+    <div className="admin-panel-title"><div><h2>Counter desk</h2><p>Look up a customer by mobile or email, pick the service and enter the amount. Every visit is kept with its date and time.</p></div></div>
     <div className="counter-desk__grid">
       <div className="counter-desk__entry">
-        <label className="field"><span className="field__label">Customer mobile</span>
+        <div className="counter-desk__modes" role="group" aria-label="Search by">
+          <button type="button" className={mode === "mobile" ? "is-active" : undefined} aria-pressed={mode === "mobile"} onClick={() => switchMode("mobile")}>Mobile</button>
+          <button type="button" className={mode === "email" ? "is-active" : undefined} aria-pressed={mode === "email"} onClick={() => switchMode("email")}>Email</button>
+        </div>
+        <label className="field"><span className="field__label">{mode === "mobile" ? "Customer mobile" : "Customer email"}</span>
           <span className="counter-desk__lookup">
-            <input type="tel" inputMode="numeric" autoComplete="off" value={phone} placeholder="98765 43210" maxLength={14} aria-describedby="counter-phone-hint"
-              onChange={(event) => setPhone(limitMobileDigits(event.target.value))}
-              onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void findCustomer(); } }}
-              onBlur={() => { if (digits.length === 10 && lookup?.phone !== digits) void findCustomer(); }}/>
-            <button type="button" className="btn btn--ghost btn--sm" disabled={looking || digits.length < 10} onClick={() => void findCustomer()} aria-busy={looking}>
+            <input type={mode === "mobile" ? "tel" : "email"} inputMode={mode === "mobile" ? "numeric" : "email"} autoComplete="off" value={lookupText}
+              placeholder={mode === "mobile" ? "98765 43210" : "name@example.com"} maxLength={mode === "mobile" ? 14 : 120} aria-describedby="counter-lookup-hint"
+              onChange={(event) => changeLookup(event.target.value)}
+              onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void findCustomer(); } }}/>
+            <button type="button" className="btn btn--ghost btn--sm" disabled={looking || !lookupReady} onClick={() => void findCustomer()} aria-busy={looking}>
               {looking ? <><Loader2 size={15} className="counter-desk__spin" aria-hidden="true"/> Looking up…</> : "Look up"}
             </button>
           </span>
-          <span id="counter-phone-hint" className="field__hint">Enter the 10 digits only.</span>
+          <span id="counter-lookup-hint" className="field__hint">{mode === "mobile" ? "Enter the 10 digits only." : "Type the full email address."}</span>
         </label>
 
         {lookup && <>
@@ -210,11 +299,11 @@ export default function CounterDesk({ services }: { services: Service[]; isOwner
       </div>
 
       <aside className="counter-desk__side" aria-live="polite">
-        {!lookup && <p className="muted">Enter a mobile number and press Look up. The customer, their wallet balance and the bill summary appear here.</p>}
+        {!lookup && <p className="muted">Enter a mobile number or email and press Look up. The customer, their verified contacts, wallet balance and the bill summary appear here.</p>}
         {lookup && <>
           <div className="counter-desk__card">
             {lookup.customer
-              ? <><b>{lookup.customer.name}</b><div className="muted">{lookup.phone} · wallet <b>{rupees(lookup.balancePaise)}</b></div></>
+              ? <><b>{lookup.customer.name}</b><div className="muted">{shownPhone(lookup.contact?.phone ?? null) ?? "No mobile on account"} · wallet <b>{rupees(lookup.balancePaise)}</b></div></>
               : <>
                 <label className="field"><span className="field__label">Customer’s name (new number)</span>
                   <input value={newName} onChange={(event) => setNewName(event.target.value)} autoComplete="off"/>
@@ -225,6 +314,32 @@ export default function CounterDesk({ services }: { services: Service[]; isOwner
                 <span className="field__hint">New numbers get a profile. The name goes on the receipt and the customer’s record.</span>
               </>}
           </div>
+
+          {lookup.customer && lookup.contact && <div className="counter-contact">
+            <ContactCheck label="Email" value={lookup.contact.email} verified={lookup.contact.emailVerified}>
+              <div className="counter-contact__actions">
+                <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => { setConfirmChannel("email"); setConfirmTicked(false); }}>Customer confirmed</button>
+                <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void sendCode()}>{codeSentTo ? "Send code again" : "Send code to email"}</button>
+                <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void contactAction({ action: "verify-request", channel: "email" }, "Sent to an admin for approval.")}>Ask admin to verify</button>
+              </div>
+              {confirmChannel === "email" && confirmBox("email")}
+              {codeSentTo && <div className="counter-contact__confirm">
+                <p>Code sent to {codeSentTo}. Ask the customer to read it out, then type it here.</p>
+                <div className="counter-contact__actions">
+                  <input inputMode="numeric" maxLength={6} value={codeValue} aria-label="6-digit code" placeholder="6-digit code"
+                    onChange={(event) => setCodeValue(event.target.value.replace(/\D/g, "").slice(0, 6))}/>
+                  <button type="button" className="btn btn--primary btn--sm" disabled={busy || codeValue.length !== 6} onClick={() => void checkCode()}>Check code</button>
+                </div>
+              </div>}
+            </ContactCheck>
+            <ContactCheck label="Mobile" value={shownPhone(lookup.contact.phone)} verified={lookup.contact.phoneVerified}>
+              <div className="counter-contact__actions">
+                <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => { setConfirmChannel("phone"); setConfirmTicked(false); }}>Customer confirmed</button>
+                <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void contactAction({ action: "verify-request", channel: "phone" }, "Sent to an admin for approval.")}>Ask admin to verify</button>
+              </div>
+              {confirmChannel === "phone" && confirmBox("phone")}
+            </ContactCheck>
+          </div>}
 
           {billPaise > 0 && <dl className="summary" style={{ marginTop: 10 }}>
             <div><dt>Bill</dt><dd>{rupees(billPaise)}</dd></div>
