@@ -14,12 +14,12 @@ export async function TeamView({ lang }: { lang: Locale }) {
   const people = await publicTeam();
   const home = lang === "en" ? "/" : `/${lang}`;
   return <main className="content-page" lang={LOCALE_META[lang].htmlLang}><SiteHeader/>
-    <JsonLd data={webPageLd({ name: t("The NISE COMPORT team", "NISE COMPORT की टीम", "NISE COMPORT-এর টিম"), description: "The people at the NISE COMPORT service desk in Kharangajhar, Telco, Jamshedpur.", path: lp(lang, "/team") })}/>
+    <JsonLd data={webPageLd({ name: t("The NiSE COMPORT team", "NiSE COMPORT की टीम", "NiSE COMPORT-এর টিম"), description: "The people at the NiSE COMPORT service desk in Kharangajhar, Telco, Jamshedpur.", path: lp(lang, "/team") })}/>
     <section className="content-hero team-hero"><span className="team-hero__orb team-hero__orb--a" aria-hidden="true"/><span className="team-hero__orb team-hero__orb--b" aria-hidden="true"/><div className="container">
       <Breadcrumbs label={t("Breadcrumb", "ब्रेडक्रंब", "ব্রেডক্রাম্ব")} items={[{ name: t("Home", "होम", "হোম"), path: home }, { name: t("Our team", "हमारी टीम", "আমাদের টিম"), path: lp(lang, "/team") }]}/>
       <span className="eyebrow eyebrow-muted">{t("A LOCAL TEAM YOU CAN REACH", "एक स्थानीय टीम जिससे आप मिल सकते हैं", "একটি স্থানীয় টিম যাঁদের কাছে আপনি পৌঁছাতে পারেন")}</span>
       <h1>{t("People who help", "वे लोग जो", "যাঁরা কাজ")}<br/><em>{t("get things moving.", "काम आगे बढ़ाने में मदद करते हैं।", "এগিয়ে নিতে সাহায্য করেন।")}</em></h1>
-      <p>{t("NISE COMPORT is rooted in the Kharangajhar neighbourhood of Telco, Jamshedpur. Our team helps customers with everyday digital and government services, with clear steps and in-person support.", "NISE COMPORT जमशेदपुर के टेल्को के खरंगाझार मोहल्ले में बसा है। हमारी टीम साफ़ चरणों और आमने-सामने की मदद के साथ ग्राहकों को रोज़मर्रा की डिजिटल और सरकारी सेवाओं में सहायता करती है।", "NISE COMPORT জামশেদপুরের টেলকোর খরংগাঝাড় পাড়ায় শিকড় গেড়েছে। আমাদের টিম স্পষ্ট ধাপ ও সামনাসামনি সাহায্য দিয়ে গ্রাহকদের দৈনন্দিন ডিজিটাল ও সরকারি পরিষেবায় সহায়তা করে।")}</p>
+      <p>{t("NiSE COMPORT is rooted in the Kharangajhar neighbourhood of Telco, Jamshedpur. Our team helps customers with everyday digital and government services, with clear steps and in-person support.", "NiSE COMPORT जमशेदपुर के टेल्को के खरंगाझार मोहल्ले में बसा है। हमारी टीम साफ़ चरणों और आमने-सामने की मदद के साथ ग्राहकों को रोज़मर्रा की डिजिटल और सरकारी सेवाओं में सहायता करती है।", "NiSE COMPORT জামশেদপুরের টেলকোর খরংগাঝাড় পাড়ায় শিকড় গেড়েছে। আমাদের টিম স্পষ্ট ধাপ ও সামনাসামনি সাহায্য দিয়ে গ্রাহকদের দৈনন্দিন ডিজিটাল ও সরকারি পরিষেবায় সহায়তা করে।")}</p>
       <div className="content-location"><MapPin size={15}/> {t("Kharangajhar, Telco, Jamshedpur, Jharkhand 831004", "खरंगाझार, टेल्को, जमशेदपुर, झारखंड 831004", "খরংগাঝাড়, টেলকো, জামশেদপুর, ঝাড়খণ্ড 831004")}</div>
     </div></section>
     <section className="container team-section"><TeamGrid people={people} lang={lang}/></section>

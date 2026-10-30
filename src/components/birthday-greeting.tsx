@@ -77,7 +77,7 @@ export default function BirthdayGreeting() {
       <button type="button" className="icon-btn help-dialog__close" aria-label={t("Close", "बंद करें", "বন্ধ করুন")} onClick={close}><X size={20}/></button>
       <div className="birthday-card__emoji" aria-hidden="true">🎂🎉</div>
       <h2 id="birthday-title">{t("Happy Birthday", "जन्मदिन मुबारक", "শুভ জন্মদিন")}{greeting.name ? `, ${greeting.name}!` : "!"}</h2>
-      <p>{t("Everyone at NISE COMPORT wishes you a wonderful year ahead.", "NISE COMPORT की पूरी टीम की ओर से आपको आने वाले साल की ढेर सारी शुभकामनाएँ।", "NISE COMPORT-এর সবার পক্ষ থেকে আপনাকে আগামী বছরের অনেক শুভেচ্ছা।")}</p>
+      <p>{t("Everyone at NiSE COMPORT wishes you a wonderful year ahead.", "NiSE COMPORT की पूरी टीम की ओर से आपको आने वाले साल की ढेर सारी शुभकामनाएँ।", "NiSE COMPORT-এর সবার পক্ষ থেকে আপনাকে আগামী বছরের অনেক শুভেচ্ছা।")}</p>
       {coupon ? <>
         <div className="birthday-card__gift">
           <span>{t(`Your gift: ${coupon.percent}% off our service charge`, `आपका तोहफ़ा: हमारे सेवा शुल्क पर ${coupon.percent}% छूट`, `আপনার উপহার: আমাদের সার্ভিস চার্জে ${coupon.percent}% ছাড়`)}</span>

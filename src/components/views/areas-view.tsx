@@ -39,7 +39,7 @@ export function AreasView({ lang }: { lang: Locale }) {
     { icon: Route, title: t("Come once", "एक बार आइए", "একবারই আসুন"), text: t("Use the directions link for your area, bring the originals we listed, and we finish the work in one visit.", "अपने इलाके के लिए दिशा-निर्देश का लिंक इस्तेमाल कीजिए, हमारी बताई मूल प्रतियाँ लाइए, और हम काम एक ही बार में पूरा कर देते हैं।", "আপনার এলাকার দিকনির্দেশ লিঙ্ক ব্যবহার করুন, আমাদের বলা আসল নথি আনুন, আর আমরা একবারেই কাজ শেষ করে দিই।") },
   ];
   return <main className="content-page" lang={LOCALE_META[lang].htmlLang}><SiteHeader/>
-    <JsonLd data={webPageLd({ name: t("Areas served by NISE COMPORT", "NISE COMPORT जिन इलाकों में सेवा देता है", "NISE COMPORT যেসব এলাকায় পরিষেবা দেয়"), description: "Neighbourhoods in Jamshedpur served by the NISE COMPORT CSC / Pragya Kendra desk in Kharangajhar, Telco.", path: lp(lang, "/areas-we-serve") })}/>
+    <JsonLd data={webPageLd({ name: t("Areas served by NiSE COMPORT", "NiSE COMPORT जिन इलाकों में सेवा देता है", "NiSE COMPORT যেসব এলাকায় পরিষেবা দেয়"), description: "Neighbourhoods in Jamshedpur served by the NiSE COMPORT CSC / Pragya Kendra desk in Kharangajhar, Telco.", path: lp(lang, "/areas-we-serve") })}/>
     <section className="content-hero"><div className="container">
       <Breadcrumbs label={t("Breadcrumb", "ब्रेडक्रंब", "ব্রেডক্রাম্ব")} items={[{ name: t("Home", "होम", "হোম"), path: home }, { name: t("Areas we serve", "हम जहाँ सेवा देते हैं", "আমরা যেখানে পরিষেবা দিই"), path: lp(lang, "/areas-we-serve") }]}/>
       <span className="eyebrow eyebrow-muted">{t("ONE DESK · ALL OF JAMSHEDPUR", "एक डेस्क · पूरा जमशेदपुर", "একটি ডেস্ক · পুরো জামশেদপুর")}</span>
@@ -63,7 +63,7 @@ export function AreasView({ lang }: { lang: Locale }) {
       </section>;
     })}
     <section className="container area-zone">
-      <div className="section-head section-head--left"><h2>{t("Living further away?", "और दूर रहते हैं?", "আরও দূরে থাকেন?")}</h2><p>{t("You do not have to be in Jamshedpur to use NISE COMPORT. Here is how it works from a distance.", "NISE COMPORT का उपयोग करने के लिए जमशेदपुर में होना ज़रूरी नहीं। दूर से यह इस तरह काम करता है।", "NISE COMPORT ব্যবহার করতে জামশেদপুরে থাকতে হবে না। দূর থেকে এটি এভাবে কাজ করে।")}</p></div>
+      <div className="section-head section-head--left"><h2>{t("Living further away?", "और दूर रहते हैं?", "আরও দূরে থাকেন?")}</h2><p>{t("You do not have to be in Jamshedpur to use NiSE COMPORT. Here is how it works from a distance.", "NiSE COMPORT का उपयोग करने के लिए जमशेदपुर में होना ज़रूरी नहीं। दूर से यह इस तरह काम करता है।", "NiSE COMPORT ব্যবহার করতে জামশেদপুরে থাকতে হবে না। দূর থেকে এটি এভাবে কাজ করে।")}</p></div>
       <ol className="about-steps">{howFar.map((step, index) => <li key={step.title}><span className="about-steps__n">{index + 1}</span><step.icon size={22} aria-hidden="true"/><h3>{step.title}</h3><p>{step.text}</p></li>)}</ol>
     </section>
     <section className="container related-services"><span className="eyebrow eyebrow-muted">{t("MOST REQUESTED", "सबसे ज़्यादा माँगी जाने वाली", "সবচেয়ে বেশি চাওয়া")}</span><h2>{t("Popular services", "लोकप्रिय सेवाएँ", "জনপ্রিয় পরিষেবা")}</h2><div className="related-links">{popular.map((item) => <Link key={item.href} href={lp(lang, item.href)}>{item.label} <ArrowUpRight size={13}/></Link>)}</div></section>

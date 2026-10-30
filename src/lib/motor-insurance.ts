@@ -3,11 +3,11 @@
  * help chat. Figures follow standard Indian motor insurance rules (IRDAI third-party tariff,
  * the motor tariff depreciation and NCB slabs); insurers confirm the exact quote.
  *
- * NISE COMPORT arranges policies and helps with claims; the insurance company issues the policy
+ * NiSE COMPORT arranges policies and helps with claims; the insurance company issues the policy
  * and decides and pays claims. Plain module (no imports).
  */
 
-export const FACILITATOR_NOTE = "NISE COMPORT helps you compare, buy, renew and claim. The policy is issued by the insurance company you choose, and claims are decided and paid by that insurer under its policy terms. NISE COMPORT is not the insurer and is not liable for the insurer’s decisions, but we stay with you from quote to claim settlement.";
+export const FACILITATOR_NOTE = "NiSE COMPORT helps you compare, buy, renew and claim. The policy is issued by the insurance company you choose, and claims are decided and paid by that insurer under its policy terms. NiSE COMPORT is not the insurer and is not liable for the insurer’s decisions, but we stay with you from quote to claim settlement.";
 export const SOLICITATION_NOTE = "Insurance is the subject matter of solicitation. Premiums, cover and discounts depend on the insurer’s terms; read the policy wording before buying.";
 
 /** Insurers customers commonly ask for. Which ones we can arrange depends on our partner tie-ups; we confirm when quoting. */
