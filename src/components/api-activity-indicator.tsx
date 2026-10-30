@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import Image from "next/image";
+
 import { getApiActivity, getServerApiActivity, subscribeApiActivity, trackApiActivity } from "@/lib/api-activity";
 
 /**
@@ -38,7 +38,7 @@ export default function ApiActivityIndicator() {
   if (!pending || !visible) return null;
   return <div className="api-activity api-activity--branded" role="status" aria-label="NiSE COMPORT is processing your request" aria-live="polite">
     <span className="api-activity__mark" aria-hidden="true">
-      <Image src="/images/logo/logo-footer.png" alt="" width={100} height={30} className="api-activity__logo"/>
+      <span className="nc-lettermark"><span>N</span><span>i</span><span>S</span><span>E</span></span>
       <span className="api-activity__orbit"/>
     </span>
     <span className="api-activity__description"><strong>NiSE COMPORT</strong><small>Processing your request…</small></span>
