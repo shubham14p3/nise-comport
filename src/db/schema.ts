@@ -814,3 +814,10 @@ export const purchaseBillItems = pgTable("purchase_bill_items", {
   lineTotalPaise: integer("line_total_paise").notNull(),
   gstPaise: integer("gst_paise").notNull().default(0),
 }, (table) => [index("purchase_bill_items_bill_idx").on(table.billId)]);
+
+/** Public website branding settings; account and integration secrets never belong here. */
+export const siteSettings = pgTable("site_settings", {
+  key: text("key").primaryKey(), value: jsonb("value").notNull(),
+  updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

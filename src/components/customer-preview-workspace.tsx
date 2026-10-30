@@ -31,7 +31,7 @@ export default function CustomerPreviewWorkspace() {
   const [section, setSection] = useState<Section>("overview");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [clock, setClock] = useState(0);
+  const [clock, setClock] = useState(() => Date.now());
   const load = useCallback(async () => {
     setError("");
     try { setData(await secureApi<Preview>(OP, { action: "state" })); }
@@ -104,14 +104,14 @@ export default function CustomerPreviewWorkspace() {
           <button type="button" aria-current={section === id ? "page" : undefined} className={section === id ? "active" : ""} onClick={() => setSection(id)} key={id}><Icon size={18}/>{label}</button>)}</nav>
         <section className="customer-preview__main">
           {section === "overview" && <><h2>Customer dashboard</h2><p className="preview-empty">What this registered account currently has on file.</p>
-            <div className="customer-preview__metrics">{[["Requests",data.requests.length],["Counter visits",data.visits.length],["Print orders",data.jobs.length],["Wallet entries",data.wallet.length]].map(([label,value])=><div key={label}><b>{value}</b><small>{label}</small></div>)}</div>
+            <div className="customer-preview__metrics">{[["Requests shown",data.requests.length],["Counter visits shown",data.visits.length],["Print orders shown",data.jobs.length],["Wallet entries shown",data.wallet.length]].map(([label,value])=><div key={label}><b>{value}</b><small>{label}</small></div>)}</div>
             <h3>Latest requests</h3>{activity(data.requests.slice(0,5),"No online requests for this account.")}</>}
           {section === "requests" && <><h2>Service requests</h2>{activity(data.requests,"No requests yet.")}</>}
           {section === "counter" && <><h2>Counter visits</h2>{activity(data.visits,"No counter visits linked to this account yet.")}</>}
           {section === "prints" && <><h2>Print orders</h2>{activity(data.jobs,"No print orders yet.")}</>}
           {section === "wallet" && <><h2>Wallet transactions</h2>{data.wallet.length ? <div className="preview-list">{data.wallet.map((entry,i)=><div className="preview-item" key={i}><div><strong>{entry.description ?? entry.kind}</strong><small>{prettyDate(entry.createdAt)}</small></div><b>{entry.kind === "debit" ? "−" : "+"}₹{entry.amount}</b></div>)}</div> : <p className="preview-empty">No wallet entries.</p>}</>}
           {section === "addresses" && <><h2>Saved addresses</h2>{data.addresses.length ? data.addresses.map(a=><article className="preview-address" key={a.id}><b>{a.label}</b><p>{a.line1}, {a.city}, {a.state} {a.postalCode}</p></article>) : <p className="preview-empty">No saved addresses.</p>}</>}
-          <p className="customer-preview__footnote">Preview is deliberately read-only. To correct customer records, return to Admin → Customers. No password, PIN or OTP has been used.</p>
+          <p className="customer-preview__footnote">Preview is deliberately read-only. To correct customer records, return to Admin → Customers. No password, PIN or OTP has been used. This preview shows recent activity: up to 60 service requests, 60 counter visits, 50 print orders, 100 wallet entries and 20 addresses.</p>
         </section>
       </div>
     </>}

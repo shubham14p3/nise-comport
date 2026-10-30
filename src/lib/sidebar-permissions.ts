@@ -60,7 +60,7 @@ export function sidebarPermissionForPath(path: string): StaffMenuId | null {
     ["/api/admin/qr-scans", "qrscans"], ["/api/admin/site-content", "content"],
     ["/api/admin/gallery", "gallery"], ["/api/admin/testimonials", "testimonials"],
     ["/api/admin/prices", "prices"], ["/api/admin/hardware", "hardware"],
-    ["/api/admin/legal", "legal"], ["/api/admin/media", "content"],
+    ["/api/admin/loader", "content"], ["/api/admin/legal", "legal"], ["/api/admin/media", "content"],
   ];
   const entry = rules.find(([prefix]) => path === prefix || path.startsWith(prefix + "/"));
   return entry?.[1] ?? null;

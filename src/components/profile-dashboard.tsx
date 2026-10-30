@@ -19,6 +19,7 @@ import {
   ArrowRight, Check, CircleHelp, FileText, FolderOpen, Gift, History, LayoutDashboard,
   MapPin, Plus, Printer, ShieldCheck, UserRound, WalletCards, Mail } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
+import { invalidateSessionCache } from "@/lib/session-client";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
 import { whatsappHref } from "@/lib/public-contact";
 import type { CustomerVoucher } from "@/lib/promo-view";
@@ -173,6 +174,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
       });
       if (result.user?.phone !== undefined) setPhone(result.user.phone ?? "");
       if (result.user?.updatedAt) setUpdatedAt(result.user.updatedAt);
+      invalidateSessionCache();
       setProfileMessage("Your profile details have been saved.");
       await reload();
     } catch (reason) {

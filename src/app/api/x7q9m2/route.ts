@@ -19,6 +19,7 @@ type Payload = { o?: string; i?: Record<string, unknown> };
 
 /** Encrypted file uploads: customer documents, and posters in the admin area. */
 const BINARY_OPS = {
+  "L7d2R8mQ4vN6": "/api/admin/loader",
   "U7b3R8mQ4zL1": "/api/uploads",
   "P6m1T8vC3xK9": "/api/admin/media",
   "G5p8U2kV7nR3": "/api/admin/gallery/upload",
