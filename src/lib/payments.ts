@@ -1,4 +1,4 @@
-import { and, count, desc, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { after } from "next/server";
 import { payments, serviceRequests, users, walletEntries } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
@@ -309,7 +309,10 @@ export async function paymentSummary() {
   const byMethod = ["upi_qr", "razorpay", "cashfree", "cash"].map((m) => { const r = paid.filter((x) => x.method === m); return { method: m, count: r.reduce((a, x) => a + x.count, 0), paise: r.reduce((a, x) => a + Number(x.amount) + (m === "razorpay" || m === "cashfree" ? Number(x.fee) : 0), 0) }; });
   const count = (status: string) => rows.filter((r) => r.status === status).reduce((a, x) => a + x.count, 0);
   const [attention] = await db.select({ n: sql<number>`count(*)::int` }).from(payments).where(sql`${payments.issueRaisedAt} is not null and coalesce(${payments.refundStatus},'') <> 'done' or ${payments.refundStatus} = 'requested'`);
-  return { byMethod, totalPaise: byMethod.reduce((a, x) => a + x.paise, 0), verifying: count("verifying"), failed: count("failed"), due: count("due"), attention: attention?.n ?? 0 };
+  // UTRs still waiting after 48 hours: the customer was promised 24–48 working hours, so staff should look at these first.
+  const [overdue] = await db.select({ n: sql<number>`count(*)::int` }).from(payments)
+    .where(and(eq(payments.status, "verifying"), sql`${payments.updatedAt} < now() - interval '48 hours'`));
+  return { byMethod, totalPaise: byMethod.reduce((a, x) => a + x.paise, 0), verifying: count("verifying"), overdueVerify: overdue?.n ?? 0, failed: count("failed"), due: count("due"), attention: attention?.n ?? 0 };
 }
 
 /**
@@ -330,4 +333,21 @@ export async function revealUpiQr(reference: string, slot: number, viewer: { id:
   const link = upiLink({ vpa: account.vpa, name: account.name, amountPaise: payment.amountPaise, note: payment.reference });
   const seconds = upiQrSeconds();
   return { svg: qrSvg(link, { size: 220 }), link, vpa: account.vpa, label: account.label, seconds, expiresAt: Date.now() + seconds * 1000 };
+}
+
+/** Requests that can get a payment request now: reviewed and approved, with no open payment. Used for the create dropdown. */
+export async function quotableRequests(limit = 200) {
+  const candidates = await db.select({
+    id: serviceRequests.id, reference: serviceRequests.reference, serviceName: serviceRequests.serviceName, serviceSlug: serviceRequests.serviceSlug,
+    status: serviceRequests.status, details: serviceRequests.details, customerName: users.name,
+  }).from(serviceRequests).innerJoin(users, eq(users.id, serviceRequests.userId))
+    .where(inArray(serviceRequests.status, ["submitted", "reviewing"]))
+    .orderBy(desc(serviceRequests.updatedAt)).limit(limit);
+  if (!candidates.length) return [];
+  const open = await db.select({ requestId: payments.requestId }).from(payments)
+    .where(and(inArray(payments.requestId, candidates.map((item) => item.id)), ne(payments.status, "cancelled")));
+  const busy = new Set(open.map((row) => row.requestId));
+  return candidates
+    .filter((item) => !busy.has(item.id) && canQuote(item.status, item.details, item.serviceSlug))
+    .map((item) => ({ reference: item.reference, serviceName: item.serviceName, customerName: item.customerName, status: item.status }));
 }

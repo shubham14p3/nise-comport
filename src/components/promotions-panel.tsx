@@ -48,7 +48,7 @@ export default function PromotionsPanel({ canEdit }: { canEdit: boolean }) {
     if (view !== "all" && row.state !== view) return false;
     const words = q.trim().toLowerCase();
     return !words || `${row.code} ${row.names.en} ${row.communities.join(" ")}`.toLowerCase().includes(words);
-  }), [data, view, q, today]);
+  }), [data, view, q]);
 
   const paging = useAdminPagination(rows);
 

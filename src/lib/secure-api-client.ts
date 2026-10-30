@@ -151,6 +151,12 @@ export async function secureApi<T>(operation: string, input: unknown = {}): Prom
   return opened.data;
 }
 
+/** Public static files only (for example blank PDF forms under /forms). Application data never goes through here. */
+export function fetchStaticFile(path: string, init: RequestInit = {}): Promise<Response> {
+  if (!path.startsWith("/forms/")) throw new Error("fetchStaticFile is only for files under /forms/.");
+  return fetch(path, init);
+}
+
 export async function secureResult<T>(operation: string, input: unknown = {}) {
   try {
     return { ok: true as const, status: 200, result: await secureApi<T>(operation, input) };

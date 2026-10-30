@@ -189,6 +189,67 @@ export const walletEntries = pgTable("wallet_entries", {
   kind: text("kind").notNull(), description: text("description").notNull(), reference: text("reference"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [index("wallet_entries_user_created_idx").on(table.userId, table.createdAt)]);
 
+/** Walk-in visits recorded at the counter. Money is stored in whole paise. */
+export const counterVisits = pgTable("counter_visits", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  staffId: uuid("staff_id").notNull().references(() => users.id),
+  serviceSlug: text("service_slug").notNull(), serviceName: text("service_name").notNull(),
+  billPaise: integer("bill_paise").notNull(), discountPaise: integer("discount_paise").notNull(),
+  walletPaise: integer("wallet_paise").notNull(), collectPaise: integer("collect_paise").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("counter_visits_user_created_idx").on(table.userId, table.createdAt)]);
+
+/**
+ * Wallet credits need a second admin's approval. Nothing reaches the customer's wallet until
+ * `approved`; the wallet entry is written in the same transaction as the approval.
+ */
+export const walletCreditRequests = pgTable("wallet_credit_requests", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  reason: text("reason").notNull(),
+  requestedById: uuid("requested_by_id").notNull().references(() => users.id),
+  requestedAt: timestamp("requested_at", { withTimezone: true }).notNull().defaultNow(),
+  status: text("status").notNull().default("pending"),
+  decidedById: uuid("decided_by_id").references(() => users.id),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  decisionNote: text("decision_note"),
+  walletEntryId: uuid("wallet_entry_id"),
+}, (table) => [index("wallet_credit_requests_status_idx").on(table.status, table.requestedAt)]);
+
+/**
+ * Email or mobile changes made by staff wait for an admin's approval. Nothing changes on the
+ * customer's account until an admin approves the request. Admin changes apply directly.
+ */
+export const contactChangeRequests = pgTable("contact_change_requests", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  newEmail: text("new_email").notNull(),
+  newPhone: text("new_phone"),
+  /** change = edit email or mobile; verify-email / verify-phone = confirm an existing one. */
+  kind: text("kind").notNull().default("change"),
+  requestedById: uuid("requested_by_id").notNull().references(() => users.id),
+  requestedAt: timestamp("requested_at", { withTimezone: true }).notNull().defaultNow(),
+  status: text("status").notNull().default("pending"),
+  decidedById: uuid("decided_by_id").references(() => users.id),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+  decisionNote: text("decision_note"),
+}, (table) => [index("contact_change_requests_status_idx").on(table.status, table.requestedAt)]);
+
+/**
+ * Welcome credit state per customer: when it was granted, whether the celebration was shown, and
+ * how many sign-in nudges were shown. Phone and email are the verified ones, used to block a second grant.
+ */
+export const welcomeCredits = pgTable("welcome_credits", {
+  userId: uuid("user_id").primaryKey().references(() => users.id),
+  phone: text("phone"), email: text("email"),
+  nudgeCount: integer("nudge_count").notNull().default(0),
+  grantedAt: timestamp("granted_at", { withTimezone: true }),
+  celebratedAt: timestamp("celebrated_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("welcome_credits_phone_idx").on(table.phone), index("welcome_credits_email_idx").on(table.email)]);
+
 export const referrals = pgTable("referrals", {
   id: uuid("id").defaultRandom().primaryKey(), referrerId: uuid("referrer_id").notNull().references(() => users.id),
   referredUserId: uuid("referred_user_id").references(() => users.id), code: text("code").notNull().unique(), status: text("status").notNull().default("invited"),
@@ -667,3 +728,89 @@ export const qrScans = pgTable("qr_scans", {
   scans: integer("scans").notNull().default(0),
   clicks: jsonb("clicks").$type<Record<string, number>>().notNull().default({}),
 }, (table) => [primaryKey({ columns: [table.day, table.source, table.device] })]);
+
+/** SMS messages sent or queued. SMS sending is not live yet; the table is ready for it. */
+export const smsMessages = pgTable("sms_messages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  phone: text("phone").notNull(),
+  purpose: text("purpose").notNull(),
+  body: text("body").notNull(),
+  status: text("status").notNull().default("queued"),
+  provider: text("provider"),
+  providerMessageId: text("provider_message_id"),
+  error: text("error"),
+  sentById: uuid("sent_by_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
+}, (table) => [index("sms_messages_status_idx").on(table.status, table.createdAt), index("sms_messages_phone_idx").on(table.phone)]);
+
+/** Sales invoices. Money is stored in paise (1 rupee = 100). */
+export const salesInvoices = pgTable("sales_invoices", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  invoiceNumber: text("invoice_number").notNull(),
+  invoiceDate: date("invoice_date").notNull(),
+  customerId: uuid("customer_id").references(() => users.id, { onDelete: "set null" }),
+  customerName: text("customer_name").notNull(),
+  customerPhone: text("customer_phone"),
+  customerGstin: text("customer_gstin"),
+  subtotalPaise: integer("subtotal_paise").notNull().default(0),
+  gstPaise: integer("gst_paise").notNull().default(0),
+  totalPaise: integer("total_paise").notNull().default(0),
+  paymentMode: text("payment_mode").notNull().default("cash"),
+  paymentStatus: text("payment_status").notNull().default("unpaid"),
+  paidPaise: integer("paid_paise").notNull().default(0),
+  notes: text("notes"),
+  createdById: uuid("created_by_id").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+}, (table) => [uniqueIndex("sales_invoices_number_unique").on(table.invoiceNumber), index("sales_invoices_date_idx").on(table.invoiceDate)]);
+
+export const salesInvoiceItems = pgTable("sales_invoice_items", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  invoiceId: uuid("invoice_id").notNull().references(() => salesInvoices.id, { onDelete: "cascade" }),
+  sortOrder: integer("sort_order").notNull().default(0),
+  description: text("description").notNull(),
+  hsnCode: text("hsn_code"),
+  quantity: numeric("quantity", { precision: 12, scale: 3 }).notNull().default("1"),
+  unitPricePaise: integer("unit_price_paise").notNull(),
+  gstRate: numeric("gst_rate", { precision: 5, scale: 2 }).notNull().default("0"),
+  lineTotalPaise: integer("line_total_paise").notNull(),
+  gstPaise: integer("gst_paise").notNull().default(0),
+}, (table) => [index("sales_invoice_items_invoice_idx").on(table.invoiceId)]);
+
+/** Purchase bills. A second person approves each bill (pending -> approved or rejected). */
+export const purchaseBills = pgTable("purchase_bills", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  billNumber: text("bill_number").notNull(),
+  billDate: date("bill_date").notNull(),
+  supplierName: text("supplier_name").notNull(),
+  supplierGstin: text("supplier_gstin"),
+  supplierPhone: text("supplier_phone"),
+  subtotalPaise: integer("subtotal_paise").notNull().default(0),
+  gstPaise: integer("gst_paise").notNull().default(0),
+  totalPaise: integer("total_paise").notNull().default(0),
+  paymentMode: text("payment_mode").notNull().default("cash"),
+  status: text("status").notNull().default("pending"),
+  notes: text("notes"),
+  createdById: uuid("created_by_id").references(() => users.id, { onDelete: "set null" }),
+  approvedById: uuid("approved_by_id").references(() => users.id, { onDelete: "set null" }),
+  approvedAt: timestamp("approved_at", { withTimezone: true }),
+  decisionNote: text("decision_note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [uniqueIndex("purchase_bills_supplier_number_unique").on(table.supplierName, table.billNumber), index("purchase_bills_date_idx").on(table.billDate), index("purchase_bills_status_idx").on(table.status, table.createdAt)]);
+
+export const purchaseBillItems = pgTable("purchase_bill_items", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  billId: uuid("bill_id").notNull().references(() => purchaseBills.id, { onDelete: "cascade" }),
+  sortOrder: integer("sort_order").notNull().default(0),
+  description: text("description").notNull(),
+  hsnCode: text("hsn_code"),
+  quantity: numeric("quantity", { precision: 12, scale: 3 }).notNull().default("1"),
+  unitCostPaise: integer("unit_cost_paise").notNull(),
+  gstRate: numeric("gst_rate", { precision: 5, scale: 2 }).notNull().default("0"),
+  lineTotalPaise: integer("line_total_paise").notNull(),
+  gstPaise: integer("gst_paise").notNull().default(0),
+}, (table) => [index("purchase_bill_items_bill_idx").on(table.billId)]);

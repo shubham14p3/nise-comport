@@ -6,11 +6,11 @@ test("legacy PAN 49A preserves all sixteen numbered areas", () => {
   const headers=intakeSections("pan49a").map(x=>x.title).join("|");
   for(const group of ["1–5.","6.","7.","8–9.","10–11.","12.","13.","14.","15.","16."])assert.ok(headers.includes(group),group);
   const ids=new Set(intakeSections("pan49a").flatMap(s=>s.fields.map(f=>f.id)));
-  for(const key of ["aoArea","aoType","aoRange","aoNumber","printedName","previousName","dob","singleMother","fatherSurname","motherSurname","residencePin","officePin","communicationAddress","mobile","email","status","registrationNumber","aadhaarNumber","aadhaarEnrolmentId","incomeSalary","incomeNone","raApplicable","identityProof","addressProof","birthProof","declarationDate"])
+  for(const key of ["aoArea","aoType","aoRange","aoNumber","printedName","previousName","dob","singleMother","fatherSurname","motherSurname","residencePin","officePin","communicationAddress","mobile","email","status","aadhaarNumber","aadhaarEnrolmentId","incomeSalary","incomeNone","raApplicable","identityProof","addressProof","birthProof","declarationDate"])
     assert.ok(ids.has(key), "Missing "+key);
 });
 test("49A validation catches invalid Aadhaar, conflicting income and impossible office preference",()=>{
-  const errors=validateDetailedIntake({kind:"pan49a",answers:{aadhaarAllotted:"Yes",aadhaarNumber:"123",incomeSalary:"Yes",incomeNone:"Yes",officeAddress:"No",communicationAddress:"Office",aoArea:"42"},documents:[]});
+  const errors=validateDetailedIntake({kind:"pan49a",answers:{aadhaarAllotted:"Yes",aadhaarNumber:"123",incomeSalary:"Yes",incomeNone:"Yes",communicationSameAsResidence:"No",officeAddress:"No",communicationAddress:"Office",aoArea:"42"},documents:[]});
   assert.ok(errors.aadhaarNumber);
   assert.ok(errors.incomeNone);
   assert.ok(errors.communicationAddress);

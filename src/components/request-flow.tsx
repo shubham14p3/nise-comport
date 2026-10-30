@@ -55,7 +55,11 @@ export default function RequestFlow({ detail, busy, canQuote, onStart, onReview,
   const [problem, setProblem] = useState("");
 
   // Load the saved draft whenever another request is opened.
-  useEffect(() => { setDraft(readDraft(reference)); setProblem(""); }, [reference]);
+  useEffect(() => {
+    // Deferred one tick so no state is set synchronously inside the effect body.
+    const timer = window.setTimeout(() => { setDraft(readDraft(reference)); setProblem(""); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [reference]);
 
   // Warn before leaving with unsaved typing.
   const dirty = JSON.stringify(draft) !== JSON.stringify(EMPTY);
@@ -89,7 +93,7 @@ export default function RequestFlow({ detail, busy, canQuote, onStart, onReview,
 
     {step === "review" && <div className="case-flow__actions">
       <h3>Step 1 of 6 · Review</h3>
-      <p>Read the customer's details below. When you start, the customer sees that their request is being checked.</p>
+      <p>Read the customer&apos;s details below. When you start, the customer sees that their request is being checked.</p>
       <div className="case-flow__buttons"><button type="button" className="btn btn--primary" disabled={busy} onClick={() => void onStart()}>Start review</button></div>
     </div>}
 
@@ -119,7 +123,7 @@ export default function RequestFlow({ detail, busy, canQuote, onStart, onReview,
         <label>Official / external fee (₹)<input inputMode="decimal" type="number" step="0.01" min="0" max="500000" value={draft.externalFee} onChange={(event) => change({ externalFee: event.target.value })}/></label>
       </div>
       <label className="field"><span className="field__label">Note for the customer (optional)</span><input maxLength={200} value={draft.quoteNote} onChange={(event) => change({ quoteNote: event.target.value })} placeholder="How the charges are calculated"/></label>
-      <p><b>Amount to request: ₹{((Number(draft.serviceFee) || 0) + (Number(draft.externalFee) || 0)).toFixed(2)}</b> · Promo discounts show on the customer's payment page.</p>
+      <p><b>Amount to request: ₹{((Number(draft.serviceFee) || 0) + (Number(draft.externalFee) || 0)).toFixed(2)}</b> · Promo discounts show on the customer&apos;s payment page.</p>
       {problem && <p className="form-error" role="alert">{problem}</p>}
       <div className="case-flow__buttons"><button type="button" className="btn btn--primary" disabled={busy} onClick={() => void quote()}>Send payment request</button></div>
     </div>}

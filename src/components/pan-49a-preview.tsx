@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Pan49ASourceViewer from "@/components/pan-49a-source-viewer";
 import type { PanIntake } from "@/lib/pan-validation";
+import { fetchStaticFile } from "@/lib/secure-api-client";
 import "./pan-49a-preview.css";
 
 type Answers = Record<string, string>;
@@ -64,7 +65,7 @@ export default function Pan49APreview({ answers: rawAnswers, pan, onEdit }: Prop
     // Enable only after public/forms/pan-49a.pdf has actually been committed to this branch.
     if (process.env.NEXT_PUBLIC_PAN49A_TEMPLATE_READY !== "true") return;
     let active = true;
-    fetch("/forms/pan-49a.pdf", { cache: "force-cache" }).then(async response => {
+    fetchStaticFile("/forms/pan-49a.pdf", { cache: "force-cache" }).then(async response => {
       if (!response.ok) return;
       const blob = await response.blob();
       if (active && blob.size && blob.size <= 12 * 1024 * 1024) setSourcePdf(current => current ?? new File([blob], "49A_Form_Updated.pdf", {type:"application/pdf"}));
@@ -86,12 +87,12 @@ export default function Pan49APreview({ answers: rawAnswers, pan, onEdit }: Prop
     {sourcePdf ? <Pan49ASourceViewer file={sourcePdf} answers={a} pan={pan}/> : <div className="pan49-paper-wrap">
       <article className="pan49-sheet">
         <div className="pan49-top">
-          <div className="pan49-photo">Only 'Individuals'<br/> to affix recent photograph<br/>(3.5 × 2.5 cm)<small>Signature/Left thumb impression across photo</small></div>
+          <div className="pan49-photo">Only &lsquo;Individuals&rsquo;<br/> to affix recent photograph<br/>(3.5 × 2.5 cm)<small>Signature/Left thumb impression across photo</small></div>
           <div className="pan49-top-main"><b>Form No. 49A</b><strong>Application for Allotment of Permanent Account Number</strong><span>[In the case of Indian Citizens / Indian Companies / Entities incorporated in India]</span><small>See Rule 114 — legacy specimen</small>
             <p>Assessing officer (AO code)</p>
             <div className="pan49-ao">{[["Area code","aoArea",4],["AO type","aoType",2],["Range code","aoRange",3],["AO No.","aoNumber",3]].map(([label,key,n])=><div key={String(key)}><b>{label}</b><Cells count={Number(n)} value={pick(a,String(key))}/></div>)}</div>
           </div>
-          <div className="pan49-photo">Only 'Individuals'<br/> to affix recent photograph<br/>(3.5 × 2.5 cm)<small>Signature/Left Thumb impression</small></div>
+          <div className="pan49-photo">Only &lsquo;Individuals&rsquo;<br/> to affix recent photograph<br/>(3.5 × 2.5 cm)<small>Signature/Left Thumb impression</small></div>
         </div>
         <p className="pan49-dear">Sir, I/We hereby request that a permanent account number be allotted to me/us.<br/>I/We give below necessary particulars:</p>
         <Caption number="1" title="Full Name (Full expanded name; initials are not permitted)"/>
@@ -107,8 +108,8 @@ export default function Pan49APreview({ answers: rawAnswers, pan, onEdit }: Prop
         <div className="pan49-date">Day &nbsp; Month &nbsp; Year <Cells count={8} value={dt.replace(/\D/g,"")}/></div>
         <Caption number="6" title="Details of Parents (only for individual applicants)"/>
         <div className="pan49-parent"><span>Is mother a single parent? <Ticks choices={["Yes","No"]} value={pick(a,"singleMother")}/></span></div>
-        <b className="pan49-subhead">Father's name</b><Name a={a} prefix="father" title={false}/>
-        <b className="pan49-subhead">Mother's name</b><Name a={a} prefix="mother" title={false}/>
+        <b className="pan49-subhead">Father&apos;s name</b><Name a={a} prefix="father" title={false}/>
+        <b className="pan49-subhead">Mother&apos;s name</b><Name a={a} prefix="mother" title={false}/>
         <p className="pan49-small">Name to be printed on the card: <Ticks choices={["Father","Mother"]} value={pick(a,"printedParent",(a as Answers).singleMother==="Yes"?"Mother":"Father")}/></p>
         <Caption number="7" title="Address"/>
         <b className="pan49-subhead">Residence Address</b>

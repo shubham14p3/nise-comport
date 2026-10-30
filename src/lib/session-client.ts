@@ -7,7 +7,7 @@ export type SessionUser = { id: string; name: string; email: string; role: strin
 export const SESSION_CHANGED = "nise:session-changed";
 
 // Page-local headers are mounted on every route. Without shared state, each
-// mount separately calls /api/auth/session, including unauthenticated pages.
+// mount separately requests the session, including unauthenticated pages.
 const cache = createSingleFlightCache(async () => {
   const response = await secureApi<{ user: SessionUser | null; degraded?: boolean }>("C4w7G2hN6kP9");
   // Never cache an unavailable database as proof of signed-out status.

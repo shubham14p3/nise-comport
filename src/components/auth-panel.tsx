@@ -63,6 +63,8 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
 
   useEffect(() => {
     if(mode!=="signup" || new URLSearchParams(window.location.search).get("callback")!=="1")return;
+    // Restored one tick after mount, so no state is set synchronously inside the effect body.
+    const timer=window.setTimeout(()=>{
     setMethod("email");
     try{
       const saved=sessionStorage.getItem("nise-callback-signup");
@@ -77,6 +79,8 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
         setSuccess("A 6-digit email verification code was sent when you requested your callback. Enter that code below, then complete your profile.");
       }
     }catch{/* Normal signup remains available. */}
+    },0);
+    return()=>window.clearTimeout(timer);
   },[mode]);
 
   useEffect(() => {

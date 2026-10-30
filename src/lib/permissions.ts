@@ -4,7 +4,7 @@
  *
  * Plain module (no imports) so it can be used in the browser and in tests.
  */
-export const STAFF_PERMISSIONS = ["requests", "payments", "charge", "records", "pan", "promotions", "content", "campaigns", "whatsapp", "wallet", "mail"] as const;
+export const STAFF_PERMISSIONS = ["requests", "payments", "charge", "records", "pan", "promotions", "content", "campaigns", "whatsapp", "wallet", "mail", "counter"] as const;
 export type Permission = (typeof STAFF_PERMISSIONS)[number];
 
 export const PERMISSION_INFO: Record<Permission, { label: string; detail: string }> = {
@@ -19,6 +19,7 @@ export const PERMISSION_INFO: Record<Permission, { label: string; detail: string
   whatsapp: { label: "WhatsApp chats (reply to customers)", detail: "Unlocks WhatsApp chats only. Read and reply to customer chats, without campaigns or contacts." },
   wallet: { label: "Wallet credits", detail: "Unlocks Wallet, Loyalty credit. Add credits to customer wallets." },
   mail: { label: "Messages", detail: "Unlocks Messages. Read and answer customer messages (tickets), including the files they attach." },
+  counter: { label: "Counter desk", detail: "Look up a customer by mobile, record walk-in visits (10% off from the wallet) and request wallet top-ups. Top-ups still need the owner's approval." },
 };
 
 export type StaffLike = { role: string; permissions?: unknown };
@@ -51,6 +52,15 @@ export function sanitizePermissions(value: unknown): Permission[] {
 
 export function isStaffRole(role: string) {
   return role === "admin" || role === "staff";
+}
+
+/**
+ * The main owner account. It can override any other admin's decisions and changes; no other admin
+ * can override it. Compared without case, so the email is the identity.
+ */
+export const MAIN_OWNER_EMAIL = "shubham14p3@gmail.com";
+export function isMainOwner(user: { role?: string | null; email?: string | null } | null | undefined) {
+  return user?.role === "admin" && (user.email ?? "").trim().toLowerCase() === MAIN_OWNER_EMAIL;
 }
 
 export function hasPermission(user: StaffLike | null | undefined, permission: Permission) {

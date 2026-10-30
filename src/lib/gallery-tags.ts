@@ -7,7 +7,7 @@ export type GalleryGroup = "service" | "festival" | "shop";
 
 export const SERVICE_TAGS: Record<string, string> = {
   "pan-card": "PAN card", aadhaar: "Aadhaar", "income-caste-residence-certificate": "Income, caste & residence certificate",
-  "voter-id": "Voter ID", "passport-driving-licence": "Passport & driving licence", "aeps-money-transfer": "AEPS & money transfer",
+  "voter-id": "Voter ID", "passport-driving-licence": "Passport", "driving-licence": "Driving licence", "aeps-money-transfer": "AEPS & money transfer",
   "bike-insurance": "Bike insurance", "car-insurance": "Car insurance", "health-life-insurance": "Health & life insurance",
   "scholarship-forms": "Scholarship forms", "exam-forms": "Exam & job forms", "bill-payment-recharge": "Bill payment & recharge",
   "itr-gst": "ITR & GST", "printing-scanning": "Printing, lamination & gifts", "computer-repair": "Computer & laptop repair",
@@ -15,7 +15,7 @@ export const SERVICE_TAGS: Record<string, string> = {
   "mutual-fund-sip": "SIP & mutual fund", "rent-agreement": "Rent agreement & e-stamp", "fssai-license": "FSSAI licence",
   "udyam-registration": "Udyam registration", "jeevan-pramaan": "Jeevan Pramaan", "birth-death-certificate": "Birth & death certificate",
   "land-mutation": "Land mutation", "aadhaar-pvc-card": "Aadhaar PVC card", "bank-account-opening": "Bank account opening",
-  "ayushman-card": "Ayushman card", "ration-card": "Ration card", "abua-awas-yojana": "Abua Awas Yojana",
+  "ayushman-card": "Ayushman card", "abha-health-id": "ABHA health ID", "ration-card": "Ration card", "abua-awas-yojana": "Abua Awas Yojana",
 };
 
 /** Festivals and national days (photo-inbox/<slug>/). */

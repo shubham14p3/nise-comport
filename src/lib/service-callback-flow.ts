@@ -14,6 +14,6 @@ export function canTakeCallbackAction(current:string,next:ServiceCallbackStatus)
   if(next==="called")return current==="new";
   if(next==="done")return current==="online_invited";
   if(next==="spam")return ["new","called","online_invited"].includes(current);
-  if(next==="new")return ["called","offline_closed"].includes(current);
+  if(next==="new")return ["called","offline_closed","spam"].includes(current);
   return false;
 }

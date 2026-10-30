@@ -5,9 +5,9 @@ import { notFound, redirect } from "next/navigation";
 import PayPanel from "@/components/pay-panel";
 import { getCurrentUser } from "@/lib/auth";
 import { paymentForReference, paymentOptions, payerVerification, syncCashfreePayment, upiQrSeconds } from "@/lib/payments";
-import { convenienceFee, refundBreakdown, TICKET_AFTER_HOURS } from "@/lib/payments-core";
+import { convenienceFee, refundBreakdown, rupees, TICKET_AFTER_HOURS } from "@/lib/payments-core";
 import { privateMetadata } from "@/lib/seo";
-import { whatsappLink } from "@/lib/site";
+import { site, whatsappLink } from "@/lib/site";
 import { workflowOf } from "@/lib/review-workflow";
 
 export const metadata: Metadata = privateMetadata("Pay for your request");
@@ -44,6 +44,9 @@ export default async function PayPage({ params }: { params: Promise<{ reference:
         serviceFeePaise={Math.round(Number(request.serviceFee)*100)}
         externalFeePaise={Math.round(Number(request.externalFee)*100)}
         couponCode={discount?.code ?? null} discountPaise={discount?.discountPaise ?? 0}
+        utr={payment.utr ?? null} submittedAt={payment.updatedAt.toISOString()} shopName={site.name}
+        verifyHref={whatsappLink(`Hello NISE COMPORT, I have paid ${rupees(payment.amountPaise)} for ${payment.reference}. UTR ${payment.utr ?? "-"}. Please confirm my payment.`)}
+        callHref={`tel:${site.phones.primary.e164}`}
         paidVia={payment.method} upiSlots={(options.upi ?? []).map((item) => ({ slot: item.slot, label: item.label }))} qrSeconds={upiQrSeconds()}
         helpHref={whatsappLink(`Hello NISE COMPORT, I want to pay ${payment.reference}. Please share the payment details.`)} failureReason={payment.failureReason} ticketRaised={Boolean(payment.issueRaisedAt)} ticketOpen={ticketOpen} refundStatus={payment.refundStatus} refundChoice={payment.refundChoice} refundPaise={payment.refundPaise} estimates={estimates}
         razorpay={options.razorpay} cashfree={options.cashfree} feePercent={options.feePercent}/>

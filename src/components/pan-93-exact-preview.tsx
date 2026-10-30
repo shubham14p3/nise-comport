@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FileCheck2, FileText } from "lucide-react";
 import type { PanIntake } from "@/lib/pan-validation";
+import { fetchStaticFile } from "@/lib/secure-api-client";
 import "./pan-93-exact-preview.css";
 
 /**
@@ -117,11 +118,11 @@ export default function Pan93ExactPreview({answers,pan,onEdit}:Props){
     if(file)return;
     // Avoid repeated 404s until the scrubbed binary is installed in public/forms.
     if(process.env.NEXT_PUBLIC_PAN93_TEMPLATE_READY!=="true"){
-      setPages("missing");
-      return;
+      const timer=window.setTimeout(()=>setPages("missing"),0);
+      return()=>window.clearTimeout(timer);
     }
     let active=true;
-    fetch("/forms/pan-93-template.pdf",{cache:"force-cache"}).then(async response=>{
+    fetchStaticFile("/forms/pan-93-template.pdf",{cache:"force-cache"}).then(async response=>{
       if(!active)return;
       if(response.status===404){setPages("missing");return;}
       if(!response.ok)throw Error("Unable to load Form 93 template");

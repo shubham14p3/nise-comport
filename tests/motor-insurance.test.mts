@@ -4,7 +4,7 @@ import test from "node:test";
 import { checkInsuranceForm, FACILITATOR_NOTE, NCB_SLABS, renewalDate, summariseInsurance } from "../src/lib/motor-insurance.ts";
 import { findGuide, findVariant } from "../src/lib/help-docs.ts";
 
-const base = { name: "Priya Kumari", phone: "98765 43210", vehicle: "car", regNo: "jh05-ab-1234" };
+const base = { name: "Priya Kumari", phone: "98765 43210", email: "priya@example.com", vehicle: "car", regNo: "jh05-ab-1234" };
 
 test("insurance form: renewal is cleaned and summarised", () => {
   const { form, problems } = checkInsuranceForm({ ...base, purpose: "renew", expiry: "2026-11-02", ncb: "35", addOns: ["zero-dep", "hack"], cover: "comprehensive" });

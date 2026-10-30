@@ -18,9 +18,9 @@ const WA = (text: string) => `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIC
  * Car & bike insurance form: new policy, renewal, expired policy or claim help. Signed-in customers
  * can attach the RC and old policy and track the request; visitors get a call back.
  */
-export default function InsuranceForm({ initialPurpose, initialVehicle }: { initialPurpose?: InsurancePurpose; initialVehicle?: "bike" | "car" }) {
+export default function InsuranceForm({ initialPurpose, initialVehicle }: { initialPurpose?: InsurancePurpose; initialVehicle?: "bike" | "car" | "three-wheeler" }) {
   const [purpose, setPurpose] = useState<InsurancePurpose>(initialPurpose ?? "renew");
-  const [vehicle, setVehicle] = useState<"bike" | "car">(initialVehicle ?? "bike");
+  const [vehicle, setVehicle] = useState<"bike" | "car" | "three-wheeler">(initialVehicle ?? "bike");
   const [f, setF] = useState<Record<string, string>>({ city: "Jamshedpur", claimedLastYear: "no", cover: "comprehensive", term: "1 year", loan: "no", fir: "na" });
   const [addOns, setAddOns] = useState<string[]>([]);
   const [signedIn, setSignedIn] = useState(false);
@@ -30,7 +30,7 @@ export default function InsuranceForm({ initialPurpose, initialVehicle }: { init
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
-  const [done, setDone] = useState<{ kind: string; reference?: string } | null>(null);
+  const [done, setDone] = useState<{ kind: string; reference?: string; account?: string } | null>(null);
   const locale = useLocale();
   const L = (text: Record<"en" | "hi" | "bn", string>) => text[locale];
 
@@ -60,8 +60,8 @@ export default function InsuranceForm({ initialPurpose, initialVehicle }: { init
   async function submit(event: FormEvent) {
     event.preventDefault(); setBusy(true); setError(""); setErrors({});
     try {
-      const result = await secureApi<{ kind: string; request?: { reference: string } }>("M9q2X5wJ8tB3", { consent, fileIds: uploads.map((item) => item.id), form: { ...f, purpose, vehicle, addOns } });
-      setDone({ kind: result.kind, reference: result.request?.reference });
+      const result = await secureApi<{ kind: string; account?: string; request?: { reference: string } }>("M9q2X5wJ8tB3", { consent, fileIds: uploads.map((item) => item.id), form: { ...f, purpose, vehicle, addOns } });
+      setDone({ kind: result.kind, reference: result.request?.reference, account: result.account });
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (reason) {
       const body = (reason as { body?: { fields?: Record<string, string> } }).body;
@@ -75,6 +75,7 @@ export default function InsuranceForm({ initialPurpose, initialVehicle }: { init
     <CircleCheck size={42}/>
     <h2>{L(T.thanks)}{f.name?.split(/\s+/)[0] ? `, ${f.name.split(/\s+/)[0]}` : ""}!</h2>
     <p>{done.kind === "request" ? fillText(L(T.doneRequest), { ref: done.reference ?? "" }) : fillText(L(T.doneLead), { phone: f.phone ?? "" })}</p>
+    {done.account && done.account !== "verified" && <p className="field__hint">We emailed you a sign-in code. Enter it on the <Link href="/login">sign-in page</Link> to verify your email and unlock your extra discount.</p>}
     <div className="ins-done__actions">
       {done.kind === "request" && <Link className="btn btn--primary" href="/profile#requests">{L(T.track)}</Link>}
       <a className="btn btn--wa" href={WA(`Hi NISE COMPORT, I just sent the ${vehicle} insurance form (${PURPOSES[purpose]}).`)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={17}/>{L(T.waUs)}</a>
@@ -90,13 +91,14 @@ export default function InsuranceForm({ initialPurpose, initialVehicle }: { init
       <div className="ins-chips ins-chips--big">
         <button type="button" className={vehicle === "bike" ? "is-active" : undefined} aria-pressed={vehicle === "bike"} onClick={() => setVehicle("bike")}><Bike size={22}/>{L(T.bike)}</button>
         <button type="button" className={vehicle === "car" ? "is-active" : undefined} aria-pressed={vehicle === "car"} onClick={() => setVehicle("car")}><Car size={22}/>{L(T.car)}</button>
+        <button type="button" className={vehicle === "three-wheeler" ? "is-active" : undefined} aria-pressed={vehicle === "three-wheeler"} onClick={() => setVehicle("three-wheeler")}><Bike size={22}/>{L({ en: "Three-wheeler", hi: "तीन पहिया", bn: "তিন চাকা" })}</button>
       </div>
       {purpose === "expired" && <p className="alert alert--warn">{L(T.expiredWarn)}</p>}
     </div>
 
     <fieldset className="ins-section"><legend>{L(T.vehicleLegend)}</legend>
       <div className="form-grid form-grid--3">
-        {field("regNo", L(T.regNo), { required: purpose !== "new", placeholder: "JH05AB1234", maxLength: 14, autoCapitalize: "characters" }, purpose === "new" ? L(T.regNoNew) : undefined)}
+        {field("regNo", L(T.regNo), { required: purpose !== "new", disabled: purpose === "new", title: purpose === "new" ? "Coming soon" : undefined, "aria-label": purpose === "new" ? "Vehicle number (coming soon)" : undefined, placeholder: "JH05AB1234", maxLength: 14, autoCapitalize: "characters" })}
         {field("make", L(T.make), { placeholder: vehicle === "car" ? "Maruti, Tata, Hyundai…" : "Hero, Honda, TVS…", maxLength: 40, required: purpose === "new" })}
         {field("model", L(T.model), { placeholder: vehicle === "car" ? "Swift VXi" : "Splendor Plus", maxLength: 60, required: purpose === "new" })}
       </div>
@@ -105,6 +107,7 @@ export default function InsuranceForm({ initialPurpose, initialVehicle }: { init
         {field("year", L(T.year), { inputMode: "numeric", maxLength: 4, placeholder: "2021" })}
         {field("city", L(T.city), { maxLength: 40 })}
       </div>
+      <div className="form-grid form-grid--3">{field("chassisNo", "Chassis number", { maxLength: 25, autoCapitalize: "characters" }, "From your RC or policy. Optional.")}{field("engineNo", "Engine number", { maxLength: 25, autoCapitalize: "characters" }, "From your RC or policy. Optional.")}</div>
     </fieldset>
 
     {purpose !== "new" && <fieldset className="ins-section"><legend>{L(T.policyLegend)}</legend>
@@ -147,7 +150,7 @@ export default function InsuranceForm({ initialPurpose, initialVehicle }: { init
         {field("whatsapp", L(T.whatsapp), { inputMode: "tel", maxLength: 16, placeholder: L(T.ifDifferent) })}
       </div>
       <div className="form-grid form-grid--3">
-        {field("email", L(T.email), { type: "email", maxLength: 120, autoComplete: "email" }, L(T.forPolicy))}
+        {field("email", L(T.email), { type: "email", required: true, maxLength: 120, autoComplete: "email" }, L(T.forPolicy))}
         {field("callTime", L(T.callTime), { maxLength: 40, placeholder: L(T.callTimePh) })}
         <label className="field"><span className="field__label">{L(T.note)}{opt}</span><input value={f.note ?? ""} onChange={set("note")} maxLength={600}/></label>
       </div>

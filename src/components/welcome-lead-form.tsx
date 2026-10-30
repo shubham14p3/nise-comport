@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { secureApi } from "@/lib/secure-api-client";
+
+/** Opaque gateway code for POST /api/leads (mapped in src/app/api/x7q9m2/route.ts). */
+const LEAD_OP = "Q3n7B1xK5vR8";
 
 /** Optional "call me back" box on the welcome page. Nothing is sent until the person ticks the consent box and presses the button. */
 export default function WelcomeLeadForm({ source = "qr" }: { source?: string }) {
@@ -15,11 +19,7 @@ export default function WelcomeLeadForm({ source = "qr" }: { source?: string }) 
     event.preventDefault();
     setError(""); setState("busy");
     try {
-      const response = await fetch("/api/leads", {
-        method: "POST", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ name: name.trim() || undefined, phone: phone.trim(), topic: "QR welcome", message: "Asked for a call back from the welcome QR page.", page: `/welcome?src=${encodeURIComponent(source)}`, source: "form" }),
-      });
-      if (!response.ok) { const body = await response.json().catch(() => null) as { error?: string } | null; throw new Error(body?.error ?? "Could not send. Please try again."); }
+      await secureApi(LEAD_OP, { name: name.trim() || undefined, phone: phone.trim(), topic: "QR welcome", message: "Asked for a call back from the welcome QR page.", page: `/welcome?src=${encodeURIComponent(source)}`, source: "form" });
       setState("done");
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not send."); setState("idle"); }
   }
