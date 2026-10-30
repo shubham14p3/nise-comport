@@ -2,7 +2,7 @@
 
 import { AdminPager } from "@/components/admin-pager";
 import { FormEvent, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import RequestFlow from "@/components/request-flow";
+const RequestFlow = dynamic(() => import("@/components/request-flow"), { loading: () => <p className="admin-loading">Loading details…</p> });
 import dynamic from "next/dynamic";
 import SiteHeader from "@/components/site-header";
 import Portal from "@/components/portal";
@@ -10,8 +10,8 @@ import Portal from "@/components/portal";
 import { WhatsAppIcon } from "@/components/icons";
 
 
-import PanSavedDetails from "@/components/pan-saved-details";
-import RequestExtras from "@/components/request-extras";
+const PanSavedDetails = dynamic(() => import("@/components/pan-saved-details"), { loading: () => <p className="admin-loading">Loading details…</p> });
+const RequestExtras = dynamic(() => import("@/components/request-extras"), { loading: () => <p className="admin-loading">Loading details…</p> });
 const CounterDesk = dynamic(() => import("@/components/counter-desk"), { ssr: false, loading: () => <p className="admin-loading">Loading counter desk…</p> });
 const FindCustomerPanel = dynamic(() => import("@/components/find-customer-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading customer search…</p> });
 import { ArrowRight, Bell, Cake, ClipboardList, Contact, UserRound, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images, PanelLeftClose, PanelLeftOpen, Store, X } from "lucide-react";
