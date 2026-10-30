@@ -149,7 +149,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
   async function saveCredential(member: Member) {
     const kind = credentialKind;
     const value = kind === "pin" ? credentialPin : credentialPassword;
-    const ready = generateCredential || (kind === "pin" ? /^\\d{6}$/.test(value) : value.trim().length >= 10);
+    const ready = generateCredential || (kind === "pin" ? /^\d{6}$/.test(value) : value.trim().length >= 10);
     if (!ready || submitting.current) return;
     if (kind === "pin" && !member.phone) { setError("Add a contact mobile before setting a PIN."); return; }
     if (!window.confirm(`Set a ${generateCredential ? "generated" : "custom"} ${kind} for ${member.name}? Their existing sessions will end and the new credential will be emailed to them.`)) return;
@@ -214,6 +214,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
             : <p className="admin-empty">{member.permissions.map((permission) => PERMISSION_INFO[permission as keyof typeof PERMISSION_INFO].label).join(" · ") || "No access"}{member.permissions.includes("requests") && (member.categories.length ? ` · Categories: ${member.categories.map((slug) => serviceCatalog.find((group) => group.slug === slug)?.title ?? slug).join(", ")}` : " · All categories")}</p>}
           <div className="staff-card__actions">
             <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => startEdit(member)}><Pencil size={15}/> Edit</button>
+            {isMe && <a className="btn btn--ghost btn--sm" href="/profile#security"><KeyRound size={15}/> Set my PIN / password</a>}
             {!isMe && <>
               
               <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => {
