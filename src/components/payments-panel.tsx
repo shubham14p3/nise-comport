@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { secureApi } from "@/lib/secure-api-client";
 import { AdminPager } from "@/components/admin-pager";
 import { customerWhatsAppLink, rupees } from "@/lib/payments-core";
@@ -23,9 +23,14 @@ export default function PaymentsPanel({ canCharge }: { canCharge: boolean }) {
   const [form, setForm] = useState({ reference: "", amount: "", note: "" });
   const [quotable, setQuotable] = useState<Quotable[] | null>(null);
   const [pickFilter, setPickFilter] = useState("");
+  const latestPaymentsRequest = useRef(0);
 
   const load = useCallback(async (status: string, nextPage = 0, size = 20) => {
-    try { setData(await secureApi<Data>(LIST, { status, page: nextPage, pageSize: size })); setError(""); } catch (e) { setError(e instanceof Error ? e.message : "Could not load payments."); }
+    const requestId = ++latestPaymentsRequest.current;
+    try {
+      const result = await secureApi<Data>(LIST, { status, page: nextPage, pageSize: size });
+      if (requestId === latestPaymentsRequest.current) { setData(result); setError(""); }
+    } catch (e) { if (requestId === latestPaymentsRequest.current) setError(e instanceof Error ? e.message : "Could not load payments."); }
   }, []);
   useEffect(() => { void Promise.resolve().then(() => load(filter, page, pageSize)); }, [filter, page, pageSize, load]);
 
