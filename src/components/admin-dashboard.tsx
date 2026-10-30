@@ -397,6 +397,8 @@ export default function AdminDashboard({ me, viewAsStaff = false, services }: { 
     };
   }, [canMail, active]);
   const clearUnread = useCallback(() => setSummary((value) => value ? { ...value, unread: 0 } : value), []);
+  const [teamAccountsOpen, setTeamAccountsOpen] = useState(false);
+  const [teamProfilesOpen, setTeamProfilesOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(true);
   useEffect(() => { try { if (window.localStorage.getItem("nc-desk-rail") === "0") queueMicrotask(() => setRailOpen(false)); } catch { /* ignore */ } }, []);
   function toggleRail() { setRailOpen((open) => { try { window.localStorage.setItem("nc-desk-rail", open ? "0" : "1"); } catch { /* ignore */ } return !open; }); }
@@ -471,8 +473,8 @@ export default function AdminDashboard({ me, viewAsStaff = false, services }: { 
         {active === "payments" && <PaymentsPanel canCharge={isOwner || effectivePermissions.includes("charge")}/>}
         {active === "integrations" && <SystemConnectionsPanel/>}
         {active === "team" && <div className="admin-team-groups">
-          <details className="admin-accordion"><summary><UsersRound size={17}/> Staff & owner login accounts</summary><TeamPanel meRole={me.role} meId={me.id}/></details>
-          <details className="admin-accordion"><summary><UsersRound size={17}/> Website team profiles & missing staff logins</summary><SiteTeamPanel/></details>
+          <details className="admin-accordion" onToggle={(event) => setTeamAccountsOpen(event.currentTarget.open)}><summary><UsersRound size={17}/> Staff & owner login accounts</summary>{teamAccountsOpen && <TeamPanel meRole={me.role} meId={me.id}/>}</details>
+          <details className="admin-accordion" onToggle={(event) => setTeamProfilesOpen(event.currentTarget.open)}><summary><UsersRound size={17}/> Website team profiles & missing staff logins</summary>{teamProfilesOpen && <SiteTeamPanel/>}</details>
         </div>}
         {active === "pan" && <PanImportPanel/>}
         {active === "wallet" && <WalletCreditForm canCorrect={isOwner}/>}
