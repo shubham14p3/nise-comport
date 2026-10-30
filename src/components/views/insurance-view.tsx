@@ -19,7 +19,7 @@ import { MOTOR_TEXT } from "@/lib/translations/motor-insurance";
 import { lp, tr } from "@/lib/tr";
 
 const ENGLISH_FAQS = [
-  { question: "Is NISE COMPORT an insurance company?", answer: FACILITATOR_NOTE },
+  { question: "Is NiSE COMPORT an insurance company?", answer: FACILITATOR_NOTE },
   { question: "When should I renew?", answer: "Up to 45 days before the end date. Renewing before expiry needs no inspection and keeps your No Claim Bonus. We send a WhatsApp reminder before your next due date." },
   { question: "My policy has expired. What now?", answer: "Don't drive until it's renewed: there's no cover and you can be fined. We arrange renewal; the insurer may ask for an inspection. Renew within 90 days of expiry to keep your NCB." },
   { question: "Can I change my insurer at renewal and keep my NCB?", answer: "Yes. The NCB belongs to you, not the insurer. Bring your last policy; we get your NCB applied with the new insurer." },
@@ -56,7 +56,7 @@ export async function InsuranceView({ lang, purpose, vehicle }: { lang: Locale; 
         <p className="page-hero__lead">{t("New policy, renewal, expired policy or a claim: tell us once, we compare quotes from several insurers and do the paperwork. We stay with you until the claim is settled.", "नई पॉलिसी, नवीनीकरण, समाप्त पॉलिसी या क्लेम: हमें एक बार बताइए, हम कई बीमा कंपनियों के कोटेशन की तुलना करते हैं और कागज़ी काम करते हैं। क्लेम निपटने तक हम आपके साथ रहते हैं।", "নতুন পলিসি, নবীকরণ, মেয়াদোত্তীর্ণ পলিসি বা ক্লেম: আমাদের একবার জানান, আমরা একাধিক বিমা কোম্পানির কোটেশন তুলনা করি ও কাগজপত্রের কাজ করি। ক্লেম নিষ্পত্তি না হওয়া পর্যন্ত আমরা আপনার পাশে থাকি।")}</p>
         <div className="page-hero__ctas">
           <a className="btn btn--primary btn--lg" href="#quote">{t("Get my quotes", "मेरे कोटेशन पाएँ", "আমার কোটেশন পান")} <ArrowRight size={18}/></a>
-          <a className="btn btn--wa btn--lg" href={whatsappLink(t("Hi NISE COMPORT, I need help with vehicle insurance.", "नमस्ते NISE COMPORT, मुझे वाहन बीमा में मदद चाहिए।", "নমস্কার NISE COMPORT, গাড়ির বিমায় আমার সাহায্য দরকার।"))} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> WhatsApp</a>
+          <a className="btn btn--wa btn--lg" href={whatsappLink(t("Hi NiSE COMPORT, I need help with vehicle insurance.", "नमस्ते NiSE COMPORT, मुझे वाहन बीमा में मदद चाहिए।", "নমস্কার NiSE COMPORT, গাড়ির বিমায় আমার সাহায্য দরকার।"))} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> WhatsApp</a>
           <a className="btn btn--glass btn--lg" href={`tel:${site.phones.primary.e164}`}><Phone size={18}/> {t("Call", "कॉल करें", "কল করুন")}</a>
         </div>
       </div>
@@ -77,7 +77,7 @@ export async function InsuranceView({ lang, purpose, vehicle }: { lang: Locale; 
       <div className="section-head"><span className="eyebrow">{t("INSURERS", "बीमा कंपनियाँ", "বিমা কোম্পানি")}</span><h2>{t("Quotes from several insurers", "कई बीमा कंपनियों के कोटेशन", "একাধিক বিমা কোম্পানির কোটেশন")}</h2><p className="muted">{t("We compare what the insurers we work with offer for your vehicle: premium, IDV, add-ons, cashless garages near Jamshedpur and claim service. Which insurers we can quote depends on our partner tie-ups at the time.", "हम जिन बीमा कंपनियों के साथ काम करते हैं, वे आपके वाहन के लिए जो देती हैं उसकी तुलना करते हैं: प्रीमियम, IDV, ऐड-ऑन, जमशेदपुर के पास कैशलेस गैरेज और क्लेम सेवा। हम किन कंपनियों का कोटेशन दे सकते हैं, यह उस समय हमारी साझेदारियों पर निर्भर करता है।", "আমরা যেসব বিমা কোম্পানির সঙ্গে কাজ করি তারা আপনার গাড়ির জন্য কী দেয় তা তুলনা করি: প্রিমিয়াম, IDV, অ্যাড-অন, জামশেদপুরের কাছে ক্যাশলেস গ্যারেজ ও ক্লেম পরিষেবা। আমরা কোন কোম্পানির কোটেশন দিতে পারি তা সেই সময়ের আমাদের অংশীদারির উপর নির্ভর করে।")}</p></div>
       {logos.length ? <div className="insurer-logos">{logos.map((logo) => logo.image ? <InsurerLogo key={logo.id} src={logo.image} name={logo.title.en}/> : <span key={logo.id} className="insurer-chip">{logo.title.en}</span>)}</div>
         : <div className="insurer-names">{INSURERS.map((name) => <span key={name} className="insurer-chip">{name}</span>)}</div>}
-      <p className="fine">{t("Names and logos belong to their owners. Listing an insurer doesn’t mean it endorses NISE COMPORT.", "नाम और लोगो उनके स्वामियों के हैं। किसी बीमा कंपनी का नाम होने का मतलब यह नहीं कि वह NISE COMPORT का समर्थन करती है।", "নাম ও লোগো তাদের মালিকদের। কোনও বিমা কোম্পানির নাম থাকা মানে এই নয় যে তারা NISE COMPORT-কে সমর্থন করে।")}</p>
+      <p className="fine">{t("Names and logos belong to their owners. Listing an insurer doesn’t mean it endorses NiSE COMPORT.", "नाम और लोगो उनके स्वामियों के हैं। किसी बीमा कंपनी का नाम होने का मतलब यह नहीं कि वह NiSE COMPORT का समर्थन करती है।", "নাম ও লোগো তাদের মালিকদের। কোনও বিমা কোম্পানির নাম থাকা মানে এই নয় যে তারা NiSE COMPORT-কে সমর্থন করে।")}</p>
 
       <div className="ins-grid">
         {policyTypes.map((type) => <article key={type.id} className="ins-card"><b>{type.name}</b><p>{type.text}</p></article>)}

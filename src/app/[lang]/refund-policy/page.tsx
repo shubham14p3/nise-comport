@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   if (!lang) return {};
   return localizedMetadata(lang, "/refund-policy",
     { hi: "रिफ़ंड और रद्दीकरण नीति", bn: "রিফান্ড ও বাতিল নীতি" },
-    { hi: "NISE COMPORT का अनुरोध कब रद्द हो सकता है, कौन-से शुल्क लौटाए जाते हैं, रिफ़ंड कैसे गिना और दिया जाता है, और भुगतान की समस्या कैसे उठाएँ।", bn: "কখন NISE COMPORT-এর অনুরোধ বাতিল করা যায়, কোন চার্জ ফেরতযোগ্য, রিফান্ড কীভাবে হিসাব ও দেওয়া হয়, এবং পেমেন্টের সমস্যা কীভাবে জানাবেন।" });
+    { hi: "NiSE COMPORT का अनुरोध कब रद्द हो सकता है, कौन-से शुल्क लौटाए जाते हैं, रिफ़ंड कैसे गिना और दिया जाता है, और भुगतान की समस्या कैसे उठाएँ।", bn: "কখন NiSE COMPORT-এর অনুরোধ বাতিল করা যায়, কোন চার্জ ফেরতযোগ্য, রিফান্ড কীভাবে হিসাব ও দেওয়া হয়, এবং পেমেন্টের সমস্যা কীভাবে জানাবেন।" });
 }
 
 export default async function LocalizedRefundPolicyPage({ params }: { params: Promise<{ lang: string }> }) {

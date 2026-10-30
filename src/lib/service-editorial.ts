@@ -19,7 +19,7 @@ export const serviceEditorial: Record<string, ServiceEditorial> = {
     beforeYouStart: ["Decide whether you need a new PAN, correction, reprint or help checking an existing application.", "Keep your name and date-of-birth details consistent with the proof you plan to use.", "Bring the current provider checklist; the accepted documents depend on the application route."],
     faqs: [
       { question: "Can I apply for a new PAN and a correction on the same page?", answer: "The correct route depends on whether a PAN has already been allotted. Tell us which situation applies; the authorised PAN provider's current instructions determine the application type." },
-      { question: "Will you guarantee that my PAN is issued?", answer: "No. NISE COMPORT can help prepare and submit an eligible application. The authorised provider and tax authority control verification, processing and issuance." },
+      { question: "Will you guarantee that my PAN is issued?", answer: "No. NiSE COMPORT can help prepare and submit an eligible application. The authorised provider and tax authority control verification, processing and issuance." },
     ],
   },
   "aadhaar": {
@@ -27,7 +27,7 @@ export const serviceEditorial: Record<string, ServiceEditorial> = {
     audience: "Residents who need help understanding the correct official Aadhaar update route or preparing for an authorised appointment.",
     beforeYouStart: ["Identify exactly which detail you need to update.", "Check whether that change is available online or needs an authorised Aadhaar centre.", "Carry only the proof listed for that update; never share an OTP or biometric credential with anyone."],
     faqs: [
-      { question: "Can every Aadhaar change be completed at NISE COMPORT?", answer: "No. Some updates require an authorised Aadhaar centre or official UIDAI process. We can help identify the route, but only the authorised service can make the record change." },
+      { question: "Can every Aadhaar change be completed at NiSE COMPORT?", answer: "No. Some updates require an authorised Aadhaar centre or official UIDAI process. We can help identify the route, but only the authorised service can make the record change." },
       { question: "Should I give my Aadhaar OTP to staff?", answer: "No. Keep your OTP private and enter it yourself only in the official flow you initiated." },
     ],
   },
@@ -37,7 +37,7 @@ export const serviceEditorial: Record<string, ServiceEditorial> = {
     beforeYouStart: ["Confirm the exact certificate and applicant category.", "Use the current checklist from the responsible Jharkhand department; evidence varies by certificate and applicant.", "Check that names, address and family details match the supporting records."],
     faqs: [
       { question: "Are income, caste, residence and EWS certificates the same application?", answer: "No. They have different eligibility rules and supporting evidence. Select the exact certificate first and follow the current checklist for that application." },
-      { question: "How long does a certificate take?", answer: "The responsible authority controls verification and processing time. NISE COMPORT cannot promise an approval date." },
+      { question: "How long does a certificate take?", answer: "The responsible authority controls verification and processing time. NiSE COMPORT cannot promise an approval date." },
     ],
   },
   "voter-id": {
@@ -45,7 +45,7 @@ export const serviceEditorial: Record<string, ServiceEditorial> = {
     audience: "Eligible residents who need help understanding voter registration, a correction, or an electoral-roll address request.",
     beforeYouStart: ["Identify whether this is a new registration, correction, address change or another electoral request.", "Check the Election Commission's current form and evidence requirements.", "Review every detail yourself before submission and keep the acknowledgement."],
     faqs: [
-      { question: "Does NISE COMPORT issue a Voter ID card?", answer: "No. We can help with form navigation and application preparation. The Election Commission verifies the request and maintains the electoral roll." },
+      { question: "Does NiSE COMPORT issue a Voter ID card?", answer: "No. We can help with form navigation and application preparation. The Election Commission verifies the request and maintains the electoral roll." },
       { question: "Can I apply for a correction and a new registration together?", answer: "The correct form depends on your current electoral-roll status and the change requested. Check the official election-service guidance before submitting." },
     ],
   },
@@ -57,7 +57,7 @@ export const serviceEditorial: Record<string, ServiceEditorial> = {
       { question: "How do I know whether to choose a fresh passport or re-issue?", answer: "Passport Seva separates fresh and re-issue applications. Check the official application guidance against your passport history and the service you need before selecting a category." },
       { question: "Do I need to attend a Passport Seva appointment in person?", answer: "The official process requires applicants to attend the selected Passport Seva Kendra or Post Office Passport Seva Kendra with the appointment details and original documents. Confirm the instructions for your application on Passport Seva." },
       { question: "Which passport documents should I bring?", answer: "The accepted documents vary by applicant, application category and circumstances. Use the official Passport Seva Document Advisor for your case; the short list on this page is only a preparation reminder." },
-      { question: "Can NISE COMPORT issue my passport or guarantee an appointment?", answer: "No. We can help with form navigation and preparation. Passport Seva and the relevant authorities control appointments, verification, fees, processing and issuance." },
+      { question: "Can NiSE COMPORT issue my passport or guarantee an appointment?", answer: "No. We can help with form navigation and preparation. Passport Seva and the relevant authorities control appointments, verification, fees, processing and issuance." },
     ],
     officialLinks: [
       { label: "Passport Seva: Fresh and re-issue application guidance", href: "https://www.passportindia.gov.in/psp/Apply" },
@@ -77,7 +77,7 @@ export const serviceEditorial: Record<string, ServiceEditorial> = {
   "bike-insurance": {
     image: "/images/service/two-wheeler.png", imageAlt: "Two-wheeler insurance enquiry artwork",
     audience: "Bike and scooter owners buying a new policy, renewing (even after expiry), switching insurer or making a claim.",
-    beforeYouStart: ["Keep your RC and last policy copy handy; the NCB on it lowers your premium.", "Renew before the end date: an expired policy loses cover, may need an inspection and loses NCB after 90 days.", "Check IDV, add-ons and exclusions on the quote; a very low IDV means a smaller payout.", "NISE COMPORT arranges the policy with the insurer. The insurer issues it and settles claims; we help you until the claim is closed."],
+    beforeYouStart: ["Keep your RC and last policy copy handy; the NCB on it lowers your premium.", "Renew before the end date: an expired policy loses cover, may need an inspection and loses NCB after 90 days.", "Check IDV, add-ons and exclusions on the quote; a very low IDV means a smaller payout.", "NiSE COMPORT arranges the policy with the insurer. The insurer issues it and settles claims; we help you until the claim is closed."],
     faqs: [
       { question: "Can you guarantee a premium or claim?", answer: "No. The insurer decides eligibility, premium, coverage, exclusions and claim outcomes. We help with the paperwork and follow-up all the way." },
       { question: "What should I compare before renewing?", answer: "Premium, IDV, NCB applied, add-ons (zero depreciation, roadside help), cashless garages nearby and the insurer's claim record." },
@@ -88,10 +88,10 @@ export const serviceEditorial: Record<string, ServiceEditorial> = {
   "car-insurance": {
     image: "/images/blog/insurance.png", imageAlt: "Motor insurance preparation artwork",
     audience: "Car owners buying a new policy, renewing before or after expiry, switching insurer with their NCB, or making a claim.",
-    beforeYouStart: ["Keep your RC and last policy copy ready; your NCB moves with you to any insurer.", "Renew up to 45 days before expiry: no inspection, no gap in cover, NCB kept.", "Decide on add-ons: zero depreciation for cars up to 5 years, engine protect in flood-prone areas, return to invoice for new cars.", "NISE COMPORT arranges the policy with the insurer. The insurer issues it and settles claims; we support you until the claim is closed."],
+    beforeYouStart: ["Keep your RC and last policy copy ready; your NCB moves with you to any insurer.", "Renew up to 45 days before expiry: no inspection, no gap in cover, NCB kept.", "Decide on add-ons: zero depreciation for cars up to 5 years, engine protect in flood-prone areas, return to invoice for new cars.", "NiSE COMPORT arranges the policy with the insurer. The insurer issues it and settles claims; we support you until the claim is closed."],
     faqs: [
       { question: "Does an online quote guarantee the final premium?", answer: "No. The insurer confirms eligibility, vehicle details, coverage and final premium before issuing a policy." },
-      { question: "Who decides whether a claim is paid?", answer: "The insurance company that issued your policy applies its terms and decides claims. NISE COMPORT does not underwrite policies or decide claims, and isn't liable for the insurer's decision, but we help you register, document and follow up the claim to the end." },
+      { question: "Who decides whether a claim is paid?", answer: "The insurance company that issued your policy applies its terms and decides claims. NiSE COMPORT does not underwrite policies or decide claims, and isn't liable for the insurer's decision, but we help you register, document and follow up the claim to the end." },
       { question: "What is a cashless claim?", answer: "At the insurer's network garage, the insurer pays the garage directly. You pay only the deductible, depreciation (unless you have zero dep) and anything not covered." },
       { question: "Can I keep my NCB if I sell the car?", answer: "Yes. Ask for an NCB certificate or retention letter; you can use it on your next car's policy, usually within 3 years." },
     ],
@@ -101,7 +101,7 @@ export const serviceEditorial: Record<string, ServiceEditorial> = {
     audience: "People looking for information on available health, life or personal-accident insurance application routes.",
     beforeYouStart: ["Decide what type of cover information you need.", "Read the insurer's exclusions, waiting periods, premium terms and policy wording.", "Submit medical, identity or income information only through the insurer's authorised process."],
     faqs: [
-      { question: "Can NISE COMPORT recommend a policy or promise returns?", answer: "We can help with an enquiry or application route where available. Product suitability, advice, underwriting, returns and claims are governed by the insurer or authorised provider." },
+      { question: "Can NiSE COMPORT recommend a policy or promise returns?", answer: "We can help with an enquiry or application route where available. Product suitability, advice, underwriting, returns and claims are governed by the insurer or authorised provider." },
       { question: "What information might an insurer request?", answer: "The insurer decides what information is needed for the selected product. Provide accurate details directly through its authorised application flow." },
     ],
   },
@@ -110,7 +110,7 @@ export const serviceEditorial: Record<string, ServiceEditorial> = {
     audience: "Students and families preparing an eligible admission, scholarship or education application.",
     beforeYouStart: ["Read the latest institution or scheme notification and note the deadline.", "Check eligibility, file formats and category-specific evidence before visiting.", "Review every entry, bank detail and uploaded document before submission."],
     faqs: [
-      { question: "Can NISE COMPORT confirm that a student is eligible?", answer: "No. The scheme or institution sets eligibility and makes the final decision. We can help you understand the published checklist." },
+      { question: "Can NiSE COMPORT confirm that a student is eligible?", answer: "No. The scheme or institution sets eligibility and makes the final decision. We can help you understand the published checklist." },
       { question: "What should I bring for an online form?", answer: "Bring the official link or notification and the identity, education, bank or category documents the current instructions request." },
     ],
   },
@@ -119,7 +119,7 @@ export const serviceEditorial: Record<string, ServiceEditorial> = {
     audience: "Applicants preparing an examination, recruitment or other online application with a published deadline.",
     beforeYouStart: ["Bring the official notice or application link and verify the last date.", "Prepare clear files in the specified format and size.", "The applicant must check all information and approve the form before it is submitted."],
     faqs: [
-      { question: "Will NISE COMPORT choose my answers or certify my details?", answer: "No. You are responsible for the accuracy of your information and must review the completed application before submission." },
+      { question: "Will NiSE COMPORT choose my answers or certify my details?", answer: "No. You are responsible for the accuracy of your information and must review the completed application before submission." },
       { question: "Can you guarantee the form will be accepted?", answer: "No. The recruiting body, examination authority or institution controls eligibility, acceptance and later stages." },
     ],
   },
@@ -187,7 +187,7 @@ export const serviceEditorial: Record<string, ServiceEditorial> = {
     image: "/images/blog/insurance.png", imageAlt: "Insurance policy document assistance artwork",
     audience: "LIC policyholders who need help locating a current service route or organising policy information for an enquiry.",
     beforeYouStart: ["Bring the policy number or a copy of the policy document if available.", "Decide whether you need a premium receipt, contact update, policy status or another service.", "Use LIC's official process for payments, claims and account authentication; keep OTPs private."],
-    faqs: [{ question: "Can NISE COMPORT settle a claim or change LIC records?", answer: "No. LIC controls policy records, servicing, underwriting and claim decisions. We can help identify a route or prepare an enquiry." }, { question: "Should I share a policy login password or OTP?", answer: "No. Enter credentials yourself only on the official LIC service you initiated." }],
+    faqs: [{ question: "Can NiSE COMPORT settle a claim or change LIC records?", answer: "No. LIC controls policy records, servicing, underwriting and claim decisions. We can help identify a route or prepare an enquiry." }, { question: "Should I share a policy login password or OTP?", answer: "No. Enter credentials yourself only on the official LIC service you initiated." }],
   },
   "mutual-fund-sip": {
     image: "/images/service/1.png", imageAlt: "Digital account process assistance artwork",
@@ -199,18 +199,18 @@ export const serviceEditorial: Record<string, ServiceEditorial> = {
     image: "/images/blog/10.png", imageAlt: "Document preparation assistance artwork",
     audience: "Tenants, owners and local organisations who need help preparing information or typing a customer-reviewed document.",
     beforeYouStart: ["Bring the parties' correct names, property address and agreed terms.", "Confirm what the receiving office, society, employer or institution requires.", "Seek a lawyer's review when the document affects legal rights, duties or a dispute."],
-    faqs: [{ question: "Does typing a rent agreement make it legally valid?", answer: "Typing alone does not determine validity. Applicable requirements depend on the document and circumstances; get legal advice and confirm stamp or registration steps." }, { question: "Can you decide what terms should be included?", answer: "The parties provide and approve their terms. NISE COMPORT provides document or process assistance, not legal advice." }],
+    faqs: [{ question: "Does typing a rent agreement make it legally valid?", answer: "Typing alone does not determine validity. Applicable requirements depend on the document and circumstances; get legal advice and confirm stamp or registration steps." }, { question: "Can you decide what terms should be included?", answer: "The parties provide and approve their terms. NiSE COMPORT provides document or process assistance, not legal advice." }],
   },
   "fssai-license": {
     image: "/images/service/4.png", imageAlt: "Small business registration preparation artwork",
     audience: "Food businesses that want help preparing information for an eligible FSSAI registration or licence application.",
     beforeYouStart: ["Write down the food activity, premises address and business type.", "Check current official FSSAI eligibility and document requirements for that activity.", "The business owner must review declarations and submit accurate details."],
-    faqs: [{ question: "Does every food business use the same FSSAI application?", answer: "No. The appropriate route depends on the current rules and the business activity and scale. Confirm the category through official FSSAI guidance." }, { question: "Can NISE COMPORT guarantee a licence?", answer: "No. The authority reviews the application and makes the decision. We can assist with preparation and portal navigation where available." }],
+    faqs: [{ question: "Does every food business use the same FSSAI application?", answer: "No. The appropriate route depends on the current rules and the business activity and scale. Confirm the category through official FSSAI guidance." }, { question: "Can NiSE COMPORT guarantee a licence?", answer: "No. The authority reviews the application and makes the decision. We can assist with preparation and portal navigation where available." }],
   },
   "udyam-registration": {
     image: "/images/service/1.png", imageAlt: "Small business digital registration assistance artwork",
     audience: "Owners of eligible small businesses who need help understanding the Udyam portal and preparing registration information.",
     beforeYouStart: ["Confirm whether you need a new registration or a correction to an existing record.", "Review the official Udyam portal's current eligibility and required details.", "Keep authentication private and review all enterprise declarations before submitting."],
-    faqs: [{ question: "Is Udyam registration handled by NISE COMPORT?", answer: "No. Registration is through the official government portal. NISE COMPORT can help with process navigation; the portal handles the record." }, { question: "What assistance charge applies?", answer: "We explain any separate assistance fee before you decide. Check the official portal for its current terms and do not confuse an assistance charge with a government fee." }],
+    faqs: [{ question: "Is Udyam registration handled by NiSE COMPORT?", answer: "No. Registration is through the official government portal. NiSE COMPORT can help with process navigation; the portal handles the record." }, { question: "What assistance charge applies?", answer: "We explain any separate assistance fee before you decide. Check the official portal for its current terms and do not confuse an assistance charge with a government fee." }],
   },
 };
