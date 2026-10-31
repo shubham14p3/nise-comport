@@ -17,7 +17,7 @@ type Service = { slug: string; title: string };
 type Visit = { id: string; serviceName: string; billPaise: number; discountPaise: number; walletPaise: number; collectPaise: number; createdAt: string };
 type Contact = { email: string | null; emailVerified: boolean; phone: string | null; phoneVerified: boolean };
 type Lookup = { ambiguous?: boolean; candidates?: { id: string; name: string; email: string | null; role: string }[]; phone: string; customer: { id: string; name: string } | null; knownName: string | null; contact: Contact | null; balancePaise: number; visits: Visit[]; visitsTotal: number; page: number; pageSize: number };
-type Recorded = { reference: string; earnedPaise: number; billPaise: number; discountPaise: number; collectPaise: number; balanceAfterPaise: number };
+type Recorded = { reference: string; jobId?: string | null; earnedPaise: number; billPaise: number; discountPaise: number; collectPaise: number; balanceAfterPaise: number };
 type CreditRequest = {
   id: string; amount: string; reason: string; status: "pending" | "approved" | "rejected"; requestedAt: string; requestedById: string;
   decidedAt: string | null; decisionNote: string | null; customerName: string; customerPhone: string | null; requestedBy: string; decidedBy: string | null;
@@ -221,7 +221,7 @@ export default function CounterDesk({ services, isOwner = false }: { services: S
     if (!result) return;
     setAccumulate(false); setService(null); setServiceText(""); setAmount(""); setNewName(""); setNewEmail("");
     await findCustomer(0);
-    setNotice(`Recorded ${result.reference}. Customer pays ${rupees(result.collectPaise)}${result.discountPaise ? `, wallet covers ${rupees(result.discountPaise)}` : ""}. ${result.earnedPaise ? `Earned ${rupees(result.earnedPaise)}. ` : ""}Balance now ${rupees(result.balanceAfterPaise)}.`);
+    setNotice(`Recorded ${result.reference}${result.jobId ? ` · Job ID ${result.jobId}` : ""}. Customer pays ${rupees(result.collectPaise)}${result.discountPaise ? `, wallet covers ${rupees(result.discountPaise)}` : ""}. ${result.earnedPaise ? `Earned ${rupees(result.earnedPaise)}. ` : ""}Balance now ${rupees(result.balanceAfterPaise)}.`);
   }
 
   async function requestTopUp() {

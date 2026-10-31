@@ -1,6 +1,7 @@
 "use client";
 
 import CounterVisitConversation from "@/components/counter-visit-conversation";
+import UniversalJobsPanel from "@/components/universal-jobs-panel";
 import PhoneVerify from "@/components/phone-verify";
 import { serviceName, statusText } from "@/lib/i18n-forms";
 import { useLocale } from "@/lib/use-locale";
@@ -56,11 +57,12 @@ type RequestDetail = {
   files: { name: string; createdAt: string }[];
   events: { toStatus: string; label: string; createdAt: string }[];
 };
-type Section = "overview" | "records" | "requests" | "history" | "prints" | "wallet" | "vouchers" | "addresses" | "profile" | "security" | "help";
+type Section = "overview" | "jobs" | "records" | "requests" | "history" | "prints" | "wallet" | "vouchers" | "addresses" | "profile" | "security" | "help";
 
 const navigation: { id: Section; label: string; icon: typeof UserRound }[] = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
   { id: "requests", label: "My requests", icon: FileText },
+  { id: "jobs", label: "All Job IDs", icon: History },
   { id: "records", label: "My records", icon: FolderOpen },
   { id: "history", label: "Request history", icon: History },
   { id: "prints", label: "Print orders", icon: Printer },
@@ -257,6 +259,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
           <button type="button" onClick={() => openSection("addresses")} className="quick tone-green"><MapPin size={20}/><span><b>Saved addresses</b><small>For delivery and doorstep help.</small></span><ArrowRight size={18}/></button>
         </div>
       </>;
+      case "jobs": return demoMode ? <div className="panel"><p>Demo accounts do not have persistent jobs.</p></div> : <UniversalJobsPanel/>;
       case "requests": return <div className="panel"><SectionHeading eyebrow="IN PROGRESS" title="My service requests" text="Private request details load over the encrypted account connection and never appear in the page address."/>
         {focusRequest && <article className="request-detail"><div className="request-detail__top"><div><span className="eyebrow">REQUEST · {focusRequest.reference}</span><h3>{focusRequest.serviceName}</h3><small>Submitted {dateLabel(focusRequest.createdAt)}</small></div><span className={statusClass(focusRequest.status)}>{focusRequest.status.replaceAll("_", " ")}</span></div>
           {requestDetailBusy && <p className="muted">Opening private request details…</p>}
