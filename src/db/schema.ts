@@ -821,3 +821,13 @@ export const siteSettings = pgTable("site_settings", {
   updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** Small, paged conversations attached only to in-person counter visits. */
+export const counterComments = pgTable('counter_comments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  visitId: uuid('visit_id').notNull().references(() => counterVisits.id, { onDelete: 'cascade' }),
+  authorId: uuid('author_id').notNull().references(() => users.id),
+  body: text('body').notNull(),
+  clientKey: uuid('client_key').notNull().unique(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, table => [index('counter_comments_visit_created_idx').on(table.visitId, table.createdAt, table.id)]);

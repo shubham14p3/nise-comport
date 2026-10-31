@@ -1,4 +1,5 @@
 "use client";
+import CounterVisitConversation from "@/components/counter-visit-conversation";
 import Link from "next/link";
 import "./inbox-panel.css";
 
@@ -269,6 +270,7 @@ export default function CounterDesk({ services, isOwner = false }: { services: S
           if (result) { await loadHistory(historyPage); setNotice(`Payment request created: ${result.reference}. Customer can open ${window.location.origin}${result.path}.`); }
         }}>Raise payment request</button>}</>}
         {row.phone && row.paymentStatus && <a className="btn btn--ghost btn--sm" href={`https://wa.me/${row.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Namaste ${row.customer}, your NiSE COMPORT payment request for ${row.service}: ${window.location.origin}/pay/${row.reference}`)}`} target="_blank" rel="noopener noreferrer">Share payment link on WhatsApp</a>}
+        <CounterVisitConversation visitId={row.id}/>
       </article>)}
       {history && history.rows.length === 0 && <p>No counter visits found.</p>}
       <nav className="inbox__pager" aria-label="Counter history pages"><button type="button" className="btn btn--ghost btn--sm" disabled={busy || historyPage === 0} onClick={() => void loadHistory(historyPage - 1)}>Previous</button><span>Page {historyPage + 1} · 10 per page</span><button type="button" className="btn btn--ghost btn--sm" disabled={busy || !history || (historyPage + 1) * 10 >= history.total} onClick={() => void loadHistory(historyPage + 1)}>Next</button></nav>
@@ -392,7 +394,8 @@ export default function CounterDesk({ services, isOwner = false }: { services: S
             <ul className="counter-desk__visits">
               {lookup.visits.map((visit) => <li key={visit.id}>
                 <b>{visit.serviceName}</b> · {when(visit.createdAt)}<br/>
-                <small>Bill {rupees(visit.billPaise)} · wallet {rupees(visit.walletPaise)} · paid {rupees(visit.collectPaise)}</small>
+                <CounterVisitConversation visitId={visit.id}/>
+                <small>Bill {rupees(visit.billPaise)} · wallet {rupees(visit.walletPaise)} · collect {rupees(visit.collectPaise)}</small>
               </li>)}
             </ul>
             {lookup.visitsTotal > lookup.pageSize && <div className="counter-pager">

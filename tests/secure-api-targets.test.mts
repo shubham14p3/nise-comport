@@ -58,3 +58,9 @@ test('inbox and claims gateway preserves calendar filters and independent pages'
     if (operation === 'I5x2N8kQ3wT6') { assert.equal(url.searchParams.get('feedPage'), '4'); assert.equal(url.searchParams.get('leadPage'), '2'); }
   }
 });
+
+test('counter comment reads preserve the exact visit and cursor; writes use a dedicated endpoint',()=>{
+ const target=targetFor('N4v7C2mP8qL5',{visitId:'visit-id',before:'cursor-id'});
+ const url=new URL(target!.path,'http://local.test');assert.equal(url.searchParams.get('visitId'),'visit-id');assert.equal(url.searchParams.get('before'),'cursor-id');
+ assert.deepEqual(targetFor('S8r3W6kL2pN9',{}),{method:'POST',path:'/api/counter-comments'});
+});

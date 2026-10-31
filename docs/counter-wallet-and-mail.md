@@ -28,3 +28,9 @@ Admin mail selection removes up to 100 loaded conversations at a time from the w
 ## WhatsApp
 
 The chat offers the configured WhatsApp assistant and the original shop contact separately. Set `NEXT_PUBLIC_WHATSAPP_ASSISTANT` to the active API sender and rebuild when changing it. Template bodies, sample values and exact environment names are in `whatsapp-templates.md`. Drafts still require submission/approval in Meta WhatsApp Manager.
+
+## Counter visit conversations and contact numbers
+
+Each counter visit has a collapsed Updates / ask a question button in customer history and Counter desk history. Only the owning customer, recording staff member with Counter permission, and owners can read or reply. A shared mobile number does not grant access. Opening loads the latest 20 messages; older messages are cursor-paged. Updates and reference numbers are plain text, at most 2,000 characters, with retry-safe sends and a refresh button. Online request rows do not gain this conversation control.
+
+Migration 0044 adds the conversation table and an indexed visit/date cursor. It also aligns account WhatsApp values with their current mobile values and installs a database trigger to maintain that rule across every account-writing flow. This does not verify a number or change login ownership. The profile WhatsApp field is read-only and follows Mobile.

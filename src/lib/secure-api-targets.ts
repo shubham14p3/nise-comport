@@ -1,5 +1,6 @@
 /** Pure encrypted operation routing; authorization remains in the gateway and endpoints. */
 const OPS = {
+  "S8r3W6kL2pN9": { method: "POST", path: "/api/counter-comments" },
   "I2t7V4mC9nK5": { method: "POST", path: "/api/admin/integrations/test" },
   "S9p2C6mV4tK8": { method: "POST", path: "/api/admin/social-publish" },
   "I8n3T5gR2sV7": { method: "GET", path: "/api/admin/integrations" },
@@ -170,6 +171,11 @@ function operationTarget(operation: string, input: Record<string, unknown>) {
       const params = new URLSearchParams();
       for (const key of ["from", "to"]) { const value = stringValue(input, key, 10); if (value) params.set(key, value); }
       return { method: "GET", path: `/api/admin/claims?${params}` };
+    }
+    case "N4v7C2mP8qL5": {
+      const params = new URLSearchParams({ visitId: stringValue(input, "visitId", 40) });
+      const before = stringValue(input, "before", 40); if (before) params.set("before", before);
+      return { method: "GET", path: `/api/counter-comments?${params}` };
     }
     case "I5x2N8kQ3wT6": {
       const params = new URLSearchParams();

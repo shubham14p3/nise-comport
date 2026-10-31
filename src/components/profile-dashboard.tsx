@@ -1,5 +1,6 @@
 "use client";
 
+import CounterVisitConversation from "@/components/counter-visit-conversation";
 import PhoneVerify from "@/components/phone-verify";
 import { serviceName, statusText } from "@/lib/i18n-forms";
 import { useLocale } from "@/lib/use-locale";
@@ -77,7 +78,8 @@ function CounterVisitHistory({ visits, phoneVerified }: { visits: CounterVisit[]
     {visits.length ? <div className="record-list">{visits.map((visit) => <article className="record" key={visit.id}>
       <span className="record__icon"><History size={20}/></span>
       <div className="record__body"><b>{visit.serviceName}</b><small>{dateTime(visit.createdAt)} · Counter visit</small>
-        <small>Bill {rupees(visit.billPaise / 100)} · Wallet discount {rupees(visit.discountPaise / 100)} · Paid {rupees(visit.collectPaise / 100)}</small>
+        <small>Bill {rupees(visit.billPaise / 100)} · Wallet discount {rupees(visit.discountPaise / 100)} · To collect {rupees(visit.collectPaise / 100)}</small>
+        <CounterVisitConversation visitId={visit.id}/>
       </div><span className="chip chip--soft">Recorded</span>
     </article>)}</div> : <p className="muted">No counter visits are linked to this account yet.{!phoneVerified ? " If a visit was recorded under your mobile number, verify that number in Profile details to find it." : " Ask the counter team to check the mobile number used for your visit."}</p>}
   </section>;
@@ -139,7 +141,6 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
   const section = chosenSection ?? urlSection;
   const [name, setName] = useState(user.name);
   const [phone, setPhone] = useState(user.phone ?? "");
-  const [whatsapp, setWhatsapp] = useState(user.whatsapp ?? "");
   const [city, setCity] = useState(user.city);
   const [state, setState] = useState(user.state);
   const [postalCode, setPostalCode] = useState(user.postalCode);
@@ -170,7 +171,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
     if (demoMode) { setProfileBusy(false); setProfileMessage("Demo preview only — these changes are temporary and are not sent to the server."); return; }
     try {
       const result = await secureApi<{ user?: { phone?: string | null; updatedAt?: string }; fields?: Record<string, string> }>("T2f9K4pW7cL1", {
-        name, phone, whatsapp, city, state, postalCode, profileSummary, preferredContact, ...(updatedAt ? { expectedUpdatedAt: updatedAt } : {}),
+        name, phone, whatsapp: phone, city, state, postalCode, profileSummary, preferredContact, ...(updatedAt ? { expectedUpdatedAt: updatedAt } : {}),
       });
       if (result.user?.phone !== undefined) setPhone(result.user.phone ?? "");
       if (result.user?.updatedAt) setUpdatedAt(result.user.updatedAt);
@@ -303,7 +304,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
           <label className="field"><span className="field__label">Full name</span><input required minLength={2} maxLength={100} autoComplete="name" value={name} onChange={(event) => setName(event.target.value)}/></label>
           <label className="field"><span className="field__label">Email address</span><input value={user.email} readOnly/><span className="field__hint">Change it under “Sign-in &amp; privacy”.</span></label>
           <label className="field"><span className="field__label">Mobile number</span><input type="tel" inputMode="tel" maxLength={20} autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} aria-invalid={Boolean(profileFieldErrors.phone)}/><span className={profileFieldErrors.phone ? "field__error" : "field__hint"}>{profileFieldErrors.phone ?? "Needed for phone or WhatsApp updates."}</span><PhoneVerify phone={phone} verified={Boolean(user.phoneVerified) && phone === (user.phone ?? "")} enabled={Boolean(user.smsEnabled) && phone === (user.phone ?? "")} onVerified={() => window.location.reload()}/></label>
-          <label className="field"><span className="field__label">WhatsApp number <em>if different</em></span><input type="tel" inputMode="tel" maxLength={20} autoComplete="tel" value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} placeholder="Same as mobile" aria-invalid={Boolean(profileFieldErrors.whatsapp)}/><span className={profileFieldErrors.whatsapp ? "field__error" : "field__hint"}>{profileFieldErrors.whatsapp ?? "We send updates and offers here only if you choose WhatsApp."}</span></label>
+          <label className="field"><span className="field__label">WhatsApp number</span><input type="tel" value={phone} readOnly aria-describedby="profile-whatsapp-note"/><span className="field__hint" id="profile-whatsapp-note">Same as your mobile number. Update Mobile to change both.</span></label>
           <label className="field"><span className="field__label">Preferred update channel</span><select value={preferredContact} onChange={(event) => setPreferredContact(event.target.value as ProfileUser["preferredContact"])}><option value="email">Email</option><option value="phone">Phone call</option><option value="whatsapp">WhatsApp</option></select>{profileFieldErrors.preferredContact && <span className="field__error">{profileFieldErrors.preferredContact}</span>}</label>
           <label className="field"><span className="field__label">State</span><StateSelect value={state} onChange={(next) => { setState(next); setCity(""); }}/></label>
           <label className="field"><span className="field__label">City</span><CitySelect state={state} value={city} onChange={setCity}/></label>
