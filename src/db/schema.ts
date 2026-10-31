@@ -855,6 +855,7 @@ export const jobs = pgTable("jobs", {
   uniqueIndex("jobs_source_unique").on(table.sourceKind, table.sourceId),
   index("jobs_user_created_idx").on(table.userId, table.createdAt.desc()),
   index("jobs_status_updated_idx").on(table.status, table.updatedAt.desc()),
+  index("jobs_source_ref_idx").on(table.sourceReference),
 ]);
 
 export const jobEvents = pgTable("job_events", {

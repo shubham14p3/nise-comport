@@ -26,6 +26,8 @@ CREATE INDEX IF NOT EXISTS "jobs_user_created_idx" ON "jobs"("user_id", "created
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "jobs_status_updated_idx" ON "jobs"("status", "updated_at" DESC);
 --> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "jobs_source_ref_idx" ON "jobs"("source_reference");
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "job_events" (
  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
  "job_id" uuid NOT NULL REFERENCES "jobs"("id") ON DELETE CASCADE,
@@ -62,6 +64,15 @@ SELECT 'historical', r."id", r."service", r."service", NULL, 'historical',
  COALESCE(r."record_date"::timestamptz, r."created_at"), r."created_at"
 FROM "customer_records" r WHERE true ON CONFLICT ("source_kind", "source_id") DO NOTHING;
 --> statement-breakpoint
+-- Payment-only requests share the Counter job rather than creating another one.
+-- For pre-existing Counter bills, synchronize the most recent ticket status.
+UPDATE "jobs" j SET "status" = r."status", "updated_at" = r."updated_at"
+FROM "service_requests" r
+WHERE j."source_kind" = 'counter'
+  AND j."source_reference" = r."reference"
+  AND r."details"->>'source' = 'counter'
+  AND r."details" ? 'counterVisitId';
+--> statement-breakpoint
 -- Database trigger keeps every new source insert covered without altering dozens of app writers.
 -- Status changes in existing service/print workflows also synchronize into the registry.
 CREATE OR REPLACE FUNCTION "nise_sync_universal_job"() RETURNS trigger AS $$
@@ -81,6 +92,16 @@ BEGIN
    -- A payment-only request created from an existing counter visit is NOT another job.
    -- Its CV-reference and details.counterVisitId link it to the original counter job.
    IF NEW.details->>'source' = 'counter' AND NEW.details ? 'counterVisitId' THEN
+     -- Keep Counter status and payment progress attached to the same universal Job ID.
+     SELECT j.status INTO old_value FROM jobs j
+       WHERE j.source_kind = 'counter' AND j.source_reference = NEW.reference FOR UPDATE;
+     UPDATE jobs j SET status = NEW.status, updated_at = NEW.updated_at
+       WHERE j.source_kind = 'counter' AND j.source_reference = NEW.reference
+       RETURNING j.id INTO job_pk;
+     IF job_pk IS NOT NULL AND old_value IS DISTINCT FROM NEW.status THEN
+       INSERT INTO job_events (job_id, kind, from_status, to_status, note, public_visible)
+       VALUES (job_pk, 'status', old_value, NEW.status, 'Counter payment status updated', true);
+     END IF;
      RETURN NEW;
    END IF;
    name_value := NEW.service_name; slug_value := NEW.service_slug;

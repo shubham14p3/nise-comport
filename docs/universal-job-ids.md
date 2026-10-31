@@ -47,3 +47,5 @@ A Counter charge can create a separate payment-only `service_requests` row with 
 
 ### Customer-visible progress
 The owner may post a `customerUpdate` (max 500 characters) through the owner-only Job IDs panel. It creates a `job_events` record marked public, visible to the verified customer and their WhatsApp Job ID lookup. The `internalNote` is never included in these public responses. Confirm the update contains no private document number or protected details before submitting.
+
+Counter payment-only requests also synchronize their payment/status transitions into the same Counter job (`jobs.status` and `job_events`), including during historical backfill. The `jobs_source_ref_idx` index avoids scanning unrelated jobs for each update.
