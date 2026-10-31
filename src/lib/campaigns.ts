@@ -1,5 +1,5 @@
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNull, lte, or, sql, type SQL } from "drizzle-orm";
-import { campaignMessages, campaigns, contacts, jobs, printJobs, serviceRequests, users } from "@/db/schema";
+import { campaignMessages, campaigns, contacts, jobs, printJobs, serviceRequests } from "@/db/schema";
 import { db } from "@/lib/db";
 import { extractJobCode } from "@/lib/job-id";
 import { findOwnedJobByCode, verifiedWhatsAppUserId } from "@/lib/jobs";
