@@ -2,9 +2,9 @@ import { randomBytes } from "node:crypto";
 import { hash } from "@node-rs/argon2";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, gt, isNull } from "drizzle-orm";
 import { z } from "zod";
-import { activityLog, addresses, counterVisits, printJobs, serviceRequests, users, walletEntries } from "@/db/schema";
+import { mailTickets, mailMessages, sessions, activityLog, addresses, counterVisits, printJobs, serviceRequests, users, walletEntries } from "@/db/schema";
 import { requireStaff } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { apiError, readJson } from "@/lib/http";
@@ -21,6 +21,7 @@ const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("start"), userId: z.uuid() }),
   z.object({ action: z.literal("create"), phone: z.string().max(24), name: z.string().max(100), email: z.string().max(254).optional() }),
   z.object({ action: z.literal("state") }),
+  z.object({ action: z.literal("section"), section: z.enum(["records", "vouchers", "security", "messages"]), ticketId: z.uuid().optional() }),
   z.object({ action: z.literal("extend") }),
   z.object({ action: z.literal("end") }),
 ]);
@@ -32,6 +33,7 @@ function previewCookie(value: string, maxAge: number) {
 const previewColumns = {
   id: users.id, name: users.name, email: users.email, phone: users.phone, role: users.role,
   emailVerifiedAt: users.emailVerifiedAt, phoneVerifiedAt: users.phoneVerifiedAt,
+  whatsapp: users.whatsapp, profileSummary: users.profileSummary, preferredContact: users.preferredContact, signupMethod: users.signupMethod, createdAt: users.createdAt, updatedAt: users.updatedAt,
   city: users.city, state: users.state, postalCode: users.postalCode,
   deletedAt: users.deletedAt, disabledAt: users.disabledAt,
 };
@@ -58,6 +60,7 @@ async function previewData(id: string, expiresAt: number) {
   if (!target || target.deletedAt || target.disabledAt) throw new PublicError("This account is no longer available.", 404);
   return {
     user: { id: target.id, name: target.name, email: isPlaceholderEmail(target.email) ? null : target.email,
+      whatsapp: target.whatsapp, profileSummary: target.profileSummary, preferredContact: target.preferredContact, signupMethod: target.signupMethod, createdAt: target.createdAt, updatedAt: target.updatedAt,
       phone: target.phone, role: target.role, emailVerified: Boolean(target.emailVerifiedAt),
       phoneVerified: Boolean(target.phoneVerifiedAt), city: target.city, state: target.state, postalCode: target.postalCode },
     requests: requests.map(r => ({ ...r, createdAt: r.createdAt.toISOString() })),
@@ -134,6 +137,30 @@ export async function POST(request: NextRequest) {
       await audit(actor.id, target.id, "Administrator extended customer preview");
       jar.set(previewCookie(grant, Math.ceil((until - now) / 1000)));
       return NextResponse.json({ ok: true, expiresAt: until });
+    }
+    if (input.action === "section") {
+      let result: unknown;
+      if (input.section === "vouchers") {
+        const { customerVouchers } = await import("@/lib/promotions");
+        result = { vouchers: await customerVouchers(target.id) };
+      } else if (input.section === "records") {
+        const { previewRecords } = await import("@/lib/customer-preview-records");
+        result = await previewRecords(target.id);
+      } else if (input.section === "security") {
+        result = { sessions: await db.select({ createdAt: sessions.createdAt, expiresAt: sessions.expiresAt })
+          .from(sessions).where(and(eq(sessions.userId, target.id), gt(sessions.expiresAt, new Date()))).orderBy(desc(sessions.createdAt)).limit(50) };
+      } else if (input.ticketId) {
+        const [ticket] = await db.select({ id: mailTickets.id, subject: mailTickets.subject }).from(mailTickets)
+          .where(and(eq(mailTickets.id, input.ticketId), eq(mailTickets.userId, target.id))).limit(1);
+        if (!ticket) throw new PublicError("Message thread not found for this customer.", 404);
+        result = { ticket, messages: await db.select({ body: mailMessages.body, direction: mailMessages.direction, authorName: mailMessages.authorName, createdAt: mailMessages.createdAt })
+          .from(mailMessages).where(eq(mailMessages.ticketId, ticket.id)).orderBy(desc(mailMessages.createdAt)).limit(100) };
+      } else {
+        result = { tickets: await db.select({ id: mailTickets.id, subject: mailTickets.subject, status: mailTickets.status, number: mailTickets.number, createdAt: mailTickets.createdAt })
+          .from(mailTickets).where(eq(mailTickets.userId, target.id)).orderBy(desc(mailTickets.lastMessageAt)).limit(60) };
+      }
+      await audit(actor.id, target.id, `Administrator viewed customer preview ${input.section}`);
+      return NextResponse.json(result, { headers: { "cache-control": "private, no-store" } });
     }
     return NextResponse.json(await previewData(target.id, existing.until), { headers: { "cache-control": "private, no-store" } });
   } catch (error) { return apiError(error); }

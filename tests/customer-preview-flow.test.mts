@@ -8,10 +8,11 @@ const actor={id:"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",name:"Owner",role:"admin"
 const target={id:"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",name:"Customer",role:"customer",email:"customer@example.test",phone:"+919876543210",emailVerifiedAt:null,phoneVerifiedAt:null,city:null,state:null,postalCode:null,deletedAt:null,disabledAt:null,passwordHash:"NEVER-SERIALIZE",loginPinHash:"NEVER-SERIALIZE-PIN"};
 const created:Record<string,unknown>[]=[];
 const jar=new Map<string,string>();const audits:Record<string,unknown>[]=[];const reads:Array<{table:string;columns:string[];params:unknown[]}>=[];
+let tableRows:Record<string,unknown[]>={};
 let currentActor={...actor};let currentTarget={...target};let failAudit=false;
 const dialect=new PgDialect();
 const fixture={requireStaff(role:string){assert.equal(role,"admin");if(currentActor.role!=="admin")throw new Error("staff denied before data access");return currentActor;},cookies:{get:(key:string)=>jar.has(key)?{value:jar.get(key)}:undefined,set:(value:{name:string;value:string;maxAge:number})=>{if(value.maxAge===0)jar.delete(value.name);else jar.set(value.name,value.value);}},db:{
- select(columns?:Record<string,unknown>){const read={table:"",columns:Object.keys(columns??{}),params:[] as unknown[]};const q={from(t:Parameters<typeof getTableName>[0]){read.table=getTableName(t);return q;},where(sql:Parameters<typeof dialect.sqlToQuery>[0]){read.params=dialect.sqlToQuery(sql).params;return q;},orderBy(){return q;},limit(){return q;},then(resolve:(value:unknown[])=>void,reject:(e:unknown)=>void){reads.push(read);return Promise.resolve(read.table==="users"?[currentTarget,...created.map(row=>({...target,...row,role:"customer"}))].filter(row=>read.params.includes(row.id)||read.params.includes(row.phone)||read.params.includes(row.email)):[]).then(resolve,reject);}};return q;},
+ select(columns?:Record<string,unknown>){const read={table:"",columns:Object.keys(columns??{}),params:[] as unknown[]};const q={from(t:Parameters<typeof getTableName>[0]){read.table=getTableName(t);return q;},where(sql:Parameters<typeof dialect.sqlToQuery>[0]){read.params=dialect.sqlToQuery(sql).params;return q;},orderBy(){return q;},limit(){return q;},then(resolve:(value:unknown[])=>void,reject:(e:unknown)=>void){reads.push(read);return Promise.resolve(tableRows[read.table]??(read.table==="users"?[currentTarget,...created.map(row=>({...target,...row,role:"customer"}))].filter(row=>read.params.includes(row.id)||read.params.includes(row.phone)||read.params.includes(row.email)):[])).then(resolve,reject);}};return q;},
  insert(table:Parameters<typeof getTableName>[0]){return{values(value:Record<string,unknown>){
    if(getTableName(table)==="users")return{returning:async()=>{const row={...value,id:"cccccccc-cccc-4ccc-8ccc-cccccccccccc"};created.push(row);return[{id:row.id}];}};
    if(failAudit)throw new Error("audit unavailable");audits.push(value);return Promise.resolve();
@@ -22,7 +23,7 @@ const fixture={requireStaff(role:string){assert.equal(role,"admin");if(currentAc
 const {POST}=await loadServerModule("src/app/api/admin/customer-preview/route.ts");
 const request=(body:unknown)=>new Request("http://test/api/admin/customer-preview",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
 const previousToken=process.env.INTERNAL_API_TOKEN;process.env.INTERNAL_API_TOKEN="preview-flow-test-only-token-at-least-32-characters";
-function reset(){currentActor={...actor};currentTarget={...target};jar.clear();audits.length=0;reads.length=0;created.length=0;failAudit=false;}
+function reset(){tableRows={};currentActor={...actor};currentTarget={...target};jar.clear();audits.length=0;reads.length=0;created.length=0;failAudit=false;}
 const quiet=async(work:()=>Promise<void>)=>{const original=console.error;console.error=()=>{};try{await work();}finally{console.error=original;}};
 
 test("start/state/end retain admin login and expose only the selected account data",async()=>{
@@ -70,6 +71,50 @@ test("creating a preview-only account records the action without replacing login
 test("failed account provisioning audit rolls back the new account",async()=>{
  reset();failAudit=true;await quiet(async()=>{assert.equal((await POST(request({action:"create",phone:"9123456789",name:"New Customer"}))).status,500);});
  assert.equal(created.length,0);assert.equal(jar.has(PREVIEW_COOKIE),false);
+});
+
+test("additional sections require a valid grant and keep customer data scoped",async()=>{
+ reset();
+ assert.equal((await POST(request({action:"section",section:"security"}))).status,401);
+ assert.equal(reads.length,0);
+ await POST(request({action:"start",userId:target.id}));reads.length=0;
+ for(const section of ["security","messages","records","vouchers"]){
+   const response=await POST(request({action:"section",section}));assert.equal(response.status,200);
+   assert.ok(!JSON.stringify(await response.json()).includes("NEVER-SERIALIZE"));
+ }
+ assert.ok(reads.filter(read=>read.table!=="coupons").every(read=>read.params.includes(target.id)),"private section reads are scoped to the selected customer");
+ assert.equal((await POST(request({action:"section",section:"messages",ticketId:"dddddddd-dddd-4ddd-8ddd-dddddddddddd"}))).status,404);
+ assert.ok(!reads.some(read=>read.table==="mail_messages"),"unowned ticket bodies are never fetched");
+ assert.equal((await POST(request({action:"section",section:"password"}))).status,400);
+ assert.ok(audits.some(row=>row.title==="Administrator viewed customer preview records"));
+});
+
+test("message inspection checks ticket ownership before returning bodies and never updates read state",async()=>{
+ reset();await POST(request({action:"start",userId:target.id}));
+ const ticketId="dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+ tableRows.mail_tickets=[{id:ticketId,subject:"Customer help"}];
+ tableRows.mail_messages=[{body:"Customer message",direction:"in",authorName:"Customer",createdAt:new Date()}];
+ const response=await POST(request({action:"section",section:"messages",ticketId}));
+ assert.equal(response.status,200);assert.equal((await response.json()).messages[0].body,"Customer message");
+ assert.ok(reads.some(read=>read.table==="mail_tickets"&&read.params.includes(target.id)&&read.params.includes(ticketId)));
+ assert.ok(reads.some(read=>read.table==="mail_messages"&&read.params.includes(ticketId)));
+});
+
+test("record preview preserves claim approval and returns only customer-safe record fields",async()=>{
+ reset();await POST(request({action:"start",userId:target.id}));
+ tableRows.mobile_record_claims=[{phone:target.phone,status:"pending",expiresAt:new Date(Date.now()+60000)}];
+ const pending=await (await POST(request({action:"section",section:"records"}))).json();
+ assert.equal(pending.status,"pending");assert.deepEqual(pending.records,[]);
+ assert.ok(!reads.some(read=>read.table==="customer_records"));
+ const saved=process.env.RECORDS_ENCRYPTION_KEY;process.env.RECORDS_ENCRYPTION_KEY=Buffer.alloc(32,7).toString("base64");
+ try {
+   tableRows.mobile_record_claims=[{phone:target.phone,status:"approved",expiresAt:new Date()}];
+   tableRows.customer_records=[{id:"record-id",name:"Customer Name",service:"insurance",recordDate:"2026-01-01",renewalOn:null,vehicle:"bike"}];
+   const approved=await (await POST(request({action:"section",section:"records"}))).json();
+   assert.equal(approved.status,"approved");assert.equal(approved.records[0].name,"Customer");
+   assert.deepEqual(Object.keys(approved.records[0]).sort(),["id","name","service","date","nextRenewal","vehicle"].sort());
+   const read=reads.find(read=>read.table==="customer_records");assert.ok(read);assert.ok(!read.columns.includes("payloadEnc"));
+ }finally{if(saved===undefined)delete process.env.RECORDS_ENCRYPTION_KEY;else process.env.RECORDS_ENCRYPTION_KEY=saved;}
 });
 
 test.after(()=>{if(previousToken===undefined)delete process.env.INTERNAL_API_TOKEN;else process.env.INTERNAL_API_TOKEN=previousToken;});

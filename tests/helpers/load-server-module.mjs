@@ -22,6 +22,7 @@ export async function loadServerModule(entry) {
             : 'export async function sendEmailChangedNotice() {} export async function sendAdminAccountArchivedEmail() {}' }));
         builder.onResolve({ filter: /^next\/headers$/ }, () => ({ path: "headers", namespace: "test-headers" }));
         builder.onLoad({ filter: /.*/, namespace: "test-headers" }, () => ({ contents: 'export async function cookies() { return globalThis.__niseTest.cookies; }' }));
+        builder.onResolve({ filter: /^next\/cache$/ }, () => ({ path: "next/cache.js", external: true }));
         builder.onResolve({ filter: /^next\/server$/ }, () => ({ path: "next/server.js", external: true }));
       } }],
     });
