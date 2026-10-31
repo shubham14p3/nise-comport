@@ -14,6 +14,7 @@ const has = (text: string, pattern: RegExp) => pattern.test(text);
 export function detectIntent(raw: string): BotIntent {
   const text = raw.trim().toLowerCase();
   if (!text) return "attachment";
+  if (/\bncj-\d{2}-[0-9a-f]{12}\b/i.test(text)) return "track";
   if (/^[1-6]$/.test(text)) return (["menu", "price", "track", "pay", "documents", "hours", "human"] as const)[Number(text)] ?? "menu";
   if (has(text, /\bscanned\b.*\bqr\b|\bqr\b.*\bscanned\b/)) return "menu"; // arrived from our welcome QR code
   if (whatsappFaqReply(raw, "")) return "faq";

@@ -1,5 +1,6 @@
 /** Pure encrypted operation routing; authorization remains in the gateway and endpoints. */
 const OPS = {
+  "V9k3L6pD2tF7": { method: "PATCH", path: "/api/admin/jobs" },
   "S8r3W6kL2pN9": { method: "POST", path: "/api/counter-comments" },
   "I2t7V4mC9nK5": { method: "POST", path: "/api/admin/integrations/test" },
   "S9p2C6mV4tK8": { method: "POST", path: "/api/admin/social-publish" },
@@ -117,6 +118,22 @@ function stringValue(input: Record<string, unknown>, key: string, max = 200) {
 function operationTarget(operation: string, input: Record<string, unknown>) {
   if (Object.hasOwn(OPS, operation)) return OPS[operation as keyof typeof OPS];
   switch (operation) {
+    case "A5j8T2mQ7nR4": {
+      const params = new URLSearchParams();
+      const code = stringValue(input, "code", 40);
+      if (code) params.set("code", code);
+      else {
+        const query = stringValue(input, "query", 80);
+        if (query) params.set("query", query);
+        const page = Number(input.page);
+        params.set("page", String(Number.isSafeInteger(page) ? Math.min(10_000, Math.max(0, page)) : 0));
+      }
+      return { method: "GET", path: `/api/admin/jobs?${params.toString()}` };
+    }
+    case "K4n8P1xR7vC3": {
+      const code = stringValue(input, "code", 40);
+      return { method: "GET", path: `/api/jobs${code ? `?code=${encodeURIComponent(code)}` : ""}` };
+    }
     case "Q3x8M5wT2kB7": {
       // Message centre reads: list, one ticket, counters.
       const query = new URLSearchParams();

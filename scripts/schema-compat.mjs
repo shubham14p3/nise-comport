@@ -188,6 +188,7 @@ try {
   for (const step of plan.pending) console.log(`  ${step.kind.padEnd(6)} ${step.table}${step.column ? "." + step.column : ""} [${step.name}]`);
   console.log(`\nIndexes on existing tables not automatically rebuilt: ${plan.deferredIndexes.length}`);
   if (plan.deferredIndexes.length) console.log("  These require separate indexing review (unique indexes can fail on duplicate existing rows).");
+  for (const step of plan.deferredIndexes) console.log(`  - ${step.index} on ${step.table} [${step.name}]`);
   if (initial.typeMismatch.length) {
     console.log(`\nTYPE DIFFERENCES REQUIRING REVIEW: ${initial.typeMismatch.length}`);
     for (const x of initial.typeMismatch.slice(0, 25)) console.log(`  ${x.table}.${x.column}: expected ${x.expectedType}; database ${x.actualType}`);

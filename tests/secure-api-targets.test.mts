@@ -64,3 +64,19 @@ test('counter comment reads preserve the exact visit and cursor; writes use a de
  const url=new URL(target!.path,'http://local.test');assert.equal(url.searchParams.get('visitId'),'visit-id');assert.equal(url.searchParams.get('before'),'cursor-id');
  assert.deepEqual(targetFor('S8r3W6kL2pN9',{}),{method:'POST',path:'/api/counter-comments'});
 });
+
+
+test("universal Job ID APIs use only allowlisted encrypted operations", () => {
+  const customerList = targetFor("K4n8P1xR7vC3", {});
+  assert.deepEqual(customerList, { method: "GET", path: "/api/jobs" });
+  const customerDetail = targetFor("K4n8P1xR7vC3", { code: "NCJ-26-ABCDEF123456" });
+  assert.equal(new URL(customerDetail!.path, "http://localhost").searchParams.get("code"), "NCJ-26-ABCDEF123456");
+  const adminList = targetFor("A5j8T2mQ7nR4", { query: "PAN & insurance", page: 3 });
+  const adminUrl = new URL(adminList!.path, "http://localhost");
+  assert.equal(adminUrl.pathname, "/api/admin/jobs");
+  assert.equal(adminUrl.searchParams.get("page"), "3");
+  assert.equal(adminUrl.searchParams.get("query"), "PAN & insurance");
+  const adminDetail = targetFor("A5j8T2mQ7nR4", { code: "NCJ-26-ABCDEF123456" });
+  assert.equal(new URL(adminDetail!.path, "http://localhost").searchParams.get("code"), "NCJ-26-ABCDEF123456");
+  assert.deepEqual(targetFor("V9k3L6pD2tF7", {}), { method: "PATCH", path: "/api/admin/jobs" });
+});

@@ -4,6 +4,7 @@ import { and, eq, inArray, isNull, ne } from "drizzle-orm";
 import { z } from "zod";
 import { addresses, serviceRequests, storedFiles } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
+import { jobCodeForSource } from "@/lib/jobs";
 import { db } from "@/lib/db";
 import { isUnavailable, PublicError } from "@/lib/errors";
 import { apiError, readJson } from "@/lib/http";
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     if (input.idempotencyKey) {
       const [existing] = await db.select(selectFields).from(serviceRequests).where(and(eq(serviceRequests.userId, user.id), eq(serviceRequests.idempotencyKey, input.idempotencyKey))).limit(1);
-      if (existing) return NextResponse.json({ ok: true, request: existing, duplicate: true });
+      if (existing) return NextResponse.json({ ok: true, request: existing, jobId: await jobCodeForSource("service", existing.id), duplicate: true });
     }
     const userKey = identity("user", user.id);
     await enforceRate(RATE_RULES.requestsPerUserHour, userKey, "You’ve sent several requests in the last hour. If it’s urgent, call or WhatsApp us.");
@@ -156,11 +157,12 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       if (input.idempotencyKey && isIdempotencyConflict(error)) {
         const [existing] = await db.select(selectFields).from(serviceRequests).where(and(eq(serviceRequests.userId, user.id), eq(serviceRequests.idempotencyKey, input.idempotencyKey))).limit(1);
-        if (existing) return NextResponse.json({ ok: true, request: existing, duplicate: true });
+        if (existing) return NextResponse.json({ ok: true, request: existing, jobId: await jobCodeForSource("service", existing.id), duplicate: true });
       }
       throw error;
     }
 
+    const jobId = await jobCodeForSource("service", created.id);
     if(input.intake?.photoFileId) {
       await db.update(storedFiles).set({requestId:created.id}).where(and(eq(storedFiles.id,input.intake.photoFileId),eq(storedFiles.userId,user.id),isNull(storedFiles.requestId)));
     }
@@ -175,6 +177,7 @@ export async function POST(request: NextRequest) {
         .catch((error) => console.error("[pan] could not issue the fixed payment", error));
     }
     await notifyNewRequest(user, created.reference, service.title, [
+      ...(jobId ? [`Universal Job ID: ${jobId}`] : []),
       ...(input.description ? [`Note: ${input.description.slice(0, 300)}`] : []),
       ...(input.intake ? [`Application form: ${input.intake.kind}`, "Questionnaire saved securely — open the request in staff dashboard to view"] : []),
       ...(contactPhone ? [`Phone: ${contactPhone}${input.preferredContact ? ` (prefers ${input.preferredContact})` : ""}`] : []),
@@ -185,14 +188,14 @@ export async function POST(request: NextRequest) {
     ], found && "categorySlug" in found ? String(found.categorySlug) : undefined);
     const replyTo = contactPhone ?? user.whatsapp ?? user.phone ?? null;
     await captureCustomer({ name: input.contactName ?? user.name, phone: replyTo, email: user.email, serviceSlug: currentService.slug, source: "request" });
-    sendRequestWhatsApp({ name: input.contactName ?? user.name, phone: replyTo, reference: created.reference, service: service.title, details: input.description });
+    sendRequestWhatsApp({ name: input.contactName ?? user.name, phone: replyTo, reference: jobId ? `${jobId} / ${created.reference}` : created.reference, service: service.title, details: input.description });
     // They finished the form: the "started a request" call-back is no longer needed.
     if (replyTo) {
       await closeWizardLeads(replyTo).catch(() => undefined);
       await completeInvitedServiceCallback(replyTo,user.email,service.slug).catch(() => undefined);
     }
     return NextResponse.json({
-      ok: true, request: created, whatsappSent: whatsappAlertsEnabled(),
+      ok: true, request: created, jobId, whatsappSent: whatsappAlertsEnabled(),
       ...(input.offerId ? { offer: { applied: offer.applied, ...(offer.reason ? { reason: offer.reason } : {}) } } : {}),
       ...(input.couponCode ? { coupon: { applied: coupon.applied, ...(coupon.applied ? { code: coupon.code } : { reason: coupon.reason }) } } : {}),
     }, { status: 201 });
