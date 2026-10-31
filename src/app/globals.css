@@ -3886,7 +3886,7 @@ a.partner-card:hover { border-color: var(--line-2); box-shadow: var(--shadow); }
 }
 
 /* NiSE COMPORT animated global request status; no downloaded or proprietary fonts. */
-.api-activity--branded { top: 14px; left: 50%; right: auto; bottom: auto; transform: translateX(-50%); overflow: hidden;
+.api-activity--branded { top: 50%; left: 50%; right: auto; bottom: auto; transform: translate(-50%, -50%); overflow: hidden;
   width: min(350px,calc(100vw - 28px)); max-width: none; background: rgba(255,255,255,.98); color: #15264d;
   border: 1px solid #d3dff5; box-shadow: 0 14px 50px #0a22572b; padding: 10px 16px 14px;
   display: flex; align-items: center; gap: 14px; font-size: .82rem; z-index: 9999; }
