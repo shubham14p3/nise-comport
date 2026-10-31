@@ -1,0 +1,8 @@
+.inbox__callback-tabs{display:flex;gap:8px;margin:10px 0 16px;flex-wrap:wrap}
+.inbox__callback-tabs [aria-pressed="true"],.inbox__callback-tabs [aria-selected="true"]{background:#e8f0ff;color:#144ca5;border-color:#8db7f5}
+
+.inbox__dates{padding:12px 14px;margin:12px 0 20px;border:1px solid #d9e3ef;border-radius:12px;background:#f8faff}
+.inbox__dates label{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;font-weight:600}
+.inbox__dates input[type="date"]{min-width:0;width:auto;max-width:100%;padding:8px 10px;border:1px solid #c9d5e5;border-radius:8px;background:#fff;color:#24344d}
+.inbox__dates small{color:#53667e}
+@media(max-width:520px){.inbox__dates .btn{white-space:normal;text-align:left}.inbox__dates label{width:100%;justify-content:space-between}}

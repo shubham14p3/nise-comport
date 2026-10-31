@@ -242,10 +242,10 @@ export default function FindCustomerPanel() {
           <b>Resend sign-in code</b>
           <div className="fc-row">
             <button type="button" className="btn btn--ghost btn--sm" disabled={busy || !selected.email} onClick={() => void resendEmail()}>Resend email code</button>
-            <button type="button" className="btn btn--ghost btn--sm" disabled title="Coming soon">Resend SMS code</button>
-            <button type="button" className="btn btn--ghost btn--sm" disabled title="Coming soon">Resend WhatsApp code</button>
+            <button type="button" className="btn btn--ghost btn--sm" disabled title="Not available from this panel">Resend SMS code</button>
+            <button type="button" className="btn btn--ghost btn--sm" disabled title="Not available from this panel">Resend WhatsApp code</button>
           </div>
-          <small className="muted">{selected.email ? "" : "Add an email to the account before a code can be sent. "}SMS and WhatsApp codes are coming soon.</small>
+          <small className="muted">{selected.email ? "" : "Add an email to the account before a code can be sent. "}This panel resends email codes only. Customers request configured SMS/WhatsApp verification from their signed-in profile.</small>
         </div>
       </div> : <div className="fc-card"><p className="muted" style={{ margin: 0 }}>Pick a customer on the left to see their details and actions.</p></div>}
     </div>}

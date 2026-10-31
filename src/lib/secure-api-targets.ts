@@ -104,7 +104,7 @@ const OPS = {
   "B9t4L7qM2xF5": { method: "POST", path: "/api/account/records" },
   "W6c1X8kT3nJ9": { method: "GET", path: "/api/account/verify-status" },
   "H4p7D2vR9mQ1": { method: "POST", path: "/api/account/verify-status" },
-  "Z2n5G8yL6bK3": { method: "GET", path: "/api/admin/claims" },
+
   "F8q3V6cW1tN7": { method: "POST", path: "/api/admin/claims" },
 } as const;
 
@@ -166,9 +166,14 @@ function operationTarget(operation: string, input: Record<string, unknown>) {
       const status = stringValue(input, "status", 40);
       return { method: "GET", path: `/api/internal/admin-snapshot?q=${encodeURIComponent(q)}&status=${encodeURIComponent(status)}` };
     }
+    case "Z2n5G8yL6bK3": {
+      const params = new URLSearchParams();
+      for (const key of ["from", "to"]) { const value = stringValue(input, key, 10); if (value) params.set(key, value); }
+      return { method: "GET", path: `/api/admin/claims?${params}` };
+    }
     case "I5x2N8kQ3wT6": {
       const params = new URLSearchParams();
-      for (const key of ["category", "leadTab", "leadScope", "leadPage"]) { const value = stringValue(input, key, 20); if (value) params.set(key, value); }
+      for (const key of ["category", "leadTab", "leadScope", "leadPage", "feedPage", "from", "to"]) { const value = stringValue(input, key, 20); if (value) params.set(key, value); }
       if (input.count) params.set("count", "1");
       return { method: "GET", path: `/api/admin/inbox?${params.toString()}` };
     }

@@ -1,6 +1,6 @@
 import { after } from "next/server";
 import { sendCallbackWhatsApp } from "@/lib/whatsapp-alerts";
-import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, lt, inArray, sql } from "drizzle-orm";
 import { contacts, leads, users } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import { db } from "@/lib/db";
@@ -151,8 +151,8 @@ export type CallbackTab = keyof typeof CALLBACK_TABS;
 export const CALLBACK_PAGE_SIZE = 15;
 
 /** One page of callbacks for a tab, with counts for every tab. `mine` limits it to the viewer's own callbacks. */
-export async function listCallbackPage(input: { tab: CallbackTab; mine: boolean; viewerId: string; page: number }) {
-  const scope = input.mine ? eq(leads.handledBy, input.viewerId) : undefined;
+export async function listCallbackPage(input: { tab: CallbackTab; mine: boolean; viewerId: string; page: number; from?: Date; until?: Date }) {
+  const scope = and(input.mine ? eq(leads.handledBy, input.viewerId) : undefined, input.from ? gte(leads.createdAt, input.from) : undefined, input.until ? lt(leads.createdAt, input.until) : undefined);
   const page = Math.max(0, Math.floor(input.page));
   const statuses = [...CALLBACK_TABS[input.tab]];
   const rows = await db.select({ lead: leads, ownerName: users.name }).from(leads)

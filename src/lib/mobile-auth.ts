@@ -81,7 +81,7 @@ export async function mobileSignUp(input: { phone: string; name: string; passwor
   }
   await enforceRate(RATE_RULES.mobileSignupPerIpHour, identity("ip", ip), "Too many accounts were created from this network.");
   const [taken] = await db.select({ id: users.id }).from(users).where(and(eq(users.phone, e164), isNull(users.deletedAt))).limit(1);
-  if (taken) throw new PublicError("This number already has an account. Sign in with your PIN. If you forgot it, message us on WhatsApp and we will reset it.", 409, { code: "account_exists", fields: { phone: "This number already has an account." } });
+  if (taken) throw new PublicError("This number already has an account. Sign in with your own credentials. For a separate family member, register using their own email and leave the optional mobile blank; do not sign in to someone else’s account.", 409, { code: "account_exists", fields: { phone: "This number already has an account." } });
   const pin = generatePin((below) => randomInt(0, below));
   // Existing mobile sign-ups retain PIN-only behavior. Customers who opt in to
   // password access get their own password hash rather than an unknowable random password.
@@ -114,7 +114,7 @@ export async function resetPin(staff: { id: string; name: string }, phoneInput: 
   const { e164, digits } = mobileOrThrow(phoneInput);
   // Staff may reset an explicitly enabled PIN regardless of original signup method.
   const found = await db.select().from(users).where(and(eq(users.phone, e164), isNotNull(users.loginPinHash), isNull(users.deletedAt), isNull(users.disabledAt))).limit(2);
-  if (found.length !== 1) throw new PublicError("No mobile-PIN account uses this number.", 404);
+  if (found.length !== 1) throw new PublicError("No unique active PIN account was found. For shared numbers, choose the exact account in Customers or Team and reset its PIN there.", 404);
   const pin = generatePin((below) => randomInt(0, below));
   await db.update(users).set({ loginPinHash: await hash(pin), updatedAt: new Date() }).where(eq(users.id, found[0].id));
   await db.update(recordClaims).set({ pinEnc: seal(pin) }).where(and(eq(recordClaims.userId, found[0].id), eq(recordClaims.status, "pending")));

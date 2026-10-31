@@ -98,12 +98,12 @@ export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }
     {mode === "signin" && credential === "pin" && pinIdentity === "email"
       ? <label className="field"><span className="field__label">Account email</span>
           <span className="input-wrap"><input type="email" autoComplete="username" maxLength={254} required value={emailPin} onChange={(e) => setEmailPin(e.target.value)} placeholder="you@example.com" aria-invalid={Boolean(fields.email)} autoFocus/></span>
-          <span className="field__hint">Use email + PIN when several team accounts share a contact number.</span>{fieldError("email")}
+          <span className="field__hint">Use email + PIN when family members or team accounts share a contact number. A password reset does not change this PIN.</span>{fieldError("email")}
         </label>
       : <label className="field"><span className="field__label">Mobile number</span>
           <span className="input-wrap"><span className="input-prefix" aria-hidden="true">+91</span>
             <input type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={14} required value={phone} onChange={(e) => setPhone(typedMobile(e.target.value))} placeholder="98765 43210" aria-invalid={Boolean(fields.phone)} autoFocus/></span>
-          <span className="field__hint">10 digits, without +91 or 0.</span>{fieldError("phone")}
+          <span className="field__hint">10 digits, without +91 or 0. Shared family/team number? Use Email + PIN, or email + password from email sign-in.</span>{fieldError("phone")}
         </label>}
     {mode === "signin" && <div className="auth__method" role="group" aria-label="Choose mobile sign-in secret">
       <button type="button" className="link-btn" aria-pressed={credential === "pin"} disabled={busy} onClick={() => { setCredential("pin"); setError(""); setFields({}); }}>6-digit PIN</button>
