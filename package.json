@@ -27,7 +27,8 @@
     "offers:sync": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/sync-offers.mts",
     "security:check": "node scripts/security-check.mjs",
     "verify": "npm run security:check && npm test && npm run lint && npm run build",
-    "check": "npm run security:check && npm test && npm run lint && tsc --noEmit"
+    "check": "npm run security:check && npm test && npm run lint && tsc --noEmit",
+    "db:jobs:backup": "node scripts/job-ids-backup.mjs"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",

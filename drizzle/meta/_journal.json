@@ -260,6 +260,13 @@
       "when": 1794045600003,
       "tag": "0044_counter_comments_mobile_whatsapp",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1794045600004,
+      "tag": "0045_universal_jobs",
+      "breakpoints": true
     }
   ]
 }

@@ -831,3 +831,40 @@ export const counterComments = pgTable('counter_comments', {
   clientKey: uuid('client_key').notNull().unique(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, table => [index('counter_comments_visit_created_idx').on(table.visitId, table.createdAt, table.id)]);
+
+/**
+ * Cross-channel work registry. Every original row keeps its own primary key/reference;
+ * one universal, non-secret public job code maps back to exactly one source row.
+ * Historical imports may have no verified user ownership, so userId is nullable.
+ */
+export const jobs = pgTable("jobs", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  code: text("code").notNull().unique(),
+  sourceKind: text("source_kind").notNull(),
+  sourceId: uuid("source_id").notNull(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  serviceSlug: text("service_slug"),
+  serviceName: text("service_name").notNull(),
+  sourceReference: text("source_reference"),
+  status: text("status").notNull(),
+  missingDocuments: jsonb("missing_documents").$type<string[]>().notNull().default([]),
+  internalNote: text("internal_note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("jobs_source_unique").on(table.sourceKind, table.sourceId),
+  index("jobs_user_created_idx").on(table.userId, table.createdAt.desc()),
+  index("jobs_status_updated_idx").on(table.status, table.updatedAt.desc()),
+]);
+
+export const jobEvents = pgTable("job_events", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  jobId: uuid("job_id").notNull().references(() => jobs.id, { onDelete: "cascade" }),
+  actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
+  kind: text("kind").notNull(),
+  fromStatus: text("from_status"),
+  toStatus: text("to_status"),
+  note: text("note"),
+  publicVisible: boolean("public_visible").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [index("job_events_job_created_idx").on(table.jobId, table.createdAt.desc())]);
