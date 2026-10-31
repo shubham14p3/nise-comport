@@ -1,4 +1,5 @@
 import { after } from "next/server";
+import { sendCallbackWhatsApp } from "@/lib/whatsapp-alerts";
 import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { contacts, leads, users } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
@@ -49,6 +50,7 @@ export async function createLead(input: LeadInput) {
     try { await sendStaffAlertEmail(staffAlertEmail(), `New enquiry: ${topic}`, [`Name: ${name}`, `Mobile: ${formatPhone(phone)}`, `About: ${topic}`, ...(email ? [`Email: ${email}`] : []), ...(message ? [`Message: ${message}`] : []), `From: ${input.page || "chat"}`], `${site.url}/admin#inbox`); }
     catch (error) { console.error("[leads] alert email failed", error); }
   });
+  if (input.source === "service-callback") sendCallbackWhatsApp({ name, phone, service: topic });
   return row;
 }
 

@@ -20,7 +20,7 @@ const MAX_ATTEMPTS = 5;
 function secret() {
   const value = process.env.OTP_SECRET;
   if (value && value.length >= 32) return value;
-  if (process.env.NODE_ENV === "production") throw new PublicError("SMS codes are temporarily unavailable.", 503, { code: "otp_not_configured" });
+  if (process.env.NODE_ENV === "production") throw new PublicError("Verification codes are temporarily unavailable.", 503, { code: "otp_not_configured" });
   return value || "development-only-otp-secret-not-for-production";
 }
 const hashCode = (phone: string, purpose: string, code: string) => createHmac("sha256", secret()).update(`${phone}:${purpose}:${code}`).digest("hex");
@@ -50,7 +50,7 @@ async function issue(userId: string, phone: string, purpose: "verify" | "signin"
 
 async function consume(userId: string, phone: string, purpose: "verify" | "signin" | "reset-pin" | "reset-password", code: string, ip: string) {
   await enforceRate(RATE_RULES.smsVerifyPerIpHour, identity("ip", ip), "Too many attempts from this network.");
-  if (!isSixDigitCode(code)) throw new PublicError("Enter the 6-digit code from the SMS.", 400, { fields: { code: "Enter the 6-digit code from the SMS." } });
+  if (!isSixDigitCode(code)) throw new PublicError("Enter the 6-digit verification code.", 400, { fields: { code: "Enter the 6-digit verification code." } });
   const [challenge] = await db.select().from(phoneOtps).where(and(eq(phoneOtps.userId, userId), eq(phoneOtps.purpose, purpose), eq(phoneOtps.phone, phone), isNull(phoneOtps.consumedAt), gt(phoneOtps.expiresAt, new Date()))).orderBy(desc(phoneOtps.createdAt)).limit(1);
   if (!challenge) throw new PublicError("This code has expired or a newer code was sent. Request a new code.", 400, { code: "otp_expired" });
   if (challenge.attempts >= MAX_ATTEMPTS) { await db.delete(phoneOtps).where(eq(phoneOtps.id, challenge.id)); throw new PublicError("Too many incorrect attempts. Request a new code.", 400, { code: "otp_locked" }); }
@@ -65,7 +65,7 @@ async function consume(userId: string, phone: string, purpose: "verify" | "signi
 
 /** Signed-in customer asks for a code to prove a mobile number is theirs. */
 export async function requestPhoneVerification(userId: string, phoneInput: string, ip: string, channel?: string | null) {
-  if (!otpChannels().length) throw new PublicError("SMS verification is coming soon.", 503, { code: "sms_not_configured" });
+  if (!otpChannels().length) throw new PublicError("Mobile verification is not currently available.", 503, { code: "sms_not_configured" });
   const phone = indianPhoneOrThrow(phoneInput);
   const [taken] = await db.select({ id: users.id }).from(users).where(and(eq(users.phone, phone), sql`${users.phoneVerifiedAt} is not null`, ne(users.id, userId), isNull(users.deletedAt))).limit(1);
   if (taken) throw new PublicError("This number is already verified on another account.", 409, { code: "phone_taken", fields: { phone: "This number is already used on another account." } });
