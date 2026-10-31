@@ -11,7 +11,7 @@
 1. From a clean checkout, confirm `dev` is updated. Work only on the feature branch.
 2. Inspect your `DATABASE_URL` target. Local Next.js does **not** imply local PostgreSQL. Never connect the backup/migrate command to an unidentified production database.
 3. **Before any migration**, run `npm run db:jobs:backup` on the machine with real DB access. Copy the newly verified SQL backup **off GitHub** onto encrypted storage. Existing committed backups are not evidence of a fresh backup.
-4. Restore that backup into an isolated PostgreSQL test DB using the existing `db:restore` procedure. Test `npm run db:migrate` there. Note this app's data-only backups do not contain table DDL, nor uploaded private files; prepare schema and separately back up `.private-uploads`.
+4. For a **pre-migration** SQL backup, restore into an isolated PostgreSQL clone in this order: using the existing `dev` revision (through migration 0044), create the original schema with `npm run db:migrate`; run `npm run db:restore -- backups/<new-backup>.sql` against the clone; switch to this feature branch and then run `npm run db:migrate` to apply 0045 **after restoring the data**. Applying 0045 first would backfill empty tables while restore suppresses triggers. These backups are data-only (no DDL) and exclude temporary session/OTP tables by default. Copy `.private-uploads` separately.
 5. Verify counts:
 ```sql
 SELECT
