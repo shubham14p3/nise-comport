@@ -8,6 +8,16 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+const now = new Date();
+const two = (n) => String(n).padStart(2, "0");
+// The existing backup script timestamps only to the minute. Abort before it can
+// truncate a previous backup with the same basename.
+const stamp = `${now.getFullYear()}-${two(now.getMonth() + 1)}-${two(now.getDate())}_${two(now.getHours())}-${two(now.getMinutes())}`;
+const collision = join("backups", `nise-comport-${stamp}.sql`);
+if (existsSync(collision)) {
+  console.error(`Backup file already exists: ${collision}. Refusing to overwrite it. Run this in a new minute.`);
+  process.exit(1);
+}
 const before = new Set(existsSync("backups") ? readdirSync("backups") : []);
 console.log("Creating a fresh database backup (SQL only, no readable CSVs).");
 const result = spawnSync(process.execPath, ["scripts/db-backup.mjs", "--no-readable"], { stdio: "inherit" });
