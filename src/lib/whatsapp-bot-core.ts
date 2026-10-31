@@ -4,7 +4,9 @@
  * the data (prices, payments) and sends the reply.
  */
 
-export type BotIntent = "menu" | "price" | "documents" | "track" | "pay" | "hours" | "human" | "attachment" | "unknown";
+import { whatsappFaqReply } from "./whatsapp-faq.ts";
+
+export type BotIntent = "faq" | "menu" | "price" | "documents" | "track" | "pay" | "hours" | "human" | "attachment" | "unknown";
 export type BotService = { slug: string; title: string; keywords: string[]; documents: string[] };
 
 const has = (text: string, pattern: RegExp) => pattern.test(text);
@@ -14,6 +16,7 @@ export function detectIntent(raw: string): BotIntent {
   if (!text) return "attachment";
   if (/^[1-6]$/.test(text)) return (["menu", "price", "track", "pay", "documents", "hours", "human"] as const)[Number(text)] ?? "menu";
   if (has(text, /\bscanned\b.*\bqr\b|\bqr\b.*\bscanned\b/)) return "menu"; // arrived from our welcome QR code
+  if (whatsappFaqReply(raw, "")) return "faq";
   if (has(text, /\b(agent|human|staff|person|call me|talk to|baat|complaint|problem|issue|refund)\b/)) return "human";
   if (has(text, /\b(status|track|stat)\b/)) return "track";
   if (has(text, /\b(pay|payment|paid|upi|qr|bhugtan|paise)\b/)) return "pay";
@@ -39,21 +42,23 @@ export function matchService(raw: string, services: BotService[]): BotService | 
 }
 
 export const MENU = [
-  "Hello! This is NISE COMPORT (CSC / Pragya Kendra, Kharangajhar, Telco). How can we help?",
-  "",
-  "1 – Service charges (send e.g. “PAN card price”)",
-  "2 – Track my request",
-  "3 – Pay for my request",
-  "4 – Documents needed (send e.g. “documents for voter ID”)",
-  "5 – Address and timings",
-  "6 – Talk to our team",
-  "",
-  "Reply with a number or just type your question.",
+  "🙏 *नमस्ते! NiSE COMPORT में आपका स्वागत है*",
+  "*CSC / प्रज्ञा केंद्र · Kharangajhar, Telco*",
+  "आपके विश्वास और सहयोग के लिए धन्यवाद ❤️",
+  "", "बताइए, किस काम में सहायता चाहिए? / How can we help?", "",
+  "1️⃣ सेवा शुल्क / Charges — जैसे: PAN card price",
+  "2️⃣ आवेदन की स्थिति / Track request",
+  "3️⃣ अपने आवेदन का भुगतान / Payment",
+  "4️⃣ जरूरी दस्तावेज़ / Documents — जैसे: documents for PAN card",
+  "5️⃣ पता और समय / Address & timings",
+  "6️⃣ हमारी टीम से बात / Talk to staff",
+  "", "1–6 भेजें या अपना प्रश्न लिखें।",
+  "📎 Documents के लिए अपने website application का upload विकल्प उपयोग करें।",
 ].join("\n");
 
 export function priceReply(service: BotService, price: { amount: number; kind: string; note: string | null } | null, siteUrl: string) {
   if (price) return `${service.title}: our service charge is ${price.kind === "from" ? "from " : ""}₹${price.amount}${price.note ? ` (${price.note})` : ""}. Government or courier fees, if any, are extra and told to you first.\n\nStart online: ${siteUrl}/services/${service.slug}`;
-  return `${service.title}: we quote this after checking your case. Our team will message you here shortly with the charge. You can also start a request: ${siteUrl}/services/${service.slug}`;
+  return `${service.title}: we quote this after checking your case. Please ask our team to confirm the charge; a response time is not guaranteed. You can also start a request: ${siteUrl}/services/${service.slug}`;
 }
 
 export function documentsReply(service: BotService, siteUrl: string) {
@@ -64,7 +69,7 @@ export function documentsReply(service: BotService, siteUrl: string) {
 export function payReply(payment: { reference: string; amountPaise: number; status: string } | null, siteUrl: string) {
   if (!payment) return "We don't see a pending payment on this number. Payments are requested only after we check your documents. If you were told to pay, reply 6 and our team will help.";
   const amount = `₹${payment.amountPaise / 100}`;
-  if (payment.status === "verifying") return `We have your UPI payment for ${payment.reference} and are verifying it. This can take a few hours in working time.`;
+  if (payment.status === "verifying") return `Your payment details for ${payment.reference} are awaiting verification. This is not confirmation that payment was received.`;
   return `Please pay ${amount} for ${payment.reference} here (sign in first): ${siteUrl}/pay/${payment.reference}\nUPI QR is free; instant card or net banking adds a small fee shown before you pay.`;
 }
 
@@ -72,6 +77,6 @@ export function hoursReply(address: string, hours: string, mapsUrl: string) {
   return `${address}\n${hours}\nDirections: ${mapsUrl}`;
 }
 
-export const HUMAN_REPLY = "Thanks. Our team has been alerted and will reply here as soon as they can during working hours. For something urgent, please call us.";
-export const ATTACHMENT_REPLY = "For your safety please don't send documents or photos on WhatsApp. Upload them securely inside your request on our website, or bring them to the centre. Reply “menu” for options.";
+export const HUMAN_REPLY = "🙏 आपकी बात टीम के website inbox में चिह्नित कर दी गई है। / Your message is flagged for staff review. जवाब काम के समय उपलब्धता के अनुसार मिलेगा। Urgent सहायता के लिए दुकान पर कॉल करें।";
+export const ATTACHMENT_REPLY = "📎 आपने एक attachment/non-text message भेजा है। यह फ़ाइल अभी website inbox में save या preview नहीं होती। अपने service request के upload विकल्प का उपयोग करें। मदद के लिए 6 या document upload लिखें।";
 export const UNKNOWN_REPLY = "Sorry, I didn't catch that. Our team will look at your message too.\n\nReply 1–6, or “menu”:\n1 Charges · 2 Track · 3 Pay · 4 Documents · 5 Address · 6 Talk to us";

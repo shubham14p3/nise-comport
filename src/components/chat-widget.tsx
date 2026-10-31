@@ -1,5 +1,6 @@
 "use client";
 
+import { whatsappFaqReply, shopWhatsAppLink } from "@/lib/whatsapp-faq";
 import { FEATURES } from "@/lib/features";
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
@@ -247,6 +248,13 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
       void sendLead({ phone: number, message: text });
       return;
     }
+    const faq = whatsappFaqReply(text, window.location.origin);
+    if (faq) {
+      setMessages((list) => [...list, { id: newId(), from: "user", text }]);
+      setContext(text);
+      botSay({ text: faq.replace(/\*/g, ""), actions: [{ label: "दुकान से बात करें · Shop WhatsApp", href: shopWhatsAppLink(whatsapp, text), kind: "wa" }] });
+      return;
+    }
     const guide = findGuide(text);
     if (guide) { showGuide(guide, findVariant(guide, text).id, text); return; }
     const topic = matchTopic(text);
@@ -256,7 +264,7 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
     void loadSearchRecords().then((records) => {
       const found = matchServices(text, services, records);
       if (found.length) botSay({ text: t.matches, services: found, actions: [{ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${text}`), kind: "wa" }] });
-      else botSay({ text: t.noMatch, callback: true, actions: [{ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${text}`), kind: "wa" }, { label: t.callUs, href: `tel:${phone}`, kind: "tel" }] });
+      else botSay({ text: `${t.noMatch}\nटीम से मदद के लिए नीचे Shop WhatsApp खोलें। आपका सवाल पहले से भरा होगा; Send आप दबाएँ।`, callback: true, actions: [{ label: "दुकान से बात करें · Shop WhatsApp", href: shopWhatsAppLink(whatsapp, text), kind: "wa" }, { label: t.callUs, href: `tel:${phone}`, kind: "tel" }] });
     });
   }
 
