@@ -1,3 +1,4 @@
+import { transferStaffLogin } from "@/lib/staff-login-transfer";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireStaff } from "@/lib/auth";
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
 }
 
 const patchSchema = z.object({
-  id: z.uuid(),
+  id: z.uuid(), transferEmail: z.email().max(254).optional(),
   name: z.string().trim().max(100).optional(), email: z.string().trim().max(254).optional(), phone: z.string().trim().max(20).nullable().optional(),
   role: z.enum(["staff", "admin"]).optional(), permissions: z.array(z.string().max(40)).max(80).optional(),
   disabled: z.boolean().optional(), remove: z.boolean().optional(),
@@ -38,7 +39,11 @@ const patchSchema = z.object({
 export async function PATCH(request: NextRequest) {
   try {
     const actor = await requireStaff("admin");
-    const { id, resetPassword, resetPin, password, pin, delete: del, ...patch } = patchSchema.parse(await readJson(request));
+    const { id, transferEmail, resetPassword, resetPin, password, pin, delete: del, ...patch } = patchSchema.parse(await readJson(request));
+    if (transferEmail) {
+      if (del || resetPassword || resetPin || password !== undefined || pin !== undefined || Object.keys(patch).length) return NextResponse.json({ error: "Move staff access separately from other edits." }, { status: 400 });
+      return NextResponse.json({ ok: true, ...(await transferStaffLogin(id, transferEmail, actor)) });
+    }
     if (del) return NextResponse.json({ ok: true, ...(await deleteStaff(id, actor)) });
     if (resetPassword && resetPin) return NextResponse.json({ error: "Update the password and PIN separately." }, { status: 400 });
     if (resetPassword) return NextResponse.json({ ok: true, ...(await resetStaffPassword(id, password, actor)) });

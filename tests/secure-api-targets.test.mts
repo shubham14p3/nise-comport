@@ -49,3 +49,18 @@ test("writes stay unchanged and arbitrary operations remain rejected", () => {
   assert.equal(targetFor("toString", {}), null);
   assert.equal(targetFor("__proto__", {}), null);
 });
+
+test('inbox and claims gateway preserves calendar filters and independent pages', () => {
+  for (const operation of ['I5x2N8kQ3wT6', 'Z2n5G8yL6bK3']) {
+    const url = new URL(targetFor(operation, { from: '2026-10-29', to: '2026-10-31', feedPage: '4', leadPage: '2' })!.path, 'http://local.test');
+    assert.equal(url.searchParams.get('from'), '2026-10-29');
+    assert.equal(url.searchParams.get('to'), '2026-10-31');
+    if (operation === 'I5x2N8kQ3wT6') { assert.equal(url.searchParams.get('feedPage'), '4'); assert.equal(url.searchParams.get('leadPage'), '2'); }
+  }
+});
+
+test('counter comment reads preserve the exact visit and cursor; writes use a dedicated endpoint',()=>{
+ const target=targetFor('N4v7C2mP8qL5',{visitId:'visit-id',before:'cursor-id'});
+ const url=new URL(target!.path,'http://local.test');assert.equal(url.searchParams.get('visitId'),'visit-id');assert.equal(url.searchParams.get('before'),'cursor-id');
+ assert.deepEqual(targetFor('S8r3W6kL2pN9',{}),{method:'POST',path:'/api/counter-comments'});
+});

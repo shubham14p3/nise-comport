@@ -19,13 +19,13 @@ export function sendRequestWhatsApp(input: { name: string; phone: string | null;
   const staffTemplate = process.env.WHATSAPP_STAFF_TEMPLATE?.trim();
   const staffNumber = process.env.WHATSAPP_STAFF_NUMBER?.replace(/\D/g, "");
   after(async () => {
-    const lang = input.lang ?? "en";
+    const lang = process.env.WHATSAPP_TEMPLATE_LANG?.trim() || input.lang || "en";
     if (confirm && input.phone) {
       const result = await sendTemplate({ to: input.phone, template: confirm, lang, bodyParams: [input.name, input.reference, input.service] });
       if (!result.ok) console.error("[whatsapp] customer copy failed:", result.error);
     }
     if (staffTemplate && staffNumber) {
-      const result = await sendTemplate({ to: staffNumber, template: staffTemplate, lang: "en", bodyParams: [input.reference, input.service, `${input.name}${input.phone ? ` ${input.phone}` : ""}`, input.details.replace(/\s+/g, " ").slice(0, 900)] });
+      const result = await sendTemplate({ to: staffNumber, template: staffTemplate, lang: process.env.WHATSAPP_TEMPLATE_LANG?.trim() || "en", bodyParams: [input.reference, input.service, `${input.name}${input.phone ? ` ${input.phone}` : ""}`, input.details.replace(/\s+/g, " ").slice(0, 900)] });
       if (!result.ok) console.error("[whatsapp] shop copy failed:", result.error);
     }
   });
@@ -44,7 +44,7 @@ export function sendDbDownFallbackWhatsApp(input: { name: string; phone: string 
   if (!cloudApiConfigured() || !staffTemplate || !staffNumber) return;
   after(async () => {
     const summary = `DATABASE WAS DOWN — not saved, please follow up manually. ${input.email}${input.phone ? ` · ${input.phone}` : ""}. ${input.details}`.replace(/\s+/g, " ").slice(0, 900);
-    const result = await sendTemplate({ to: staffNumber, template: staffTemplate, lang: "en", bodyParams: ["DB-DOWN", input.service, input.name, summary] });
+    const result = await sendTemplate({ to: staffNumber, template: staffTemplate, lang: process.env.WHATSAPP_TEMPLATE_LANG?.trim() || "en", bodyParams: ["DB-DOWN", input.service, input.name, summary] });
     if (!result.ok) console.error("[whatsapp] db-down fallback failed too:", result.error);
   });
 }
@@ -61,7 +61,7 @@ export function sendStatusWhatsApp(input: { name: string; phone: string | null; 
   const template = process.env.WHATSAPP_STATUS_TEMPLATE?.trim();
   if (!template) return;
   after(async () => {
-    const result = await sendTemplate({ to: input.phone!, template, lang: input.lang ?? "en", bodyParams: [input.name, input.reference, input.service, input.status] });
+    const result = await sendTemplate({ to: input.phone!, template, lang: process.env.WHATSAPP_TEMPLATE_LANG?.trim() || input.lang || "en", bodyParams: [input.name, input.reference, input.service, input.status] });
     if (!result.ok) console.error("[whatsapp] status update failed:", result.error);
   });
 }
@@ -77,7 +77,7 @@ export function sendOfficialReferenceWhatsApp(input: { name: string; phone: stri
   const template = process.env.WHATSAPP_OFFICIAL_REF_TEMPLATE?.trim();
   if (!template) return;
   after(async () => {
-    const result = await sendTemplate({ to: input.phone!, template, lang: input.lang ?? "en", bodyParams: [input.name, input.reference, input.officialReferenceLabel, input.officialReference] });
+    const result = await sendTemplate({ to: input.phone!, template, lang: process.env.WHATSAPP_TEMPLATE_LANG?.trim() || input.lang || "en", bodyParams: [input.name, input.reference, input.officialReferenceLabel, input.officialReference] });
     if (!result.ok) console.error("[whatsapp] official reference message failed:", result.error);
   });
 }
@@ -92,7 +92,30 @@ export function sendReviewRequestWhatsApp(input: { name: string; phone: string |
   const template = process.env.WHATSAPP_REVIEW_TEMPLATE?.trim();
   if (!template) return;
   after(async () => {
-    const result = await sendTemplate({ to: input.phone!, template, lang: input.lang ?? "en", bodyParams: [input.name, input.reference, input.service, input.reviewLink] });
+    const result = await sendTemplate({ to: input.phone!, template, lang: process.env.WHATSAPP_TEMPLATE_LANG?.trim() || input.lang || "en", bodyParams: [input.name, input.reference, input.service, input.reviewLink] });
     if (!result.ok) console.error("[whatsapp] review request failed:", result.error);
+  });
+}
+
+/** A separate payment template is optional; caller retains the existing status-template fallback. */
+export function sendPaymentRequestWhatsApp(input: { name: string; phone: string | null; reference: string; service: string; amountPaise: number }) {
+  const template = process.env.WHATSAPP_PAYMENT_TEMPLATE?.trim();
+  if (!cloudApiConfigured() || !input.phone || !template) return false;
+  after(async () => {
+    const result = await sendTemplate({ to: input.phone!, template, lang: process.env.WHATSAPP_TEMPLATE_LANG?.trim() || "en",
+      bodyParams: [input.name, (input.amountPaise / 100).toFixed(2), input.service, input.reference] });
+    if (!result.ok) console.error("[whatsapp] payment request failed:", result.error);
+  });
+  return true;
+}
+
+/** Acknowledges an explicitly requested service callback, separate from marketing consent. */
+export function sendCallbackWhatsApp(input: { name: string; phone: string; service: string }) {
+  const template = process.env.WHATSAPP_CALLBACK_TEMPLATE?.trim();
+  if (!cloudApiConfigured() || !template) return;
+  after(async () => {
+    const result = await sendTemplate({ to: input.phone, template, lang: process.env.WHATSAPP_TEMPLATE_LANG?.trim() || "en",
+      bodyParams: [input.name, input.service] });
+    if (!result.ok) console.error("[whatsapp] callback acknowledgement failed:", result.error);
   });
 }

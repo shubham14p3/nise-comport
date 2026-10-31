@@ -3,12 +3,12 @@
 import { ArrowRight, Check, Copy, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound } from "lucide-react";
 import { FormEvent, useRef, useState } from "react";
 import { checkMobile, pinProblem, typedMobile } from "@/lib/mobile-login-core";
-import { passwordProblem, PASSWORD_MIN } from "@/lib/validation";
+import { looksLikeEmail, passwordProblem, PASSWORD_MIN } from "@/lib/validation";
 import Link from "next/link";
 import { secureResult } from "@/lib/secure-api-client";
 import { whatsappHref } from "@/lib/public-contact";
 
-type Result = { error?: string; fields?: Record<string, string>; pin?: string; hasRecords?: boolean; requiresOtp?: boolean };
+type Result = { error?: string; fields?: Record<string, string>; pin?: string; hasRecords?: boolean; requiresOtp?: boolean; testLoginEmail?: string };
 
 /** Sign in (mobile number + 6-digit PIN) or sign up (mobile number + name → a PIN is made and shown once). */
 export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }: { mode: "signin" | "signup"; onDone: () => void | Promise<void>; recoveryEnabled?: boolean }) {
@@ -20,7 +20,7 @@ export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }
   const [pinIdentity, setPinIdentity] = useState<"mobile" | "email">("mobile");
   const [emailPin, setEmailPin] = useState("");
   const [error, setError] = useState(""); const [fields, setFields] = useState<Record<string, string>>({});
-  const [created, setCreated] = useState<{ pin: string; hasRecords: boolean } | null>(null);
+  const [created, setCreated] = useState<{ pin: string; hasRecords: boolean; testLoginEmail?: string } | null>(null);
   const [saved, setSaved] = useState(false); const [copied, setCopied] = useState(false);
   const submitting = useRef(false);
   const navigating = useRef(false);
@@ -35,7 +35,7 @@ export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }
     const byEmailPin = mode === "signin" && credential === "pin" && pinIdentity === "email";
     const mobile = byEmailPin ? null : checkMobile(phone);
     if (byEmailPin) {
-      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(emailPin.trim())) problems.email = "Enter your account email address.";
+      if (!looksLikeEmail(emailPin.trim())) problems.email = "Enter your account email address.";
     } else if (mobile && !mobile.ok) problems.phone = mobile.error;
     if (mode === "signin") {
       if (credential === "pin") { const bad = pinProblem(pin); if (bad) problems.pin = bad; }
@@ -61,7 +61,7 @@ export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }
         passwordSignIn ? { email: mobile && mobile.ok ? mobile.e164 : "", password } : body,
       );
       if (!ok) { setFields(result.fields ?? {}); setError(result.error ?? "Something went wrong. Please try again."); return; }
-      if (mode === "signup" && result.pin) { setCreated({ pin: result.pin, hasRecords: Boolean(result.hasRecords) }); return; }
+      if (mode === "signup" && result.pin) { setCreated({ pin: result.pin, hasRecords: Boolean(result.hasRecords), testLoginEmail: result.testLoginEmail }); return; }
       if (result.requiresOtp) {
         setError("Your email address must be verified first. Choose email sign-in and enter the code we sent, or sign in with your existing PIN.");
         return;
@@ -84,32 +84,32 @@ export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }
     <h2 className="pin-reveal__title">Your PIN</h2>
     <p>This is how you sign in next time. We show it only once and keep just a scrambled copy, so write it down or take a screenshot.</p>
     <div className="pin-reveal__box" aria-live="polite"><b>{created.pin}</b><button type="button" className="btn btn--ghost btn--sm" onClick={() => void copyPin()}>{copied ? <Check size={15}/> : <Copy size={15}/>}{copied ? "Copied" : "Copy"}</button></div>
+    {created.testLoginEmail && <div className="alert alert--info"><b>Local signup test account</b><p>Sign in later with Email + PIN: <strong>{created.testLoginEmail}</strong>. Your original account is unchanged. This test account has no verified mobile or access to its records. Delete this test account when finished; it is not merged automatically.</p></div>}
     {created.hasRecords && <p className="alert alert--success" role="status">We found earlier work under this number. Our team will check it with you before showing it. Never share this PIN with anyone, including staff.</p>}
     <label className="check-row"><input type="checkbox" checked={saved} onChange={(e) => setSaved(e.target.checked)}/> I have saved my PIN</label>
     <button type="button" className="btn btn--primary btn--lg btn--block" disabled={!saved || busy} onClick={() => { if (submitting.current || navigating.current) return; navigating.current = true; setBusy(true); void onDone(); }}>Continue<ArrowRight size={18}/></button>
   </div>;
 
   return <form onSubmit={submit} className="auth__form" aria-busy={busy} noValidate>
-    {mode === "signin" && credential === "pin" && <div className="auth__method" role="group" aria-label="PIN sign-in account identifier">
-      <button type="button" className="link-btn" aria-pressed={pinIdentity === "mobile"} disabled={busy} onClick={() => { setPinIdentity("mobile"); setFields({}); setError(""); }}>Mobile + PIN</button>
-      <span aria-hidden="true"> · </span>
-      <button type="button" className="link-btn" aria-pressed={pinIdentity === "email"} disabled={busy} onClick={() => { setPinIdentity("email"); setFields({}); setError(""); }}>Email + PIN</button>
+    {mode === "signin" && credential === "pin" && <div className="auth-choices" role="group" aria-label="PIN sign-in account identifier">
+      <button type="button" className="auth-choice" aria-pressed={pinIdentity === "mobile"} disabled={busy} onClick={() => { setPinIdentity("mobile"); setFields({}); setError(""); }} title="Use your registered mobile and permanent six-digit PIN. Shared number? Choose Email + PIN.">Mobile + PIN</button>
+      <button type="button" className="auth-choice" aria-pressed={pinIdentity === "email"} disabled={busy} onClick={() => { setPinIdentity("email"); setFields({}); setError(""); }} title="Use your account email with the same six-digit PIN. Best when a family or team shares a mobile.">Email + PIN</button>
     </div>}
     {mode === "signin" && credential === "pin" && pinIdentity === "email"
       ? <label className="field"><span className="field__label">Account email</span>
           <span className="input-wrap"><input type="email" autoComplete="username" maxLength={254} required value={emailPin} onChange={(e) => setEmailPin(e.target.value)} placeholder="you@example.com" aria-invalid={Boolean(fields.email)} autoFocus/></span>
-          <span className="field__hint">Use email + PIN when several team accounts share a contact number.</span>{fieldError("email")}
+          <span className="field__hint">Same six-digit account PIN; email identifies you when a number is shared.</span>{fieldError("email")}
         </label>
       : <label className="field"><span className="field__label">Mobile number</span>
           <span className="input-wrap"><span className="input-prefix" aria-hidden="true">+91</span>
             <input type="tel" inputMode="numeric" autoComplete="tel-national" maxLength={14} required value={phone} onChange={(e) => setPhone(typedMobile(e.target.value))} placeholder="98765 43210" aria-invalid={Boolean(fields.phone)} autoFocus/></span>
-          <span className="field__hint">10 digits, without +91 or 0.</span>{fieldError("phone")}
+          <span className="field__hint">10 digits. Shared number? Choose Email + PIN, or email + password from email sign-in.</span>{fieldError("phone")}
         </label>}
-    {mode === "signin" && <div className="auth__method" role="group" aria-label="Choose mobile sign-in secret">
-      <button type="button" className="link-btn" aria-pressed={credential === "pin"} disabled={busy} onClick={() => { setCredential("pin"); setError(""); setFields({}); }}>6-digit PIN</button>
-      <span aria-hidden="true"> · </span>
-      <button type="button" className="link-btn" aria-pressed={credential === "password"} disabled={busy} onClick={() => { setCredential("password"); setError(""); setFields({}); }}>Password</button>
+    {mode === "signin" && <div className="auth-choices" role="group" aria-label="Choose mobile sign-in secret">
+      <button type="button" className="auth-choice" aria-pressed={credential === "pin"} disabled={busy} onClick={() => { setCredential("pin"); setError(""); setFields({}); }} title="Your permanent six-digit account PIN. This is not a one-time OTP.">6-digit PIN</button>
+      <button type="button" className="auth-choice" aria-pressed={credential === "password"} disabled={busy} onClick={() => { setCredential("password"); setError(""); setFields({}); }} title="Use your account password, which can include letters, numbers and symbols. A password is different from your PIN.">Password</button>
     </div>}
+    {mode === "signin" && <p className="auth-choice-help" role="status">{credential === "password" ? "Your password is separate from your six-digit PIN." : "Use your saved six-digit PIN, not an OTP. The same PIN works with email or an unshared mobile."}</p>}
     {mode === "signin"
       ? credential === "pin" ? <label className="field"><span className="field__label">6-digit PIN</span>
         <span className="input-wrap"><LockKeyhole size={18}/><input type={showPin ? "text" : "password"} inputMode="numeric" autoComplete="current-password" maxLength={6} required value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="••••••" aria-invalid={Boolean(fields.pin)}/>

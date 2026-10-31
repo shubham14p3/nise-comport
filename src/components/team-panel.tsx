@@ -171,6 +171,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
   return <section className="admin-queue team-panel">
     <h2><UsersRound size={17}/> Team <span>{members?.length ?? "…"}</span></h2>
     <p className="admin-lead"><b>Owners</b> can do everything and manage the team. <b>Staff</b> see only the areas you tick. <b>Customers</b> never see this workspace.</p>
+    <p className="fine">Staff and owners use the same account for their own customer profile. Family members may share a contact mobile, but must use separate email logins and credentials. A shared number cannot select an account for sign-in. Changing a password does not change the six-digit PIN.</p>
     {error && <div className="alert alert--error" role="alert">{error}</div>}
     {notice && <div className="alert alert--success" role="status">{notice}</div>}
     {secret && <div className="alert alert--info" role="status">
@@ -180,7 +181,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
       {secret.pin && <div><span>6-digit PIN:</span> <code>{secret.pin}</code>{" "}
         <button type="button" className="btn btn--ghost btn--sm" onClick={() => void navigator.clipboard?.writeText(secret.pin ?? "")}><Copy size={14}/> Copy PIN</button></div>}
       <button type="button" className="btn btn--ghost btn--sm" onClick={() => setSecret(null)}>Hide credentials</button>
-      <p><small>Shown once in the owner panel and sent to their email. Do not share publicly.</small></p>
+      <p><small>Use the exact account email shown above. Password: choose email + password. PIN: choose Email + PIN. A shared mobile cannot identify the account. Shown once here and sent to their email. Do not share publicly.</small></p>
     </div>}
     <label className="admin-team__search"><Search size={17} aria-hidden="true"/><input
       type="search" aria-label="Search staff and owners" placeholder="Find existing or new staff by name, email, mobile or permission…"
@@ -209,6 +210,10 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
           <div className="staff-card__actions">
             <button type="button" className="btn btn--primary btn--sm" disabled={locked} onClick={() => void saveEdit(member)}>{locked ? "Saving…" : "Save changes"}</button>
             <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={() => { setEditing(null); setEdit(null); }}>Cancel</button>
+            {member.role === 'staff' && edit.email.trim().toLowerCase() !== member.email.toLowerCase() && <button type="button" className="btn btn--ghost btn--sm" disabled={locked} onClick={async () => {
+              if (!window.confirm(`Move ${member.name}'s saved staff permissions to the existing customer login ${edit.email}? Confirm these are the SAME PERSON, not family members sharing a phone. The customer keeps their password, PIN, wallet and requests. The old staff login is disabled; its history stays separate. Unsaved edits are not copied. Afterward reset credentials on the new team entry if needed.`)) return;
+              if (await patch(member, { transferEmail: edit.email.trim() }, `Staff access moved to ${edit.email}. Use that account's existing credentials or reset them on its new team entry. The old login is disabled; history was not merged.`)) { setEditing(null); setEdit(null); }
+            }}>Use existing customer login for this staff member</button>}
           </div>
         </> : <>
           {member.role === "admin" ? <p className="admin-empty">Full access to every area.</p>
@@ -263,7 +268,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
     })}</div>
     {filteredMembers.length === 0 && members && <p className="admin-empty">No team accounts match this search. You can add a new member below.</p>}
     {filteredMembers.length > paging.pageSize && <AdminPager {...paging} label="team members"/>}
-    <details className="admin-accordion"><summary><UserPlus size={15}/> Add a person</summary>
+    <details className="admin-accordion"><summary><UserPlus size={15}/> Add a new person or existing customer</summary>
     <form className="team-add" onSubmit={add}>
       <h3><UserPlus size={17}/> Add a person</h3>
       <div className="form-grid">
@@ -277,7 +282,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
       {role === "staff" ? <><span className="field__label">What may they do?</span><PermissionBoxes value={permissions} onChange={setPermissions}/></>
         : <p className="field__hint">Owners can open every area and manage the team. Only add people you fully trust.</p>}
       <button className="btn btn--primary" disabled={busy === "add" || (role === "staff" && !permissions.length)}>{busy === "add" ? <LoaderCircle size={16} className="api-activity__spin"/> : <UserPlus size={16}/>}{busy === "add" ? "Adding…" : role === "admin" ? "Add owner" : "Add to team"}</button>
-      <p className="field__hint">New team accounts with a mobile number get a temporary PIN and password by email. Existing customers keep their account history and password; an explicitly entered PIN is set for that account.</p>
+      <p className="field__hint">New team accounts with a mobile number get a temporary PIN and password by email. To add an existing customer, enter their exact account email. Their customer profile, requests, wallet, password and existing PIN are kept; an explicitly entered PIN replaces that account’s PIN. Matching a mobile number alone never links accounts.</p>
     </form></details>
   </section>;
 }

@@ -8,7 +8,7 @@ import { secureApi, SecureApiError } from "@/lib/secure-api-client";
 const CUSTOMERS_OP = "F8k3Q2mW9xLz";
 
 type ContactChange = {
-  id: string; kind: string; status: string; newEmail: string | null; newPhone: string | null; requestedAt: string; requestedById: string; requestedBy: string;
+  customerId: string; id: string; kind: string; status: string; newEmail: string | null; newPhone: string | null; requestedAt: string; requestedById: string; requestedBy: string;
   customerName: string; customerEmail: string | null; customerPhone: string | null; decisionNote: string | null; decidedAt: string | null; decidedBy: string | null;
 };
 
@@ -85,6 +85,7 @@ export default function FindCustomerPanel() {
     const result = await run(() => secureApi<{ customers: Customer[] }>(CUSTOMERS_OP, { action: "search", query: term }));
     if (!result) return;
     setResults(result.customers);
+    void loadChanges();
     setSelectedId(result.customers.length === 1 ? result.customers[0].id : null);
     setEditField(null);
     setIssued(null);
@@ -138,7 +139,8 @@ export default function FindCustomerPanel() {
     const value = editValue.trim();
     const label = editField === "email" ? "email address" : "mobile number";
     const shown = value ? (editField === "email" ? value : `+91 ${value}`) : "";
-    const question = value ? `Are you sure? Save this ${label} as ${shown}?` : `Are you sure? This removes the ${label} from the account.`;
+    const approvalNeeded = changes?.isAdmin !== true;
+    const question = approvalNeeded ? `Request admin approval to change this ${label} to ${shown || "not provided"}? Current details remain unchanged until approval.` : value ? `Are you sure? Save this ${label} as ${shown}?` : `Are you sure? This removes the ${label} from the account.`;
     if (!window.confirm(question)) return;
     const email = editField === "email" ? value : (selected.email && !selected.email.endsWith(".invalid") ? selected.email : "");
     const phone = editField === "phone" ? value : tenDigits(selected.phone);
@@ -149,7 +151,7 @@ export default function FindCustomerPanel() {
     setEditField(null);
     if (result.pending) {
       await loadChanges();
-      setNotice("Sent to an admin for approval. It changes only after another admin approves it.");
+      setNotice("Change requested — not applied yet. The old details remain active until an admin approves it in Approvals.");
       return;
     }
     await search();
@@ -209,6 +211,7 @@ export default function FindCustomerPanel() {
       </div>
 
       {selected ? <div className="fc-card">
+        {changes?.requests.filter(request => request.customerId === selected.id && request.status === "pending").map(request => <div key={request.id} className="alert alert--info" role="status"><b>Pending admin approval — details are unchanged</b><p>{request.kind === "change" ? <>Requested email: {request.newEmail?.endsWith('.invalid') ? 'Not provided' : request.newEmail || 'Not provided'}<br/>Requested mobile: {request.newPhone || 'Not provided'}</> : 'Verification request is waiting for an admin.'}</p><small>An admin must approve this in the Approvals section below. Searching now will still show the currently saved details.</small></div>)}
         <h3 style={{ margin: "0 0 2px" }}>{selected.name}</h3>
         <small className="muted">Customer since {when(selected.createdAt)}</small>
         {selected.mustChangePassword && <div className="fc-badges"><span className="fc-badge">Must change password at sign-in</span></div>}
@@ -242,10 +245,10 @@ export default function FindCustomerPanel() {
           <b>Resend sign-in code</b>
           <div className="fc-row">
             <button type="button" className="btn btn--ghost btn--sm" disabled={busy || !selected.email} onClick={() => void resendEmail()}>Resend email code</button>
-            <button type="button" className="btn btn--ghost btn--sm" disabled title="Coming soon">Resend SMS code</button>
-            <button type="button" className="btn btn--ghost btn--sm" disabled title="Coming soon">Resend WhatsApp code</button>
+            <button type="button" className="btn btn--ghost btn--sm" disabled title="Not available from this panel">Resend SMS code</button>
+            <button type="button" className="btn btn--ghost btn--sm" disabled title="Not available from this panel">Resend WhatsApp code</button>
           </div>
-          <small className="muted">{selected.email ? "" : "Add an email to the account before a code can be sent. "}SMS and WhatsApp codes are coming soon.</small>
+          <small className="muted">{selected.email ? "" : "Add an email to the account before a code can be sent. "}This panel resends email codes only. Customers request configured SMS/WhatsApp verification from their signed-in profile.</small>
         </div>
       </div> : <div className="fc-card"><p className="muted" style={{ margin: 0 }}>Pick a customer on the left to see their details and actions.</p></div>}
     </div>}

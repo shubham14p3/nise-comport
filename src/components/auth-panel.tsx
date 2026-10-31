@@ -1,4 +1,5 @@
 "use client";
+import "./auth-compact.css";
 import SiteHeader from "@/components/site-header";
 import LanguageMenu from "@/components/language-menu";
 import CopyCode from "@/components/copy-code";
@@ -230,7 +231,7 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
   const heading = stage === "welcome" ? p.welcomeDone : stage === "otp" ? t.otpTitle : stage === "profile" ? x.finishTitle : mode === "signup" ? x.signupTitle : x.signinTitle;
   const benefitIcons = [BellRing, MapPin, Smartphone];
 
-  return <main className="auth"><SiteHeader/>
+  return <main className="auth auth--compact"><SiteHeader/>
     <div className="auth__bg" aria-hidden="true"><span className="blob blob--1"/><span className="blob blob--2"/><span className="blob blob--3"/></div>
     <div className="container auth__wrap">
       <section className="auth__visual">
@@ -248,7 +249,7 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
       <section className="auth__card" aria-labelledby="auth-heading">
         <div className="auth__lang"><span><Languages size={17}/>{t.language}</span><LanguageMenu locale={locale} label={t.language} inline/></div>
         <h1 id="auth-heading">{heading}</h1>
-        {stage !== "welcome" && <p className="auth__sub">{stage === "otp" ? <>{viaSms ? "We sent a 6-digit code to" : t.otpSub} <b>{email}</b>.{viaSms ? "" : ` ${t.otpSpam}`}</> : stage === "profile" ? x.finishSub : method === "mobile" ? (mode === "signup" ? "Start with your mobile number. We make you a 6-digit PIN." : "Enter your mobile number and 6-digit PIN.") : mode === "signup" ? x.signupSub : x.signinSub}</p>}
+        {stage !== "welcome" && <p className="auth__sub">{stage === "otp" ? <>{viaSms ? "We sent a 6-digit code to" : t.otpSub} <b>{email}</b>.{viaSms ? "" : ` ${t.otpSpam}`}</> : stage === "profile" ? x.finishSub : method === "mobile" ? (mode === "signup" ? "Start with your mobile number. We make you a 6-digit PIN." : "Choose your account and sign-in method below.") : mode === "signup" ? x.signupSub : x.signinSub}</p>}
         {mode === "signup" && (stage === "details" || stage === "profile") && <p className="gift-strip"><Gift size={18}/><span>{p.signupGift}</span><b>₹50</b></p>}
 
         {mode === "signin" && demoEnabled && stage === "details" && <div className="demo-card"><strong>Local preview login</strong><span>Email: <code>demo@nisecomport.test</code></span><span>Password: <code>LocalDemo#2026</code></span><button type="button" className="btn btn--ghost btn--sm" onClick={() => { setEmail("demo@nisecomport.test"); setPassword("LocalDemo#2026"); }}>Fill demo details</button><small>Preview only: this account is temporary and does not use the database or email.</small></div>}

@@ -219,7 +219,7 @@ async function applyContactChange(member: typeof users.$inferSelect, next: Conta
 }
 
 export type ContactChange = {
-  id: string; kind: string; status: string; newEmail: string | null; newPhone: string | null; requestedAt: string; requestedById: string; requestedBy: string;
+  customerId: string; id: string; kind: string; status: string; newEmail: string | null; newPhone: string | null; requestedAt: string; requestedById: string; requestedBy: string;
   customerName: string; customerEmail: string | null; customerPhone: string | null; decisionNote: string | null; decidedAt: string | null; decidedBy: string | null;
 };
 
@@ -238,7 +238,7 @@ async function loadContactChanges(actor: { id: string; role?: string | null }) {
   const requester = alias(users, "contact_requester");
   const decider = alias(users, "contact_decider");
   const rows = await db.select({
-    id: contactChangeRequests.id, kind: contactChangeRequests.kind, status: contactChangeRequests.status, newEmail: contactChangeRequests.newEmail,
+    customerId: contactChangeRequests.userId, id: contactChangeRequests.id, kind: contactChangeRequests.kind, status: contactChangeRequests.status, newEmail: contactChangeRequests.newEmail,
     newPhone: contactChangeRequests.newPhone, requestedAt: contactChangeRequests.requestedAt, requestedById: contactChangeRequests.requestedById,
     requestedBy: requester.name, decidedBy: decider.name, customerName: users.name, customerEmail: users.email, customerPhone: users.phone,
     decisionNote: contactChangeRequests.decisionNote, decidedAt: contactChangeRequests.decidedAt,

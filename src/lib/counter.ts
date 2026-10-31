@@ -6,7 +6,8 @@ import { sendEmailChangedNotice } from "@/lib/email";
 import { db } from "@/lib/db";
 import { isPlaceholderEmail } from "@/lib/mobile-login-core";
 import { PublicError } from "@/lib/errors";
-import { COUNTER_DISCOUNT_PERCENT } from "@/lib/counter-rules";
+import { getCounterPolicy } from "@/lib/counter-settings";
+import { counterAmounts } from "@/lib/counter-rules";
 import { cleanName, looksLikeEmail, normalizeEmail, normalizePhone } from "@/lib/validation";
 import { profileChanges, formatAuditChange } from "@/lib/customer-audit";
 
@@ -172,18 +173,18 @@ export async function customerForCounter(tx: Tx, phone: string, name: string | u
 }
 
 /**
- * Records one counter visit. The 10% discount comes out of the wallet, up to the balance.
+ * Records one counter visit. Apply the owner’s deduction or accumulation policy.
  * The customer pays the rest (collectPaise). The customer row is locked so two quick
  * entries can't spend the same balance twice.
  */
-export async function recordVisit(input: { staffId: string; phone: string; userId?: string; name?: string; email?: string; serviceSlug: string; serviceName: string; billRupees: number }) {
+export async function recordVisit(input: { staffId: string; phone: string; userId?: string; name?: string; email?: string; serviceSlug: string; serviceName: string; billRupees: number; walletMode?: "deduct" | "accumulate" }) {
   const billPaise = toPaise(input.billRupees);
+  const policy = await getCounterPolicy();
   return db.transaction(async (tx) => {
     const userId = await customerForCounter(tx, input.phone, input.name, input.email, input.userId);
     await tx.execute(sql`select id from users where id = ${userId} for update`);
     const balance = await walletPaise(tx, userId);
-    const discountPaise = Math.min(Math.floor((billPaise * COUNTER_DISCOUNT_PERCENT) / 100), balance);
-    const collectPaise = billPaise - discountPaise;
+    const { discountPaise, earnedPaise, collectPaise, balanceAfterPaise } = counterAmounts(billPaise, balance, input.walletMode ?? "deduct", policy);
     const [visit] = await tx.insert(counterVisits).values({
       userId, staffId: input.staffId, serviceSlug: input.serviceSlug, serviceName: input.serviceName,
       billPaise, discountPaise, walletPaise: discountPaise, collectPaise,
@@ -192,10 +193,11 @@ export async function recordVisit(input: { staffId: string; phone: string; userI
     if (discountPaise > 0) {
       await tx.insert(walletEntries).values({
         userId, amount: (discountPaise / 100).toFixed(2), kind: "debit",
-        description: `Counter: ${input.serviceName} (${COUNTER_DISCOUNT_PERCENT}% discount)`, reference: `CV-${visit.id}`,
+        description: `Counter: ${input.serviceName} (${policy.deductionPercent}% discount)`, reference: `CV-${visit.id}`,
       });
     }
-    return { visitId: visit.id, createdAt: visit.createdAt, billPaise, discountPaise, collectPaise, balanceAfterPaise: balance - discountPaise };
+    if (earnedPaise > 0) await tx.insert(walletEntries).values({ userId, amount: (earnedPaise / 100).toFixed(2), kind: "credit", description: `Counter: ${input.serviceName} (${policy.accumulationPercent}% accumulated)`, reference: `CV-EARN-${visit.id}` });
+    return { reference: `CV-${visit.id.toUpperCase()}`, visitId: visit.id, createdAt: visit.createdAt, billPaise, discountPaise, earnedPaise, collectPaise, balanceAfterPaise };
   });
 }
 

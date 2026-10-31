@@ -110,7 +110,7 @@ export default function CustomerManagementPanel(){
     }catch(err){setError(err instanceof Error?err.message:"Could not create customer account.");}
     finally{setBusy(false);}
   }
-  return <section className="admin-queue" aria-label="Admin customer accounts">
+  return <section className="admin-queue customer-accounts" aria-label="Admin customer accounts">
     <div className="admin-section-head"><h2><UserRound size={21}/> Customer accounts</h2><p>Owner-only account corrections and field-by-field history. Staff cannot access this page.</p></div>
     {error&&<p role="alert" className="alert alert--error">{error}</p>}
     {note&&<p role="status" className="alert alert--success">{note}</p>}
@@ -140,7 +140,7 @@ export default function CustomerManagementPanel(){
         </div>
       </li>)}</ol>}
     </div> : <>
-      <form className="admin-filters" onSubmit={(event:FormEvent)=>{event.preventDefault();void search(q,showArchived,0);}}>
+      <form className="admin-filters customer-search" onSubmit={(event:FormEvent)=>{event.preventDefault();void search(q,showArchived,0);}}>
         <label className="field"><span className="field__label">Search name, email or mobile</span>
           <input type="search" value={q} onChange={e=>setQ(e.target.value)} placeholder="Customer details" maxLength={80}/></label>
         <button className="btn btn--primary" type="submit" disabled={busy}><Search size={17}/> Search</button>
@@ -167,7 +167,7 @@ export default function CustomerManagementPanel(){
       <AdminPager page={page} pageSize={pageSize} total={total} onPage={(next)=>void search(appliedQ,showArchived,next)} onPageSize={(size)=>void search(appliedQ,showArchived,0,size)} label="customers"/>
       <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Customer</th><th>Email</th><th>Mobile</th><th>Status</th><th>Details</th></tr></thead><tbody>
         {list.map(u=><tr key={u.id}><td><strong>{u.name}</strong></td><td>{u.email}</td><td>{u.phone??"—"}</td><td>{u.archived?"Archived":u.disabled?"Disabled":"Active"}</td>
-          <td className="customer-admin-actions"><button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={()=>void open(u.id)}>Open / History</button><button type="button" className="btn btn--primary btn--sm" disabled={busy||u.archived||u.disabled} onClick={()=>void previewCustomer(u.id)}><Eye size={15}/> Impersonate</button></td></tr>)}
+          <td><div className="customer-admin-actions"><button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={()=>void open(u.id)}>Open / History</button><button type="button" className="btn btn--primary btn--sm" disabled={busy||u.archived||u.disabled} onClick={()=>void previewCustomer(u.id)}><Eye size={15}/> Impersonate</button></div></td></tr>)}
       </tbody></table></div>
       {!list.length&&<p className="field__hint">No matching customers.</p>}
     </>}

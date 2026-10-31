@@ -243,7 +243,6 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       if (draft.name.trim().length < 2) return t.errName;
       if (user === null && !draft.phone.trim() && !guest.email.trim()) return "Give a mobile number or an email address so we can reach you.";
       if (draft.phone.trim() ? !validPhone(draft.phone) : user !== null) return t.errPhone;
-      if (user === null && guest.whatsapp.trim() && !validPhone(guest.whatsapp)) return "Check the WhatsApp number.";
       if (user === null && guest.email.trim() && !/^\S+@\S+\.\S+$/.test(guest.email.trim())) return "Enter a valid email address.";
       if (activeIntake && Object.keys(intakeErrors).length) return Object.values(intakeErrors)[0];
       if (file && file.size > MAX_FILE_BYTES) return t.errFile;
@@ -298,7 +297,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   // Guests can only pick a way to reach them that they have actually given: mobile, WhatsApp number or email.
   const guestEmailOk = /^\S+@\S+\.\S+$/.test(guest.email.trim());
   const mobileOk = validPhone(draft.phone);
-  const whatsappOk = guest.whatsapp.trim() ? validPhone(guest.whatsapp) : mobileOk;
+  const whatsappOk = mobileOk;
   function contactOptionAvailable(option: Contact) {
     if (user !== null) return true;
     return option === "email" ? guestEmailOk : option === "phone" ? mobileOk : whatsappOk;
@@ -319,7 +318,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         name: draft.name.trim(),
         phone: draft.phone.trim() || undefined,
         email: guest.email.trim() || undefined,
-        whatsapp: guest.whatsapp.trim() || undefined,
+        whatsapp: draft.phone.trim() || undefined,
         preferredContact: contactChoice,
         consentTerms: true,
         consentContact: true,
@@ -489,7 +488,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
           <label className="field"><span className="field__label">{t.name}</span><input value={draft.name} onChange={(event) => update({ name: event.target.value.replace(/[^\p{L}\p{M}\s.'-]/gu, "") })} onBlur={captureLead} autoComplete="name" maxLength={100} required aria-invalid={nameBad}/>{nameBad && <span className="field__error">{t.errName}</span>}</label>
           <label className="field"><span className="field__label">{t.phone}</span><span className="input-wrap"><span className="input-prefix">+91</span><input value={draft.phone} onChange={(event) => update({ phone: event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16) })} inputMode="tel" autoComplete="tel-national" placeholder="98765 43210" onBlur={captureLead} aria-invalid={phoneBad}/></span>{phoneBad ? <span className="field__error">{t.errPhone}</span> : <span className="field__hint">{t.phoneHint}</span>}</label>
           <label className="field"><span className="field__label">Email (optional)</span><input type="email" inputMode="email" autoComplete="email" value={user === null ? guest.email : draft.email} onChange={(event) => { const value = event.target.value.trim(); if (user === null) setGuest((current) => ({ ...current, email: value })); else update({ email: value }); }} placeholder="name@example.com" aria-invalid={emailBad}/>{emailBad && <span className="field__error">Enter a valid email address.</span>}</label>
-          {user === null && <label className="field"><span className="field__label">WhatsApp number (optional)</span><span className="input-wrap"><span className="input-prefix">+91</span><input value={guest.whatsapp} onChange={(event) => setGuest((current) => ({ ...current, whatsapp: event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16) }))} inputMode="tel" autoComplete="off" placeholder="Same as mobile"/></span><span className="field__hint">Leave blank to use your mobile number.</span></label>}
+          {user === null && <label className="field"><span className="field__label">WhatsApp number</span><input type="tel" value={draft.phone} readOnly/><span className="field__hint">Same as your mobile number.</span></label>}
         </div>
         <fieldset className="field"><legend className="field__label">{t.contactVia}</legend><div className="seg">
           {(["whatsapp", "phone", "email"] as Contact[]).map((option) => <button key={option} type="button" className={contactChoice === option ? "is-active" : undefined} aria-pressed={contactChoice === option} disabled={!contactOptionAvailable(option)} onClick={() => update({ contact: option })}>{option === "whatsapp" ? <WhatsAppIcon size={16}/> : null}{option === "whatsapp" ? t.viaWhatsapp : option === "phone" ? t.viaPhone : t.viaEmail}</button>)}

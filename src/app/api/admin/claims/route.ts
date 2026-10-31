@@ -1,3 +1,4 @@
+import { inboxDateRange } from "@/lib/inbox-dates";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requirePermission } from "@/lib/auth";
@@ -12,10 +13,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** Record requests waiting for approval and "this isn't me" reports. */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await requirePermission("records");
-    return NextResponse.json(await staffClaims(), { headers: { "cache-control": "private, no-store" } });
+    let dates;
+    try { dates = inboxDateRange(request.nextUrl.searchParams.get("from") ?? "", request.nextUrl.searchParams.get("to") ?? ""); } catch { throw new PublicError("Invalid date range. Use dates from 2000 through today.", 400); }
+    return NextResponse.json(await staffClaims(dates), { headers: { "cache-control": "private, no-store" } });
   } catch (error) { return apiError(error); }
 }
 

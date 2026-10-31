@@ -51,6 +51,8 @@ function MessageText({ text }: { text: string }) {
 export default function MailClient({ mode, onUnread }: { mode: "customer" | "staff"; onUnread?: (count: number) => void }) {
   const staff = mode === "staff";
   const boxes = staff ? STAFF_BOXES : CUSTOMER_BOXES;
+  const [checkedMail, setCheckedMail] = useState<string[]>([]);
+  const [deletingMail, setDeletingMail] = useState(false);
   const [meta, setMeta] = useState<MailMeta | null>(null);
   const [box, setBox] = useState(boxes[0].id);
   const [search, setSearch] = useState("");
@@ -87,6 +89,7 @@ export default function MailClient({ mode, onUnread }: { mode: "customer" | "sta
     try {
       const result = await secureApi<{ tickets: MailTicketSummary[]; nextBefore: string | null }>(OP.read, { view: "list", box, q: query, ...(before ? { before } : {}) });
       if (request !== listRequest.current) return;
+      if (reset) setCheckedMail(ids => ids.filter(id => result.tickets.some(ticket => ticket.id === id)));
       setTickets((current) => reset ? result.tickets : [...current, ...result.tickets]);
       setNext(result.nextBefore); setListState("ready"); setListError("");
     } catch (error) { if (request !== listRequest.current) return; setListError(errorText(error)); setListState("error"); }
@@ -175,7 +178,17 @@ export default function MailClient({ mode, onUnread }: { mode: "customer" | "sta
         {!query && !staff && <p>Write to us about a request, a payment, or anything you need help with.</p>}
         {!query && !staff && <button type="button" className="mbx-btn mbx-btn--primary" onClick={() => setCompose(true)}><PenSquare size={16}/> Write to us</button>}
       </div>}
+      {meta?.canDelete && tickets.length > 0 && <div className="mbx-search" style={{ padding: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <label><input type="checkbox" checked={tickets.slice(0, 100).every(ticket => checkedMail.includes(ticket.id))} onChange={event => setCheckedMail(event.target.checked ? tickets.slice(0, 100).map(ticket => ticket.id) : [])}/> Select loaded conversations (up to 100)</label>
+        <button type="button" className="mbx-btn mbx-btn--ghost mbx-btn--sm" disabled={deletingMail || checkedMail.length === 0} onClick={async () => {
+          if (!window.confirm(`Delete ${checkedMail.length} selected conversations from the website inbox? This does not delete messages from your email provider.`)) return;
+          setDeletingMail(true);
+          try { await secureApi(OP.write, { action: 'delete-selected', ids: checkedMail }); setCheckedMail([]); setSelected(null); setDetail(null); await Promise.all([loadList(true), loadMeta()]); flash('Selected conversations removed from the website inbox.'); }
+          catch (error) { flash(errorText(error)); } finally { setDeletingMail(false); }
+        }}>Delete selected ({checkedMail.length})</button>
+      </div>}
       {listState === "ready" && tickets.length > 0 && <ul className="mbx-rows">{tickets.map((ticket) => <li key={ticket.id}>
+        {meta?.canDelete && <label style={{ display: "block", padding: "4px 12px" }}><input type="checkbox" aria-label={`Select ${ticket.subject}`} checked={checkedMail.includes(ticket.id)} onChange={event => setCheckedMail(items => event.target.checked ? [...items, ticket.id].slice(0, 100) : items.filter(id => id !== ticket.id))}/> Select</label>}
         <button type="button" className={`mbx-row${selected === ticket.id ? " is-selected" : ""}${ticket.unread ? " is-unread" : ""}`} aria-current={selected === ticket.id ? "true" : undefined} onClick={() => void openTicket(ticket.id)}>
           <span className="mbx-avatar" aria-hidden="true">{initials(staff ? ticket.fromName || ticket.fromEmail : "NC")}</span>
           <span className="mbx-row__main">
@@ -223,8 +236,8 @@ function StoragePanel({ meta, onSync, syncing }: { meta: MailMeta; onSync: () =>
     </>}
     <h3><Mail size={14} aria-hidden="true"/> Support mailbox</h3>
     {meta.mailboxConnected
-      ? <p>{meta.supportAddress}<br/><small>{meta.sync?.lastError ? `Last check failed: ${meta.sync.lastError}` : meta.sync?.lastRunAt ? `Checked ${listTime(meta.sync.lastRunAt)}` : "Not checked yet"}</small></p>
-      : <p><small>Incoming mailbox not configured. Sending email (SMTP) is separate. Set MAIL_IMAP_HOST, MAIL_IMAP_USER and MAIL_IMAP_PASSWORD in cPanel, or enter the IMAP fields under Admin → System & connections → Email. The IMAP account must own the support address.</small></p>}
+      ? <p>{meta.supportAddress}<br/><small>{meta.mailboxSource === "vault" ? "Saved Email integration" : "Server IMAP settings"} · {meta.sync?.lastError ? `Last check failed: ${meta.sync.lastError}` : meta.sync?.lastRunAt ? `Checked ${listTime(meta.sync.lastRunAt)}` : "Not checked yet"}</small></p>
+      : <p><small>{meta.mailboxError || "Incoming mailbox not configured."} Sending email (SMTP) is separate. Set MAIL_IMAP_HOST, MAIL_IMAP_USER and MAIL_IMAP_PASSWORD in cPanel, or enter the IMAP fields under Admin → System & connections → Email. The IMAP account must own the support address.</small></p>}
     {meta.mailboxConnected && <button type="button" className="mbx-btn mbx-btn--ghost mbx-btn--sm" disabled={syncing} onClick={onSync}><RefreshCw size={14} className={syncing ? "is-spinning" : undefined}/> Check now</button>}
   </div>;
 }

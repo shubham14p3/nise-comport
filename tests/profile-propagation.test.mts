@@ -35,3 +35,9 @@ test("Counter cannot edit a team account through customer correction",async()=>{
  await assert.rejects(counter.updateCounterCustomer(original.id,"Changed","",{id:"owner",name:"Owner"}),/Team account/);
  assert.equal(audits.length,0);assert.equal(account.name,original.name);
 });
+
+test('profile saves mirror mobile into WhatsApp even if an older client submits a different number',async()=>{
+ reset();account.phone='+919876543210';
+ const response=await profile.PATCH(new Request('http://test/api/profile',{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({name:original.name,phone:'+919876543210',whatsapp:'+918092766575'})}));
+ assert.equal(response.status,200);assert.equal(account.whatsapp,account.phone);
+});

@@ -12,7 +12,7 @@ import { qrSvg } from "@/lib/qr";
 import { enforceRate, identity } from "@/lib/rate-limit";
 import { canQuote } from "@/lib/review-workflow";
 import { deliverNotifications, queueNotification } from "@/lib/notifications";
-import { sendStatusWhatsApp } from "@/lib/whatsapp-alerts";
+import { sendPaymentRequestWhatsApp, sendStatusWhatsApp } from "@/lib/whatsapp-alerts";
 import { recordEvent } from "@/lib/requests";
 
 export type PaymentRow = typeof payments.$inferSelect;
@@ -125,7 +125,10 @@ export async function createPaymentRequest(input: { reference: string; amountPai
       });
       after(async()=>{await deliverNotifications([id]).catch(error=>console.error("[quote] notification delivery retry queued",error));});
     }catch(error){console.error("[quote] could not queue payment link email",error);}
-    sendStatusWhatsApp({name:customer.name,phone:customer.whatsapp??customer.phone,reference:request.reference,service:request.serviceName,status:"Quotation ready — pay through your account"});
+    const paymentNotice = { name: customer.name, phone: customer.whatsapp ?? customer.phone, reference: request.reference, service: request.serviceName, amountPaise: input.amountPaise };
+    if (!sendPaymentRequestWhatsApp(paymentNotice)) {
+      sendStatusWhatsApp({ ...paymentNotice, status: "Quotation ready — pay through your account" });
+    }
   }
   return payment;
 }

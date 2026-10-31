@@ -1,6 +1,6 @@
 "use client";
 
-import { Gift, MessageCircle, Smartphone, X, Mail, UserRound } from "lucide-react";
+import { Gift, Smartphone, X, Mail, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import { promptDue } from "@/lib/mobile-login-core";
 import { secureApi, secureResult } from "@/lib/secure-api-client";
@@ -43,7 +43,7 @@ export default function VerifyPrompt({ signedIn }: { signedIn: boolean }) {
       <h2 id="verify-title">Keep your account safe</h2>
       <p className="muted">Add these once so we can reach you and you can always get back in. Verified mobile: ₹{status.rewards.phone}. Verified email: ₹{status.rewards.email}. The reward is added to your welcome coupon (₹50 in all), which you can use on your orders.</p>
       {status.missing.includes("name") && <NameRow onSaved={refresh}/>}
-      {status.missing.includes("whatsapp") && <WhatsAppRow defaultValue={status.user.phone.replace(/^\+91/, "")} onSaved={refresh}/>}
+      {status.missing.includes("whatsapp") && <p className="fine">WhatsApp uses the same number as Mobile.</p>}
       {status.missing.includes("email") && <EmailRow reward={status.rewards.email} onVerified={refresh}/>}
       {status.missing.includes("mobile") && <MobileRow phone={status.user.phone.replace(/^\+91/, "")} smsEnabled={status.smsEnabled} whatsappEnabled={Boolean(status.whatsappEnabled)} reward={status.rewards.phone} onVerified={refresh}/>}
       <button type="button" className="btn btn--ghost btn--block" onClick={() => setOpen(false)}>Not now</button>
@@ -57,12 +57,6 @@ function NameRow({ onSaved }: { onSaved: () => void }) {
   const [name, setName] = useState(""); const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
   async function save() { setBusy(true); const { ok, result } = await secureResult<{ error?: string }>("H4p7D2vR9mQ1", { name }); setBusy(false); if (!ok) setError(result.error ?? "Could not save."); else onSaved(); }
   return <div className="verify-row"><label className="field"><span className="field__label"><UserRound size={15}/> Your name</span><span className="input-wrap"><input value={name} maxLength={100} onChange={(e) => setName(e.target.value)} autoComplete="name"/></span><Msg text={error}/></label><button type="button" className="btn btn--primary btn--sm" disabled={busy || name.trim().length < 2} onClick={() => void save()}>Save</button></div>;
-}
-
-function WhatsAppRow({ defaultValue, onSaved }: { defaultValue: string; onSaved: () => void }) {
-  const [value, setValue] = useState(defaultValue); const [error, setError] = useState(""); const [busy, setBusy] = useState(false);
-  async function save() { setBusy(true); const { ok, result } = await secureResult<{ error?: string }>("H4p7D2vR9mQ1", { whatsapp: value }); setBusy(false); if (!ok) setError(result.error ?? "Could not save."); else onSaved(); }
-  return <div className="verify-row"><label className="field"><span className="field__label"><MessageCircle size={15}/> WhatsApp number</span><span className="input-wrap"><span className="input-prefix">+91</span><input inputMode="numeric" maxLength={14} value={value} onChange={(e) => setValue(e.target.value.replace(/\D/g, "").slice(-10))} autoComplete="tel-national"/></span><Msg text={error}/></label><button type="button" className="btn btn--primary btn--sm" disabled={busy || value.length !== 10} onClick={() => void save()}>Save</button></div>;
 }
 
 function EmailRow({ reward, onVerified }: { reward: number; onVerified: () => void }) {
@@ -82,7 +76,7 @@ function MobileRow({ phone, smsEnabled, whatsappEnabled, reward, onVerified }: {
   const [unavailable, setUnavailable] = useState<("sms" | "whatsapp")[]>([]);
   const activeSms = smsEnabled && !unavailable.includes("sms");
   const activeWhatsapp = whatsappEnabled && !unavailable.includes("whatsapp");
-  if (!activeSms && !activeWhatsapp) return <p className="fine"><Smartphone size={14}/> Mobile code verification is coming soon. We will ask again then (₹{reward}).</p>;
+  if (!activeSms && !activeWhatsapp) return <p className="fine"><Smartphone size={14}/> Mobile code verification is unavailable right now. Please contact the shop for help.</p>;
   async function send(channel: "sms" | "whatsapp") {
     setBusy(true); setError("");
     const { ok, status, result } = await secureResult<{ error?: string }>("M8b5C1qJ7yL2", { action: "send", phone: value, channel });

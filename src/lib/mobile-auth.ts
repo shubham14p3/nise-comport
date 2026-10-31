@@ -7,7 +7,7 @@ import { endSessions, ensureClaim, matchedRecordCount } from "@/lib/claims";
 import { db } from "@/lib/db";
 import { PublicError, isUniqueViolation } from "@/lib/errors";
 import { logActivity } from "@/lib/activity";
-import { checkMobile, generatePin, loginPinHashForAccount, pinProblem, placeholderEmail } from "@/lib/mobile-login-core";
+import { checkMobile, localSignupTrial, generatePin, loginPinHashForAccount, pinProblem, placeholderEmail } from "@/lib/mobile-login-core";
 import { clearRate, enforceRate, hitRate, identity, peekRate, RATE_RULES } from "@/lib/rate-limit";
 import { cleanName, passwordProblem, looksLikeEmail, normalizeEmail } from "@/lib/validation";
 import { seal } from "@/lib/vault";
@@ -23,7 +23,7 @@ function mobileOrThrow(input: string) {
   return result;
 }
 
-const SAME_ANSWER = "Mobile number or PIN is incorrect.";
+const SAME_ANSWER = "Email/mobile or PIN is incorrect. If the mobile is shared, choose Email + PIN and use your own account email.";
 const publicUser = (user: Pick<User, "id" | "name" | "email">) => ({ id: user.id, name: user.name, email: user.email });
 
 /**
@@ -81,7 +81,8 @@ export async function mobileSignUp(input: { phone: string; name: string; passwor
   }
   await enforceRate(RATE_RULES.mobileSignupPerIpHour, identity("ip", ip), "Too many accounts were created from this network.");
   const [taken] = await db.select({ id: users.id }).from(users).where(and(eq(users.phone, e164), isNull(users.deletedAt))).limit(1);
-  if (taken) throw new PublicError("This number already has an account. Sign in with your PIN. If you forgot it, message us on WhatsApp and we will reset it.", 409, { code: "account_exists", fields: { phone: "This number already has an account." } });
+  const trial = Boolean(taken) && localSignupTrial(e164, process.env.NODE_ENV);
+  if (taken && !trial) throw new PublicError("This number already has an account. Sign in with your own credentials. For a separate family member, register using their own email and leave the optional mobile blank; do not sign in to someone else’s account.", 409, { code: "account_exists", fields: { phone: "This number already has an account." } });
   const pin = generatePin((below) => randomInt(0, below));
   // Existing mobile sign-ups retain PIN-only behavior. Customers who opt in to
   // password access get their own password hash rather than an unknowable random password.
@@ -90,23 +91,23 @@ export async function mobileSignUp(input: { phone: string; name: string; passwor
   ]);
   let created: User;
   try {
-    [created] = await db.insert(users).values({ name, email: placeholderEmail(digits), phone: e164, passwordHash, loginPinHash, signupMethod: "mobile", preferredContact: "whatsapp", passwordChangedAt: new Date() }).returning();
+    [created] = await db.insert(users).values({ name, email: trial ? `trial-${randomBytes(8).toString("hex")}@mobile.nisecomport.invalid` : placeholderEmail(digits), phone: trial ? null : e164, ...(trial ? { whatsapp: e164, role: "customer", name: `${name.slice(0, 82)} (signup test)` } : {}), passwordHash, loginPinHash, signupMethod: trial ? "local_test" : "mobile", preferredContact: "whatsapp", passwordChangedAt: new Date() }).returning();
   } catch (error) {
     if (isUniqueViolation(error)) throw new PublicError("This number already has an account. Sign in with your PIN.", 409, { code: "account_exists" });
     throw error;
   }
   await createSession(created.id);
-  const claim = await ensureClaim(created, pin).catch((error) => { console.error("[claims] could not check records", error); return null; });
+  const claim = trial ? null : await ensureClaim(created, pin).catch((error) => { console.error("[claims] could not check records", error); return null; });
   // Consent is asked only from brand-new customers; people already in the registers are handled by the owner.
-  if (!claim && !(await matchedRecordCount(e164).catch(() => 0)) && (input.whatsappConsent || input.emailConsent)) {
+  if (!trial && !claim && !(await matchedRecordCount(e164).catch(() => 0)) && (input.whatsappConsent || input.emailConsent)) {
     const now = new Date();
     await db.insert(contacts).values({
       name: name.slice(0, 100), phone: digits, source: "website sign-up",
       ...(input.whatsappConsent ? { consent: "opted_in", consentAt: now } : {}), ...(input.emailConsent ? { emailConsent: "opted_in", emailConsentAt: now } : {}),
     }).onConflictDoNothing();
   }
-  await logActivity({ kind: "signup", permission: "records", category: "records", title: `New sign-up: ${name}`, detail: `${e164} · mobile PIN account${claim ? " · has records" : ""}`, refType: "user", refId: created.id, actorId: created.id });
-  return { user: publicUser(created), pin, hasRecords: Boolean(claim) };
+  await logActivity({ kind: "signup", permission: "records", category: "records", title: `New sign-up: ${name}`, detail: `${e164} · ${trial ? "isolated local signup test" : "mobile PIN account"}${claim ? " · has records" : ""}`, refType: "user", refId: created.id, actorId: created.id });
+  return { user: publicUser(created), pin, hasRecords: Boolean(claim), ...(trial ? { testLoginEmail: created.email } : {}) };
 }
 
 /** Staff reset a customer's PIN: a new random PIN (shown once to staff), the old sessions end and the lock is cleared. */
@@ -114,7 +115,7 @@ export async function resetPin(staff: { id: string; name: string }, phoneInput: 
   const { e164, digits } = mobileOrThrow(phoneInput);
   // Staff may reset an explicitly enabled PIN regardless of original signup method.
   const found = await db.select().from(users).where(and(eq(users.phone, e164), isNotNull(users.loginPinHash), isNull(users.deletedAt), isNull(users.disabledAt))).limit(2);
-  if (found.length !== 1) throw new PublicError("No mobile-PIN account uses this number.", 404);
+  if (found.length !== 1) throw new PublicError("No unique active PIN account was found. For shared numbers, choose the exact account in Customers or Team and reset its PIN there.", 404);
   const pin = generatePin((below) => randomInt(0, below));
   await db.update(users).set({ loginPinHash: await hash(pin), updatedAt: new Date() }).where(eq(users.id, found[0].id));
   await db.update(recordClaims).set({ pinEnc: seal(pin) }).where(and(eq(recordClaims.userId, found[0].id), eq(recordClaims.status, "pending")));

@@ -4,31 +4,53 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Clock3, Eye, FileText, LoaderCircle, ShieldCheck, WalletCards, Store, Printer, MapPin, RefreshCcw } from "lucide-react";
 import { secureApi } from "@/lib/secure-api-client";
+import type { CustomerVoucher } from "@/lib/promo-view";
 import "./customer-preview-workspace.css";
 
 const OP = "V2a9N6sK4rD8";
 type Entry = { reference?: string; name?: string; description?: string; status?: string; kind?: string; amount?: string | number; createdAt: string; fulfillment?: string };
 type Preview = {
-  user: { id: string; name: string; email: string | null; phone: string | null; role: string; emailVerified: boolean; phoneVerified: boolean; city: string | null; state: string | null; postalCode: string | null };
+  user: { id: string; name: string; email: string | null; phone: string | null; role: string; whatsapp?: string | null; profileSummary?: string | null; preferredContact?: string; signupMethod?: string; createdAt?: string; updatedAt?: string; emailVerified: boolean; phoneVerified: boolean; city: string | null; state: string | null; postalCode: string | null };
   requests: Entry[]; jobs: Entry[]; visits: Entry[]; wallet: Entry[];
   addresses: { id: string; label: string; line1: string; city: string; state: string; postalCode: string }[];
   expiresAt: number;
 };
-type Section = "overview" | "requests" | "counter" | "prints" | "wallet" | "addresses";
+type Section = "overview" | "requests" | "counter" | "prints" | "wallet" | "addresses" | "records" | "history" | "vouchers" | "profile" | "security" | "help" | "messages";
 const sections: { id: Section; label: string; icon: typeof Eye }[] = [
   { id: "overview", label: "Overview", icon: Eye },
-  { id: "requests", label: "Requests", icon: FileText },
+  { id: "requests", label: "My requests", icon: FileText },
+  { id: "records", label: "My records", icon: FileText },
+  { id: "history", label: "Request history", icon: Clock3 },
   { id: "counter", label: "Counter visits", icon: Store },
   { id: "prints", label: "Print orders", icon: Printer },
   { id: "wallet", label: "Wallet", icon: WalletCards },
-  { id: "addresses", label: "Addresses", icon: MapPin },
+  { id: "vouchers", label: "Vouchers & offers", icon: WalletCards },
+  { id: "addresses", label: "Saved addresses", icon: MapPin },
+  { id: "profile", label: "Profile details", icon: Eye },
+  { id: "security", label: "Sign-in & privacy", icon: ShieldCheck },
+  { id: "help", label: "Get help", icon: Eye },
+  { id: "messages", label: "Messages", icon: FileText },
 ];
+type Extra = {
+  status?: string;
+  records?: { id: string; name: string; service: string; date: string | null; nextRenewal: string | null; vehicle: string | null }[];
+  vouchers?: CustomerVoucher[];
+  sessions?: { createdAt: string; expiresAt: string }[];
+  tickets?: { id: string; subject: string; status: string; number: number; createdAt: string }[];
+};
+type Thread = { ticket: { subject: string }; messages: { body: string; direction: string; authorName: string | null; createdAt: string }[] };
+const closed = new Set(["completed", "rejected", "cancelled", "closed"]);
 function prettyDate(value: string) { return new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }); }
 
 export default function CustomerPreviewWorkspace() {
   const router = useRouter();
   const [data, setData] = useState<Preview | null>(null);
   const [section, setSection] = useState<Section>("overview");
+  const [extras, setExtras] = useState<Partial<Record<Section, Extra>>>({});
+  const [extraError, setExtraError] = useState("");
+  const [extraLoading, setExtraLoading] = useState(false);
+  const [thread, setThread] = useState<Thread | null>(null);
+  const [threadLoading, setThreadLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [clock, setClock] = useState(() => Date.now());
@@ -52,6 +74,26 @@ export default function CustomerPreviewWorkspace() {
       router.refresh();
     });
   }, [expired, router]);
+  useEffect(() => {
+    if (!data || expired || !["records", "vouchers", "security", "messages"].includes(section) || extras[section]) return;
+    let active = true;
+    void Promise.resolve().then(async () => {
+      if (!active) return;
+      setExtraLoading(true); setExtraError("");
+      try {
+        const result = await secureApi<Extra>(OP, { action: "section", section });
+        if (active) setExtras(current => ({ ...current, [section]: result }));
+      } catch (e) { if (active) setExtraError(e instanceof Error ? e.message : "Could not load this section."); }
+      finally { if (active) setExtraLoading(false); }
+    });
+    return () => { active = false; };
+  }, [section, data, expired, extras]);
+  async function openThread(id: string) {
+    setThreadLoading(true); setExtraError("");
+    try { setThread(await secureApi<Thread>(OP, { action: "section", section: "messages", ticketId: id })); }
+    catch (e) { setExtraError(e instanceof Error ? e.message : "Could not load messages."); }
+    finally { setThreadLoading(false); }
+  }
   const remaining = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 
   async function end() {
@@ -101,12 +143,21 @@ export default function CustomerPreviewWorkspace() {
       </div>
       <div className="customer-preview__grid">
         <nav aria-label="Customer preview sections">{sections.map(({ id, label, icon: Icon }) =>
-          <button type="button" aria-current={section === id ? "page" : undefined} className={section === id ? "active" : ""} onClick={() => setSection(id)} key={id}><Icon size={18}/>{label}</button>)}</nav>
+          <button type="button" aria-current={section === id ? "page" : undefined} className={section === id ? "active" : ""} onClick={() => { setSection(id); setExtraError(""); }} key={id}><Icon size={18}/>{label}</button>)}</nav>
         <section className="customer-preview__main">
+          {extraError && <p role="alert" className="alert alert--error">{extraError}<button type="button" onClick={() => { setExtraError(""); setExtras(current => ({ ...current })); }}>Retry</button></p>}
+          {extraLoading && !extras[section] && ["records", "vouchers", "security", "messages"].includes(section) && <p role="status">Loading section…</p>}
+          {section === "records" && extras.records && <><h2>My records</h2><p>Record access: {extras.records.status}. Preview does not approve or claim records.</p>{extras.records.records?.length ? extras.records.records.map(r => <article className="preview-item" key={r.id}><div><strong>{r.service} · {r.name}</strong><small>{r.date ?? ""}{r.nextRenewal ? ` · Renewal ${r.nextRenewal}` : ""}{r.vehicle ? ` · ${r.vehicle}` : ""}</small></div></article>) : <p className="preview-empty">No approved records available to this customer.</p>}</>}
+          {section === "history" && <><h2>Request history</h2>{activity(data.requests.filter(r => closed.has(r.status ?? "")), "No completed or closed requests.")}<h3>Counter visits</h3>{activity(data.visits, "No counter visits.")}</>}
+          {section === "vouchers" && extras.vouchers && <><h2>Vouchers & offers</h2>{extras.vouchers.vouchers?.length ? extras.vouchers.vouchers.map(v => <article className="preview-item" key={v.code}><div><strong>{v.names.en} · {v.code}</strong><small>{v.discountType === "percent" ? `${v.discount}%` : `₹${v.discount}`} off · Minimum ₹{v.minimum} · {v.startsOn} – {v.endsOn}</small><small>{v.personal ? "Personal voucher" : "Public offer"}</small></div><span className="preview-status">{v.used ? "Used" : v.live ? "Available" : "Not active"}</span></article>) : <p>No vouchers available.</p>}<p>Voucher redemption is disabled in preview.</p></>}
+          {section === "profile" && <><h2>Profile details</h2><dl className="preview-details">{Object.entries({Name:data.user.name,Email:data.user.email,Mobile:data.user.phone,WhatsApp:data.user.whatsapp,City:data.user.city,State:data.user.state,"Postal code":data.user.postalCode,"Preferred contact":data.user.preferredContact,"Profile summary":data.user.profileSummary}).map(([label,value]) => <div key={label}><dt>{label}</dt><dd>{value || "Not provided"}</dd></div>)}</dl><p>Profile corrections are available from Admin → Customers.</p></>}
+          {section === "security" && <><h2>Sign-in & privacy</h2><p>Email {data.user.emailVerified ? "verified" : "unverified"} · Mobile {data.user.phoneVerified ? "verified" : "unverified"}</p><p>Sign-in method: {data.user.signupMethod ?? "Not recorded"}</p><p>Password, PIN, OTP, account deletion and device sign-out controls are unavailable in read-only preview.</p>{extras.security && <><h3>Active sign-in sessions</h3>{extras.security.sessions?.length ? extras.security.sessions.map((session,i) => <article className="preview-item" key={i}><div><b>Signed in {prettyDate(session.createdAt)}</b><small>Expires {prettyDate(session.expiresAt)}</small></div></article>) : <p>No active customer sessions.</p>}</>}</>}
+          {section === "help" && <><h2>Get help</h2><p>NiSE COMPORT · Kharangajhar, Telco Colony</p><p>Ground Floor, Singh Building, Shop No-3, Hanuman Mandir Road, Jamshedpur, Jharkhand 831004</p><p>Call / WhatsApp: +91 97712 19893</p><p>Customer messages can be inspected in Messages. Sending as the customer is disabled.</p></>}
+          {section === "messages" && extras.messages && <><h2>Messages</h2>{threadLoading && <p role="status">Loading conversation…</p>}{thread ? <><button type="button" className="btn btn--ghost" onClick={() => setThread(null)}>All conversations</button><h3>{thread.ticket.subject}</h3>{thread.messages.map((message,i) => <article className="preview-item" key={i}><div><strong>{message.direction === "in" ? "Customer" : message.authorName ?? "Service desk"}</strong><small>{prettyDate(message.createdAt)}</small><p className="preview-message">{message.body}</p></div></article>)}</> : extras.messages.tickets?.length ? extras.messages.tickets.map(ticket => <button type="button" className="preview-item preview-ticket" key={ticket.id} disabled={threadLoading} onClick={() => void openThread(ticket.id)}><span>NC-T{ticket.number} · {ticket.subject}</span><span className="preview-status">{ticket.status}</span></button>) : <p>No customer conversations.</p>}<p className="preview-empty">Showing up to 60 conversations and the latest 100 messages per conversation. Viewing does not mark messages read or send replies.</p></>}
           {section === "overview" && <><h2>Customer dashboard</h2><p className="preview-empty">What this registered account currently has on file.</p>
             <div className="customer-preview__metrics">{[["Requests shown",data.requests.length],["Counter visits shown",data.visits.length],["Print orders shown",data.jobs.length],["Wallet entries shown",data.wallet.length]].map(([label,value])=><div key={label}><b>{value}</b><small>{label}</small></div>)}</div>
             <h3>Latest requests</h3>{activity(data.requests.slice(0,5),"No online requests for this account.")}</>}
-          {section === "requests" && <><h2>Service requests</h2>{activity(data.requests,"No requests yet.")}</>}
+          {section === "requests" && <><h2>Service requests</h2>{activity(data.requests.filter(r => !closed.has(r.status ?? "")),"No active requests.")}</>}
           {section === "counter" && <><h2>Counter visits</h2>{activity(data.visits,"No counter visits linked to this account yet.")}</>}
           {section === "prints" && <><h2>Print orders</h2>{activity(data.jobs,"No print orders yet.")}</>}
           {section === "wallet" && <><h2>Wallet transactions</h2>{data.wallet.length ? <div className="preview-list">{data.wallet.map((entry,i)=><div className="preview-item" key={i}><div><strong>{entry.description ?? entry.kind}</strong><small>{prettyDate(entry.createdAt)}</small></div><b>{entry.kind === "debit" ? "−" : "+"}₹{entry.amount}</b></div>)}</div> : <p className="preview-empty">No wallet entries.</p>}</>}

@@ -187,7 +187,7 @@ export const couponBlocks = pgTable("coupon_blocks", {
 export const walletEntries = pgTable("wallet_entries", {
   id: uuid("id").defaultRandom().primaryKey(), userId: uuid("user_id").notNull().references(() => users.id), amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   kind: text("kind").notNull(), description: text("description").notNull(), reference: text("reference"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [index("wallet_entries_user_created_idx").on(table.userId, table.createdAt)]);
+}, (table) => [index("wallet_entries_user_created_idx").on(table.userId, table.createdAt), index("wallet_entries_reference_idx").on(table.reference)]);
 
 /** Walk-in visits recorded at the counter. Money is stored in whole paise. */
 export const counterVisits = pgTable("counter_visits", {
@@ -198,7 +198,7 @@ export const counterVisits = pgTable("counter_visits", {
   billPaise: integer("bill_paise").notNull(), discountPaise: integer("discount_paise").notNull(),
   walletPaise: integer("wallet_paise").notNull(), collectPaise: integer("collect_paise").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [index("counter_visits_user_created_idx").on(table.userId, table.createdAt)]);
+}, (table) => [index("counter_visits_user_created_idx").on(table.userId, table.createdAt), index("counter_visits_created_idx").on(table.createdAt, table.id), index("counter_visits_staff_created_idx").on(table.staffId, table.createdAt, table.id)]);
 
 /**
  * Wallet credits need a second admin's approval. Nothing reaches the customer's wallet until
@@ -821,3 +821,13 @@ export const siteSettings = pgTable("site_settings", {
   updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** Small, paged conversations attached only to in-person counter visits. */
+export const counterComments = pgTable('counter_comments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  visitId: uuid('visit_id').notNull().references(() => counterVisits.id, { onDelete: 'cascade' }),
+  authorId: uuid('author_id').notNull().references(() => users.id),
+  body: text('body').notNull(),
+  clientKey: uuid('client_key').notNull().unique(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, table => [index('counter_comments_visit_created_idx').on(table.visitId, table.createdAt, table.id)]);

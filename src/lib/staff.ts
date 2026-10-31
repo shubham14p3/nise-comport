@@ -206,7 +206,7 @@ export async function updateStaff(id: string, patch: StaffPatch, actor: { id: st
     if (!looksLikeEmail(email)) throw new PublicError("Enter a valid email address.", 400, { fields: { email: "Enter a valid email address." } });
     if (email !== member.email) {
       const [taken] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
-      if (taken) throw new PublicError("Another account already uses this email address.", 409, { fields: { email: "Already in use." } });
+      if (taken) throw new PublicError("This email belongs to a separate account. For the same person, use “Use existing customer login” to move staff access. Family members sharing a number must keep separate logins.", 409, { fields: { email: "Already in use." } });
       set.email = email; set.emailVerifiedAt = null; notes.push("email");
     }
   }

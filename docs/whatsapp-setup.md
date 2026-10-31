@@ -19,7 +19,7 @@ Limits: 40 messages per customer per hour. Replies are free-form text, which Wha
 
 ## One-time setup (Meta)
 1. Go to developers.facebook.com → create an app → type **Business** → add the **WhatsApp** product.
-2. Use a business phone number that is **not already on WhatsApp / WhatsApp Business app** (or delete that account first). Verify it by SMS or call.
+2. Use the dedicated API sender registered in Meta. Keep the shop number on the mobile app if that is your current setup; do not delete an existing account to follow this guide. Same-number coexistence requires a supported onboarding flow and is not enabled merely by setting credentials.
 3. Business verification (needed for higher limits): business name and address, Udyam certificate, PAN, a utility bill or bank statement, and your website `nisecomport.com`.
 4. Create a **System User** in Business Settings, give it the app and `whatsapp_business_messaging` and `whatsapp_business_management`, and generate a **permanent token** → `WHATSAPP_TOKEN`.
 5. From WhatsApp → API Setup copy the **Phone number ID** → `WHATSAPP_PHONE_NUMBER_ID`. App settings → Basic → **App secret** → `WHATSAPP_APP_SECRET`.
@@ -27,7 +27,7 @@ Limits: 40 messages per customer per hour. Replies are free-form text, which Wha
 7. WhatsApp → Configuration → Webhook: callback URL `https://www.nisecomport.com/api/whatsapp/webhook`, verify token as above, then subscribe to **messages**.
 8. Run `npm run db:migrate` (creates the chat log table).
 
-Costs: Meta charges per conversation category (service replies inside 24 hours are free; marketing/utility templates are charged). Check current rates in Meta's pricing page.
+Costs depend on the message category and applicable Meta pricing. Check your current WhatsApp Manager billing and Meta pricing documentation before enabling automatic templates.
 
 ## QR-scanned brochure (two messages)
 The landing page at `/welcome?src=poster` displays both the service catalogue and
@@ -48,3 +48,7 @@ instead of the `/welcome` landing page.
 
 ## Test
 Send "menu" from a personal phone to the business number. You should get the menu and see the chat in Admin → WhatsApp chats.
+
+## Approved notification templates and OTP
+
+See [the complete template submission pack](whatsapp-templates.md) for all nine formatted drafts, exact parameter order, configuration, callback/payment wiring and existing OTP verification safeguards. Drafts are not Meta approvals.

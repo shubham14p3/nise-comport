@@ -34,8 +34,7 @@ export async function PATCH(request: NextRequest) {
     if (name.length < 2 || name.length > 100) fields.name = "Enter your name (2–100 characters).";
     const phone = input.phone.trim() ? normalizePhone(input.phone) : null;
     if (input.phone.trim() && !phone) fields.phone = "Enter a valid phone number, e.g. 98765 43210.";
-    const whatsapp = input.whatsapp.trim() ? normalizePhone(input.whatsapp) : null;
-    if (input.whatsapp.trim() && !whatsapp) fields.whatsapp = "Enter a valid WhatsApp number, e.g. 98765 43210.";
+
     if (phone && phone !== user.phone) {
       const [other] = await db.select({ id: users.id }).from(users)
         .where(and(eq(users.phone, phone), sql`${users.id} <> ${user.id}`, sql`${users.deletedAt} is null`)).limit(1);
@@ -54,7 +53,7 @@ export async function PATCH(request: NextRequest) {
       if(!before)throw new PublicError("Account not found.",404);
       const [result]=await tx.update(users).set({
         name, phone, ...(phone === before.phone ? {} : { phoneVerifiedAt: null }),
-        whatsapp:whatsapp && whatsapp !==phone ? whatsapp:null,
+        whatsapp:phone,
         city:input.city||null,state:input.state||null,postalCode:input.postalCode||null,
         profileSummary:input.profileSummary||null,preferredContact:input.preferredContact,updatedAt:new Date(),
       }).where(guard).returning(returning);

@@ -93,26 +93,32 @@ async function whatsappViaFast2sms(mobile: string, code: string) {
 export async function sendOtpSms(e164: string, code: string, preferred?: string | null): Promise<OtpChannel | null> {
   const mobile = indianMobile(e164);
   if (!mobile) throw new PublicError("SMS codes can be sent to Indian mobile numbers only.", 400, { fields: { phone: "Enter an Indian mobile number, e.g. 98765 43210." } });
+  let vaultFailed = false;
   // Vault-configured WhatsApp OTP takes precedence when explicitly selected.
   if (preferred === "whatsapp") {
     const vault = await getIntegration("whatsapp").catch(() => null);
     if (vault?.token && vault.phoneId && vault.template) {
-      const components: unknown[] = [{ type: "body", parameters: [{ type: "text", text: code }] }];
-      if (vault.button !== "off") components.push({ type: "button", sub_type: "url", index: "0", parameters: [{ type: "text", text: code }] });
-      const response = await post(`https://graph.facebook.com/v23.0/${encodeURIComponent(vault.phoneId)}/messages`, {
-        method: "POST",
-        headers: { authorization: `Bearer ${vault.token}`, "content-type": "application/json" },
-        body: JSON.stringify({ messaging_product: "whatsapp", to: `91${mobile}`, type: "template",
-          template: { name: vault.template, language: { code: vault.language || "en" }, components } }),
-      });
-      const result = await response.json().catch(() => ({})) as { messages?: unknown[] };
-      if (!response.ok || !result.messages?.length) throw new PublicError("WhatsApp OTP could not be sent. Please use email or SMS.", 503);
-      return "whatsapp";
+      try {
+        const components: unknown[] = [{ type: "body", parameters: [{ type: "text", text: code }] }];
+        if (vault.button !== "off") components.push({ type: "button", sub_type: "url", index: "0", parameters: [{ type: "text", text: code }] });
+        const response = await post(`https://graph.facebook.com/v23.0/${encodeURIComponent(vault.phoneId)}/messages`, {
+          method: "POST",
+          headers: { authorization: `Bearer ${vault.token}`, "content-type": "application/json" },
+          body: JSON.stringify({ messaging_product: "whatsapp", to: `91${mobile}`, type: "template",
+            template: { name: vault.template, language: { code: vault.language || "en" }, components } }),
+        });
+        const result = await response.json().catch(() => ({})) as { messages?: unknown[] };
+        if (!response.ok || !result.messages?.length) throw new PublicError("WhatsApp OTP could not be sent. Please use email or SMS.", 503);
+        return "whatsapp";
+      } catch {
+        vaultFailed = true;
+        console.error("[otp] saved WhatsApp provider failed; trying configured fallback channels");
+      }
     }
   }
   const channels = orderChannels(preferred);
   if (!channels.length) {
-    if (process.env.NODE_ENV !== "production") { console.warn(`[sms] DEV ONLY: no SMS/WhatsApp provider set. Code for ${e164} is ${code}`); return null; }
+    if (!vaultFailed && process.env.NODE_ENV !== "production") { console.warn(`[sms] DEV ONLY: no SMS/WhatsApp provider set. Code for ${e164} is ${code}`); return null; }
     throw new PublicError("SMS codes are not switched on yet. Please use your email.", 503, { code: "sms_not_configured" });
   }
   for (const channel of channels) {
