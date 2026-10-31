@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MessageCircle, RefreshCw, Search, Send, WifiOff } from "lucide-react";
+import { createLatestRequest } from "@/lib/latest-request";
 import { secureApi } from "@/lib/secure-api-client";
 
 type Conversation = { phone: string; name: string | null; last: string; at: string; direction: string; needsHuman: boolean };
@@ -11,6 +12,8 @@ const SEND = "C5t9W2yM6kD8";
 
 /** Admin → WhatsApp chats: every customer conversation with the assistant, plus replies from staff. */
 export default function ChatsPanel() {
+  const selectedPhone = useRef<string | null>(null);
+  const chatRequest = useRef(createLatestRequest());
   const [list, setList] = useState<Conversation[] | null>(null);
   const [configured, setConfigured] = useState(true);
   const [open, setOpen] = useState<string | null>(null);
@@ -22,11 +25,13 @@ export default function ChatsPanel() {
   const [refreshing, setRefreshing] = useState(false);
 
   const loadList = useCallback(async () => {
-    try { const r = await secureApi<{ conversations: Conversation[]; configured: boolean }>(LIST); setList(r.conversations); setConfigured(r.configured); setOpen((current) => current ?? r.conversations[0]?.phone ?? null); setError(""); }
+    try { const r = await secureApi<{ conversations: Conversation[]; configured: boolean }>(LIST); setList(r.conversations); setConfigured(r.configured); if (selectedPhone.current === null) { selectedPhone.current = r.conversations[0]?.phone ?? null; setOpen(selectedPhone.current); } setError(""); }
     catch (e) { setError(e instanceof Error ? e.message : "Could not load chats."); }
   }, []);
   const loadChat = useCallback(async (phone: string) => {
-    try { setMessages((await secureApi<{ messages: Message[] }>(LIST, { phone })).messages); } catch (e) { setError(e instanceof Error ? e.message : "Could not load the chat."); }
+    if (phone !== selectedPhone.current) return;
+    const current = chatRequest.current.begin();
+    try { const result = await secureApi<{ messages: Message[] }>(LIST, { phone }); if (current() && phone === selectedPhone.current) { setMessages(result.messages); setError(""); } } catch (e) { if (current() && phone === selectedPhone.current) setError(e instanceof Error ? e.message : "Could not load the chat."); }
   }, []);
   useEffect(() => {
     void Promise.resolve().then(loadList);
@@ -37,11 +42,12 @@ export default function ChatsPanel() {
   }, [loadList]);
   useEffect(() => {
     if (!open) return;
+    const gate = chatRequest.current;
     void Promise.resolve().then(() => loadChat(open));
     // The list already refreshes; keep the currently open conversation live too.
     const pollChat = () => { if (document.visibilityState === "visible") void loadChat(open); };
     const timer = window.setInterval(pollChat, 10_000);
-    return () => window.clearInterval(timer);
+    return () => { gate.invalidate(); window.clearInterval(timer); };
   }, [open, loadChat]);
 
   const filtered = useMemo(() => (list ?? []).filter((item) =>
@@ -58,8 +64,8 @@ export default function ChatsPanel() {
     event.preventDefault();
     if (!open || !text.trim()) return;
     setBusy(true); setError("");
-    try { await secureApi(SEND, { phone: open, text }); setText(""); await loadChat(open); await loadList(); }
-    catch (e) { setError(e instanceof Error ? e.message : "Could not send."); } finally { setBusy(false); }
+    try { await secureApi(SEND, { phone: open, text }); if (selectedPhone.current === open) setText(""); await loadChat(open); await loadList(); }
+    catch (e) { if (selectedPhone.current === open) setError(e instanceof Error ? e.message : "Could not send."); } finally { setBusy(false); }
   }
 
   return <section className="admin-card wa-inbox">
@@ -77,7 +83,7 @@ export default function ChatsPanel() {
         <ul className="wa-inbox__list">
           {!list ? <li className="wa-inbox__empty">Loading conversations…</li> : !filtered.length ?
             <li className="wa-inbox__empty">{list.length ? "No matching conversations." : "No chats recorded yet. Check that Meta's messages webhook is subscribed and incoming messages reach this server."}</li> :
-            filtered.map((c) => <li key={c.phone}><button type="button" aria-current={open === c.phone ? "true" : undefined} className={open === c.phone ? "is-active" : ""} onClick={() => setOpen(c.phone)}>
+            filtered.map((c) => <li key={c.phone}><button type="button" aria-current={open === c.phone ? "true" : undefined} className={open === c.phone ? "is-active" : ""} onClick={() => { if (selectedPhone.current !== c.phone) { chatRequest.current.invalidate(); selectedPhone.current = c.phone; setMessages([]); setOpen(c.phone); } }}>
               <span className="wa-inbox__avatar">{(c.name || c.phone).charAt(0).toUpperCase()}</span>
               <span className="wa-inbox__contact"><span className="wa-inbox__name">{c.name || c.phone}{c.needsHuman && <span className="wa-inbox__flag">Needs reply</span>}</span>
                 <small>{c.name ? c.phone : new Date(c.at).toLocaleString("en-IN", {dateStyle:"short",timeStyle:"short"})}</small>

@@ -22,11 +22,12 @@ export default function BirthdayGreeting() {
   const locale = useLocale();
   const t = tr(locale);
   const path = usePathname();
+  const eligible = !skip(path);
   const [greeting, setGreeting] = useState<Greeting | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (skip(path)) return;
+    if (!eligible) return;
     let live = true;
     const check = async () => {
       try {
@@ -51,7 +52,7 @@ export default function BirthdayGreeting() {
     // The root layout persists after login, so retry when auth changes.
     window.addEventListener(SESSION_CHANGED, check);
     return () => { live = false; window.removeEventListener(SESSION_CHANGED, check); };
-  }, [path]);
+  }, [eligible]);
 
   const close = useCallback(() => {
     if (greeting) { try { localStorage.setItem(`nc-bday-${greeting.birthday}`, "1"); } catch { /* ignore */ } }
@@ -85,7 +86,7 @@ export default function BirthdayGreeting() {
           <small>{t(`Valid until ${dateLabel(coupon.until, "en")}. Use it once, on any service. It does not cover government fees or insurance premium.`, `${dateLabel(coupon.until, "hi")} तक मान्य। किसी भी सेवा पर एक बार इस्तेमाल करें। सरकारी शुल्क और बीमा प्रीमियम पर लागू नहीं।`, `${dateLabel(coupon.until, "bn")} পর্যন্ত বৈধ। যেকোনও পরিষেবায় একবার ব্যবহার করুন। সরকারি ফি ও বিমার প্রিমিয়ামে প্রযোজ্য নয়।`)}</small>
         </div>
         <div className="form-actions">
-          <Link className="btn btn--primary" href={`${lp(lang, "/services")}`} onClick={close}>{t("Use it on a service", "किसी सेवा पर इस्तेमाल करें", "একটি পরিষেবায় ব্যবহার করুন")}</Link>
+          <Link prefetch={false} className="btn btn--primary" href={`${lp(lang, "/services")}`} onClick={close}>{t("Use it on a service", "किसी सेवा पर इस्तेमाल करें", "একটি পরিষেবায় ব্যবহার করুন")}</Link>
           <button type="button" className="btn btn--ghost" onClick={close}>{t("Maybe later", "बाद में", "পরে")}</button>
         </div>
       </> : <div className="form-actions"><button type="button" className="btn btn--primary" onClick={close}>{t("Thank you", "धन्यवाद", "ধন্যবাদ")}</button></div>}

@@ -56,8 +56,8 @@ coverage/
 *.tar.gz
 *.tgz
 
-# Database backups hold customer data: never commit
-# backups/
+# Database backups hold customer data: ignore future exports (tracked history is unchanged).
+/backups/
 
 # Remembered Excel location for npm run records:update
 # .records-source.json

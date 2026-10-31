@@ -29,6 +29,6 @@ export default function OfferCard({ offer, locale = "en", variant = "full", appl
       {offer.tentative && <span>{p.tentative}</span>}
     </div>
     {variant === "full" && <p className="offer-card__terms">{offer.terms[locale]}</p>}
-    {!applies && <Link className="offer-card__cta" href={offer.href}>{offer.code ? p.useNow : t.claim}<ArrowRight size={16}/></Link>}
+    {!applies && <Link prefetch={false} className="offer-card__cta" href={offer.href}>{offer.code ? p.useNow : t.claim}<ArrowRight size={16}/></Link>}
   </article>;
 }

@@ -29,8 +29,14 @@ function previewCookie(value: string, maxAge: number) {
   return { name: PREVIEW_COOKIE, value, httpOnly: true, secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const, path: "/", maxAge, priority: "high" as const };
 }
+const previewColumns = {
+  id: users.id, name: users.name, email: users.email, phone: users.phone, role: users.role,
+  emailVerifiedAt: users.emailVerifiedAt, phoneVerifiedAt: users.phoneVerifiedAt,
+  city: users.city, state: users.state, postalCode: users.postalCode,
+  deletedAt: users.deletedAt, disabledAt: users.disabledAt,
+};
 async function findTarget(id: string, actor: { id: string; role: string; email: string }) {
-  const [target] = await db.select().from(users).where(and(eq(users.id, id), isNull(users.deletedAt), isNull(users.disabledAt))).limit(1);
+  const [target] = await db.select(previewColumns).from(users).where(and(eq(users.id, id), isNull(users.deletedAt), isNull(users.disabledAt))).limit(1);
   if (!target || target.role === "demo") throw new PublicError("An active customer account is needed for preview.", 404);
   if (target.id === actor.id) throw new PublicError("Open your own customer profile directly.", 400);
   if (target.role === "admin" && !isMainOwner(actor)) throw new PublicError("Only the primary owner can preview another owner's account.", 403);
@@ -38,7 +44,7 @@ async function findTarget(id: string, actor: { id: string; role: string; email: 
 }
 async function previewData(id: string, expiresAt: number) {
   const [[target], requests, jobs, visits, wallet, savedAddresses] = await Promise.all([
-    db.select().from(users).where(eq(users.id, id)).limit(1),
+    db.select(previewColumns).from(users).where(eq(users.id, id)).limit(1),
     db.select({ reference: serviceRequests.reference, name: serviceRequests.serviceName, status: serviceRequests.status, createdAt: serviceRequests.createdAt })
       .from(serviceRequests).where(eq(serviceRequests.userId, id)).orderBy(desc(serviceRequests.createdAt)).limit(60),
     db.select({ reference: printJobs.reference, status: printJobs.status, fulfillment: printJobs.fulfillment, createdAt: printJobs.createdAt })
@@ -62,8 +68,8 @@ async function previewData(id: string, expiresAt: number) {
     expiresAt,
   };
 }
-async function audit(actorId: string, targetId: string, event: string) {
-  await db.insert(activityLog).values({
+async function audit(actorId: string, targetId: string, event: string, executor: Pick<typeof db, "insert"> = db) {
+  await executor.insert(activityLog).values({
     kind: "staff", permission: "team", category: "customer-preview",
     title: event, detail: "Admin-only read-only customer preview; no customer login credentials used",
     actorId, refType: "customer-preview", refId: targetId,
@@ -98,19 +104,23 @@ export async function POST(request: NextRequest) {
         if (other) throw new PublicError("This email is already registered. Select the existing account.", 409);
       }
       const generated = email ?? `counter-${phone}@counter.invalid`;
-      const [created] = await db.insert(users).values({
-        name, phone, email: generated, passwordHash: await hash(randomBytes(32).toString("base64url")),
-        signupMethod: "mobile", preferredContact: "whatsapp",
-      }).returning({ id: users.id });
-      await audit(actor.id, created.id, "Administrator created a customer account for preview");
+      const created = await db.transaction(async tx => {
+        const [account] = await tx.insert(users).values({
+          name, phone, email: generated, passwordHash: await hash(randomBytes(32).toString("base64url")),
+          signupMethod: "mobile", preferredContact: "whatsapp",
+        }).returning({ id: users.id });
+        await audit(actor.id, account.id, "Administrator created a customer account for preview", tx);
+        return account;
+      });
       return NextResponse.json({ ok: true, userId: created.id, created: true });
     }
     if (input.action === "start") {
       const target = await findTarget(input.userId, actor);
-      const grant = createPreviewGrant(actor.id, target.id);
-      jar.set(previewCookie(grant, PREVIEW_MS / 1000));
+      const now = Date.now();
+      const grant = createPreviewGrant(actor.id, target.id, now);
       await audit(actor.id, target.id, "Administrator started customer preview");
-      return NextResponse.json({ ok: true, expiresAt: Date.now() + PREVIEW_MS });
+      jar.set(previewCookie(grant, PREVIEW_MS / 1000));
+      return NextResponse.json({ ok: true, expiresAt: now + PREVIEW_MS });
     }
     if (!existing) throw new PublicError("The customer preview expired. Return to Customers to start another.", 401);
     const target = await findTarget(existing.target, actor);
@@ -121,9 +131,9 @@ export async function POST(request: NextRequest) {
       if (until <= now) throw new PublicError("This preview reached the maximum duration. Start a fresh preview.", 409);
       // The fresh signed grant has its own 15 minute window, but never exceeds the 30 minute cap.
       const grant = createPreviewGrant(actor.id, target.id, now, existing.started, until);
-      jar.set(previewCookie(grant, Math.ceil((until - now) / 1000)));
       await audit(actor.id, target.id, "Administrator extended customer preview");
-      return NextResponse.json({ ok: true, expiresAt: now + PREVIEW_MS });
+      jar.set(previewCookie(grant, Math.ceil((until - now) / 1000)));
+      return NextResponse.json({ ok: true, expiresAt: until });
     }
     return NextResponse.json(await previewData(target.id, existing.until), { headers: { "cache-control": "private, no-store" } });
   } catch (error) { return apiError(error); }

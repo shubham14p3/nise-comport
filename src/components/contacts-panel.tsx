@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { Contact, Search, ThumbsDown, ThumbsUp, UserPlus } from "lucide-react";
 import { CAMPAIGN_SERVICES, serviceTitle } from "@/lib/campaign-text";
+import { createLatestRequest } from "@/lib/latest-request";
 import { secureApi } from "@/lib/secure-api-client";
 import { AdminPager } from "@/components/admin-pager";
 
@@ -17,6 +18,7 @@ const day = (iso: string | null | undefined) => iso ? new Date(`${iso.slice(0, 1
 
 /** Admin → Contacts: who may be messaged, their services and renewal dates, and YES/STOP. */
 export default function ContactsPanel() {
+  const listRequest = useRef(createLatestRequest());
   const [data, setData] = useState<Listing | null>(null);
   const [q, setQ] = useState("");
   const [consent, setConsent] = useState("");
@@ -29,14 +31,16 @@ export default function ContactsPanel() {
   const [notice, setNotice] = useState("");
 
   async function load(nextQ = q, nextConsent = consent, nextPage = page, nextSize = pageSize) {
-    try { setData(await secureApi<Listing>("D4q8M2wS7kF1", { q: nextQ, consent: nextConsent, page: nextPage, pageSize: nextSize })); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load contacts."); }
+    const current = listRequest.current.begin();
+    try { const result = await secureApi<Listing>("D4q8M2wS7kF1", { q: nextQ, consent: nextConsent, page: nextPage, pageSize: nextSize }); if (current()) { setData(result); setError(""); } }
+    catch (reason) { if (current()) setError(reason instanceof Error ? reason.message : "Could not load contacts."); }
   }
   useEffect(() => {
-    let active = true;
-    secureApi<Listing>("D4q8M2wS7kF1", { q: "", consent: "", page: 0, pageSize: 20 }).then((result) => { if (active) setData(result); })
-      .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load contacts."); });
-    return () => { active = false; };
+    const gate = listRequest.current;
+    const current = gate.begin();
+    secureApi<Listing>("D4q8M2wS7kF1", { q: "", consent: "", page: 0, pageSize: 20 }).then((result) => { if (current()) setData(result); })
+      .catch((reason) => { if (current()) setError(reason instanceof Error ? reason.message : "Could not load contacts."); });
+    return () => gate.invalidate();
   }, []);
 
   async function add(event: FormEvent) {

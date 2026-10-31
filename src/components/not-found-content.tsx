@@ -29,9 +29,9 @@ export default function NotFoundContent() {
     <h1>{t.a}<br/><em>{t.b}</em></h1>
     <p>{t.lead} <a href={`tel:${site.phones.primary.e164}`}><Phone size={13}/> {site.phones.primary.display}</a>.</p>
     <div className="related-links">
-      <Link href={home}>{t.home} <ArrowUpRight size={13}/></Link>
-      {HREFS.map((href, index) => <Link key={href} href={href}>{LINKS[locale][index]} <ArrowUpRight size={13}/></Link>)}
+      <Link prefetch={false} href={home}>{t.home} <ArrowUpRight size={13}/></Link>
+      {HREFS.map((href, index) => <Link prefetch={false} key={href} href={href}>{LINKS[locale][index]} <ArrowUpRight size={13}/></Link>)}
     </div>
-    {locale === "en" && <p className="language-switch"><Link href="/hi" lang="hi">हिन्दी में देखें</Link> · <Link href="/bn" lang="bn">বাংলায় দেখুন</Link></p>}
+    {locale === "en" && <p className="language-switch"><Link prefetch={false} href="/hi" lang="hi">हिन्दी में देखें</Link> · <Link prefetch={false} href="/bn" lang="bn">বাংলায় দেখুন</Link></p>}
   </div>;
 }

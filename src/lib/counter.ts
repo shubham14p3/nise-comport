@@ -17,7 +17,7 @@ import { cleanReason, createCreditRequest, toPaise, type Tx } from "@/lib/wallet
 export { COUNTER_DISCOUNT_PERCENT } from "@/lib/counter-rules";
 
 /** Wallet balance in paise: credits minus debits. */
-export async function walletPaise(executor: Tx, userId: string) {
+export async function walletPaise(executor: Pick<Tx, "select">, userId: string) {
   const [row] = await executor.select({
     balance: sql<string>`coalesce(sum(case when ${walletEntries.kind} = 'debit' then -${walletEntries.amount} else ${walletEntries.amount} end), 0)`,
   }).from(walletEntries).where(eq(walletEntries.userId, userId));
@@ -40,15 +40,41 @@ function customerAccountsFor(phone: string) {
   );
 }
 
+const counterCustomerColumns = {
+  id: users.id, name: users.name, email: users.email, phone: users.phone,
+  emailVerifiedAt: users.emailVerifiedAt, phoneVerifiedAt: users.phoneVerifiedAt,
+};
+type CounterCustomer = Pick<typeof users.$inferSelect, keyof typeof counterCustomerColumns>;
+function counterContact(row: Pick<CounterCustomer, "email" | "phone" | "emailVerifiedAt" | "phoneVerifiedAt">) {
+  return { email: !isPlaceholderEmail(row.email) ? row.email : null, emailVerified: Boolean(row.emailVerifiedAt),
+    phone: row.phone, phoneVerified: Boolean(row.phoneVerifiedAt) };
+}
+
+/** Independent read queries; financial writes still use the locked transaction below. */
+async function counterDetails(customer: CounterCustomer, phone: string, page: number) {
+  const [balancePaise, visits, [totals]] = await Promise.all([
+    walletPaise(db, customer.id),
+    db.select({
+      id: counterVisits.id, serviceName: counterVisits.serviceName, billPaise: counterVisits.billPaise,
+      discountPaise: counterVisits.discountPaise, walletPaise: counterVisits.walletPaise, collectPaise: counterVisits.collectPaise,
+      createdAt: counterVisits.createdAt,
+    }).from(counterVisits).where(eq(counterVisits.userId, customer.id))
+      .orderBy(desc(counterVisits.createdAt), desc(counterVisits.id)).limit(VISITS_PAGE_SIZE).offset(page * VISITS_PAGE_SIZE),
+    db.select({ total: count() }).from(counterVisits).where(eq(counterVisits.userId, customer.id)),
+  ]);
+  return { phone, customer: { id: customer.id, name: customer.name }, knownName: null, contact: counterContact(customer),
+    balancePaise, visits, visitsTotal: totals?.total ?? 0, page, pageSize: VISITS_PAGE_SIZE };
+}
+
 /** Looks up the customer for this number. Returns no profile for a new number. */
 export async function lookupCustomer(phoneInput: string, pageInput = 0) {
   const page = Math.max(0, Math.floor(pageInput));
   const phone = normalizePhone(phoneInput);
   if (!phone) throw new PublicError("Enter a valid 10-digit mobile number.", 400, { fields: { phone: "Check the number." } });
-  const rows = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role }).from(users)
+  const rows = await db.select({ ...counterCustomerColumns, role: users.role }).from(users)
     .where(customerAccountsFor(phone)).limit(20);
   if (rows.length > 1) return {
-    phone, ambiguous: true, candidates: rows.map((row) => ({ ...row, email: isPlaceholderEmail(row.email) ? null : row.email })),
+    phone, ambiguous: true, candidates: rows.map((row) => ({ id: row.id, name: row.name, role: row.role, email: isPlaceholderEmail(row.email) ? null : row.email })),
     customer: null, knownName: null, contact: null, balancePaise: 0, visits: [], visitsTotal: 0, page: 0, pageSize: VISITS_PAGE_SIZE,
   };
   const customer = rows[0];
@@ -57,33 +83,18 @@ export async function lookupCustomer(phoneInput: string, pageInput = 0) {
     const [known] = await db.select({ name: contacts.name }).from(contacts).where(eq(contacts.phone, phone)).limit(1);
     return { phone, customer: null, knownName: known?.name ?? null, contact: null, balancePaise: 0, visits: [], visitsTotal: 0, page: 0, pageSize: VISITS_PAGE_SIZE };
   }
-  const balancePaise = await db.transaction((tx) => walletPaise(tx, customer.id));
-  const visits = await db.select({
-    id: counterVisits.id, serviceName: counterVisits.serviceName, billPaise: counterVisits.billPaise,
-    discountPaise: counterVisits.discountPaise, walletPaise: counterVisits.walletPaise, collectPaise: counterVisits.collectPaise,
-    createdAt: counterVisits.createdAt,
-  }).from(counterVisits).where(eq(counterVisits.userId, customer.id)).orderBy(desc(counterVisits.createdAt)).limit(VISITS_PAGE_SIZE).offset(page * VISITS_PAGE_SIZE);
-  const [totals] = await db.select({ total: count() }).from(counterVisits).where(eq(counterVisits.userId, customer.id));
-  return { phone, customer: { id: customer.id, name: customer.name }, knownName: null, contact: await customerContact(customer.id), balancePaise, visits, visitsTotal: totals?.total ?? 0, page, pageSize: VISITS_PAGE_SIZE };
+  return counterDetails(customer, phone, page);
 }
 
 /** Load a selected account for a shared phone. No fallback to first match. */
 export async function lookupCounterAccount(id: string, phoneInput: string, pageInput = 0) {
   const phone = normalizePhone(phoneInput);
   if (!phone) throw new PublicError("Enter a valid phone number.", 400);
-  const [account] = await db.select({ id: users.id, name: users.name }).from(users)
+  const [account] = await db.select(counterCustomerColumns).from(users)
     .where(and(customerAccountsFor(phone), eq(users.id, id))).limit(1);
   if (!account) throw new PublicError("This account is not linked to that number. Look it up again.", 404);
   const page = Math.max(0, Math.floor(pageInput));
-  const balancePaise = await db.transaction((tx) => walletPaise(tx, account.id));
-  const visits = await db.select({
-    id: counterVisits.id, serviceName: counterVisits.serviceName, billPaise: counterVisits.billPaise,
-    discountPaise: counterVisits.discountPaise, walletPaise: counterVisits.walletPaise, collectPaise: counterVisits.collectPaise,
-    createdAt: counterVisits.createdAt,
-  }).from(counterVisits).where(eq(counterVisits.userId, account.id)).orderBy(desc(counterVisits.createdAt)).limit(VISITS_PAGE_SIZE).offset(page * VISITS_PAGE_SIZE);
-  const [totals] = await db.select({ total: count() }).from(counterVisits).where(eq(counterVisits.userId, account.id));
-  return { phone, customer: account, knownName: null, contact: await customerContact(account.id),
-    balancePaise, visits, visitsTotal: totals?.total ?? 0, page, pageSize: VISITS_PAGE_SIZE };
+  return counterDetails(account, phone, page);
 }
 
 /** Correct the selected account's name/email without creating another account or moving records.
@@ -218,16 +229,8 @@ export async function lookupCustomerByEmail(emailInput: string, pageInput = 0) {
   const email = normalizeEmail(emailInput);
   if (!looksLikeEmail(email)) throw new PublicError("Enter a valid email address.", 400, { fields: { email: "Check the email." } });
   const page = Math.max(0, Math.floor(pageInput));
-  const [customer] = await db.select({ id: users.id, name: users.name }).from(users)
+  const [customer] = await db.select(counterCustomerColumns).from(users)
     .where(and(eq(users.email, email), isNull(users.deletedAt))).limit(1);
   if (!customer) return { phone: "", customer: null, knownName: null, contact: null, balancePaise: 0, visits: [], visitsTotal: 0, page: 0, pageSize: VISITS_PAGE_SIZE };
-  const contact = await customerContact(customer.id);
-  const balancePaise = await db.transaction((tx) => walletPaise(tx, customer.id));
-  const visits = await db.select({
-    id: counterVisits.id, serviceName: counterVisits.serviceName, billPaise: counterVisits.billPaise,
-    discountPaise: counterVisits.discountPaise, walletPaise: counterVisits.walletPaise, collectPaise: counterVisits.collectPaise,
-    createdAt: counterVisits.createdAt,
-  }).from(counterVisits).where(eq(counterVisits.userId, customer.id)).orderBy(desc(counterVisits.createdAt)).limit(VISITS_PAGE_SIZE).offset(page * VISITS_PAGE_SIZE);
-  const [totals] = await db.select({ total: count() }).from(counterVisits).where(eq(counterVisits.userId, customer.id));
-  return { phone: contact.phone ?? "", customer: { id: customer.id, name: customer.name }, knownName: null, contact, balancePaise, visits, visitsTotal: totals?.total ?? 0, page, pageSize: VISITS_PAGE_SIZE };
+  return counterDetails(customer, customer.phone ?? "", page);
 }

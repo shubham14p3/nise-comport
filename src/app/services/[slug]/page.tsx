@@ -108,20 +108,20 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
       <div className="container page-hero__split">
         <div>
           <Breadcrumbs items={crumbs}/>
-          {meta && <Link className="cat-chip" href={`/services?category=${meta.slug}`}><CategoryIcon icon={meta.icon} size={16}/>{meta.short.en}</Link>}
+          {meta && <Link prefetch={false} className="cat-chip" href={`/services?category=${meta.slug}`}><CategoryIcon icon={meta.icon} size={16}/>{meta.short.en}</Link>}
           <h1>{title}</h1>
           <p className="page-hero__lead">{service.description}</p>
           {editorial?.audience && <p className="page-hero__audience"><b>For:</b> {editorial.audience}</p>}
           <div className="page-hero__ctas">
             {detail && <ServiceCallbackButton serviceSlug={service.slug} serviceName={title} size="lg" className="btn--primary"/>}
-            {motor ? <Link className="btn btn--glass btn--lg" href={motor}>Continue online <ArrowRight size={18}/></Link>
-              : !comingSoon && <Link className="btn btn--glass btn--lg" href={detail ? startHref : `/request?category=${service.slug}`}>Continue online <ArrowRight size={18}/></Link>}
+            {motor ? <Link prefetch={false} className="btn btn--glass btn--lg" href={motor}>Continue online <ArrowRight size={18}/></Link>
+              : !comingSoon && <Link prefetch={false} className="btn btn--glass btn--lg" href={detail ? startHref : `/request?category=${service.slug}`}>Continue online <ArrowRight size={18}/></Link>}
             <a className="btn btn--wa btn--lg" href={enquiry} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> WhatsApp</a>
             <a className="btn btn--glass btn--lg" href={`tel:${site.phones.primary.e164}`}><Phone size={18}/> Call</a>
           </div>
           {comingSoon && <p className="coming-soon"><b>Coming soon online.</b> Full details for this service are being added. Call or WhatsApp us and we’ll help you today.</p>}
           {categorySlug === "insurance" && <p className="page-hero__audience"><b>Please note:</b> {FACILITATOR_NOTE}</p>}
-          <p className="page-hero__meta"><MapPin size={16}/> {site.address.oneLine}{hindi && <> · <Link href={`/hi/services/${service.slug}`} hrefLang="hi-IN" lang="hi">हिन्दी में पढ़ें</Link></>}{bengali && <> · <Link href={`/bn/services/${service.slug}`} hrefLang="bn-IN" lang="bn">বাংলায় পড়ুন</Link></>}</p>
+          <p className="page-hero__meta"><MapPin size={16}/> {site.address.oneLine}{hindi && <> · <Link prefetch={false} href={`/hi/services/${service.slug}`} hrefLang="hi-IN" lang="hi">हिन्दी में पढ़ें</Link></>}{bengali && <> · <Link prefetch={false} href={`/bn/services/${service.slug}`} hrefLang="bn-IN" lang="bn">বাংলায় পড়ুন</Link></>}</p>
         </div>
         <div className="page-hero__art"><Image src={posterFor(service.slug, categorySlug)} alt={editorial?.imageAlt ?? `${title} illustration`} width={1200} height={900} priority sizes="(max-width: 900px) 100vw, 44vw"/></div>
       </div>
@@ -132,7 +132,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
         <section className="detail__block">
           <span className="eyebrow">HOW WE HELP</span>
           <h2>What we can do for you</h2>
-          {price && <p className="service-price"><b>Our service charge: {priceLabel(price)}</b>{price.note ? ` · ${price.note}` : ""}<br/><small>Government, portal or courier fees, if any, are separate and shown before you pay. <Link href="/pricing">See pricing</Link></small></p>}
+          {price && <p className="service-price"><b>Our service charge: {priceLabel(price)}</b>{price.note ? ` · ${price.note}` : ""}<br/><small>Government, portal or courier fees, if any, are separate and shown before you pay. <Link prefetch={false} href="/pricing">See pricing</Link></small></p>}
           <ul className="tick-grid">{detail.highlights.map((item) => <li key={item}><CircleCheck size={20}/>{item}</li>)}</ul>
         </section>
         <section className="detail__block">
@@ -160,10 +160,10 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
         {photos.length > 0 && <section className="detail__block">
           <span className="eyebrow">FROM OUR DESK</span>
           <h2>Photos: {shortServiceName(title)} at NiSE COMPORT</h2>
-          <div className="photo-strip">{photos.slice(0, 6).map((photo) => <Link key={photo.src} href={`/gallery?service=${service.slug}`} className="photo-strip__item">
+          <div className="photo-strip">{photos.slice(0, 6).map((photo) => <Link prefetch={false} key={photo.src} href={`/gallery?service=${service.slug}`} className="photo-strip__item">
             <Image src={photo.src} alt={photo.alt} width={photo.width} height={photo.height} sizes="(max-width: 700px) 50vw, 240px"/>
           </Link>)}</div>
-          <Link className="text-link" href={`/gallery?service=${service.slug}`}>See all {photos.length} photos <ArrowRight size={16}/></Link>
+          <Link prefetch={false} className="text-link" href={`/gallery?service=${service.slug}`}>See all {photos.length} photos <ArrowRight size={16}/></Link>
         </section>}
         <p className="fine">Page reviewed: {reviewed}</p>
       </div>
@@ -172,7 +172,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
           <span className="eyebrow">READY WHEN YOU ARE</span>
           <h3>Start {shortServiceName(title)}</h3>
           <ol className="mini-steps"><li>Pick service</li><li>Your details</li><li>Visit time</li><li>Send</li></ol>
-          <ServiceCallbackButton serviceSlug={service.slug} serviceName={title} className="btn--primary btn--block"/><Link className="btn btn--ghost btn--block" href={startHref}>Continue online <ArrowRight size={18}/></Link>
+          <ServiceCallbackButton serviceSlug={service.slug} serviceName={title} className="btn--primary btn--block"/><Link prefetch={false} className="btn btn--ghost btn--block" href={startHref}>Continue online <ArrowRight size={18}/></Link>
           <a className="btn btn--wa btn--block" href={enquiry} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> Ask on WhatsApp</a>
           <p className="fine"><ShieldCheck size={15}/> Fees explained before we start.</p>
         </div>
@@ -184,9 +184,9 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
         <div className="section-head section-head--left"><span className="eyebrow">IN THIS CATEGORY</span><h2>Choose the help you need</h2><p>Each service has its own checklist and a 4-step request.</p></div>
         <div className="svc-grid">{children.map((item) => <article key={item.slug} className={`svc-card tone-${meta?.tone ?? "blue"}`}>
           <div className="svc-card__top"><span className="svc-card__icon">{meta && <CategoryIcon icon={meta.icon} size={22}/>}</span></div>
-          <h3><Link href={`/services/${item.slug}`}>{shortServiceName(item.title)}</Link></h3>
+          <h3><Link prefetch={false} href={`/services/${item.slug}`}>{shortServiceName(item.title)}</Link></h3>
           <p>{item.description}</p>
-          <div className="svc-card__actions"><Link className="btn btn--primary btn--sm" href={requestHrefFor(item.slug)}>Start <ArrowRight size={16}/></Link><Link className="btn btn--ghost btn--sm" href={`/services/${item.slug}`}>Details</Link></div>
+          <div className="svc-card__actions"><Link prefetch={false} className="btn btn--primary btn--sm" href={requestHrefFor(item.slug)}>Start <ArrowRight size={16}/></Link><Link prefetch={false} className="btn btn--ghost btn--sm" href={`/services/${item.slug}`}>Details</Link></div>
         </article>)}</div>
       </div>
     </section>}
@@ -194,15 +194,15 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
     {service.slug === "pan-card" ? <section className="section section--tint" id="pan-help">
       <div className="container">
         <div className="section-head section-head--left"><span className="eyebrow">PAN HELP</span><h2>PAN guides and tools</h2><p>Everything about PAN in one place: applying, corrections, Aadhaar linking, e-PAN, forms and fixing problems.</p></div>
-        <div className="pan-grid">{panGuides.map((guide) => <Link className="pan-card" key={guide.slug} href={`/pan/${guide.slug}`}><h3>{guide.title}</h3><p>{guide.intro}</p><span>Read guide →</span></Link>)}</div>
-        <div className="page-hero__ctas" style={{ marginTop: 16 }}><Link className="btn btn--primary" href="/pan/request">Start a PAN assistance request <ArrowRight size={16}/></Link><Link className="btn btn--primary" href="/pan/93">Form 93 application preview (current)</Link><Link className="btn btn--ghost" href="/pan/49a">Form 49A PDF-style preview (archived)</Link><Link className="btn btn--ghost" href="/track#pan">Track a PAN application</Link></div>
+        <div className="pan-grid">{panGuides.map((guide) => <Link prefetch={false} className="pan-card" key={guide.slug} href={`/pan/${guide.slug}`}><h3>{guide.title}</h3><p>{guide.intro}</p><span>Read guide →</span></Link>)}</div>
+        <div className="page-hero__ctas" style={{ marginTop: 16 }}><Link prefetch={false} className="btn btn--primary" href="/pan/request">Start a PAN assistance request <ArrowRight size={16}/></Link><Link prefetch={false} className="btn btn--primary" href="/pan/93">Form 93 application preview (current)</Link><Link prefetch={false} className="btn btn--ghost" href="/pan/49a">Form 49A PDF-style preview (archived)</Link><Link prefetch={false} className="btn btn--ghost" href="/track#pan">Track a PAN application</Link></div>
       </div>
     </section> : null}
 
     {guides.length ? <section className="section section--tint">
       <div className="container">
         <div className="section-head section-head--left"><span className="eyebrow">READ BEFORE YOU COME</span><h2>Related guides</h2></div>
-        <div className="guide-grid">{guides.map((guide) => <article key={guide.slug} className="guide-card"><div className="guide-card__body"><span className="chip">{guide.category}</span><h3><Link href={`/blog/${guide.slug}`}>{guide.title}</Link></h3><p>{guide.excerpt}</p><Link className="text-link" href={`/blog/${guide.slug}`} aria-label={`Read: ${guide.title}`}>Read guide <ArrowRight size={16}/></Link></div></article>)}</div>
+        <div className="guide-grid">{guides.map((guide) => <article key={guide.slug} className="guide-card"><div className="guide-card__body"><span className="chip">{guide.category}</span><h3><Link prefetch={false} href={`/blog/${guide.slug}`}>{guide.title}</Link></h3><p>{guide.excerpt}</p><Link prefetch={false} className="text-link" href={`/blog/${guide.slug}`} aria-label={`Read: ${guide.title}`}>Read guide <ArrowRight size={16}/></Link></div></article>)}</div>
       </div>
     </section> : null}
     {editorial?.explainers?.length ? <section className="section section--flush"><div className="container">
@@ -213,14 +213,14 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
     <section className="section section--flush"><div className="container">
       <h2>Serving Jamshedpur, East Singhbhum and Jharkhand</h2>
       <p>Customers visit NiSE COMPORT from across Jamshedpur and East Singhbhum. Find your area below, or call or WhatsApp us if you are not sure how to reach our desk in Kharangajhar, Telco.</p>
-      <div className="related-links">{areas.map((area) => <Link key={area.slug} href={`/areas-we-serve#${area.slug}`}>{area.name}</Link>)}</div>
+      <div className="related-links">{areas.map((area) => <Link prefetch={false} key={area.slug} href={`/areas-we-serve#${area.slug}`}>{area.name}</Link>)}</div>
     </div></section>
     <FaqSection faqs={faqs}/>
     <TestimonialsSection serviceSlug={service.slug}/>
     {siblings.length ? <section className="section section--flush">
       <div className="container">
         <div className="section-head section-head--left"><span className="eyebrow">ALSO IN {category?.title.toUpperCase()}</span></div>
-        <div className="link-cloud">{siblings.map((item) => <Link key={item.slug} href={`/services/${item.slug}`}>{shortServiceName(item.title)} <ArrowUpRight size={15}/></Link>)}</div>
+        <div className="link-cloud">{siblings.map((item) => <Link prefetch={false} key={item.slug} href={`/services/${item.slug}`}>{shortServiceName(item.title)} <ArrowUpRight size={15}/></Link>)}</div>
       </div>
     </section> : null}
     <section className="section section--flush">

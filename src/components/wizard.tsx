@@ -55,7 +55,7 @@ export function OfferStrip({ category, locale }: { category?: string | null; loc
   const offers = offersFor(category, undefined, codes).slice(0, 3);
   if (!offers.length) return null;
   return <div className="offer-strip"><LoopScroller label={dict(locale).rail.live} gap={10} loop={offers.length > 1}>
-    {offers.map((offer) => <Link key={offer.id} href={offer.href} className={`offer-strip__item tone-${offer.tone}`}><span className="badge badge--live"><i/>{offer.badge === "LIVE" ? dict(locale).ticker.live : offer.badge}</span><b>{offer.emoji ? `${offer.emoji} ` : ""}{offer.highlight[locale]}</b><span>{offer.code ? `${offer.title[locale]} · ${offer.code}` : offer.title[locale]}</span></Link>)}</LoopScroller>
+    {offers.map((offer) => <Link prefetch={false} key={offer.id} href={offer.href} className={`offer-strip__item tone-${offer.tone}`}><span className="badge badge--live"><i/>{offer.badge === "LIVE" ? dict(locale).ticker.live : offer.badge}</span><b>{offer.emoji ? `${offer.emoji} ` : ""}{offer.highlight[locale]}</b><span>{offer.code ? `${offer.title[locale]} · ${offer.code}` : offer.title[locale]}</span></Link>)}</LoopScroller>
   </div>;
 }
 

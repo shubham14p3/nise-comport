@@ -1,16 +1,19 @@
 "use client";
 
-import ClaimsPanel from "@/components/claims-panel";
+import dynamic from "next/dynamic";
+const ClaimsPanel = dynamic(() => import("@/components/claims-panel"), { loading: () => <p className="admin-loading">Loading claims…</p> });
 import { useEffect, useRef, useState } from "react";
 import { Bell, Check, Eye, Phone, RefreshCw, UserRound, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
+import { createLatestRequest } from "@/lib/latest-request";
 import { secureApi } from "@/lib/secure-api-client";
 
 type Item = { id: string; kind: string; category: string | null; title: string; detail: string | null; createdAt: string; actor: string | null };
 type Lead = { id: string; name: string; phone: string; topic: string; message: string | null; status: string; handledBy: string | null; ownerName?: string | null; source: string; details: { email?: string; serviceSlug?: string } | null; page: string | null; createdAt: string };
 type CallbackTab = "open" | "called" | "closed" | "spam";
 type Callbacks = { rows: Lead[]; total: number; tabCounts: Record<CallbackTab, number>; tab: CallbackTab; mine: boolean; page: number; pageSize: number };
-type Inbox = { items: Item[]; unread: number; seenAt: string; pending: { category: string; label: string; total: number }[]; callbacks: Callbacks | null };
+type Summary = { unread: number; waiting: number; callbacks: number };
+type Inbox = { summary: Summary; items: Item[]; unread: number; seenAt: string; pending: { category: string; label: string; total: number }[]; callbacks: Callbacks | null };
 /** What the callbacks list and the activity filter are showing. Every change reloads the inbox from the server. */
 type View = { category: string; tab: CallbackTab; scope: "all" | "mine"; page: number };
 
@@ -51,7 +54,8 @@ async function loadInbox(view: View) {
  * Admin → Inbox: callbacks split into Open / Called / Closed / Spam tabs (paged on the server),
  * what's waiting per service, and a feed of what happened.
  */
-export default function InboxPanel({ onSeen, viewer }: { onSeen?: () => void; viewer?: {id?:string;role:string} }) {
+export default function InboxPanel({ onSeen, onSummary, viewer }: { onSeen?: () => void; onSummary?: (summary: Summary) => void; viewer?: {id?:string;role:string} }) {
+  const listRequest = useRef(createLatestRequest());
   const [data, setData] = useState<Inbox | null>(null);
   const [view, setView] = useState<View>({ category: "", tab: "open", scope: "all", page: 0 });
   const viewRef = useRef(view);
@@ -60,18 +64,21 @@ export default function InboxPanel({ onSeen, viewer }: { onSeen?: () => void; vi
   const [feedPage, setFeedPage] = useState(0);
 
   async function fetchInbox(next: View = viewRef.current) {
+    const current = listRequest.current.begin();
     try {
       let result = await loadInbox(next);
+      if (!current()) return;
       // If the current page emptied (for example the last callback moved to another tab), step back to the last page that has rows.
       const cb = result.callbacks;
       if (cb && cb.rows.length === 0 && cb.total > 0 && next.page > 0) {
         next = { ...next, page: Math.ceil(cb.total / cb.pageSize) - 1 };
         viewRef.current = next; setView(next);
         result = await loadInbox(next);
+        if (!current()) return;
       }
-      setData(result); setError("");
+      setData(result); onSummary?.(result.summary); setError("");
     }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load the inbox."); }
+    catch (reason) { if (current()) setError(reason instanceof Error ? reason.message : "Could not load the inbox."); }
   }
 
   /** Changes what is shown (tab, scope, service filter or page) and loads it. */
@@ -82,10 +89,13 @@ export default function InboxPanel({ onSeen, viewer }: { onSeen?: () => void; vi
   }
 
   useEffect(() => {
-    let active = true;
-    const refresh = () => loadInbox(viewRef.current)
-      .then((result) => { if (active) setData(result); })
-      .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load the inbox."); });
+    const gate = listRequest.current;
+    const refresh = () => {
+      const current = gate.begin();
+      return loadInbox(viewRef.current)
+        .then((result) => { if (current()) { setData(result); onSummary?.(result.summary); setError(""); } })
+        .catch((reason) => { if (current()) setError(reason instanceof Error ? reason.message : "Could not load the inbox."); });
+    };
     void refresh();
     // Opening the inbox marks what's here as seen (after a moment, so the highlights are visible).
     const seen = window.setTimeout(() => { void secureApi("O9c4V7mB2pL5").then(() => onSeen?.()).catch(() => undefined); }, 4000);
@@ -93,12 +103,12 @@ export default function InboxPanel({ onSeen, viewer }: { onSeen?: () => void; vi
     const timer = window.setInterval(poll, 60_000);
     document.addEventListener("visibilitychange", poll);
     return () => {
-      active = false;
+      gate.invalidate();
       window.clearTimeout(seen);
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", poll);
     };
-  }, [onSeen]);
+  }, [onSeen, onSummary]);
 
   async function takeCase(row:Lead){
     setBusy(row.id);setError("");

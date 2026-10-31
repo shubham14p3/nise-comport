@@ -279,7 +279,7 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
           <div className="hp-field" aria-hidden="true"><label>Website<input tabIndex={-1} autoComplete="off" value={website} onChange={e => setWebsite(e.target.value)}/></label></div>
           {error && <div className="alert alert--error" role="alert">{error}</div>}{success && <div className="alert alert--success" role="status">{success}</div>}
           <button className="btn btn--primary btn--lg btn--block" disabled={busy}>{busy ? t.wait : mode === "signup" ? x.sendCode : t.signin}<ArrowRight size={18}/></button>
-          {mode === "signin" && <div className="auth__links">{isMobileInput && (availableSms || availableWhatsapp) ? <>{availableSms && <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSmsCode("sms")}>{x.smsCode}</button>}{availableWhatsapp && <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSmsCode("whatsapp")}>Code on WhatsApp</button>}</> : email.includes("@") ? <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSignInCode()}>{t.codeSignin}</button> : null}<Link className="link-btn" href="/forgot-password" onClick={rememberEmailForReset}>{t.forgot}</Link></div>}
+          {mode === "signin" && <div className="auth__links">{isMobileInput && (availableSms || availableWhatsapp) ? <>{availableSms && <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSmsCode("sms")}>{x.smsCode}</button>}{availableWhatsapp && <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSmsCode("whatsapp")}>Code on WhatsApp</button>}</> : email.includes("@") ? <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSignInCode()}>{t.codeSignin}</button> : null}<Link prefetch={false} className="link-btn" href="/forgot-password" onClick={rememberEmailForReset}>{t.forgot}</Link></div>}
         </form> : <form onSubmit={verify} className="auth__form" noValidate>
           <label className="field"><span className="field__label">{t.codeLabel}</span><input inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6}" maxLength={6} value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="••••••" className="otp-input" aria-invalid={Boolean(fieldErrors.code)} autoFocus/></label>
           {DEV && <p className="alert alert--dev"><Terminal size={18}/>{t.devHint}</p>}
@@ -292,8 +292,8 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
           <p className="auth__legal">{t.codeRules}</p>
         </form>}
         {stage === "details" && <button type="button" className="link-btn auth__method" disabled={busy} onClick={() => { setMethod(method === "mobile" ? "email" : "mobile"); setError(""); setFieldErrors({}); }}>{method === "mobile" ? (mode === "signup" ? "Use email instead" : "Sign in with email instead") : "Use my mobile number instead"}</button>}
-        {stage === "details" && <div className="auth__switch"><span>{mode === "signup" ? x.haveAccount : x.noAccount}</span><Link className="btn btn--ghost btn--block" href={mode === "signup" ? "/login" : "/signup"}>{mode === "signup" ? x.signInCta : x.signUpCta}</Link></div>}
-        <p className="auth__legal">{t.agree} <Link href="/terms">{t.terms}</Link> {t.and} <Link href="/privacy">{t.privacy}</Link>.</p>
+        {stage === "details" && <div className="auth__switch"><span>{mode === "signup" ? x.haveAccount : x.noAccount}</span><Link prefetch={false} className="btn btn--ghost btn--block" href={mode === "signup" ? "/login" : "/signup"}>{mode === "signup" ? x.signInCta : x.signUpCta}</Link></div>}
+        <p className="auth__legal">{t.agree} <Link prefetch={false} href="/terms">{t.terms}</Link> {t.and} <Link prefetch={false} href="/privacy">{t.privacy}</Link>.</p>
       </section>
     </div>
   </main>;

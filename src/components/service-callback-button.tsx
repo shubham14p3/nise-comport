@@ -85,8 +85,8 @@ export default function ServiceCallbackButton({serviceSlug,serviceName,size="sm"
               <p>{accountEmailStatus==="sent"
                 ? "If eligible for a new account, check your email for a temporary 6-digit verification code. Confirm it to finish creating your account; then you can sign in or log out whenever you like."
                 : "Your callback is saved. Email verification is not yet available; you can request a fresh code from the sign-up page."}</p>
-              <Link href="/signup?callback=1" onClick={()=>setOpen(false)}>Finish account setup</Link>
-              <p>Already registered? <Link href="/login" onClick={()=>setOpen(false)}>Sign in to your account</Link></p>
+              <Link prefetch={false} href="/signup?callback=1" onClick={()=>setOpen(false)}>Finish account setup</Link>
+              <p>Already registered? <Link prefetch={false} href="/login" onClick={()=>setOpen(false)}>Sign in to your account</Link></p>
             </div>
           </div>
           <button type="button" className="btn btn--primary" onClick={()=>setOpen(false)}>Done</button>

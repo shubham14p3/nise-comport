@@ -2,6 +2,8 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { EyeOff, Eye, LayoutTemplate, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import LoaderSettingsPanel from "@/components/loader-settings-panel";
+import type { LoaderSettings } from "@/lib/loader-config";
 import PosterPicker from "@/components/poster-picker";
 import { secureApi } from "@/lib/secure-api-client";
 
@@ -9,7 +11,7 @@ type Text3 = { en: string; hi: string; bn: string };
 type Banner = { id: string; placement: string; title: Text3; text: Text3 | null; cta: Text3 | null; href: string | null; image: string | null; tone: string; categories: string[]; startsOn: string | null; endsOn: string | null; active: boolean; sortOrder: number };
 type BuiltIn = { slug: string; title: string; categorySlug: string; hidden: boolean };
 type Custom = { id: string; slug: string; title: string; categorySlug: string; description: string; keywords: string[]; highlights: string[]; documents: string[]; steps: string[]; faqs: { question: string; answer: string }[]; seoTitle?: string; seoDescription?: string; published: boolean; sortOrder: number };
-type Content = { banners: Banner[]; builtIn: BuiltIn[]; custom: Custom[]; categories: { slug: string; title: string }[] };
+type Content = { loader: LoaderSettings; canManageBranding: boolean; banners: Banner[]; builtIn: BuiltIn[]; custom: Custom[]; categories: { slug: string; title: string }[] };
 
 const PLACES: Record<string, string> = { strip: "Thin strip at the top of every page", ticker: "The single offer line above the menu (visitors see this; keep it short, no code)", home: "Home page, below the top section", services: "All-services page", "service-page": "Service pages (side panel)", insurer: "Insurer logo (insurance page) — only insurers you're authorised to sell" };
 const TONES = ["blue", "violet", "pink", "green", "saffron", "cyan", "night"];
@@ -46,6 +48,8 @@ export default function SiteContentPanel() {
     <p className="admin-lead">Change what customers see without touching code. Changes show on the website within a minute.</p>
     {error && <div className="alert alert--error" role="alert">{error}</div>}
     {notice && <div className="alert alert--success" role="status">{notice}</div>}
+
+    {data?.canManageBranding && <LoaderSettingsPanel value={data.loader} onChange={(loader) => setData((previous) => previous ? { ...previous, loader } : previous)}/>}
 
     <div className="content-block">
       <div className="personal-codes__head"><h3>Banners</h3><button type="button" className="btn btn--primary btn--sm" onClick={() => setBanner({ placement: "home", tone: "blue", active: true, title: { ...empty3 }, categories: [] })}><Plus size={15}/>New banner</button></div>

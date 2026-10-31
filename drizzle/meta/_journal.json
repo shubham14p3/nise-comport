@@ -239,6 +239,13 @@
       "when": 1794045600000,
       "tag": "0033_qr_scans",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1794045600001,
+      "tag": "0042_site_settings",
+      "breakpoints": true
     }
   ]
 }

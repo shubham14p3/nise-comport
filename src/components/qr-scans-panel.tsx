@@ -50,7 +50,7 @@ export default function QrScansPanel() {
       </label>
       <p className="muted">Each printed location gets a different QR source so you can compare its performance.</p>
       <SiteQrCards cards={cards} download="Download SVG"/>
-      <Link className="btn btn--ghost btn--sm" href="/welcome" target="_blank">Preview welcome page</Link>
+      <Link prefetch={false} className="btn btn--ghost btn--sm" href="/welcome" target="_blank">Preview welcome page</Link>
     </div>
     <div className="admin-qr__metrics">
       <div><QrCode size={18}/><b>{scans.toLocaleString("en-IN")}</b><small>Scans (last {data?.days ?? 30} days)</small></div>

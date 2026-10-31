@@ -2,15 +2,21 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 
+import { DEFAULT_LOADER_SRC, LOADER_CHANGED, loaderSettings } from "@/lib/loader-config";
 import { getApiActivity, getServerApiActivity, subscribeApiActivity, trackApiActivity } from "@/lib/api-activity";
 
 /**
  * One consistent progress indicator for encrypted UI calls and standard same-origin
  * /api requests. The late threshold prevents flashes for instant background polling.
  */
-export default function ApiActivityIndicator() {
+export default function ApiActivityIndicator({ loaderSrc = null }: { loaderSrc?: string | null }) {
   const pending = useSyncExternalStore(subscribeApiActivity, getApiActivity, getServerApiActivity);
-  const [visible, setVisible] = useState(false);
+  const [override, setOverride] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    const changed = (event: Event) => setOverride(loaderSettings((event as CustomEvent).detail).src);
+    window.addEventListener(LOADER_CHANGED, changed);
+    return () => window.removeEventListener(LOADER_CHANGED, changed);
+  }, []);
 
   useEffect(() => {
     // Some older UI modules still use native fetch rather than secureApi.
@@ -29,16 +35,26 @@ export default function ApiActivityIndicator() {
     return () => { if (window.fetch === instrumented) window.fetch = original; };
   }, []);
 
+  const src = override === undefined ? loaderSettings({ src: loaderSrc }).src : override;
+  return pending > 0 ? <ActivityBadge src={src}/> : null;
+}
+
+/** A new busy episode gets its own delay; concurrent requests do not restart it. */
+function ActivityBadge({ src }: { src: string | null }) {
+  const [visible, setVisible] = useState(false);
+  const [failed, setFailed] = useState<string[]>([]);
   useEffect(() => {
-    if (pending === 0) return;
     const timer = window.setTimeout(() => setVisible(true), 220);
     return () => window.clearTimeout(timer);
-  }, [pending]);
-
-  if (!pending || !visible) return null;
+  }, []);
+  if (!visible) return null;
+  const imageSrc = src && !failed.includes(src) ? src : DEFAULT_LOADER_SRC;
   return <div className="api-activity api-activity--branded" role="status" aria-label="NiSE COMPORT is processing your request" aria-live="polite">
     <span className="api-activity__mark" aria-hidden="true">
-      <span className="nc-lettermark"><span>N</span><span>i</span><span>S</span><span>E</span></span>
+      {!failed.includes(imageSrc)
+        // eslint-disable-next-line @next/next/no-img-element -- custom animated loader must retain animation
+        ? <img className="api-activity__logo" src={imageSrc} alt="" width={78} height={34} onError={() => setFailed((previous) => [...previous, imageSrc])}/>
+        : <span className="nc-lettermark"><span>N</span><span>i</span><span>S</span><span>E</span></span>}
       <span className="api-activity__orbit"/>
     </span>
     <span className="api-activity__description"><strong>NiSE COMPORT</strong><small>Processing your request…</small></span>

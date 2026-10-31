@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Database, Eye, Phone, Search, Upload, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
+import { createLatestRequest } from "@/lib/latest-request";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
 import { AdminPager } from "@/components/admin-pager";
 
@@ -22,6 +23,8 @@ const pretty = (phone: string) => phone.replace(/^\+91(\d{5})(\d{5})$/, "+91 $1 
  * Data is encrypted in the database; opening a person's records is logged in the inbox.
  */
 export default function RecordsPanel() {
+  const detailRequest = useRef(createLatestRequest());
+  const listRequest = useRef(createLatestRequest());
   const [data, setData] = useState<Listing | null>(null);
   const [imports, setImports] = useState<ImportRow[]>([]);
   const [q, setQ] = useState("");
@@ -42,15 +45,18 @@ export default function RecordsPanel() {
 
   async function load(next: { q?: string; service?: string; sort?: string; page?: number; pageSize?: number } = {}) {
     const params = { q, service, sort, page, pageSize, ...next };
-    try { setData(await secureApi<Listing>("W8r2T5yN1cF6", params)); setError(""); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load records."); }
+    const current = listRequest.current.begin();
+    try { const result = await secureApi<Listing>("W8r2T5yN1cF6", params); if (current()) { setData(result); setError(""); } }
+    catch (reason) { if (current()) setError(reason instanceof Error ? reason.message : "Could not load records."); }
   }
 
   useEffect(() => {
-    let active = true;
-    secureApi<Listing>("W8r2T5yN1cF6", { sort: "repeat", page: 0, pageSize: 20 }).then((value) => { if (active) setData(value); })
-      .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load records."); });
-    return () => { active = false; };
+    const gate = listRequest.current;
+    const details = detailRequest.current;
+    const current = gate.begin();
+    secureApi<Listing>("W8r2T5yN1cF6", { sort: "repeat", page: 0, pageSize: 20 }).then((value) => { if (current()) setData(value); })
+      .catch((reason) => { if (current()) setError(reason instanceof Error ? reason.message : "Could not load records."); });
+    return () => { gate.invalidate(); details.invalidate(); };
   }, []);
 
   async function upload(event: FormEvent) {
@@ -67,13 +73,14 @@ export default function RecordsPanel() {
   }
 
   async function openPerson(person: Person) {
+    const current = detailRequest.current.begin();
     setBusy(person.key);
     try {
       const opened = await secureApi<Detail>("W8r2T5yN1cF6", { key: person.key });
-      setDetailPage(0); setDetail(opened);
+      if (current()) { setDetailPage(0); setDetail(opened); }
     }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "Could not open the records."); }
-    finally { setBusy(""); }
+    catch (reason) { if (current()) setError(reason instanceof Error ? reason.message : "Could not open the records."); }
+    finally { if (current()) setBusy(""); }
   }
 
   useEffect(() => {

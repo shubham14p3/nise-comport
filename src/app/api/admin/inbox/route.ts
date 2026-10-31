@@ -21,15 +21,17 @@ export async function GET(request: NextRequest) {
     const user = await staff();
     if (request.nextUrl.searchParams.get("count")) return NextResponse.json(await inboxSummary(user));
     const params = request.nextUrl.searchParams;
-    const base = await inbox(user, { category: params.get("category") || undefined });
     // Callbacks need the requests permission; they are paged by tab, so the page never depends on a fixed cap.
     const requested = params.get("leadTab") ?? "";
     const tab: CallbackTab = (Object.keys(CALLBACK_TABS) as CallbackTab[]).includes(requested as CallbackTab) ? (requested as CallbackTab) : "open";
     const pageNumber = Number.parseInt(params.get("leadPage") ?? "0", 10);
-    const callbacks = audiences(user).includes("requests")
-      ? await listCallbackPage({ tab, mine: params.get("leadScope") === "mine", viewerId: user.id, page: Number.isFinite(pageNumber) ? pageNumber : 0 })
-      : null;
-    return NextResponse.json({ ...base, callbacks });
+    const [base, callbacks] = await Promise.all([
+      inbox(user, { category: params.get("category") || undefined }),
+      audiences(user).includes("requests")
+      ? listCallbackPage({ tab, mine: params.get("leadScope") === "mine", viewerId: user.id, page: Number.isFinite(pageNumber) ? pageNumber : 0 })
+      : Promise.resolve(null),
+    ]);
+    return NextResponse.json({ ...base, callbacks }, { headers: { "cache-control": "private, no-store" } });
   } catch (error) { return apiError(error); }
 }
 

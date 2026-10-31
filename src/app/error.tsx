@@ -31,7 +31,7 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
     <p>{online ? <>{t.lead} <a href={`tel:${site.phones.primary.e164}`}>{site.phones.primary.display}</a> {t.or}{error.digest ? ` ${t.ref}: ${error.digest}` : ""}</> : t.offline}</p>
     <div className="service-hero-actions">
       <button type="button" className="btn btn--primary" onClick={() => (staleBuild ? window.location.reload() : reset())}>{staleBuild ? t.reload : t.retry}</button>
-      <Link className="btn btn--ghost" href={locale === "en" ? "/" : `/${locale}`}>{t.home}</Link>
+      <Link prefetch={false} className="btn btn--ghost" href={locale === "en" ? "/" : `/${locale}`}>{t.home}</Link>
     </div>
   </div></section></main>;
 }

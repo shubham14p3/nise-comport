@@ -365,7 +365,7 @@ export default function PanRequestForm({ service, demo = false, signedIn = true,
       <h2>Sign in to preview your PAN application</h2>
       <p>Your completed entries are stored in encrypted tab storage and will be restored when you return after sign-in. The detailed PDF remains hidden until login.</p>
       <div className="callout__actions"><button type="button" className="btn btn--primary" onClick={()=>{void submit()}}>Sign in to preview</button>
-        <Link className="btn btn--ghost" href="/signup" onClick={()=>rememberReturn(returnPath)}>Create an account</Link></div>
+        <Link prefetch={false} className="btn btn--ghost" href="/signup" onClick={()=>rememberReturn(returnPath)}>Create an account</Link></div>
     </section>}
     {step === 3 && authenticated && <section>
       <h2>Review before sending</h2><p className="wizard-form__sub">Check everything once. You can edit any step.</p>
