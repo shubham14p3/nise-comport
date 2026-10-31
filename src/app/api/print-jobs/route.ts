@@ -97,9 +97,10 @@ export async function POST(request: NextRequest) {
       }
       throw error;
     }
+    const jobId = await jobCodeForSource("print", job.id);
     if (couponId) await recordRedemption(couponId, user.id, "print", job.id, discount);
     await recordEvent("print", job.id, user.id, null, "submitted", "Created online");
-    await notifyNewRequest(user, job.reference, "print order", [`File: ${file.originalName}`, `Pages: ${printedPageCount} (${colorPages} colour)`, `Fulfilment: ${data.fulfillment}`, `Estimate: ₹${total.toFixed(2)}`, ...(couponCode ? [`Coupon: ${couponCode} (−₹${discount.toFixed(2)})`] : [])]);
-    return NextResponse.json({ ok: true, job, jobId: await jobCodeForSource("print", job.id) }, { status: 201 });
+    await notifyNewRequest(user, job.reference, "print order", [...(jobId ? [`Universal Job ID: ${jobId}`] : []), `File: ${file.originalName}`, `Pages: ${printedPageCount} (${colorPages} colour)`, `Fulfilment: ${data.fulfillment}`, `Estimate: ₹${total.toFixed(2)}`, ...(couponCode ? [`Coupon: ${couponCode} (−₹${discount.toFixed(2)})`] : [])]);
+    return NextResponse.json({ ok: true, job, jobId }, { status: 201 });
   } catch (error) { return apiError(error); }
 }
