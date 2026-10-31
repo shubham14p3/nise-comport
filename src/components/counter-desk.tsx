@@ -2,7 +2,7 @@
 import Link from "next/link";
 import "./inbox-panel.css";
 
-import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 import { Check, Loader2, X } from "lucide-react";
 import { secureApi, SecureApiError } from "@/lib/secure-api-client";
 import { counterAmounts, DEFAULT_COUNTER_POLICY, type CounterPolicy } from "@/lib/counter-rules";
@@ -21,7 +21,6 @@ type CreditRequest = {
   id: string; amount: string; reason: string; status: "pending" | "approved" | "rejected"; requestedAt: string; requestedById: string;
   decidedAt: string | null; decisionNote: string | null; customerName: string; customerPhone: string | null; requestedBy: string; decidedBy: string | null;
 };
-type Channel = "email" | "phone";
 type Mode = "mobile" | "email";
 
 const rupees = (paise: number) => `₹${(paise / 100).toFixed(2)}`;
@@ -36,14 +35,13 @@ function limitMobileDigits(raw: string) {
 }
 
 /** One contact line with its verified tick. The actions appear under it only while it is not verified. */
-function ContactCheck({ label, value, verified, children }: { label: string; value: string | null; verified: boolean; children?: ReactNode }) {
+function ContactCheck({ label, value, verified }: { label: string; value: string | null; verified: boolean }) {
   return <div className="counter-contact__row">
     <div className="counter-contact__top">
       <span className="counter-contact__label">{label}</span>
       <span className="counter-contact__value">{value ?? <em>Not added. Add it in Find customer.</em>}</span>
       {value && <span className={verified ? "counter-contact__ok" : "counter-contact__no"}>{verified ? <><Check size={14} aria-hidden="true"/> Verified</> : "Not verified"}</span>}
     </div>
-    {value && !verified && children}
   </div>;
 }
 
@@ -76,10 +74,6 @@ export default function CounterDesk({ services, isOwner = false }: { services: S
   const [looking, setLooking] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [confirmChannel, setConfirmChannel] = useState<Channel | null>(null);
-  const [confirmTicked, setConfirmTicked] = useState(false);
-  const [codeSentTo, setCodeSentTo] = useState<string | null>(null);
-  const [codeValue, setCodeValue] = useState("");
 
   const [showHistory, setShowHistory] = useState(false);
   const [historyPage, setHistoryPage] = useState(0);
@@ -135,10 +129,9 @@ export default function CounterDesk({ services, isOwner = false }: { services: S
     return () => { active = false; };
   }, []);
 
-  function resetContact() { setConfirmChannel(null); setConfirmTicked(false); setCodeSentTo(null); setCodeValue(""); }
 
   function switchMode(next: Mode) {
-    setAccumulate(false); setMode(next); setLookupText(""); setLookup(null); setSelectedAccountId(null); setEditingDetails(false); setNotice(""); setError(""); resetContact();
+    setAccumulate(false); setMode(next); setLookupText(""); setLookup(null); setSelectedAccountId(null); setEditingDetails(false); setNotice(""); setError("");
   }
 
   /** In mobile mode, typing "@" switches to email, so the customer's address can be pasted straight in. */
@@ -160,7 +153,7 @@ export default function CounterDesk({ services, isOwner = false }: { services: S
       const result = await run(() => secureApi<Lookup>(COUNTER_OP, body));
       if (result) {
         setLookup(result);
-        resetContact();
+       
         if (result.ambiguous) { setNotice("Several accounts use this number. Select the exact account below before making changes."); }
         if (result.customer) {
           setSelectedAccountId(result.customer.id);
@@ -213,49 +206,6 @@ export default function CounterDesk({ services, isOwner = false }: { services: S
       const picked = matches[highlight] ?? matches[0];
       if (picked) pickService(picked);
     }
-  }
-
-  /** A contact action for the open customer. Refreshes the card afterwards, then shows the message. */
-  async function contactAction(body: Record<string, unknown>, done: string) {
-    if (!lookup?.customer) return;
-    const result = await run(() => secureApi(COUNTER_OP, { ...body, userId: lookup.customer!.id }));
-    if (!result) return;
-    resetContact();
-    await findCustomer(lookup.page);
-    setNotice(done);
-  }
-
-  async function sendCode() {
-    if (!lookup?.customer) return;
-    const result = await run(() => secureApi<{ sentTo: string | null }>(COUNTER_OP, { action: "code-send", userId: lookup.customer!.id }));
-    if (!result) return;
-    setCodeSentTo(result.sentTo);
-    setCodeValue("");
-    setNotice("Code sent. Ask the customer to read it out.");
-  }
-
-  async function checkCode() {
-    if (!lookup?.customer) return;
-    const result = await run(() => secureApi(COUNTER_OP, { action: "code-check", userId: lookup.customer!.id, code: codeValue.trim() }));
-    if (!result) return;
-    resetContact();
-    await findCustomer(lookup.page);
-    setNotice("Email verified with the customer’s code.");
-  }
-
-  /** "The customer confirmed this in front of me" must be ticked before staff can verify on the spot. */
-  function confirmBox(channel: Channel) {
-    const label = channel === "email" ? "email" : "mobile number";
-    return <div className="counter-contact__confirm">
-      <label className="counter-contact__tick">
-        <input type="checkbox" checked={confirmTicked} onChange={(event) => setConfirmTicked(event.target.checked)}/> The customer confirmed this {label} in front of me.
-      </label>
-      <div className="counter-contact__actions">
-        <button type="button" className="btn btn--primary btn--sm" disabled={!confirmTicked || busy}
-          onClick={() => void contactAction({ action: "confirm", channel }, `${label.charAt(0).toUpperCase()}${label.slice(1)} verified and recorded with your name.`)}>Verify now</button>
-        <button type="button" className="btn btn--ghost btn--sm" onClick={() => resetContact()}>Cancel</button>
-      </div>
-    </div>;
   }
 
   async function recordVisit() {
@@ -425,29 +375,9 @@ export default function CounterDesk({ services, isOwner = false }: { services: S
           </div>
 
           {lookup.customer && lookup.contact && <div className="counter-contact">
-            <ContactCheck label="Email" value={lookup.contact.email} verified={lookup.contact.emailVerified}>
-              <div className="counter-contact__actions">
-                <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => { setConfirmChannel("email"); setConfirmTicked(false); }}>Customer confirmed</button>
-                <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void sendCode()}>{codeSentTo ? "Send code again" : "Send code to email"}</button>
-                <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void contactAction({ action: "verify-request", channel: "email" }, "Sent to an admin for approval.")}>Ask admin to verify</button>
-              </div>
-              {confirmChannel === "email" && confirmBox("email")}
-              {codeSentTo && <div className="counter-contact__confirm">
-                <p>Code sent to {codeSentTo}. Ask the customer to read it out, then type it here.</p>
-                <div className="counter-contact__actions">
-                  <input inputMode="numeric" maxLength={6} value={codeValue} aria-label="6-digit code" placeholder="6-digit code"
-                    onChange={(event) => setCodeValue(event.target.value.replace(/\D/g, "").slice(0, 6))}/>
-                  <button type="button" className="btn btn--primary btn--sm" disabled={busy || codeValue.length !== 6} onClick={() => void checkCode()}>Check code</button>
-                </div>
-              </div>}
-            </ContactCheck>
-            <ContactCheck label="Mobile" value={shownPhone(lookup.contact.phone)} verified={lookup.contact.phoneVerified}>
-              <div className="counter-contact__actions">
-                <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => { setConfirmChannel("phone"); setConfirmTicked(false); }}>Customer confirmed</button>
-                <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => void contactAction({ action: "verify-request", channel: "phone" }, "Sent to an admin for approval.")}>Ask admin to verify</button>
-              </div>
-              {confirmChannel === "phone" && confirmBox("phone")}
-            </ContactCheck>
+            <ContactCheck label="Email" value={lookup.contact.email} verified={lookup.contact.emailVerified}/>
+            <ContactCheck label="Mobile" value={shownPhone(lookup.contact.phone)} verified={lookup.contact.phoneVerified}/>
+            <p className="fine">Verification status is read-only here. Manage verification in Find customer or the customer’s profile.</p>
           </div>}
 
           {billPaise > 0 && <dl className="summary" style={{ marginTop: 10 }}>

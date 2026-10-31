@@ -18,7 +18,7 @@ export async function loadServerModule(entry) {
           ? 'export const db = globalThis.__niseTest.db;'
           : args.path.endsWith("/claims") ? 'export async function pendingClaimCount() { return globalThis.__niseTest.claims ?? 0; } export async function ensureClaim() {}'
           : args.path.endsWith("/auth")
-            ? 'export const CLOSED_STATUSES = ["completed", "cancelled", "rejected", "closed"]; export async function requireStaff(role) { return globalThis.__niseTest.requireStaff(role); } export async function openWorkCount() { return 0; } export async function requireUser() { return globalThis.__niseTest.requireUser(); }'
+            ? 'export const CLOSED_STATUSES = ["completed", "cancelled", "rejected", "closed"]; export async function getCurrentUser() { return globalThis.__niseTest.actor ?? null; } export async function requireStaff(role) { return globalThis.__niseTest.requireStaff(role); } export async function openWorkCount() { return 0; } export async function requireUser() { return globalThis.__niseTest.requireUser(); }'
             : 'export async function sendEmailChangedNotice() {} export async function sendAdminAccountArchivedEmail() {}' }));
         builder.onResolve({ filter: /^next\/headers$/ }, () => ({ path: "headers", namespace: "test-headers" }));
         builder.onLoad({ filter: /.*/, namespace: "test-headers" }, () => ({ contents: 'export async function cookies() { return globalThis.__niseTest.cookies; }' }));

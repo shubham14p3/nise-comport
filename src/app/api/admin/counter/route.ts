@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { lookupCounterAccount, lookupCustomer, lookupCustomerByEmail, recordVisit, requestTopUp, updateCounterCustomer } from "@/lib/counter";
-import { checkCounterCode, confirmAtCounter, requestCounterVerification, sendCounterCode } from "@/lib/counter-verify";
 import { PublicError } from "@/lib/errors";
 import { apiError, readJson } from "@/lib/http";
 import { publishedServiceDetails } from "@/lib/services";
@@ -23,10 +22,6 @@ const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("lookup-email"), email: z.string().trim().max(120), page: z.number().int().min(0).max(10_000).optional() }),
   z.object({ action: z.literal("lookup-account"), userId: z.uuid(), phone, page: z.number().int().min(0).max(10_000).optional() }),
   z.object({ action: z.literal("update-customer"), userId: z.uuid(), name: z.string().trim().min(2).max(100), email: z.string().trim().max(254).optional() }),
-  z.object({ action: z.literal("confirm"), userId: z.string().uuid(), channel: z.enum(["email", "phone"]) }),
-  z.object({ action: z.literal("code-send"), userId: z.string().uuid() }),
-  z.object({ action: z.literal("code-check"), userId: z.string().uuid(), code: z.string().trim().length(6) }),
-  z.object({ action: z.literal("verify-request"), userId: z.string().uuid(), channel: z.enum(["email", "phone"]) }),
   z.object({ action: z.literal("visit"), phone, userId: z.uuid().optional(), name: z.string().trim().max(100).optional(), email: z.string().trim().max(200).optional(), serviceSlug: z.string().min(2).max(80), amount, walletMode: z.enum(["deduct", "accumulate"]).default("deduct") }),
   z.object({ action: z.literal("topup"), phone, userId: z.uuid().optional(), name: z.string().trim().max(100).optional(), email: z.string().trim().max(200).optional(), amount, reason: z.string().max(180).default("") }),
 ]);
@@ -59,10 +54,6 @@ export async function POST(request: NextRequest) {
     if (input.action === "update-customer") return NextResponse.json({
       ok: true, ...(await updateCounterCustomer(input.userId, input.name, input.email, { id: actor.id, name: actor.name })),
     });
-    if (input.action === "confirm") return NextResponse.json(await confirmAtCounter(input.userId, input.channel, actor));
-    if (input.action === "code-send") return NextResponse.json(await sendCounterCode(input.userId, actor));
-    if (input.action === "code-check") return NextResponse.json(await checkCounterCode(input.userId, input.code, actor));
-    if (input.action === "verify-request") return NextResponse.json(await requestCounterVerification(input.userId, input.channel, actor));
 
     if (input.action === "visit") {
       const service = publishedServiceDetails.find((item) => item.slug === input.serviceSlug);

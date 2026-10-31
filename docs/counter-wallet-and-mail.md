@@ -6,6 +6,8 @@ Counter desk → History shows ten visits per page. Owners see all, staff see th
 
 Run `npm run db:migrate` during deployment to add the new read indexes. No existing balances are recalculated.
 
+Counter shows email/mobile verification status only. Verification actions belong to Find customer or the customer profile. Staff contact corrections in Find customer wait for admin approval; the pending banner shows proposed values while searches continue to show the saved values.
+
 ## Incoming email
 
 No AI Tapri mailbox is hardcoded. SMTP is outgoing; these separate values select incoming mail:
