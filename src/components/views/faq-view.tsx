@@ -64,10 +64,10 @@ export async function FaqView({ lang }: { lang: Locale }) {
   return <main className="content-page" lang={LOCALE_META[lang].htmlLang}><SiteHeader/>
     <section className="content-hero"><div className="container">
       <Breadcrumbs label={t("Breadcrumb", "ब्रेडक्रंब", "ব্রেডক্রাম্ব")} items={[{ name: t("Home", "होम", "হোম"), path: home }, { name: t("FAQs", "सवाल-जवाब", "প্রশ্নোত্তর"), path: lp(lang, "/faq") }]}/>
-      <Link href={home} className="back-small"><ArrowLeft size={14}/> {t("Home", "होम", "হোম")}</Link>
+      <Link prefetch={false} href={home} className="back-small"><ArrowLeft size={14}/> {t("Home", "होम", "হোম")}</Link>
       <span className="eyebrow eyebrow-muted">{t("GOOD QUESTIONS, CLEAR ANSWERS", "अच्छे सवाल, साफ़ जवाब", "ভালো প্রশ্ন, স্পষ্ট উত্তর")}</span>
       <h1>{t("Frequently asked", "अक्सर पूछे जाने वाले", "প্রায়ই জিজ্ঞাসিত")}<br/><em>{t("questions.", "सवाल।", "প্রশ্ন।")}</em></h1>
-      <p>{t("Search any question, or pick a topic or service. Can’t find yours? ", "कोई भी सवाल खोजिए, या कोई विषय या सेवा चुनिए। आपका सवाल नहीं मिला? ", "যেকোনো প্রশ্ন খুঁজুন, বা কোনও বিষয় বা পরিষেবা বাছুন। আপনারটা পেলেন না? ")}<Link href={lp(lang, "/contact")}>{t("Ask the service desk", "सर्विस डेस्क से पूछिए", "সার্ভিস ডেস্ককে জিজ্ঞাসা করুন")}</Link>.</p>
+      <p>{t("Search any question, or pick a topic or service. Can’t find yours? ", "कोई भी सवाल खोजिए, या कोई विषय या सेवा चुनिए। आपका सवाल नहीं मिला? ", "যেকোনো প্রশ্ন খুঁজুন, বা কোনও বিষয় বা পরিষেবা বাছুন। আপনারটা পেলেন না? ")}<Link prefetch={false} href={lp(lang, "/contact")}>{t("Ask the service desk", "सर्विस डेस्क से पूछिए", "সার্ভিস ডেস্ককে জিজ্ঞাসা করুন")}</Link>.</p>
     </div></section>
     <section className="container"><FaqFinder faqs={faqs} topics={topics} lang={lang}/></section>
     <JsonLd data={faqLd(faqs.slice(0, 60).map((faq) => ({ question: faq.question, answer: faq.answer })))}/>

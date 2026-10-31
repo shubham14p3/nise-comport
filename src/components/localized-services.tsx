@@ -58,7 +58,7 @@ export async function LocalizedServicesIndex({ lang }: { lang: Lang }) {
         <div className="note-card"><ShieldCheck size={22}/><p><b>{t("Independent service facilitator.", "स्वतंत्र सेवा सहायक।", "স্বাধীন পরিষেবা সহায়ক।")}</b> {t("We help customers use official and partner services; we do not make government, banking or insurance decisions. Official and third-party fees are separate from our service charge.", "हम ग्राहकों को आधिकारिक और साझेदार सेवाओं का उपयोग करने में मदद करते हैं; सरकार, बैंक या बीमा के फ़ैसले हम नहीं करते। आधिकारिक और तीसरे पक्ष के शुल्क हमारे सेवा शुल्क से अलग हैं।", "আমরা গ্রাহকদের সরকারি ও সহযোগী পরিষেবা ব্যবহারে সাহায্য করি; সরকার, ব্যাংক বা বিমার সিদ্ধান্ত আমরা নিই না। সরকারি ও তৃতীয় পক্ষের ফি আমাদের সার্ভিস চার্জ থেকে আলাদা।")} <Link prefetch={false} href="/services">{t("Read in English →", "अंग्रेज़ी में पढ़ें →", "ইংরেজিতে পড়ুন →")}</Link></p></div>
       </div>
     </section>
-    <JsonLd data={itemListLd(t("NISE COMPORT services", "NISE COMPORT सेवाएँ", "NISE COMPORT পরিষেবা"), services.map((service) => ({ name: service.name, path: service.href })))}/>
+    <JsonLd data={itemListLd(t("NiSE COMPORT services", "NiSE COMPORT सेवाएँ", "NiSE COMPORT পরিষেবা"), services.map((service) => ({ name: service.name, path: service.href })))}/>
   </main>;
 }
 
@@ -71,7 +71,7 @@ export async function LocalizedCategory({ lang, slug }: { lang: Lang; slug: stri
   const meta = categoryMetaFor(slug);
   const translated = translatedMap(lang);
   const children = await servicesInCategoryAll(slug);
-  const enquiry = whatsappLink(t(`Hi NISE COMPORT, I need help with ${group.title}.`, `नमस्ते NISE COMPORT, मुझे "${text.title}" में मदद चाहिए।`, `নমস্কার NISE COMPORT, "${text.title}" নিয়ে আমার সাহায্য দরকার।`));
+  const enquiry = whatsappLink(t(`Hi NiSE COMPORT, I need help with ${group.title}.`, `नमस्ते NiSE COMPORT, मुझे "${text.title}" में मदद चाहिए।`, `নমস্কার NiSE COMPORT, "${text.title}" নিয়ে আমার সাহায্য দরকার।`));
   return <main className="page" lang={LOCALE_META[lang].htmlLang}><SiteHeader/>
     <section className={`page-hero page-hero--service tone-${meta?.tone ?? "blue"}`}>
       <div className="page-hero__bg" aria-hidden="true"><span className="blob blob--1"/><span className="blob blob--2"/></div>

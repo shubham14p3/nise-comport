@@ -4,10 +4,12 @@
  *
  * Plain module (no imports) so it can be used in the browser and in tests.
  */
-export const STAFF_PERMISSIONS = ["requests", "payments", "charge", "records", "pan", "promotions", "content", "campaigns", "whatsapp", "wallet", "mail", "counter"] as const;
+export const STAFF_PERMISSIONS = ["inbox", "outreach", "requests", "payments", "charge", "records", "pan", "promotions", "content", "campaigns", "whatsapp", "wallet", "mail", "counter"] as const;
 export type Permission = (typeof STAFF_PERMISSIONS)[number];
 
 export const PERMISSION_INFO: Record<Permission, { label: string; detail: string }> = {
+  inbox: { label: "Inbox", detail: "See messages, callbacks, notifications and pending work." },
+  outreach: { label: "Birthdays & renewals", detail: "View the birthday and renewal tools." },
   requests: { label: "Requests & print orders", detail: "Unlocks Requests. See the queue, open customer files and update statuses. Tick service categories below to limit which requests they see." },
   payments: { label: "Payments (check receiving)", detail: "Unlocks Payments. See payments received and confirm (verify) UPI payments. Cannot create, refund or cancel payments." },
   charge: { label: "Create payment requests & refunds", detail: "Ask a customer to pay (create a payment request), process refunds and cancel payments. Off by default; only give it to people you trust with money." },

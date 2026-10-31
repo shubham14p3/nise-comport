@@ -1,6 +1,8 @@
 "use client";
 
 import { messageForStatus, networkMessage } from "@/lib/net-messages";
+import { coalesceInFlight, requestFlightKey } from "@/lib/inflight-requests";
+import { trackApiActivity } from "@/lib/api-activity";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -25,10 +27,14 @@ export class SecureApiError extends Error {
   }
 }
 
-const JSON_TIMEOUT_MS = 30_000;
+// First Turbopack compilation on Windows can take longer than a warm production request.
+const JSON_TIMEOUT_MS = process.env.NODE_ENV === "development" ? 120_000 : 30_000;
 const FILE_TIMEOUT_MS = 120_000;
+// All UI code paths use this shared client. Identical concurrent clicks send one POST.
+const pendingRequests = new Map<string, Promise<unknown>>();
+const pendingUploads = new WeakMap<File, Map<string, Promise<unknown>>>();
 
-/** fetch with a time limit; offline or stalled connections become a readable SecureApiError instead of "Failed to fetch". */
+/** Fetch errors can be caused by the hosting proxy, not just the visitor's internet connection. */
 async function send(init: RequestInit, timeoutMs: number): Promise<Response> {
   if (typeof navigator !== "undefined" && navigator.onLine === false) throw new SecureApiError(0, { error: networkMessage("offline"), code: "offline" });
   const controller = new AbortController();
@@ -36,8 +42,10 @@ async function send(init: RequestInit, timeoutMs: number): Promise<Response> {
   try {
     return await fetch(ROUTE, { ...init, signal: controller.signal });
   } catch (error) {
-    const timedOut = error instanceof DOMException && error.name === "AbortError";
-    throw new SecureApiError(timedOut ? 408 : 0, { error: networkMessage(timedOut ? "timeout" : "offline"), code: timedOut ? "timeout" : "offline" });
+    const timedOut = controller.signal.aborted || (error instanceof Error && error.name === "AbortError");
+    const offline = !timedOut && typeof navigator !== "undefined" && navigator.onLine === false;
+    const kind = timedOut ? "timeout" : offline ? "offline" : "unavailable";
+    throw new SecureApiError(timedOut ? 408 : 0, { error: networkMessage(kind), code: kind });
   } finally { clearTimeout(timer); }
 }
 
@@ -128,7 +136,7 @@ async function decryptJsonResponse<T>(response: Response, responseKey: CryptoKey
   return { status: Number(wrapped.z), data: wrapped.d as T };
 }
 
-export async function secureApi<T>(operation: string, input: unknown = {}): Promise<T> {
+async function secureApiOnce<T>(operation: string, input: unknown = {}): Promise<T> {
   const ctx = await prepare();
   const clear = encoder.encode(JSON.stringify({ o: operation, i: input }));
   const ciphertext = await crypto.subtle.encrypt(
@@ -151,6 +159,15 @@ export async function secureApi<T>(operation: string, input: unknown = {}): Prom
   return opened.data;
 }
 
+/**
+ * Every JSON UI API call uses a single in-flight request for the same operation
+ * and payload. This does not cache completed responses: retries are allowed.
+ * Distinct actions/filters/records do not block one another.
+ */
+export function secureApi<T>(operation: string, input: unknown = {}): Promise<T> {
+  return coalesceInFlight(pendingRequests, requestFlightKey(operation, input), () => trackApiActivity(secureApiOnce<T>(operation, input)));
+}
+
 /** Public static files only (for example blank PDF forms under /forms). Application data never goes through here. */
 export function fetchStaticFile(path: string, init: RequestInit = {}): Promise<Response> {
   if (!path.startsWith("/forms/")) throw new Error("fetchStaticFile is only for files under /forms/.");
@@ -162,11 +179,26 @@ export async function secureResult<T>(operation: string, input: unknown = {}) {
     return { ok: true as const, status: 200, result: await secureApi<T>(operation, input) };
   } catch (error) {
     if (error instanceof SecureApiError) return { ok: false as const, status: error.status, result: error.body as T };
-    return { ok: false as const, status: 0, result: { error: networkMessage("offline") } as T };
+    // Encryption, decoding and unexpected client errors are not proof of being offline.
+    // A failed sealed-response decrypt can indicate that the browser has an old build.
+    return { ok: false as const, status: 0, result: { error: networkMessage("secure"), code: "secure_failed" } as T };
   }
 }
 
-export async function secureUpload<T>(operation: string, file: File, input: Record<string, unknown> = {}): Promise<T> {
+/**
+ * File uploads are keyed by the actual File object (not just its name).
+ * Repeated clicks on Import/Upload will not upload the same selected file twice.
+ */
+export function secureUpload<T>(operation: string, file: File, input: Record<string, unknown> = {}): Promise<T> {
+  let pending = pendingUploads.get(file);
+  if (!pending) {
+    pending = new Map<string, Promise<unknown>>();
+    pendingUploads.set(file, pending);
+  }
+  return coalesceInFlight(pending, requestFlightKey(operation, input), () => trackApiActivity(secureUploadOnce<T>(operation, file, input)));
+}
+
+async function secureUploadOnce<T>(operation: string, file: File, input: Record<string, unknown> = {}): Promise<T> {
   const ctx = await prepare();
   const metadata = encoder.encode(JSON.stringify({ o: operation, i: { ...input, n: file.name, t: file.type } }));
   const fileBytes = new Uint8Array(await file.arrayBuffer());
@@ -197,7 +229,12 @@ export async function secureUpload<T>(operation: string, file: File, input: Reco
   return opened.data;
 }
 
-export async function secureFile(operation: string, input: unknown = {}) {
+/** Avoid duplicate encrypted file fetches from repeated download clicks. */
+export function secureFile(operation: string, input: unknown = {}) {
+  return coalesceInFlight(pendingRequests, `file:${requestFlightKey(operation, input)}`, () => trackApiActivity(secureFileOnce(operation, input)));
+}
+
+async function secureFileOnce(operation: string, input: unknown = {}) {
   const ctx = await prepare();
   const clear = encoder.encode(JSON.stringify({ o: operation, i: input }));
   const ciphertext = await crypto.subtle.encrypt(

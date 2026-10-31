@@ -68,8 +68,8 @@ export default function OffersExperience({ views, siteUrl, crumbs }: { views: Pr
           <strong>{t.welcomeTitle}</strong>
           <p>{t.welcomeText}</p>
           <div className="welcome-ticket__actions">
-            <Link className="btn btn--light" href="/signup">{t.welcomeCta}<ArrowRight size={17}/></Link>
-            <Link className="btn btn--glass btn--sm" href="/profile#vouchers">{t.welcomeHave}</Link>
+            <Link prefetch={false} className="btn btn--light" href="/signup">{t.welcomeCta}<ArrowRight size={17}/></Link>
+            <Link prefetch={false} className="btn btn--glass btn--sm" href="/profile#vouchers">{t.welcomeHave}</Link>
           </div>
         </aside>
       </div>
@@ -147,7 +147,7 @@ export default function OffersExperience({ views, siteUrl, crumbs }: { views: Pr
           <article><span className="mini-icon tone-violet"><TicketCheck size={18}/></span><h3>2. {t.how2}</h3><p>{t.how2Text}</p></article>
           <article><span className="mini-icon tone-green"><ShieldCheck size={18}/></span><h3>3. {t.how3}</h3><p>{t.how3Text}</p></article>
         </div>
-        <div className="section-foot"><Link className="btn btn--primary" href="/request">{dict(locale).nav.startRequest} <ArrowRight size={18}/></Link><Link className="btn btn--ghost" href="/print">{t.useOnPrint}</Link></div>
+        <div className="section-foot"><Link prefetch={false} className="btn btn--primary" href="/request">{dict(locale).nav.startRequest} <ArrowRight size={18}/></Link><Link prefetch={false} className="btn btn--ghost" href="/print">{t.useOnPrint}</Link></div>
       </div>
     </section>}
   </>;

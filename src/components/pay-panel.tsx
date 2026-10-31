@@ -158,13 +158,13 @@ export default function PayPanel(p: Props) {
         {choice === "original" && <input value={details} onChange={(e) => setDetails(e.target.value)} placeholder="Bank account + IFSC, or UPI ID" maxLength={300}/>}
         <button className="btn btn--ghost btn--block" type="button" disabled={busy === "refund"} onClick={() => void askRefund()}>{busy === "refund" ? "Sending…" : "Request refund"}</button>
       </section>;
-  if (p.status === "paid") return <div className="pay-card pay-card--done"><h2>Payment received ✓</h2><p>Thank you. We have recorded {rupees(p.amountPaise + (p.paidVia === "razorpay" || p.paidVia === "cashfree" ? p.feePaise : 0))} against {p.reference}. A receipt was emailed to you.</p><p className="pay-notice">We will now process your application. We normally aim to share the first official application reference within 1–2 working days, subject to the government portal or provider. We will add the reference to your account once available. <Link href="/profile#profile">Verify your email and WhatsApp contact details</Link> to receive updates.</p>{refundBox}{error && <p role="alert" className="form-error">{error}</p>}</div>;
+  if (p.status === "paid") return <div className="pay-card pay-card--done"><h2>Payment received ✓</h2><p>Thank you. We have recorded {rupees(p.amountPaise + (p.paidVia === "razorpay" || p.paidVia === "cashfree" ? p.feePaise : 0))} against {p.reference}. A receipt was emailed to you.</p><p className="pay-notice">We will now process your application. We normally aim to share the first official application reference within 1–2 working days, subject to the government portal or provider. We will add the reference to your account once available. <Link prefetch={false} href="/profile#profile">Verify your email and WhatsApp contact details</Link> to receive updates.</p>{refundBox}{error && <p role="alert" className="form-error">{error}</p>}</div>;
   if (p.status === "cancelled") return <div className="pay-card"><h2>This payment request was cancelled</h2><p>Please contact us if you think this is a mistake.</p></div>;
 
   return <div className="pay-card">
     {p.who && <div className="pay-who" role="status">
       <p><b>Signed in as {p.who.name}</b> · Email {p.who.email ? "verified ✓" : "not verified"} · Mobile {p.who.phone ? "verified ✓" : "not verified"}</p>
-      {!(p.who.email && p.who.phone) && <p className="alert alert--warn">Verify your email and mobile number to pay. <Link href="/profile">Open your profile</Link> to verify them.</p>}
+      {!(p.who.email && p.who.phone) && <p className="alert alert--warn">Verify your email and mobile number to pay. <Link prefetch={false} href="/profile">Open your profile</Link> to verify them.</p>}
     </div>}
     {p.razorpay && <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload"/>}
     {p.cashfree && <Script src="https://sdk.cashfree.com/js/v3/cashfree.js" strategy="lazyOnload"/>}
@@ -183,7 +183,7 @@ export default function PayPanel(p: Props) {
           placeholder="Enter promo code" onChange={e=>setCoupon(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g,"").slice(0,40))}/>
           <button type="button" className="btn btn--primary btn--sm" disabled={!coupon.trim()||Boolean(busy)} onClick={()=>void applyCoupon()}>
             {busy==="coupon"?"Applying…":"Apply offer"}</button></div>
-        <small>Discounts apply only to our service fee—not official charges or payment gateway fees. <Link href="/offers">Browse active offers</Link>.</small>
+        <small>Discounts apply only to our service fee—not official charges or payment gateway fees. <Link prefetch={false} href="/offers">Browse active offers</Link>.</small>
       </div>}
       {p.couponCode&&<p className="alert alert--success">Your offer {p.couponCode} is applied.</p>}
     </section>

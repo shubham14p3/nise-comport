@@ -7,7 +7,7 @@ export const WHATSAPP_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP_PRIMARY ?? "919
 export const PHONE_E164 = "+919771219893";
 
 /** First line of every WhatsApp message we start, so the customer sees whose chat it is. */
-export const WHATSAPP_BRAND_LINE = "*NISE COMPORT* · Kharangajhar, Telco, Jamshedpur";
+export const WHATSAPP_BRAND_LINE = "*NiSE COMPORT* · Kharangajhar, Telco, Jamshedpur";
 
 /** Adds the brand line once, unless the message already has it. */
 export function brandedWhatsAppText(text: string) {

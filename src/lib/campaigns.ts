@@ -8,7 +8,7 @@ import { isPosterUrl, posterFor } from "@/lib/poster-library";
 import { statusLabel } from "@/lib/requests";
 import { site } from "@/lib/site";
 import { normalizePhone } from "@/lib/validation";
-import { cloudApiConfigured, sendTemplate, sendText, type InboundEvent } from "@/lib/whatsapp";
+import { cloudApiConfigured, sendTemplate, type InboundEvent } from "@/lib/whatsapp";
 
 type CampaignRow = typeof campaigns.$inferSelect;
 const KINDS: CampaignKind[] = ["renewal", "offer", "optin", "birthday"];
@@ -361,11 +361,16 @@ const REFERENCE_PATTERN = /\b([A-Z]{2,3}-\d{6}-[A-Z0-9]{6})\b/i;
  * customer's WhatsApp number can never be used to read another customer's status.
  * Returns true if the message was handled as a status query (caller should skip STOP/YES parsing).
  */
+async function sendStatusReply(phone: string, message: string) {
+  // Persist the actual sent reply so Admin → WhatsApp chats matches the conversation.
+  return (await import("@/lib/whatsapp-bot")).replyAndLog(phone, message, "bot");
+}
+
 export async function handleStatusQuery(phone: string, text: string): Promise<boolean> {
   if (!cloudApiConfigured() || !/^\s*(status|stat|track|track\s*my\s*(order|request))\b/i.test(text)) return false;
   const [account] = await db.select({ id: users.id }).from(users).where(or(eq(users.phone, phone), eq(users.whatsapp, phone))).limit(1);
   if (!account) {
-    await sendText(phone, "We couldn't find a NISE COMPORT account for this WhatsApp number. Reply with your reference number (e.g. NC-261018-AB12CD), or call the desk and we'll check for you.");
+    await sendStatusReply(phone, "We couldn't find a NISE COMPORT account for this WhatsApp number. Reply with your reference number (e.g. NC-261018-AB12CD), or call the desk and we'll check for you.");
     return true;
   }
   const reference = text.match(REFERENCE_PATTERN)?.[1]?.toUpperCase();
@@ -374,14 +379,14 @@ export async function handleStatusQuery(phone: string, text: string): Promise<bo
     const [print] = service ? [] : await db.select({ reference: printJobs.reference, name: printJobs.fileName, status: printJobs.status }).from(printJobs).where(and(eq(printJobs.reference, reference), eq(printJobs.userId, account.id))).limit(1);
     const found = service ?? print;
     const officialLine = found && "officialReference" in found && found.officialReference ? ` · ${found.officialReferenceLabel || "Official ref"}: ${found.officialReference}` : "";
-    await sendText(phone, found ? `${found.reference} (${found.name}): ${statusLabel(found.status)}${officialLine}.` : `We couldn't find ${reference} on your account. Check the reference number, or call the desk.`);
+    await sendStatusReply(phone, found ? `${found.reference} (${found.name}): ${statusLabel(found.status)}${officialLine}.` : `We couldn't find ${reference} on your account. Check the reference number, or call the desk.`);
     return true;
   }
   const recent = [
     ...(await db.select({ reference: serviceRequests.reference, name: serviceRequests.serviceName, status: serviceRequests.status, updatedAt: serviceRequests.updatedAt, officialReference: serviceRequests.officialReference, officialReferenceLabel: serviceRequests.officialReferenceLabel }).from(serviceRequests).where(eq(serviceRequests.userId, account.id)).orderBy(desc(serviceRequests.updatedAt)).limit(5)),
     ...(await db.select({ reference: printJobs.reference, name: printJobs.fileName, status: printJobs.status, updatedAt: printJobs.updatedAt, officialReference: sql<string | null>`null`, officialReferenceLabel: sql<string | null>`null` }).from(printJobs).where(eq(printJobs.userId, account.id)).orderBy(desc(printJobs.updatedAt)).limit(5)),
   ].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()).slice(0, 3);
-  await sendText(phone, recent.length
+  await sendStatusReply(phone, recent.length
     ? `Your latest requests:\n${recent.map((item) => `${item.reference} (${item.name}): ${statusLabel(item.status)}${item.officialReference ? ` · ${item.officialReferenceLabel || "Official ref"}: ${item.officialReference}` : ""}`).join("\n")}`
     : "We don't see any requests on your account yet. Start one at nisecomport.com or visit the desk.");
   return true;
@@ -395,7 +400,12 @@ export async function handleInbound(events: InboundEvent[]) {
       continue;
     }
     const statusPhone = normalizePhone(event.from);
-    if (statusPhone && await handleStatusQuery(statusPhone, event.text)) continue;
+    if (statusPhone && cloudApiConfigured() && /^\s*(status|stat|track|track\s*my\s*(order|request))\b/i.test(event.text)) {
+      // Preserve actual conversation order: the question is saved before the reply.
+      try { await (await import("@/lib/whatsapp-bot")).logInboundOnly(statusPhone, event.text, event.name); }
+      catch (error) { console.error("[whatsapp] could not log status question", error); }
+      if (await handleStatusQuery(statusPhone, event.text)) continue;
+    }
     const intent = classifyReply(event.text);
     if (!intent) {
       // Not a STOP / YES reply: the assistant answers it (needs the Cloud API; without it nothing is sent).
@@ -410,6 +420,8 @@ export async function handleInbound(events: InboundEvent[]) {
     const [existing] = await db.select({ id: contacts.id, consent: contacts.consent }).from(contacts).where(eq(contacts.phone, phone)).limit(1);
     if (existing) await db.update(contacts).set({ consent, consentAt: new Date(), updatedAt: new Date() }).where(eq(contacts.id, existing.id));
     else await db.insert(contacts).values({ name: event.name?.slice(0, 100) || "WhatsApp contact", phone, consent, consentAt: new Date(), source: "whatsapp-reply" }).onConflictDoNothing();
+    try { await (await import("@/lib/whatsapp-bot")).logInboundOnly(phone, event.text, event.name); }
+    catch (error) { console.error("[whatsapp] could not log consent reply", error); }
     if (consent === "opted_out") await skipPendingFor({ phone });
     consentChanges++;
   }

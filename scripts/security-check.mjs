@@ -67,7 +67,8 @@ for (const path of filesUnder("src")) {
   if (!source.includes('"use client"') && !source.includes("'use client'")) continue;
   for (const match of source.matchAll(operationPattern)) usedOperations.add(match[1]);
 }
-const mappedOperations = new Set([...gateway.matchAll(operationPattern)].map((match) => match[1]));
+const operationTargets = readFileSync("src/lib/secure-api-targets.ts", "utf8");
+const mappedOperations = new Set([...(gateway + operationTargets).matchAll(operationPattern)].map((match) => match[1]));
 for (const operation of usedOperations) {
   if (!mappedOperations.has(operation)) failures.push(`opaque gateway: missing mapping for client operation ${operation}`);
 }

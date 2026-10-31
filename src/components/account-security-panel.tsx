@@ -1,12 +1,12 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
-import { KeyRound, LogOut, Mail, ShieldCheck, Trash2 } from "lucide-react";
+import { FormEvent, useState, type InputHTMLAttributes } from "react";
+import { Copy, Eye, EyeOff, KeyRound, LoaderCircle, LogOut, Mail, ShieldCheck, Trash2 } from "lucide-react";
 import { passwordProblem, PASSWORD_MIN } from "@/lib/validation";
 import { secureResult } from "@/lib/secure-api-client";
 import { invalidateSessionCache } from "@/lib/session-client";
 
-type ApiResult = { error?: string; message?: string; signedOut?: number; email?: string };
+type ApiResult = { error?: string; message?: string; signedOut?: number; email?: string; pin?: string };
 
 async function call(operation: string, body?: unknown) {
   return secureResult<ApiResult>(operation, body ?? {});
@@ -16,6 +16,18 @@ function Alert({ error, message }: { error: string; message: string }) {
   return <>{error && <div className="form-alert error-alert" role="alert">{error}</div>}{message && <div className="form-alert success-alert" role="status">{message}</div>}</>;
 }
 
+/** Reusable, keyboard-accessible password field; toggling never submits its form. */
+function SecretInput(props: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
+  const [visible, setVisible] = useState(false);
+  return <span className="security-secret">
+    <input {...props} type={visible ? "text" : "password"}/>
+    <button type="button" aria-label={visible ? "Hide password" : "Show password"} aria-pressed={visible}
+      onClick={() => setVisible((value) => !value)} disabled={props.disabled}>
+      {visible ? <EyeOff size={18}/> : <Eye size={18}/>}
+    </button>
+  </span>;
+}
+
 /** Profile → "Sign-in & privacy": password, email, devices and account deletion. */
 export default function AccountSecurityPanel({ email, emailVerified, activeSessions, openWork, demoMode = false }: { email: string; emailVerified: boolean; activeSessions: number; openWork: number; demoMode?: boolean }) {
   const router = useRouter();
@@ -23,6 +35,11 @@ export default function AccountSecurityPanel({ email, emailVerified, activeSessi
 
   const [currentPassword, setCurrentPassword] = useState(""); const [newPassword, setNewPassword] = useState("");
   const [passwordError, setPasswordError] = useState(""); const [passwordMessage, setPasswordMessage] = useState("");
+  const [pinPassword, setPinPassword] = useState("");
+  const [pinValue, setPinValue] = useState("");
+  const [autoPin, setAutoPin] = useState(false);
+  const [pinError, setPinError] = useState("");
+  const [issuedPin, setIssuedPin] = useState<string | null>(null);
 
   const [newEmail, setNewEmail] = useState(""); const [emailPassword, setEmailPassword] = useState(""); const [emailCode, setEmailCode] = useState("");
   const [emailStage, setEmailStage] = useState<"start" | "code">("start");
@@ -44,6 +61,18 @@ export default function AccountSecurityPanel({ email, emailVerified, activeSessi
     setBusy("");
     if (!ok) { setPasswordError(result.error ?? "Could not change your password."); return; }
     setCurrentPassword(""); setNewPassword(""); setPasswordMessage(result.message ?? "Password changed.");
+  }
+
+  async function updateMyPin(event: FormEvent) {
+    event.preventDefault();
+    if (busy || !pinPassword || (!autoPin && !/^\\d{6}$/.test(pinValue))) return;
+    setBusy("pin"); setPinError(""); setIssuedPin(null);
+    try {
+      const { ok, result } = await call("P9x4Q2wM7dK6", { currentPassword: pinPassword, pin: autoPin ? "" : pinValue });
+      if (!ok) { setPinError(result.error ?? "Could not update your PIN."); return; }
+      setIssuedPin(result.pin ?? null);
+      setPinPassword(""); setPinValue(""); setAutoPin(false);
+    } finally { setBusy(""); }
   }
 
   async function startEmailChange(event: FormEvent) {
@@ -89,17 +118,37 @@ export default function AccountSecurityPanel({ email, emailVerified, activeSessi
 
     <article className="security-card"><header><KeyRound size={19}/><div><h3>Change password</h3><p>Other devices are signed out after a change, and we email you a confirmation.</p></div></header>
       <form onSubmit={changePassword} className="security-form" noValidate>
-        <label>Current password<input type="password" autoComplete="current-password" required maxLength={128} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} disabled={disabled}/></label>
-        <label>New password<input type="password" autoComplete="new-password" required minLength={PASSWORD_MIN} maxLength={128} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={disabled} aria-describedby="new-password-hint"/><small id="new-password-hint" className={hint ? "field-hint field-hint-warn" : "field-hint"}>{hint || `At least ${PASSWORD_MIN} characters.`}</small></label>
+        <label>Current password<SecretInput autoComplete="current-password" required maxLength={128} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} disabled={disabled}/></label>
+        <label>New password<SecretInput autoComplete="new-password" required minLength={PASSWORD_MIN} maxLength={128} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={disabled} aria-describedby="new-password-hint"/><small id="new-password-hint" className={hint ? "field-hint field-hint-warn" : "field-hint"}>{hint || `At least ${PASSWORD_MIN} characters.`}</small></label>
         <Alert error={passwordError} message={passwordMessage}/>
         <button className="button button-green" disabled={disabled || busy === "password" || !currentPassword || !newPassword}>{busy === "password" ? "Saving…" : "Change password"}</button>
+      </form>
+    </article>
+
+    <article className="security-card"><header><KeyRound size={19}/><div><h3>Set or change your PIN</h3>
+      <p>Use Email + PIN for shared contact numbers. Confirm your current password before making changes.</p></div></header>
+      <form className="security-form" onSubmit={updateMyPin} aria-busy={busy === "pin"}>
+        <label>Current account password<SecretInput autoComplete="current-password" value={pinPassword} required disabled={disabled || Boolean(busy)} onChange={(event) => setPinPassword(event.target.value)} maxLength={128}/></label>
+        <label>New 6-digit PIN<SecretInput autoComplete="off" value={autoPin ? "" : pinValue} inputMode="numeric" required={!autoPin}
+          disabled={disabled || Boolean(busy) || autoPin} onChange={(event) => setPinValue(event.target.value.replace(/\\D/g, "").slice(0, 6))} maxLength={6}
+          placeholder={autoPin ? "Automatically generated" : "Enter 6 digits"}/></label>
+        <label className="team-credentials__auto"><input type="checkbox" checked={autoPin} disabled={disabled || Boolean(busy)} onChange={(event) => setAutoPin(event.target.checked)}/> Generate a secure PIN instead</label>
+        {pinError && <div role="alert" className="form-alert error-alert">{pinError}</div>}
+        {issuedPin && <div className="form-alert success-alert" role="status">Your new PIN (shown once): <strong>{issuedPin}</strong>{" "}
+          <button type="button" className="button button-outline" onClick={() => void navigator.clipboard?.writeText(issuedPin)}><Copy size={16}/> Copy PIN</button>
+          <p>Save it privately. Use Email + PIN at sign-in; other devices were signed out.</p>
+        </div>}
+        <button type="submit" className="button button-green" disabled={disabled || Boolean(busy) || !pinPassword || (!autoPin && !/^\\d{6}$/.test(pinValue))}>
+          {busy === "pin" ? <LoaderCircle size={16} className="api-activity__spin"/> : <KeyRound size={16}/>}
+          {busy === "pin" ? "Updating PIN…" : "Set my PIN"}
+        </button>
       </form>
     </article>
 
     <article className="security-card"><header><Mail size={19}/><div><h3>Change sign-in email</h3><p>We send a code to the new address, and tell the old address after the change.</p></div></header>
       {emailStage === "start" ? <form onSubmit={startEmailChange} className="security-form" noValidate>
         <label>New email address<input type="email" inputMode="email" autoComplete="email" required maxLength={254} value={newEmail} onChange={(e) => setNewEmail(e.target.value)} disabled={disabled}/></label>
-        <label>Your password<input type="password" autoComplete="current-password" required maxLength={128} value={emailPassword} onChange={(e) => setEmailPassword(e.target.value)} disabled={disabled}/></label>
+        <label>Your password<SecretInput autoComplete="current-password" required maxLength={128} value={emailPassword} onChange={(e) => setEmailPassword(e.target.value)} disabled={disabled}/></label>
         <Alert error={emailError} message={emailMessage}/>
         <button className="button button-outline" disabled={disabled || busy === "email" || !newEmail || !emailPassword}>{busy === "email" ? "Sending…" : "Send code to new email"}</button>
       </form> : <form onSubmit={confirmEmailChange} className="security-form" noValidate>
@@ -117,7 +166,7 @@ export default function AccountSecurityPanel({ email, emailVerified, activeSessi
     <article className="security-card security-danger"><header><Trash2 size={19}/><div><h3>Delete account</h3><p>Removes your name, email, phone and saved addresses. Records we must keep for completed services stay, without your contact details. This can’t be undone.</p></div></header>
       {openWork > 0 ? <p className="form-alert">You have {openWork} open request{openWork === 1 ? "" : "s"}. Cancel {openWork === 1 ? "it" : "them"} or wait until {openWork === 1 ? "it’s" : "they’re"} completed before deleting your account.</p> :
         <form onSubmit={deleteAccount} className="security-form" noValidate>
-          <label>Your password<input type="password" autoComplete="current-password" required maxLength={128} value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} disabled={disabled}/></label>
+          <label>Your password<SecretInput autoComplete="current-password" required maxLength={128} value={deletePassword} onChange={(e) => setDeletePassword(e.target.value)} disabled={disabled}/></label>
           <label>Type DELETE to confirm<input required maxLength={10} value={confirmation} onChange={(e) => setConfirmation(e.target.value)} disabled={disabled} autoComplete="off"/></label>
           <Alert error={deleteError} message=""/>
           <button className="button button-danger" disabled={disabled || busy === "delete" || !deletePassword}>{busy === "delete" ? "Deleting…" : "Delete my account"}</button>

@@ -165,7 +165,7 @@ function eventDetails(view: PromoView, options: ExportOptions) {
 
 export function eventSummary(view: PromoView, locale: Locale = "en") {
   const text = promoText(view, locale);
-  return `${view.emoji} ${shownCode(view)} · ${text.highlight} · ${text.name} (NISE COMPORT)`;
+  return `${view.emoji} ${shownCode(view)} · ${text.highlight} · ${text.name} (NiSE COMPORT)`;
 }
 
 /** "Add to Google Calendar" link for one promo: an all-day event over the days the code works. */
@@ -176,7 +176,7 @@ export function googleCalendarLink(view: PromoView, options: ExportOptions) {
     text: eventSummary(view, options.locale),
     dates: `${compact(view.startsOn)}/${compact(addDays(view.endsOn, 1))}`,
     details: description,
-    location: "NISE COMPORT, Kharangajhar, Telco, Jamshedpur, Jharkhand",
+    location: "NiSE COMPORT, Kharangajhar, Telco, Jamshedpur, Jharkhand",
     ctz: "Asia/Kolkata",
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
@@ -215,9 +215,9 @@ export function promoIcs(views: PromoView[], options: ExportOptions) {
   const stamp = `${now.toISOString().replace(/[-:]/g, "").slice(0, 15)}Z`;
   const host = new URL(options.siteUrl).hostname;
   const lines = [
-    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//NISE COMPORT//Offers calendar//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
-    "X-WR-CALNAME:NISE COMPORT offers",
-    `X-WR-CALDESC:${icsEscape("Festival and Team India promo codes at NISE COMPORT, Kharangajhar, Telco, Jamshedpur.")}`,
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//NiSE COMPORT//Offers calendar//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+    "X-WR-CALNAME:NiSE COMPORT offers",
+    `X-WR-CALDESC:${icsEscape("Festival and Team India promo codes at NiSE COMPORT, Kharangajhar, Telco, Jamshedpur.")}`,
     "X-WR-TIMEZONE:Asia/Kolkata", "REFRESH-INTERVAL;VALUE=DURATION:P1D", "X-PUBLISHED-TTL:P1D",
   ];
   for (const view of views) {
@@ -231,7 +231,7 @@ export function promoIcs(views: PromoView[], options: ExportOptions) {
       `SUMMARY:${icsEscape(eventSummary(view, options.locale))}`,
       `DESCRIPTION:${icsEscape(description)}`,
       `URL:${options.siteUrl}/offers#${view.code}`,
-      `LOCATION:${icsEscape("NISE COMPORT, Kharangajhar, Telco, Jamshedpur")}`,
+      `LOCATION:${icsEscape("NiSE COMPORT, Kharangajhar, Telco, Jamshedpur")}`,
       `CATEGORIES:${view.kind === "sport" ? "Sports" : "Festival"}`,
       "TRANSP:TRANSPARENT",
       "END:VEVENT",

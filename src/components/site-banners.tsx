@@ -7,12 +7,12 @@ type Lang = "en" | "hi" | "bn";
 
 function BannerImage({ src }: { src: string }) {
   // eslint-disable-next-line @next/next/no-img-element -- poster from the admin library or uploads (any size)
-  return <img src={src} alt="" loading="lazy"/>;
+  return <img src={src} alt="" loading="lazy" decoding="async"/>;
 }
 
 function BannerLink({ banner, children, className }: { banner: Banner; children: React.ReactNode; className: string }) {
   if (!banner.href) return <div className={className}>{children}</div>;
-  if (banner.href.startsWith("/")) return <Link className={className} href={banner.href}>{children}</Link>;
+  if (banner.href.startsWith("/")) return <Link prefetch={false} className={className} href={banner.href}>{children}</Link>;
   return <a className={className} href={banner.href} target={banner.href.startsWith("tel:") ? undefined : "_blank"} rel="noopener noreferrer">{children}</a>;
 }
 

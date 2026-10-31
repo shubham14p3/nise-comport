@@ -3,7 +3,7 @@
  * "Did my Excel import and WhatsApp setup work?" — prints counts only, never names or numbers.
  * Usage: npm run data:check
  */
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { loadEnvFile } from "node:process";
 import pg from "pg";
 
@@ -20,7 +20,8 @@ const line = (label, value) => console.log(`  ${label.padEnd(34)} ${value}`);
 
 try {
   const migrations = await one("select count(*)::int as n from drizzle.__drizzle_migrations").catch(() => [{ n: "?" }]);
-  console.log(`\nMigrations applied: ${migrations[0].n} (this code has 13: 0000–0012)`);
+  const sqlFiles = readdirSync("drizzle").filter((name) => /^\d{4}_.+\.sql$/.test(name)).length;
+  console.log(`\nMigration ledger entries: ${migrations[0].n}; SQL files: ${sqlFiles}. Additive schema repair does not alter the ledger.`);
 
   console.log("\nExcel registers (Admin → Records)");
   if (!(await has("record_imports"))) console.log("  Tables missing: run npm run db:migrate");

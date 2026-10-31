@@ -18,6 +18,7 @@ import { newIdempotencyKey } from "@/lib/client-id";
 import type { OpeningHoursRule } from "@/lib/hours";
 import { dict, type Locale } from "@/lib/i18n";
 import { findOffer, isOfferLive, offerAppliesTo, offersFor } from "@/lib/offers";
+import { getSessionUser } from "@/lib/session-client";
 import { secureApi, secureUpload, SecureApiError } from "@/lib/secure-api-client";
 import { useLocale } from "@/lib/use-locale";
 import { whatsappHref } from "@/lib/public-contact";
@@ -201,7 +202,8 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
 
   useEffect(() => {
     let active = true;
-    secureApi<{ user: SessionUser }>("C4w7G2hN6kP9").then(async (session) => {
+    getSessionUser().then(async (user) => {
+      const session = { user };
       if (!active) return;
       setUser(session.user);
       if (!session.user || session.user.role === "demo") return;
@@ -405,7 +407,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         {done.offerNote && <p className="alert alert--info">{t.offerNotApplied} {done.offerNote}</p>}
         {done.couponNote && <p className={done.couponOk ? "alert alert--success" : "alert alert--info"}>{done.couponNote}</p>}
         <div className="success-card__actions">
-          <Link className="btn btn--primary btn--lg" href="/profile#requests">{t.track}<ArrowRight size={18}/></Link>
+          <Link prefetch={false} className="btn btn--primary btn--lg" href="/profile#requests">{t.track}<ArrowRight size={18}/></Link>
           <a className="btn btn--wa btn--lg" href={whatsappHref(share)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/>{t.shareWa}</a>
           <button type="button" className="btn btn--ghost" onClick={() => { setDone(null); idempotencyKey.current = null; setFile(null); setDraft(initialDraft(services, {})); }}>{t.another}</button>
         </div>
@@ -476,8 +478,8 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
             <span className="choice__icon"><FileText size={20}/></span><span className="choice__text"><b>{t.somethingElse}</b><small>{t.somethingElseSub}</small></span><span className="choice__check" aria-hidden="true">{draft.serviceSlug === "other" && <Check size={16}/>}</span>
           </button>
         </div>
-        {draft.serviceSlug === "pan-card" && <div className="callout"><b>PAN has a dedicated guided form.</b><span>It collects exactly what the PAN process needs.</span><Link className="btn btn--sm btn--primary" href="/pan/request">Open PAN form <ArrowRight size={16}/></Link></div>}
-        {draft.serviceSlug === "printing-scanning" && FEATURES.printUploads && <div className="callout"><b>Printing has its own flow.</b><span>Upload your file, pick pages and see the estimate.</span><Link className="btn btn--sm btn--primary" href="/print">Open print flow <ArrowRight size={16}/></Link></div>}
+        {draft.serviceSlug === "pan-card" && <div className="callout"><b>PAN has a dedicated guided form.</b><span>It collects exactly what the PAN process needs.</span><Link prefetch={false} className="btn btn--sm btn--primary" href="/pan/request">Open PAN form <ArrowRight size={16}/></Link></div>}
+        {draft.serviceSlug === "printing-scanning" && FEATURES.printUploads && <div className="callout"><b>Printing has its own flow.</b><span>Upload your file, pick pages and see the estimate.</span><Link prefetch={false} className="btn btn--sm btn--primary" href="/print">Open print flow <ArrowRight size={16}/></Link></div>}
       </section>}
 
       {draft.step === 1 && <section>
@@ -497,7 +499,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
           errors={showErrors?intakeErrors:{}} photo={photo} onPhotoChange={user && user.role!=="demo"?setPhoto:undefined}/>}
         <div className="quick-picks"><span>{t.quickPicks}</span>{picks.map((pick) => <button key={pick} type="button" className="chip-btn chip-btn--sm" onClick={() => update({ description: draft.description.includes(pick) ? draft.description : `${draft.description ? `${draft.description.trim()} ` : ""}${pick}.`.slice(0, 1500) })}>+ {pick}</button>)}</div>
         {user === null && <div className="guest-intake">
-          <label className="check"><input type="checkbox" checked={guest.terms} onChange={(event) => setGuest((current) => ({ ...current, terms: event.target.checked }))}/><span>I agree to the <Link href="/terms" target="_blank">terms</Link> and <Link href="/privacy" target="_blank">privacy policy</Link>.</span></label>
+          <label className="check"><input type="checkbox" checked={guest.terms} onChange={(event) => setGuest((current) => ({ ...current, terms: event.target.checked }))}/><span>I agree to the <Link prefetch={false} href="/terms" target="_blank">terms</Link> and <Link prefetch={false} href="/privacy" target="_blank">privacy policy</Link>.</span></label>
           <label className="check"><input type="checkbox" checked={guest.contact} onChange={(event) => setGuest((current) => ({ ...current, contact: event.target.checked }))}/><span>NISE COMPORT may contact me about this request on WhatsApp, phone or email.</span></label>
         </div>}
       </section>}
@@ -545,7 +547,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         {activeIntake && <DetailedIntakePreview intake={activeIntake}/>}
         {offer && <div className={`applied-offer tone-${offer.tone}`}><span className="badge badge--live"><i/>{dict(locale).ticker.live}</span><div><b>{offer.highlight[locale]} · {offer.title[locale]}</b><small>{t.offerApplied}. {offer.firstTimeOnly ? t.offerCheck : ""}</small></div></div>}
         <p className="field__hint">Have an offer or coupon? Apply it after our team reviews your application and sends the quotation. The final discount is shown before you pay.</p>
-        <label className="check check--agree"><input type="checkbox" checked={draft.consent} onChange={(event) => update({ consent: event.target.checked })}/><span>{t.consent} <Link href="/terms" target="_blank">{WX.terms[locale]}</Link> · <Link href="/privacy" target="_blank">{WX.privacy[locale]}</Link></span></label>
+        <label className="check check--agree"><input type="checkbox" checked={draft.consent} onChange={(event) => update({ consent: event.target.checked })}/><span>{t.consent} <Link prefetch={false} href="/terms" target="_blank">{WX.terms[locale]}</Link> · <Link prefetch={false} href="/privacy" target="_blank">{WX.privacy[locale]}</Link></span></label>
         {user === null && <p className="alert alert--info">{t.signInNote}</p>}
       </section>}
 

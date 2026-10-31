@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --hostname 0.0.0.0",
+    "dev": "next dev --hostname 0.0.0.0 -p 3020",
     "build": "next build --webpack",
     "release": "node scripts/release-build.mjs",
     "init": "node scripts/check-build.mjs && npm start",
@@ -26,7 +26,8 @@
     "records:import": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/import-records.mts",
     "offers:sync": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types scripts/sync-offers.mts",
     "security:check": "node scripts/security-check.mjs",
-    "verify": "npm run security:check && npm test && npm run lint && npm run build"
+    "verify": "npm run security:check && npm test && npm run lint && npm run build",
+    "check": "npm run security:check && npm test && npm run lint && tsc --noEmit"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { Check, Copy, Eye, EyeOff, KeyRound, Smartphone } from "lucide-react";
 import { checkMobile, typedMobile } from "@/lib/mobile-login-core";
 import { secureResult } from "@/lib/secure-api-client";
@@ -21,6 +21,17 @@ export default function MobileRecoveryPanel({ channels }: { channels: Channel[] 
   const [showPassword, setShowPassword] = useState(false);
   const [step, setStep] = useState<"phone" | "code" | "done">("phone");
   const [busy, setBusy] = useState(false);
+  const submitting = useRef(false);
+  function lock() {
+    if (submitting.current) return false;
+    submitting.current = true;
+    setBusy(true);
+    return true;
+  }
+  function unlock() {
+    submitting.current = false;
+    setBusy(false);
+  }
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [newPin, setNewPin] = useState<string | null>(null);
@@ -30,19 +41,25 @@ export default function MobileRecoveryPanel({ channels }: { channels: Channel[] 
   const available = channels.filter((channel) => !unavailable.includes(channel));
 
   function chooseKind(next: Kind) {
+    if (submitting.current) return;
     setKind(next); setStep("phone"); setCode(""); setPassword(""); setConfirmPassword("");
     setNewPin(null); setError(""); setMessage("");
   }
 
   async function sendCode(channel: Channel) {
+    if (submitting.current) return;
     const mobile = checkMobile(phone);
     if (!mobile.ok) { setError(mobile.error); return; }
     if (!available.includes(channel)) { setError("This recovery channel is not available."); return; }
-    setBusy(true); setError(""); setMessage("");
-    const { ok, status, result } = await secureResult<Result>("F3m8J6pQ1vT9", {
-      action: "send", kind, phone: mobile.e164, channel, website,
-    });
-    setBusy(false);
+    if (!lock()) return;
+    setError(""); setMessage("");
+    let response: Awaited<ReturnType<typeof secureResult<Result>>>;
+    try {
+      response = await secureResult<Result>("F3m8J6pQ1vT9", {
+        action: "send", kind, phone: mobile.e164, channel, website,
+      });
+    } finally { unlock(); }
+    const { ok, status, result } = response;
     if (!ok) {
       if (status === 503) setUnavailable((previous) => previous.includes(channel) ? previous : [...previous, channel]);
       setError(result.error ?? "Mobile recovery is temporarily unavailable."); return;
@@ -53,6 +70,7 @@ export default function MobileRecoveryPanel({ channels }: { channels: Channel[] 
 
   async function confirmCode(event: FormEvent) {
     event.preventDefault();
+    if (submitting.current) return;
     const mobile = checkMobile(phone);
     if (!mobile.ok) { setError(mobile.error); return; }
     if (!/^\d{6}$/.test(code)) { setError("Enter the 6-digit recovery code."); return; }
@@ -61,11 +79,15 @@ export default function MobileRecoveryPanel({ channels }: { channels: Channel[] 
       if (problem) { setError(problem); return; }
       if (password !== confirmPassword) { setError("The two passwords do not match."); return; }
     }
-    setBusy(true); setError(""); setMessage("");
-    const { ok, result } = await secureResult<Result>("F3m8J6pQ1vT9", {
-      action: "confirm", phone: mobile.e164, kind, code, ...(kind === "password" ? { password } : {}),
-    });
-    setBusy(false);
+    if (!lock()) return;
+    setError(""); setMessage("");
+    let response: Awaited<ReturnType<typeof secureResult<Result>>>;
+    try {
+      response = await secureResult<Result>("F3m8J6pQ1vT9", {
+        action: "confirm", phone: mobile.e164, kind, code, ...(kind === "password" ? { password } : {}),
+      });
+    } finally { unlock(); }
+    const { ok, result } = response;
     if (!ok) { setError(result.error ?? "The recovery code is incorrect or has expired."); return; }
     if (kind === "pin" && !result.pin) { setError("Could not retrieve the new PIN. Contact our team."); return; }
     setNewPin(result.pin ?? null);
@@ -80,7 +102,7 @@ export default function MobileRecoveryPanel({ channels }: { channels: Channel[] 
       void navigator.clipboard.writeText(newPin).then(() => setCopied(true)).catch(() => setCopied(false));
     }}>{copied ? <Check size={15}/> : <Copy size={15}/>} {copied ? "Copied" : "Copy PIN"}</button></div>}
     {newPin && <p className="field__hint">Your new PIN appears only once. Never share it with anyone, including staff.</p>}
-    <Link className="btn btn--primary btn--lg btn--block" href="/login">Sign in with your new {kind === "pin" ? "PIN" : "password"}</Link>
+    <Link prefetch={false} className="btn btn--primary btn--lg btn--block" href="/login">Sign in with your new {kind === "pin" ? "PIN" : "password"}</Link>
   </div>;
 
   return <div className="auth__form">
@@ -101,12 +123,12 @@ export default function MobileRecoveryPanel({ channels }: { channels: Channel[] 
       </div>
       {!available.length && <p className="field__hint">Mobile verification is currently unavailable. Please use email recovery or contact the service desk.</p>}
       {error && <p className="alert alert--error" role="alert">{error}</p>}
-    </div> : <form onSubmit={(event) => void confirmCode(event)}>
+    </div> : <form onSubmit={(event) => void confirmCode(event)} aria-busy={busy}>
       <p className="field__hint">{message}</p>
       <label className="field"><span className="field__label">6-digit recovery code</span><input inputMode="numeric" autoComplete="one-time-code" required maxLength={6} value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))} className="otp-input" placeholder="••••••"/></label>
       {kind === "password" && <>
         <label className="field"><span className="field__label">New password</span><span className="input-wrap"><KeyRound size={17}/><input type={showPassword ? "text" : "password"} autoComplete="new-password" minLength={PASSWORD_MIN} maxLength={128} value={password} onChange={(event) => setPassword(event.target.value)}/><button type="button" className="icon-btn" onClick={() => setShowPassword((show) => !show)} aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff size={17}/> : <Eye size={17}/>}</button></span></label>
-        <label className="field"><span className="field__label">Confirm new password</span><input type={showPassword ? "text" : "password"} autoComplete="new-password" maxLength={128} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)}/></label>
+        <label className="field"><span className="field__label">Confirm new password</span><span className="input-wrap"><input type={showPassword ? "text" : "password"} autoComplete="new-password" maxLength={128} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)}/><button type="button" className="icon-btn" onClick={() => setShowPassword((show) => !show)} aria-label={showPassword ? "Hide password" : "Show password"} aria-pressed={showPassword}>{showPassword ? <EyeOff size={17}/> : <Eye size={17}/>}</button></span></label>
       </>}
       {error && <p className="alert alert--error" role="alert">{error}</p>}
       <button className="btn btn--primary btn--lg btn--block" type="submit" disabled={busy || code.length !== 6}>{busy ? "Checking…" : kind === "pin" ? "Reset PIN" : "Reset password"}</button>

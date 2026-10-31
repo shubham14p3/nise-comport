@@ -13,7 +13,7 @@ npm ci
 npm run dev
 ```
 
-Open **http://localhost:3000**. You do not need PostgreSQL or SMTP to explore the local demo pages.
+Open **http://localhost:3020**. You do not need PostgreSQL or SMTP to explore the local demo pages.
 
 ### Local demo sign-in
 

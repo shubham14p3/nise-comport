@@ -1,5 +1,5 @@
 /**
- * Programmes and portals NISE COMPORT helps customers use. We are a local facilitator (a CSC /
+ * Programmes and portals NiSE COMPORT helps customers use. We are a local facilitator (a CSC /
  * Pragya Kendra outlet), not these organisations. Names belong to their owners.
  *
  * To show an official logo, drop the file into public/images/partners/ named after the `slug`

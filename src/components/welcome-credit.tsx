@@ -51,7 +51,7 @@ export default function WelcomeCredit() {
       <div className="confetti" aria-hidden="true">{Array.from({ length: 36 }, (_, index) => <i key={index} style={{ left: `${(index * 37) % 100}%`, animationDelay: `${(index % 9) * 0.15}s` }}/>)}</div>
       <div style={card}>
         <p style={{ fontSize: 40, margin: 0 }}>🎉</p>
-        <h2 id="welcome-title" style={{ margin: "8px 0 4px" }}>Welcome to NISE COMPORT!</h2>
+        <h2 id="welcome-title" style={{ margin: "8px 0 4px" }}>Welcome to NiSE COMPORT!</h2>
         <p style={{ fontSize: 22, fontWeight: 700, margin: "6px 0" }}>₹{amount} welcome credit</p>
         <p style={{ margin: "6px 0 16px" }}>It gives you 10% off every bill at the shop, on every service.</p>
         <button type="button" className="btn btn--primary" onClick={() => void closeCelebration()}>Lovely, thank you</button>

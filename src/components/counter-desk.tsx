@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type KeyboardEvent, type ReactNode } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, X } from "lucide-react";
 import { secureApi, SecureApiError } from "@/lib/secure-api-client";
 import { COUNTER_DISCOUNT_PERCENT } from "@/lib/counter-rules";
 
@@ -13,7 +13,7 @@ const APPROVALS_OP = "W5k2P8vN4rQd";
 type Service = { slug: string; title: string };
 type Visit = { id: string; serviceName: string; billPaise: number; discountPaise: number; walletPaise: number; collectPaise: number; createdAt: string };
 type Contact = { email: string | null; emailVerified: boolean; phone: string | null; phoneVerified: boolean };
-type Lookup = { phone: string; customer: { id: string; name: string } | null; knownName: string | null; contact: Contact | null; balancePaise: number; visits: Visit[]; visitsTotal: number; page: number; pageSize: number };
+type Lookup = { ambiguous?: boolean; candidates?: { id: string; name: string; email: string | null; role: string }[]; phone: string; customer: { id: string; name: string } | null; knownName: string | null; contact: Contact | null; balancePaise: number; visits: Visit[]; visitsTotal: number; page: number; pageSize: number };
 type Recorded = { billPaise: number; discountPaise: number; collectPaise: number; balanceAfterPaise: number };
 type CreditRequest = {
   id: string; amount: string; reason: string; status: "pending" | "approved" | "rejected"; requestedAt: string; requestedById: string;
@@ -53,6 +53,10 @@ export default function CounterDesk({ services }: { services: Service[]; isOwner
   const [mode, setMode] = useState<Mode>("mobile");
   const [lookupText, setLookupText] = useState("");
   const [lookup, setLookup] = useState<Lookup | null>(null);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [editingDetails, setEditingDetails] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [mainOwner, setMainOwner] = useState(false);
@@ -111,27 +115,36 @@ export default function CounterDesk({ services }: { services: Service[]; isOwner
   function resetContact() { setConfirmChannel(null); setConfirmTicked(false); setCodeSentTo(null); setCodeValue(""); }
 
   function switchMode(next: Mode) {
-    setMode(next); setLookupText(""); setLookup(null); setNotice(""); setError(""); resetContact();
+    setMode(next); setLookupText(""); setLookup(null); setSelectedAccountId(null); setEditingDetails(false); setNotice(""); setError(""); resetContact();
   }
 
   /** In mobile mode, typing "@" switches to email, so the customer's address can be pasted straight in. */
   function changeLookup(raw: string) {
     if (mode === "mobile" && raw.includes("@")) { setMode("email"); setLookupText(raw.slice(0, 120)); return; }
     setLookupText(mode === "mobile" ? limitMobileDigits(raw) : raw.slice(0, 120));
+    setLookup(null); setSelectedAccountId(null); setEditingDetails(false);
   }
 
-  async function findCustomer(page = 0) {
+  async function findCustomer(page = 0, chosenId = selectedAccountId) {
     if (mode === "mobile" && lookupText.length !== 10) { setError("Enter a valid 10-digit mobile number."); return; }
     if (mode === "email" && !lookupText.includes("@")) { setError("Enter a valid email address."); return; }
     setLooking(true);
     try {
       const body = mode === "email"
         ? { action: "lookup-email", email: lookupText.trim(), page }
-        : { action: "lookup", phone: lookupText, page };
+        : chosenId ? { action: "lookup-account", userId: chosenId, phone: lookupText, page }
+          : { action: "lookup", phone: lookupText, page };
       const result = await run(() => secureApi<Lookup>(COUNTER_OP, body));
       if (result) {
         setLookup(result);
         resetContact();
+        if (result.ambiguous) { setNotice("Several accounts use this number. Select the exact account below before making changes."); }
+        if (result.customer) {
+          setSelectedAccountId(result.customer.id);
+          setEditName(result.customer.name);
+          setEditEmail(result.contact?.email ?? "");
+          setEditingDetails(false);
+        }
         if (!result.customer && result.knownName) setNewName((current) => current || result.knownName!);
         setNotice(result.customer ? "" : mode === "email"
           ? "No customer has this email. Search by mobile to add a new customer."
@@ -140,6 +153,29 @@ export default function CounterDesk({ services }: { services: Service[]; isOwner
             : "New number. Add the customer’s name below to create their profile.");
       }
     } finally { setLooking(false); }
+  }
+
+  async function chooseCustomer(id: string) {
+    setSelectedAccountId(id);
+    await findCustomer(0, id);
+  }
+
+  async function saveCustomerDetails() {
+    if (!lookup?.customer || busy) return;
+    if (!editName.trim()) { setError("Enter the customer name."); return; }
+    if (!window.confirm("Update the selected customer account? Email changes require verification again. Existing service records stay attached to the same account.")) return;
+    const result = await run(() => secureApi<{ changed: boolean; email: string }>(COUNTER_OP, {
+      action: "update-customer", userId: lookup.customer!.id,
+      name: editName, email: editEmail.trim() || undefined,
+    }));
+    if (!result) return;
+    if (mode === "email" && result.email !== lookupText.trim().toLowerCase()) {
+      setLookupText(result.email);
+      const updated = await run(() => secureApi<Lookup>(COUNTER_OP, { action: "lookup-email", email: result.email, page: lookup.page }));
+      if (updated) { setLookup(updated); setEditName(updated.customer?.name ?? editName); setEditEmail(updated.contact?.email ?? ""); }
+    } else await findCustomer(lookup.page, lookup.customer.id);
+    setNotice(result.changed ? "Customer profile updated. Their existing visits remain linked." : "No customer details changed.");
+    setEditingDetails(false);
   }
 
   function pickService(item: Service) {
@@ -205,7 +241,7 @@ export default function CounterDesk({ services }: { services: Service[]; isOwner
     if (!lookup) { setError("Look up the customer first."); return; }
     if (!lookup.phone) { setError("This customer has no mobile number. Add one in Find customer before recording a visit."); return; }
     const result = await run(() => secureApi<Recorded>(COUNTER_OP, {
-      action: "visit", phone: lookup.phone, name: lookup.customer ? undefined : newName, email: lookup.customer ? undefined : newEmail.trim() || undefined, serviceSlug: service.slug, amount: billPaise / 100,
+      action: "visit", phone: lookup.phone, userId: lookup.customer?.id, name: lookup.customer ? undefined : newName, email: lookup.customer ? undefined : newEmail.trim() || undefined, serviceSlug: service.slug, amount: billPaise / 100,
     }));
     if (!result) return;
     setService(null); setServiceText(""); setAmount(""); setNewName(""); setNewEmail("");
@@ -220,7 +256,7 @@ export default function CounterDesk({ services }: { services: Service[]; isOwner
     if (!lookup) { setError("Look up the customer first."); return; }
     if (!lookup.phone) { setError("This customer has no mobile number. Add one in Find customer first."); return; }
     const result = await run(() => secureApi<{ status: string }>(COUNTER_OP, {
-      action: "topup", phone: lookup.phone, name: lookup.customer ? undefined : newName, email: lookup.customer ? undefined : newEmail.trim() || undefined, amount: paise / 100, reason: topupReason,
+      action: "topup", phone: lookup.phone, userId: lookup.customer?.id, name: lookup.customer ? undefined : newName, email: lookup.customer ? undefined : newEmail.trim() || undefined, amount: paise / 100, reason: topupReason,
     }));
     if (!result) return;
     setTopupAmount(""); setTopupReason("");
@@ -269,9 +305,11 @@ export default function CounterDesk({ services }: { services: Service[]; isOwner
 
         {lookup && <>
           <label className="field" style={{ marginTop: 10 }}><span className="field__label">Service</span>
-            <input value={serviceText} placeholder="Type to search, then Enter" autoComplete="off" role="combobox" aria-controls="counter-service-options" aria-expanded={!service}
+            <div className="counter-service-input"><input value={serviceText} placeholder="Type to search, then Enter" autoComplete="off" role="combobox" aria-controls="counter-service-options" aria-expanded={!service}
               onChange={(event) => { setServiceText(event.target.value); setService(null); setHighlight(0); }}
               onKeyDown={onServiceKey}/>
+              {(serviceText || service) && <button type="button" className="counter-service-clear" aria-label="Clear selected service" title="Choose another service" disabled={busy} onClick={() => { setServiceText(""); setService(null); setHighlight(0); }}><X size={16}/></button>}
+            </div>
             {!service && <ul role="listbox" id="counter-service-options" className="counter-desk__options">
               {matches.map((item, index) => <li key={item.slug} role="option" aria-selected={index === highlight}
                 onMouseDown={(event) => { event.preventDefault(); pickService(item); }}
@@ -300,10 +338,32 @@ export default function CounterDesk({ services }: { services: Service[]; isOwner
 
       <aside className="counter-desk__side" aria-live="polite">
         {!lookup && <p className="muted">Enter a mobile number or email and press Look up. The customer, their verified contacts, wallet balance and the bill summary appear here.</p>}
-        {lookup && <>
+        {lookup?.ambiguous && <div className="counter-desk__card" role="group" aria-label="Select matching customer account">
+          <h3>Choose the correct account</h3>
+          <p className="muted">This phone is shared by several people. Select the correct account; nothing will be merged automatically.</p>
+          <div className="counter-account-choices">
+            {(lookup.candidates ?? []).map((candidate) => <button type="button" className="btn btn--ghost btn--sm" key={candidate.id} disabled={looking || busy}
+              onClick={() => void chooseCustomer(candidate.id)}>
+              <b>{candidate.name}</b><small>{candidate.email ?? "Mobile-only profile"} · {candidate.role}</small>
+            </button>)}
+          </div>
+        </div>}
+        {lookup && !lookup.ambiguous && <>
           <div className="counter-desk__card">
             {lookup.customer
-              ? <><b>{lookup.customer.name}</b><div className="muted">{shownPhone(lookup.contact?.phone ?? null) ?? "No mobile on account"} · wallet <b>{rupees(lookup.balancePaise)}</b></div></>
+              ? <><b>{lookup.customer.name}</b><div className="muted">{shownPhone(lookup.contact?.phone ?? null) ?? "No mobile on account"} · wallet <b>{rupees(lookup.balancePaise)}</b></div>
+                  <button type="button" className="btn btn--ghost btn--sm" style={{ marginTop: 10 }} disabled={busy}
+                    onClick={() => { setEditingDetails((value) => !value); setEditName(lookup.customer!.name); setEditEmail(lookup.contact?.email ?? ""); }}>
+                    {editingDetails ? "Close customer editor" : "Correct name / email"}
+                  </button>
+                  {editingDetails && <div className="counter-correction">
+                    <p className="muted">Changes apply only to this selected customer account. Existing counter history is preserved.</p>
+                    <label className="field"><span className="field__label">Customer name</span><input maxLength={100} value={editName} disabled={busy} onChange={(e) => setEditName(e.target.value)}/></label>
+                    <label className="field"><span className="field__label">Email (optional)</span><input type="email" maxLength={254} value={editEmail} disabled={busy} placeholder="name@example.com" onChange={(e) => setEditEmail(e.target.value)}/></label>
+                    <button type="button" className="btn btn--primary btn--sm" disabled={busy || !editName.trim() || (editName.trim() === lookup.customer.name && editEmail.trim() === (lookup.contact?.email ?? ""))}
+                      onClick={() => void saveCustomerDetails()}>{busy ? "Saving…" : "Save customer details"}</button>
+                  </div>}
+                </>
               : <>
                 <label className="field"><span className="field__label">Customer’s name (new number)</span>
                   <input value={newName} onChange={(event) => setNewName(event.target.value)} autoComplete="off"/>

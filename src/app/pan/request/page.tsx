@@ -4,7 +4,7 @@ import PanQuickStart from "@/components/pan-quick-start";
 import { getCurrentUser } from "@/lib/auth";
 import { privateMetadata } from "@/lib/seo";
 
-export const metadata = privateMetadata("PAN assistance request", "Prepare a PAN assistance request with NISE COMPORT in four steps.");
+export const metadata = privateMetadata("PAN assistance request", "Prepare a PAN assistance request with NiSE COMPORT in four steps.");
 
 export default async function PanRequestPage() {
   const user = await getCurrentUser().catch(() => null);

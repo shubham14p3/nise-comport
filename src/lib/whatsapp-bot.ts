@@ -20,6 +20,11 @@ async function log(entry: { phone: string; direction: "in" | "out"; body: string
   } catch (error) { console.error("[whatsapp-bot] could not save message (run npm run db:migrate)", error); }
 }
 
+/** Log an already-handled inbound status/consent message without triggering another bot reply. */
+export async function logInboundOnly(phone: string, text: string, name?: string) {
+  await log({ phone, direction: "in", body: text || "(empty message)", sender: "customer", name });
+}
+
 /** Sends a reply and keeps a copy in the chat log. */
 export async function replyAndLog(phone: string, body: string, sender: "bot" | "staff", userId?: string | null) {
   const result = await sendText(phone, body);
@@ -56,7 +61,7 @@ export async function handleBotMessage(event: { from: string; text: string; name
 
   if (intent === "track") {
     await handleStatusQuery(phone, /^\s*(status|track)/i.test(text) ? text : `status ${text}`);
-    await log({ phone, direction: "out", body: "(status reply sent)", sender: "bot", userId });
+    // handleStatusQuery already logs the real outgoing text.
     return;
   }
 

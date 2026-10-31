@@ -6,7 +6,7 @@ import { languageAlternates } from "@/lib/tr";
 
 export const metadata: Metadata = pageMetadata(
   "Car & Bike Insurance – New, Renewal & Claims in Jamshedpur",
-  "Compare car and bike insurance quotes, renew before expiry, renew an expired policy or get claim help at NISE COMPORT, Telco, Jamshedpur. NCB, IDV and add-ons explained.",
+  "Compare car and bike insurance quotes, renew before expiry, renew an expired policy or get claim help at NiSE COMPORT, Telco, Jamshedpur. NCB, IDV and add-ons explained.",
   "/insurance",
   { languages: languageAlternates("/insurance") },
 );

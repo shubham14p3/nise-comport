@@ -28,5 +28,5 @@ export function CodeText({ code, masked }: { code: string; masked?: boolean }) {
 export function UseNowButton({ code, masked, className, label }: { code: string; masked?: boolean; className: string; label: string }) {
   const shown = useCode(code, masked);
   if (shown.locked) return <button type="button" className={className} onClick={shown.openGate}>{label}<ArrowRight size={16}/></button>;
-  return <Link className={className} href={`/request?coupon=${encodeURIComponent(shown.text)}`}>{label}<ArrowRight size={16}/></Link>;
+  return <Link prefetch={false} className={className} href={`/request?coupon=${encodeURIComponent(shown.text)}`}>{label}<ArrowRight size={16}/></Link>;
 }

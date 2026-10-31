@@ -19,6 +19,7 @@ import {
   ArrowRight, Check, CircleHelp, FileText, FolderOpen, Gift, History, LayoutDashboard,
   MapPin, Plus, Printer, ShieldCheck, UserRound, WalletCards, Mail } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
+import { invalidateSessionCache } from "@/lib/session-client";
 import { secureApi, secureUpload } from "@/lib/secure-api-client";
 import { whatsappHref } from "@/lib/public-contact";
 import type { CustomerVoucher } from "@/lib/promo-view";
@@ -26,6 +27,7 @@ import type { CustomerVoucher } from "@/lib/promo-view";
 type RequestItem = { reference: string; serviceSlug: string; serviceName: string; status: string; description: string; createdAt: string; officialReference: string | null; officialReferenceLabel: string | null };
 type WalletItem = { amount: string; kind: string; description: string; reference: string | null; createdAt: string };
 type PrintItem = { reference: string; status: string; total: string; fulfillment: string; createdAt: string };
+type CounterVisit = { id: string; serviceName: string; billPaise: number; discountPaise: number; collectPaise: number; createdAt: string };
 type ProfileUser = {
   name: string; email: string; phone: string | null; whatsapp?: string | null; emailVerified: boolean; phoneVerified?: boolean; smsEnabled?: boolean;
   city: string; state: string; postalCode: string; profileSummary: string;
@@ -34,7 +36,7 @@ type ProfileUser = {
 };
 type Coupon = CustomerVoucher;
 type Snapshot = {
-  user: ProfileUser; requests: RequestItem[]; jobs: PrintItem[]; wallet: WalletItem[];
+  user: ProfileUser; requests: RequestItem[]; jobs: PrintItem[]; wallet: WalletItem[]; counterHistory?: CounterVisit[];
   coupons: Coupon[]; activeSessions: number; openWork: number;
 };
 const DEMO_SNAPSHOT: Snapshot = {
@@ -42,7 +44,7 @@ const DEMO_SNAPSHOT: Snapshot = {
     name: "Demo Customer", email: "demo@nisecomport.test", phone: null, emailVerified: false,
     city: "", state: "", postalCode: "", profileSummary: "", preferredContact: "email", updatedAt: "",
   },
-  requests: [], jobs: [], wallet: [], coupons: [], activeSessions: 1, openWork: 0,
+  requests: [], jobs: [], wallet: [], counterHistory: [], coupons: [], activeSessions: 1, openWork: 0,
 };
 type RequestDetail = {
   request: {
@@ -68,6 +70,19 @@ const navigation: { id: Section; label: string; icon: typeof UserRound }[] = [
   { id: "security", label: "Sign-in & privacy", icon: ShieldCheck },
   { id: "help", label: "Get help", icon: CircleHelp },
 ];
+function CounterVisitHistory({ visits, phoneVerified }: { visits: CounterVisit[]; phoneVerified: boolean }) {
+  return <section className="panel" aria-label="Counter visit history">
+    <h2>Shop counter history</h2>
+    <p className="muted">Services recorded when you visited NiSE COMPORT in person. These entries are separate from online requests.</p>
+    {visits.length ? <div className="record-list">{visits.map((visit) => <article className="record" key={visit.id}>
+      <span className="record__icon"><History size={20}/></span>
+      <div className="record__body"><b>{visit.serviceName}</b><small>{dateTime(visit.createdAt)} · Counter visit</small>
+        <small>Bill {rupees(visit.billPaise / 100)} · Wallet discount {rupees(visit.discountPaise / 100)} · Paid {rupees(visit.collectPaise / 100)}</small>
+      </div><span className="chip chip--soft">Recorded</span>
+    </article>)}</div> : <p className="muted">No counter visits are linked to this account yet.{!phoneVerified ? " If a visit was recorded under your mobile number, verify that number in Profile details to find it." : " Ask the counter team to check the mobile number used for your visit."}</p>}
+  </section>;
+}
+
 const closedStatuses = new Set(["completed", "rejected", "cancelled", "closed"]);
 const dateLabel = (value: string) => new Date(value).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 const dateTime = (value: string) => new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
@@ -118,7 +133,7 @@ function sectionFromUrl(): Section {
 
 function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; reload: () => Promise<void>; demoMode: boolean }) {
   const locale = useLocale();
-  const { user, requests, jobs, wallet, coupons, activeSessions, openWork } = snapshot;
+  const { user, requests, jobs, wallet, coupons, activeSessions, openWork, counterHistory = [] } = snapshot;
   const urlSection = useSyncExternalStore(subscribeHash, sectionFromUrl, () => "overview" as Section);
   const [chosenSection, setSection] = useState<Section | null>(null);
   const section = chosenSection ?? urlSection;
@@ -159,6 +174,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
       });
       if (result.user?.phone !== undefined) setPhone(result.user.phone ?? "");
       if (result.user?.updatedAt) setUpdatedAt(result.user.updatedAt);
+      invalidateSessionCache();
       setProfileMessage("Your profile details have been saved.");
       await reload();
     } catch (reason) {
@@ -203,7 +219,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
   const statusClass = (status: string) => `status-pill status-pill--${closedStatuses.has(status.toLowerCase()) ? status.toLowerCase() === "completed" ? "done" : "closed" : "progress"}`;
 
   function RequestRows({ rows }: { rows: RequestItem[] }) {
-    if (!rows.length) return <EmptyState icon={<FileText size={22}/>} title="No requests here yet" text="Send your first request in four quick steps. Its reference number and live status will appear here." action={<Link className="btn btn--primary" href="/request">Start a request <ArrowRight size={16}/></Link>} />;
+    if (!rows.length) return <EmptyState icon={<FileText size={22}/>} title="No requests here yet" text="Send your first request in four quick steps. Its reference number and live status will appear here." action={<Link prefetch={false} className="btn btn--primary" href="/request">Start a request <ArrowRight size={16}/></Link>} />;
     return <div className="record-list">{rows.map((item) => <article className="record" key={item.reference}>
       <span className="record__icon"><FileText size={20}/></span>
       <div className="record__body"><b>{serviceName(item.serviceSlug, item.serviceName, locale)}</b><small>{item.reference} · {dateLabel(item.createdAt)}</small>{item.officialReference && <small>{item.officialReferenceLabel || "Official reference"}: {item.officialReference}</small>}{item.description && <p>{item.description}</p>}</div>
@@ -224,7 +240,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
 
   const content = (() => {
     switch (section) {
-      case "records": return <MyRecordsPanel/>;
+      case "records": return <><MyRecordsPanel/><CounterVisitHistory visits={counterHistory} phoneVerified={Boolean(user.phoneVerified)}/></>;
       case "overview": return <>
         <div className="metric-grid">
           <Metric icon={<FileText size={20}/>} number={activeRequests.length} label="Open requests" tone="blue" onClick={() => openSection("requests")}/>
@@ -234,8 +250,8 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
         </div>
         <div className="panel"><SectionHeading eyebrow="RECENT ACTIVITY" title="Your latest requests" text="Open any request to see what you sent and its current status."/><RequestRows rows={requests.slice(0, 3)}/></div>
         <div className="quick-grid">
-          <Link href="/request" className="quick tone-blue"><Plus size={20}/><span><b>Start a request</b><small>4 quick steps, any service.</small></span><ArrowRight size={18}/></Link>
-          <Link href="/print" className="quick tone-cyan"><Printer size={20}/><span><b>Printing &amp; photocopy</b><small>Ask for a price.</small></span><ArrowRight size={18}/></Link>
+          <Link prefetch={false} href="/request" className="quick tone-blue"><Plus size={20}/><span><b>Start a request</b><small>4 quick steps, any service.</small></span><ArrowRight size={18}/></Link>
+          <Link prefetch={false} href="/print" className="quick tone-cyan"><Printer size={20}/><span><b>Printing &amp; photocopy</b><small>Ask for a price.</small></span><ArrowRight size={18}/></Link>
           <button type="button" onClick={() => openSection("profile")} className="quick tone-violet"><UserRound size={20}/><span><b>Complete your profile</b><small>{completion}/5 details added.</small></span><ArrowRight size={18}/></button>
           <button type="button" onClick={() => openSection("addresses")} className="quick tone-green"><MapPin size={20}/><span><b>Saved addresses</b><small>For delivery and doorstep help.</small></span><ArrowRight size={18}/></button>
         </div>
@@ -260,7 +276,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
             {requestDetail.request.status==="awaiting_payment"&&<div className="case-flow__customer">
               <h3>Your quotation is ready</h3>
               <p>Our staff reviewed your information. View the final charges and apply eligible offer codes before paying.</p>
-              <Link className="btn btn--primary" href={`/pay/${encodeURIComponent(requestDetail.request.reference)}`}>Review and pay <ArrowRight size={16}/></Link>
+              <Link prefetch={false} className="btn btn--primary" href={`/pay/${encodeURIComponent(requestDetail.request.reference)}`}>Review and pay <ArrowRight size={16}/></Link>
             </div>}
             {requestDetail.request.status==="payment_received"&&<p className="alert alert--info">Your payment has been verified. We usually aim to share the official application reference within 1–2 working days, subject to the issuing portal. Check that your email and WhatsApp contact details are current under Profile.</p>}
             {requestDetail.request.officialReference ? (
@@ -272,12 +288,12 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
             <RequestExtras details={requestDetail.request.details} fallback={focusRequest.description}/>
             {requestDetail.events.length > 0 && <ol className="timeline">{requestDetail.events.map((event, index) => <li key={`${event.createdAt}-${index}`}><b>{event.label}</b><small>{dateTime(event.createdAt)}</small></li>)}</ol>}
             {requestDetail.files.length > 0 && <div className="request-detail__files"><b>Supporting documents</b><ul>{requestDetail.files.map((file, index) => <li key={`${file.createdAt}-${index}`}><FileText size={16}/>{file.name} <small>· {dateLabel(file.createdAt)}</small></li>)}</ul></div>}
-            <div className="request-detail__actions">{requestDetail.request.serviceSlug !== "other" && <Link className="btn btn--ghost btn--sm" href={`/services/${requestDetail.request.serviceSlug}`}>Service checklist <ArrowRight size={15}/></Link>}<a className="btn btn--wa btn--sm" href={whatsappHref(`Hi NISE COMPORT, about my request ${requestDetail.request.reference}`)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={16}/>Ask on WhatsApp</a>{requestDetail.request.cancellable && <CancelRequestButton reference={requestDetail.request.reference} onDone={async () => { setSelectedRequest(""); setRequestDetail(null); await reload(); }}/>}</div>
+            <div className="request-detail__actions">{requestDetail.request.serviceSlug !== "other" && <Link prefetch={false} className="btn btn--ghost btn--sm" href={`/services/${requestDetail.request.serviceSlug}`}>Service checklist <ArrowRight size={15}/></Link>}<a className="btn btn--wa btn--sm" href={whatsappHref(`Hi NISE COMPORT, about my request ${requestDetail.request.reference}`)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={16}/>Ask on WhatsApp</a>{requestDetail.request.cancellable && <CancelRequestButton reference={requestDetail.request.reference} onDone={async () => { setSelectedRequest(""); setRequestDetail(null); await reload(); }}/>}</div>
           </>}
         </article>}
         <RequestRows rows={activeRequests}/></div>;
-      case "history": return <div className="panel"><SectionHeading eyebrow="COMPLETED & CLOSED" title="Request history" text="Completed, cancelled and otherwise closed requests."/><RequestRows rows={historyRequests}/>{!historyRequests.length && requests.length > 0 && <p className="muted">Your requests are still in progress. They move here once the team closes them.</p>}</div>;
-      case "prints": return <div className="panel"><SectionHeading eyebrow="DOCUMENT SERVICES" title="Print orders" text="Your print requests, pickup or delivery choice, the estimate and the latest status." />{jobs.length ? <div className="record-list">{jobs.map((job) => <article className="record" key={job.reference}><span className="record__icon"><Printer size={20}/></span><div className="record__body"><b>Print order · {job.fulfillment}</b><small>{job.reference} · {dateLabel(job.createdAt)}</small><p>Estimate: {rupees(Number(job.total))}</p></div><span className={statusClass(job.status)}>{statusText(job.status, locale)}</span></article>)}</div> : <EmptyState icon={<Printer size={22}/>} title="No print orders yet" text="Upload a document, choose options and request an estimate. The team confirms the final cost before printing." action={<Link href="/print" className="btn btn--primary">Start a print request <ArrowRight size={16}/></Link>}/>}</div>;
+      case "history": return <><div className="panel"><SectionHeading eyebrow="COMPLETED & CLOSED" title="Request history" text="Completed, cancelled and otherwise closed online requests."/><RequestRows rows={historyRequests}/>{!historyRequests.length && requests.length > 0 && <p className="muted">Your requests are still in progress. They move here once the team closes them.</p>}</div><CounterVisitHistory visits={counterHistory} phoneVerified={Boolean(user.phoneVerified)}/></>;
+      case "prints": return <div className="panel"><SectionHeading eyebrow="DOCUMENT SERVICES" title="Print orders" text="Your print requests, pickup or delivery choice, the estimate and the latest status." />{jobs.length ? <div className="record-list">{jobs.map((job) => <article className="record" key={job.reference}><span className="record__icon"><Printer size={20}/></span><div className="record__body"><b>Print order · {job.fulfillment}</b><small>{job.reference} · {dateLabel(job.createdAt)}</small><p>Estimate: {rupees(Number(job.total))}</p></div><span className={statusClass(job.status)}>{statusText(job.status, locale)}</span></article>)}</div> : <EmptyState icon={<Printer size={22}/>} title="No print orders yet" text="Upload a document, choose options and request an estimate. The team confirms the final cost before printing." action={<Link prefetch={false} href="/print" className="btn btn--primary">Start a print request <ArrowRight size={16}/></Link>}/>}</div>;
       case "wallet": return <div className="panel"><SectionHeading eyebrow="CUSTOMER REWARDS" title="Wallet & credits" text="Credits and adjustments posted by the team, with date and reference."/><div className="wallet-hero"><span>AVAILABLE BALANCE</span><strong>{rupees(balance)}</strong><small>Top-up and online wallet payment are not enabled.</small></div>{wallet.length ? <div className="ledger">{wallet.map((entry, index) => <article key={`${entry.createdAt}-${index}`}><div><b>{entry.description}</b><small>{dateLabel(entry.createdAt)}{entry.reference ? ` · ${entry.reference}` : ""}</small></div><strong className={entry.kind.toLowerCase() === "debit" ? "is-debit" : "is-credit"}>{entry.kind.toLowerCase() === "debit" ? "−" : "+"}{rupees(Number(entry.amount))}</strong></article>)}</div> : <EmptyState icon={<WalletCards size={22}/>} title="No wallet activity yet" text="Eligible promotional credits or adjustments will appear here."/>}</div>;
       case "vouchers": return <div className="panel"><SectionHeading eyebrow="SAVINGS" title="Vouchers & offers" text="Your ₹50 welcome coupon and the festival and Team India codes live today. Each code can be used once." /><VoucherBoard vouchers={coupons}/></div>;
       case "addresses": return <div className="panel"><SectionHeading eyebrow="DELIVERY & CONTACT" title="Saved addresses" text="Search with Google, use your current location or type it. Used for print delivery and doorstep help."/>{demoMode ? <EmptyState icon={<MapPin size={22}/>} title="Demo preview" text="Saved addresses are available after creating a real account."/> : <AddressManager/>}</div>;
@@ -298,7 +314,7 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
           <div className="form-actions field--full"><button className="btn btn--primary btn--lg" disabled={profileBusy}>{profileBusy ? "Saving…" : "Save profile details"}</button></div>
         </form></div>;
       case "security": return <div className="panel"><SectionHeading eyebrow="ACCOUNT ACCESS" title="Sign-in & privacy" text="Manage your password, sign-in email and devices. Keep access codes private."/><AccountSecurityPanel email={user.email} emailVerified={user.emailVerified} activeSessions={activeSessions} openWork={openWork} demoMode={demoMode}/></div>;
-      case "help": return <div className="panel"><SectionHeading eyebrow="LOCAL SUPPORT" title="Need help with your account?" text="Contact the Kharangajhar team about a request status or your details."/><div className="help-card"><CircleHelp size={26}/><div><b>NISE COMPORT · Kharangajhar, Telco Colony</b><p>Ground Floor, Singh Building, Shop No-3, Hanuman Mandir Road, Kharangajhar, Telco Colony, Jamshedpur, Jharkhand 831004</p><div className="help-card__actions"><a className="btn btn--wa" href={whatsappHref("Hi NISE COMPORT, I need help with my account.")} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={17}/>WhatsApp</a><a className="btn btn--ghost" href="tel:+919771219893">Call +91 97712 19893</a><Link className="btn btn--ghost" href="/contact">Contact page</Link></div></div></div></div>;
+      case "help": return <div className="panel"><SectionHeading eyebrow="LOCAL SUPPORT" title="Need help with your account?" text="Contact the Kharangajhar team about a request status or your details."/><div className="help-card"><CircleHelp size={26}/><div><b>NISE COMPORT · Kharangajhar, Telco Colony</b><p>Ground Floor, Singh Building, Shop No-3, Hanuman Mandir Road, Kharangajhar, Telco Colony, Jamshedpur, Jharkhand 831004</p><div className="help-card__actions"><a className="btn btn--wa" href={whatsappHref("Hi NISE COMPORT, I need help with my account.")} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={17}/>WhatsApp</a><a className="btn btn--ghost" href="tel:+919771219893">Call +91 97712 19893</a><Link prefetch={false} className="btn btn--ghost" href="/contact">Contact page</Link></div></div></div></div>;
     }
   })();
 
@@ -310,12 +326,12 @@ function ProfileWorkspace({ snapshot, reload, demoMode }: { snapshot: Snapshot; 
       <div className="container profile__hero-inner">
         <span className="profile__avatar" aria-hidden="true">{firstName.slice(0, 1).toUpperCase()}</span>
         <div className="profile__hello"><span className="eyebrow eyebrow--light">MY ACCOUNT</span><h1>Hi {firstName}, <span className="grad-text grad-text--warm">good to see you.</span></h1><p>{user.email} · <span className={user.emailVerified ? "verified" : "unverified"}><ShieldCheck size={15}/> Email {user.emailVerified ? "verified" : "not verified"}</span></p></div>
-        <Link className="btn btn--primary btn--lg profile__cta" href="/request"><Plus size={18}/>New request</Link>
+        <Link prefetch={false} className="btn btn--primary btn--lg profile__cta" href="/request"><Plus size={18}/>New request</Link>
       </div>
     </section>
     <div className="container profile__layout">
       <aside className="profile__nav" aria-label="Account sections">
-        <nav>{navigation.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={section === id ? "is-active" : undefined} aria-current={section === id ? "page" : undefined} onClick={() => openSection(id)}><Icon size={19}/><span>{label}</span>{id === "requests" && activeRequests.length > 0 && <small>{activeRequests.length}</small>}</button>)}<Link href={MAIL_PATH} className="profile__nav-link"><Mail size={19}/><span>Messages</span></Link></nav>
+        <nav>{navigation.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={section === id ? "is-active" : undefined} aria-current={section === id ? "page" : undefined} onClick={() => openSection(id)}><Icon size={19}/><span>{label}</span>{id === "requests" && activeRequests.length > 0 && <small>{activeRequests.length}</small>}</button>)}<Link prefetch={false} href={MAIL_PATH} className="profile__nav-link"><Mail size={19}/><span>Messages</span></Link></nav>
       </aside>
       <section className="profile__main" aria-live="polite" aria-label={current?.label}>{content}
         <p className="fine"><Check size={15}/> Account data loads over an encrypted connection. Final government and provider decisions rest with the relevant authority.</p>

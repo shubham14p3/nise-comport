@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import AdminDashboard from "@/components/admin-dashboard";
 import { permissionsOf } from "@/lib/permissions";
+import { sanitizedMenu } from "@/lib/sidebar-permissions";
 import { publishedServiceDetails } from "@/lib/services";
 import { isStaffRole } from "@/lib/staff-routes";
 
@@ -20,5 +21,5 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   const viewAsStaff = user.role === "admin" && view === "staff";
   // Service list for the Counter desk popup (public service names only).
   const services = publishedServiceDetails.map((service) => ({ slug: service.slug, title: service.title }));
-  return <AdminDashboard me={{ id: user.id, name: user.name, role: user.role, permissions: permissionsOf(user) }} viewAsStaff={viewAsStaff} services={services}/>;
+  return <AdminDashboard me={{ id: user.id, name: user.name, role: user.role, permissions: permissionsOf(user), sidebar: sanitizedMenu(user.permissions) }} viewAsStaff={viewAsStaff} services={services}/>;
 }

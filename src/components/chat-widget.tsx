@@ -276,7 +276,7 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
       {messages.map((message) => <div key={message.id} className={`chat__msg chat__msg--${message.from}`}>
         <p>{message.text}</p>
         {message.visit && <div className="chat__visit"><MapPin size={15}/><OpenStatus rules={hours} language={locale}/></div>}
-        {message.services && <div className="chat__services">{message.services.map((service) => <Link key={service.slug} href={`/services/${service.slug}`} onClick={onClose}><span>{service.title}</span><ArrowRight size={15}/></Link>)}</div>}
+        {message.services && <div className="chat__services">{message.services.map((service) => <Link prefetch={false} key={service.slug} href={`/services/${service.slug}`} onClick={onClose}><span>{service.title}</span><ArrowRight size={15}/></Link>)}</div>}
         {message.chips && <div className="chat__chips">
           <button type="button" className="chat__chip--main" onClick={askDocs}><FileText size={14}/>{t.docsLabel}</button>
           <button type="button" className="chat__chip--main" onClick={askCallback}><PhoneCall size={14}/>{t.callbackLabel}</button>
@@ -286,7 +286,7 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
         {message.guide && <GuideCard guideId={message.guide.id} variantId={message.guide.variant} locale={locale} t={t} onVariant={(guide, variant) => showGuide(guide, variant)}/>}
         {message.callback && <CallbackForm t={t} onSend={sendLead}/>}
         {message.actions && <div className="chat__actions">{message.actions.map((action) => action.kind === "link"
-          ? <Link key={action.label} href={action.href} className="chat__action" onClick={onClose}>{action.label}<ArrowRight size={14}/></Link>
+          ? <Link prefetch={false} key={action.label} href={action.href} className="chat__action" onClick={onClose}>{action.label}<ArrowRight size={14}/></Link>
           : <a key={action.label} href={action.href} className={action.kind === "wa" ? "chat__action chat__action--wa" : "chat__action"} {...(action.kind === "tel" ? {} : { target: "_blank", rel: "noopener noreferrer" })}>{action.kind === "wa" ? <WhatsAppIcon size={15}/> : action.kind === "tel" ? <Phone size={14}/> : <MapPin size={14}/>}{action.label}</a>)}</div>}
       </div>)}
       {typing && <div className="chat__msg chat__msg--bot chat__typing" aria-label="…"><i/><i/><i/></div>}

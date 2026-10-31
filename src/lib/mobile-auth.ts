@@ -9,7 +9,7 @@ import { PublicError, isUniqueViolation } from "@/lib/errors";
 import { logActivity } from "@/lib/activity";
 import { checkMobile, generatePin, loginPinHashForAccount, pinProblem, placeholderEmail } from "@/lib/mobile-login-core";
 import { clearRate, enforceRate, hitRate, identity, peekRate, RATE_RULES } from "@/lib/rate-limit";
-import { cleanName, passwordProblem } from "@/lib/validation";
+import { cleanName, passwordProblem, looksLikeEmail, normalizeEmail } from "@/lib/validation";
 import { seal } from "@/lib/vault";
 import { RateLimitError, humanDuration } from "@/lib/errors";
 import { secondsUntilWindowEnds } from "@/lib/rate-limit-core";
@@ -31,19 +31,24 @@ const publicUser = (user: Pick<User, "id" | "name" | "email">) => ({ id: user.id
  * tries for one number pause it for 15 minutes whether or not an account exists.
  */
 export async function mobileSignIn(phoneInput: string, pin: string, ip: string) {
-  const { e164, digits } = mobileOrThrow(phoneInput);
+  const emailMode = phoneInput.includes("@");
+  const email = emailMode ? normalizeEmail(phoneInput) : "";
+  const mobile = emailMode ? null : mobileOrThrow(phoneInput);
+  if (emailMode && !looksLikeEmail(email)) throw new PublicError("Enter a valid account email.", 400);
   const problem = pinProblem(pin);
   if (problem) throw new PublicError(problem, 400, { fields: { pin: problem } });
   await enforceRate(RATE_RULES.passwordPerIp15m, identity("ip", ip), "Too many sign-in attempts from this network.");
-  const failId = identity("pin-phone", digits);
+  // Rate limits use the complete selected identity, not just a shared phone's PIN.
+  const failId = identity(emailMode ? "pin-email" : "pin-phone", emailMode ? email : mobile!.digits);
   if ((await peekRate(RATE_RULES.pinFailuresPerPhone15m, failId)) >= RATE_RULES.pinFailuresPerPhone15m.limit) {
     const wait = secondsUntilWindowEnds(Date.now(), RATE_RULES.pinFailuresPerPhone15m.windowSeconds);
-    throw new RateLimitError(`Too many wrong PINs, so sign-in for this number is paused for ${humanDuration(wait)}. Message us on WhatsApp and we will reset your PIN.`, wait);
+    throw new RateLimitError(`Too many incorrect PINs. Try again in ${humanDuration(wait)}.`, wait);
   }
-  // A PIN may be enabled on an existing email account too. Require a server-provisioned
-  // Argon2 PIN hash and an unambiguous active phone match; never infer access from
-  // a profile phone number alone or change signup_method.
-  const found = await db.select().from(users).where(and(eq(users.phone, e164), isNotNull(users.loginPinHash), isNull(users.deletedAt), isNull(users.disabledAt))).limit(2);
+  // Never pick one of several accounts sharing a contact phone, even when only
+  // one has a PIN. An email address is a unique identity for those accounts.
+  const found = emailMode
+    ? await db.select().from(users).where(and(eq(users.email, email), isNull(users.deletedAt), isNull(users.disabledAt))).limit(2)
+    : await db.select().from(users).where(and(eq(users.phone, mobile!.e164), isNull(users.deletedAt), isNull(users.disabledAt))).limit(2);
   const user = found.length === 1 ? found[0] : null;
   const pinHash = loginPinHashForAccount(user);
   const valid = pinHash ? await verify(pinHash, pin).catch(() => false) : (await verify(await dummyHash(), pin).catch(() => false), false);
@@ -52,9 +57,9 @@ export async function mobileSignIn(phoneInput: string, pin: string, ip: string) 
     const left = RATE_RULES.pinFailuresPerPhone15m.limit - recent.count;
     if (left <= 0) {
       const wait = secondsUntilWindowEnds(Date.now(), RATE_RULES.pinFailuresPerPhone15m.windowSeconds);
-      throw new RateLimitError(`${SAME_ANSWER} Sign-in for this number is now paused for ${humanDuration(wait)}.`, wait);
+      throw new RateLimitError(`Email/mobile or PIN is incorrect. Try again in ${humanDuration(wait)}.`, wait);
     }
-    throw new PublicError(`${SAME_ANSWER}${left <= 2 ? ` ${left} ${left === 1 ? "try" : "tries"} left before a 15-minute pause.` : ""}`, 401, { code: "invalid_credentials", fields: { pin: SAME_ANSWER } });
+    throw new PublicError(`Email/mobile or PIN is incorrect.${left <= 2 ? ` ${left} ${left === 1 ? "try" : "tries"} left before a 15-minute pause.` : ""}`, 401, { code: "invalid_credentials", fields: { pin: SAME_ANSWER } });
   }
   await clearRate(RATE_RULES.pinFailuresPerPhone15m, failId);
   await createSession(user.id);

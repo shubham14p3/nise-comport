@@ -12,6 +12,7 @@ import { OfferRail, OfferStrip, WizardActions, WizardFrame } from "@/components/
 import { promoDict } from "@/lib/promo-i18n";
 import { newIdempotencyKey } from "@/lib/client-id";
 import { blackWhiteCost, COLOR_PAGE_RATE, countSelectedPages } from "@/lib/print-pricing";
+import { getSessionUser } from "@/lib/session-client";
 import { secureApi, secureFile, secureUpload } from "@/lib/secure-api-client";
 import { useLocale } from "@/lib/use-locale";
 import { rememberReturn } from "@/lib/after-login";
@@ -71,7 +72,8 @@ export default function PrintOrderForm() {
 
   useEffect(() => {
     let active = true;
-    secureApi<{ user: { role: string } | null }>("C4w7G2hN6kP9").then(async (session) => {
+    getSessionUser().then(async (user) => {
+      const session = { user };
       if (!active) return;
       setSignedIn(Boolean(session.user));
       if (!session.user || session.user.role === "demo") return;
@@ -187,7 +189,7 @@ export default function PrintOrderForm() {
       <form className="wizard-form" noValidate onSubmit={(event) => { event.preventDefault(); if (step === 3) void submitOrder(); else next(); }}>
         {step === 0 && <section>
           <h2>Add your document</h2><p className="wizard-form__sub">PDF, Word, JPG, PNG or WEBP · up to 20 MB. Word files are converted to PDF for preview.</p>
-          {signedIn === false && <div className="callout"><LockKeyhole size={20}/><b>Sign in to upload privately.</b><span>Your files are stored privately and removed after the retention period.</span><Link className="btn btn--primary btn--sm" href="/login" onClick={() => rememberReturn("/print")}>Sign in</Link><Link className="btn btn--ghost btn--sm" href="/signup" onClick={() => rememberReturn("/print")}>Create account</Link></div>}
+          {signedIn === false && <div className="callout"><LockKeyhole size={20}/><b>Sign in to upload privately.</b><span>Your files are stored privately and removed after the retention period.</span><Link prefetch={false} className="btn btn--primary btn--sm" href="/login" onClick={() => rememberReturn("/print")}>Sign in</Link><Link prefetch={false} className="btn btn--ghost btn--sm" href="/signup" onClick={() => rememberReturn("/print")}>Create account</Link></div>}
           {file ? <div className="file-pill file-pill--lg"><FileText size={22}/><span>{file.name}<small>{file.pages} {file.pages === 1 ? "page" : "pages"} · {(file.size / 1024 / 1024).toFixed(1)} MB</small></span><button type="button" className="icon-btn" aria-label="Remove file" onClick={() => { setFile(null); setPreviewUrl(""); setPageText(""); setNotice(""); }}><X size={18}/></button></div>
             : <label className={busy ? "dropzone dropzone--lg is-busy" : "dropzone dropzone--lg"}><input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp,application/pdf" onChange={onFileChange} disabled={busy || signedIn === false}/><span className="dropzone__icon"><Upload size={26}/></span><b>{busy ? "Checking and preparing your file…" : "Tap to choose a file"}</b><small>or drag it here</small></label>}
           {file && <div className="doc-preview"><div className="doc-preview__tip"><Info size={15}/> Preview the file before continuing.</div><iframe src={previewUrl || "about:blank"} title="Private document preview"/></div>}

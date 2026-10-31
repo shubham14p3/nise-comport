@@ -5,7 +5,9 @@ import Link from "next/link";
 import BrandWordmark from "@/components/brand-wordmark";
 import LanguageMenu from "@/components/language-menu";
 import OfferTicker from "@/components/offer-ticker";
-import { ServicesMegaDesktop, ServicesMegaMobile } from "@/components/services-mega-menu";
+import dynamic from "next/dynamic";
+const ServicesMegaDesktop = dynamic(() => import("@/components/services-mega-menu").then((mod) => mod.ServicesMegaDesktop));
+const ServicesMegaMobile = dynamic(() => import("@/components/services-mega-menu").then((mod) => mod.ServicesMegaMobile));
 import { WhatsAppIcon } from "@/components/icons";
 import { ArrowRight, LayoutDashboard, LogOut, Menu, Phone, Search, ShieldCheck, UserRound, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
@@ -91,8 +93,7 @@ export default function SiteHeader() {
     window.addEventListener(SESSION_CHANGED, load);
     const onOtherTab = (event: StorageEvent) => {
       if (event.key !== REMEMBER_KEY) return;
-      invalidateSessionCache(false);
-      load();
+      invalidateSessionCache();
     };
     window.addEventListener("storage", onOtherTab);
     return () => {
@@ -129,6 +130,8 @@ export default function SiteHeader() {
     remember(null);
     setSigningOut(false);
     setMenuOpen(false);
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    router.replace("/login", { scroll: true });
     router.refresh();
   }
 

@@ -35,7 +35,7 @@ export const revalidate = 43200;
 export const metadata: Metadata = {
   ...pageMetadata(
     "CSC & Digital Services in Telco, Jamshedpur",
-    "PAN card, Aadhaar update help, income/caste/residence certificates, AEPS banking, insurance, online forms, websites and printing at NISE COMPORT, Kharangajhar, Telco, Jamshedpur.",
+    "PAN card, Aadhaar update help, income/caste/residence certificates, AEPS banking, insurance, online forms, websites and printing at NiSE COMPORT, Kharangajhar, Telco, Jamshedpur.",
     "/",
     { languages: { "hi-IN": "/hi", "bn-IN": "/bn" }, keywords: ["CSC centre Jamshedpur", "Pragya Kendra Telco", "Pragya Kendra Kharangajhar", "PAN card Jamshedpur", "Aadhaar update Jamshedpur", "income certificate Jamshedpur", "caste certificate Jharkhand", "AEPS Telco", "bike insurance Jamshedpur", "online form filling Jamshedpur", "printing Telco", "प्रज्ञा केंद्र जमशेदपुर", "सीएससी सेंटर टेल्को", "জামশেদপুর প্রজ্ঞা কেন্দ্র"] },
   ),
@@ -57,8 +57,8 @@ const steps = [
 ];
 
 const homeFaqs = [
-  { question: "Where is NISE COMPORT in Jamshedpur?", answer: `${site.address.oneLine}. Tap “Get directions” to open the route in Google Maps.` },
-  { question: "Is NISE COMPORT a government office?", answer: "No. NISE COMPORT is an independent CSC / Pragya Kendra service centre. We help you use official and partner services; the relevant department, bank or provider makes the final decision." },
+  { question: "Where is NiSE COMPORT in Jamshedpur?", answer: `${site.address.oneLine}. Tap “Get directions” to open the route in Google Maps.` },
+  { question: "Is NiSE COMPORT a government office?", answer: "No. NiSE COMPORT is an independent CSC / Pragya Kendra service centre. We help you use official and partner services; the relevant department, bank or provider makes the final decision." },
   { question: "Are government fees included in your charge?", answer: "No. Official or third-party fees are separate from our service charge. We explain both before any work starts and give you a receipt." },
   { question: "Can I track my request online?", answer: "Yes. Create a free account, send a request in four quick steps and follow its status and reference number in your account. We also update you by email, phone or WhatsApp." },
   { question: "Do you help in Hindi and Bengali?", answer: "Yes. The website works in English, हिन्दी and বাংলা, and our team is happy to help you in the language you’re comfortable with." },
@@ -71,13 +71,13 @@ export default async function HomePage() {
   const place = await safely(() => getPlaceSummary(), null, "Google place summary");
   const galleryPreview = [
     ...(await safely(() => livePhotos(), [], "gallery photos")).filter((photo) => photo.tag === "shop" || photo.tag === "camps" || photo.tag === "training").slice(0, 4).map((photo) => ({ key: photo.src, src: photo.src, alt: photo.alt, title: photo.title, google: false })),
-    ...(place?.photos.slice(0, 3).map((photo) => ({ key: `g${photo.index}`, src: `/api/gallery/photo/${photo.index}`, alt: `Photo of NISE COMPORT by ${photo.author}`, title: `Photo · ${photo.author}`, google: true })) ?? []),
+    ...(place?.photos.slice(0, 3).map((photo) => ({ key: `g${photo.index}`, src: `/api/gallery/photo/${photo.index}`, alt: `Photo of NiSE COMPORT by ${photo.author}`, title: `Photo · ${photo.author}`, google: true })) ?? []),
     ...localGallery.slice(0, 6).map((item) => ({ key: item.src, src: item.src, alt: item.alt, title: item.title, google: false })),
   ].slice(0, 6);
 
   return <>
     <SiteHeader/>
-    <JsonLd data={webPageLd({ name: "NISE COMPORT – CSC & Pragya Kendra in Telco, Jamshedpur", description: site.description, path: "/" })}/>
+    <JsonLd data={webPageLd({ name: "NiSE COMPORT – CSC & Pragya Kendra in Telco, Jamshedpur", description: site.description, path: "/" })}/>
     <main className="home">
       <section className="hero">
         <div className="hero__bg" aria-hidden="true"><span className="blob blob--1"/><span className="blob blob--2"/><span className="blob blob--3"/><span className="hero__grid"/></div>
@@ -88,8 +88,8 @@ export default async function HomePage() {
             <p className="hero__lead">PAN, Aadhaar help, certificates, AEPS banking, insurance, forms, websites and printing. Start online in 4 quick steps, track it live, and walk in only when you need to.</p>
             <HeroSearch popular={popular} services={publishedServiceDetails.map((item) => ({ slug: item.slug, title: item.title }))}/>
             <div className="hero__ctas">
-              <Link href="/request" className="btn btn--primary btn--lg">Start a request <ArrowRight size={20}/></Link>
-              <a href={whatsappLink("Hi NISE COMPORT, I need help with a service.")} className="btn btn--glass btn--lg" target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={20}/> Chat on WhatsApp</a>
+              <Link prefetch={false} href="/request" className="btn btn--primary btn--lg">Start a request <ArrowRight size={20}/></Link>
+              <a href={whatsappLink("Hi NiSE COMPORT, I need help with a service.")} className="btn btn--glass btn--lg" target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={20}/> Chat on WhatsApp</a>
             </div>
             <ul className="hero__trust">
               <li><BadgeCheck size={18}/> Serving since 1995</li>
@@ -117,7 +117,7 @@ export default async function HomePage() {
             <p>Pick a category to see every service inside it, with documents to prepare and a 4-step request.</p>
           </div>
           <CategoryGrid/>
-          <div className="section-foot"><Link className="btn btn--ghost" href="/services">Browse all {publishedServiceDetails.length} services <ArrowRight size={18}/></Link></div>
+          <div className="section-foot"><Link prefetch={false} className="btn btn--ghost" href="/services">Browse all {publishedServiceDetails.length} services <ArrowRight size={18}/></Link></div>
         </div>
       </section>
 
@@ -130,7 +130,7 @@ export default async function HomePage() {
             <p>Claim them right inside your request. Offers apply to our service charge, never to government fees.</p>
           </div>
           <LoopScroller className="loop-scroller--offers" label="Live offers" arrows gap={18}>{offers.map((offer) => <div role="listitem" key={offer.id}><OfferCard offer={offer}/></div>)}</LoopScroller>
-          <div className="section-foot"><Link className="btn btn--glass" href="/offers">See all offers <ArrowRight size={18}/></Link></div>
+          <div className="section-foot"><Link prefetch={false} className="btn btn--glass" href="/offers">See all offers <ArrowRight size={18}/></Link></div>
         </div>
       </section>}
 
@@ -146,7 +146,7 @@ export default async function HomePage() {
             <span className="step-card__icon"><Icon size={26}/></span>
             <h3>{title}</h3><p>{text}</p>
           </li>)}</ol>
-          <div className="section-foot"><Link className="btn btn--primary" href="/request">Try it now <ArrowRight size={18}/></Link></div>
+          <div className="section-foot"><Link prefetch={false} className="btn btn--primary" href="/request">Try it now <ArrowRight size={18}/></Link></div>
         </div>
       </section>
 
@@ -161,7 +161,7 @@ export default async function HomePage() {
             <article className="bento__item tone-green"><Clock3 size={28}/><h3>Track it live</h3><p>Every request gets a reference number and status updates in your account.</p></article>
             <article className="bento__item tone-violet"><Languages size={28}/><h3>Your language</h3><p>English, हिन्दी or বাংলা, on the site and at the counter.</p></article>
             <article className="bento__item tone-pink"><LockKeyhole size={28}/><h3>Private by design</h3><p>Encrypted connections. We never ask for your OTP, PIN or password.</p></article>
-            <article className="bento__item tone-cyan"><Truck size={28}/><h3>Printing, photos &amp; websites</h3><p>Printing, photocopy, passport photos and business websites from our Kharangajhar counter. Ask us for the price.</p><Link className="text-link" href="/print">Ask for a printing price <ArrowRight size={16}/></Link></article>
+            <article className="bento__item tone-cyan"><Truck size={28}/><h3>Printing, photos &amp; websites</h3><p>Printing, photocopy, passport photos and business websites from our Kharangajhar counter. Ask us for the price.</p><Link prefetch={false} className="text-link" href="/print">Ask for a printing price <ArrowRight size={16}/></Link></article>
           </div>
         </div>
       </section>
@@ -170,13 +170,13 @@ export default async function HomePage() {
         <div className="container">
           <div className="section-head section-head--split">
             <div><span className="eyebrow">GALLERY</span><h2>A peek at <span className="grad-text">our desk &amp; services.</span></h2></div>
-            <Link className="btn btn--ghost" href="/gallery">Open gallery <ArrowUpRight size={18}/></Link>
+            <Link prefetch={false} className="btn btn--ghost" href="/gallery">Open gallery <ArrowUpRight size={18}/></Link>
           </div>
-          <div className="gallery-strip only-desktop">{galleryPreview.map((item) => <Link key={item.key} href="/gallery" className="gallery-strip__item">
+          <div className="gallery-strip only-desktop">{galleryPreview.map((item) => <Link prefetch={false} key={item.key} href="/gallery" className="gallery-strip__item">
             <SafeImage src={item.src} alt={item.alt} width={600} height={450} sizes="(max-width: 700px) 80vw, 33vw" unoptimized={item.google} fallbackSrc={localGallery[0]?.src}/>
             <span>{item.title}</span>
           </Link>)}</div>
-          <div className="only-mobile"><LoopScroller label="Gallery" gap={12}>{galleryPreview.map((item) => <Link key={item.key} href="/gallery" className="gallery-strip__item gallery-strip__item--loop">
+          <div className="only-mobile"><LoopScroller label="Gallery" gap={12}>{galleryPreview.map((item) => <Link prefetch={false} key={item.key} href="/gallery" className="gallery-strip__item gallery-strip__item--loop">
             <SafeImage src={item.src} alt={item.alt} width={600} height={450} sizes="(max-width: 700px) 80vw, 33vw" unoptimized={item.google} fallbackSrc={localGallery[0]?.src}/>
             <span>{item.title}</span>
           </Link>)}</LoopScroller></div>
@@ -187,11 +187,11 @@ export default async function HomePage() {
         <div className="container">
           <div className="section-head section-head--split">
             <div><span className="eyebrow">LOCAL GUIDES</span><h2>Know what to bring <span className="grad-text">before you visit.</span></h2></div>
-            <Link className="btn btn--ghost" href="/blog">All guides <ArrowUpRight size={18}/></Link>
+            <Link prefetch={false} className="btn btn--ghost" href="/blog">All guides <ArrowUpRight size={18}/></Link>
           </div>
           <div className="guide-grid">{articles.slice(0, 3).map((article) => <article key={article.slug} className="guide-card">
-            <Link href={`/blog/${article.slug}`} className="guide-card__media" tabIndex={-1} aria-hidden="true"><Image src={article.image} alt="" width={420} height={260} sizes="(max-width: 700px) 100vw, 33vw"/></Link>
-            <div className="guide-card__body"><span className="chip">{article.category}</span><h3><Link href={`/blog/${article.slug}`}>{article.title}</Link></h3><p>{article.excerpt}</p><Link className="text-link" href={`/blog/${article.slug}`} aria-label={`Read: ${article.title}`}>Read guide <ArrowRight size={16}/></Link></div>
+            <Link prefetch={false} href={`/blog/${article.slug}`} className="guide-card__media" tabIndex={-1} aria-hidden="true"><Image src={article.image} alt="" width={420} height={260} sizes="(max-width: 700px) 100vw, 33vw"/></Link>
+            <div className="guide-card__body"><span className="chip">{article.category}</span><h3><Link prefetch={false} href={`/blog/${article.slug}`}>{article.title}</Link></h3><p>{article.excerpt}</p><Link prefetch={false} className="text-link" href={`/blog/${article.slug}`} aria-label={`Read: ${article.title}`}>Read guide <ArrowRight size={16}/></Link></div>
           </article>)}</div>
         </div>
       </section>
@@ -211,12 +211,12 @@ export default async function HomePage() {
               <p className="visit-card__hours"><Clock3 size={20}/> <span><OpenStatus rules={site.openingHours}/> {hours.length ? hours.join(" · ") : "Mon–Sat · call before visiting"}</span></p>
               <div className="visit-card__ctas">
                 <a className="btn btn--light" href={site.mapsUrl} target="_blank" rel="noopener noreferrer"><MapPin size={18}/> Get directions</a>
-                <a className="btn btn--wa" href={whatsappLink("Hi NISE COMPORT, I need help with a service.")} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> WhatsApp</a>
+                <a className="btn btn--wa" href={whatsappLink("Hi NiSE COMPORT, I need help with a service.")} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/> WhatsApp</a>
                 <a className="btn btn--glass" href={`tel:${site.phones.primary.e164}`}><Phone size={18}/> {site.phones.primary.display}</a>
               </div>
             </div>
             <div className="visit-card__side" aria-hidden="true">
-              <div className="map-art"><span className="map-art__road map-art__road--1"/><span className="map-art__road map-art__road--2"/><span className="map-art__road map-art__road--3"/><span className="map-art__pin"><MapPin size={28}/></span><span className="map-art__label">NISE COMPORT</span></div>
+              <div className="map-art"><span className="map-art__road map-art__road--1"/><span className="map-art__road map-art__road--2"/><span className="map-art__road map-art__road--3"/><span className="map-art__pin"><MapPin size={28}/></span><span className="map-art__label">NiSE COMPORT</span></div>
               <div className="visit-card__chips"><span><ShieldCheck size={16}/> Independent CSC</span><span><MessageCircle size={16}/> Replies on WhatsApp</span></div>
             </div>
           </div>

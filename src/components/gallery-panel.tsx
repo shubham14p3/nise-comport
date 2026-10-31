@@ -19,7 +19,7 @@ function TagSelect({ value, onChange, label, includeAll = false }: { value: stri
 
 function Thumb({ src, alt }: { src: string; alt: string }) {
   // eslint-disable-next-line @next/next/no-img-element -- admin thumbnails of our own photos
-  return <img src={src} alt={alt} loading="lazy"/>;
+  return <img src={src} alt={alt} loading="lazy" decoding="async"/>;
 }
 
 /**

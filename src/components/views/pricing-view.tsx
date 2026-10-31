@@ -48,11 +48,11 @@ export async function PricingView({ lang }: { lang: Locale }) {
         {blackWhite.map((row) => <tr key={row.pages}><th scope="row">{t("Black & white", "ब्लैक एंड व्हाइट", "সাদা-কালো")}, {row.pages} {t("pages", "पेज", "পেজ")}</th><td>₹{row.rate}</td></tr>)}
         <tr><th scope="row">{t("Colour, any quantity", "रंगीन, कितनी भी संख्या", "রঙিন, যেকোনো সংখ্যা")}</th><td>₹{COLOR_PAGE_RATE}</td></tr>
       </tbody></table>
-      <p>{t("Rates can change with the file, size and quantity, so ask us for the exact price before you print. ", "दरें फ़ाइल, साइज़ और संख्या के साथ बदल सकती हैं, इसलिए प्रिंट से पहले हमसे सही दाम पूछ लीजिए। ", "ফাইল, সাইজ ও সংখ্যা অনুযায়ী দর বদলাতে পারে, তাই প্রিন্টের আগে সঠিক দাম আমাদের জিজ্ঞাসা করুন। ")}<Link href="/print">{t("Ask for a printing price", "प्रिंटिंग का दाम पूछिए", "প্রিন্টিংয়ের দাম জিজ্ঞাসা করুন")} <ArrowRight size={13}/></Link></p>
+      <p>{t("Rates can change with the file, size and quantity, so ask us for the exact price before you print. ", "दरें फ़ाइल, साइज़ और संख्या के साथ बदल सकती हैं, इसलिए प्रिंट से पहले हमसे सही दाम पूछ लीजिए। ", "ফাইল, সাইজ ও সংখ্যা অনুযায়ী দর বদলাতে পারে, তাই প্রিন্টের আগে সঠিক দাম আমাদের জিজ্ঞাসা করুন। ")}<Link prefetch={false} href="/print">{t("Ask for a printing price", "प्रिंटिंग का दाम पूछिए", "প্রিন্টিংয়ের দাম জিজ্ঞাসা করুন")} <ArrowRight size={13}/></Link></p>
 
       {named.length > 0 && <><h2>{t("Our service charges", "हमारे सेवा शुल्क", "আমাদের সার্ভিস চার্জ")}</h2>
       <p>{t("Our own charge for each service. Government, portal or courier fees are separate.", "हर सेवा का हमारा अपना शुल्क। सरकारी, पोर्टल या कूरियर शुल्क अलग हैं।", "প্রতিটি পরিষেবার জন্য আমাদের নিজস্ব চার্জ। সরকারি, পোর্টাল বা কুরিয়ার ফি আলাদা।")}</p>
-      <table className="price-table"><tbody>{named.map((row) => <tr key={row.price.slug}><th scope="row"><Link href={lp(lang, `/services/${row.price.slug}`)}>{serviceName(row.price.slug, shortServiceName(row.title), lang)}</Link>{row.price.note && lang === "en" && <small><br/>{row.price.note}</small>}</th><td>{labelFor(row.price)}</td></tr>)}</tbody></table>
+      <table className="price-table"><tbody>{named.map((row) => <tr key={row.price.slug}><th scope="row"><Link prefetch={false} href={lp(lang, `/services/${row.price.slug}`)}>{serviceName(row.price.slug, shortServiceName(row.title), lang)}</Link>{row.price.note && lang === "en" && <small><br/>{row.price.note}</small>}</th><td>{labelFor(row.price)}</td></tr>)}</tbody></table>
       <p>{t("No price listed for a service? Message or call us and we will quote it before any work starts.", "किसी सेवा का दाम नहीं लिखा? हमें संदेश या कॉल कीजिए; काम शुरू होने से पहले हम दाम बता देंगे।", "কোনও পরিষেবার দাম লেখা নেই? আমাদের মেসেজ বা কল করুন; কাজ শুরুর আগে আমরা দাম জানিয়ে দেব।")}</p></>}
 
       <h2>{t("Services quoted before work starts", "जिन सेवाओं का दाम काम शुरू होने से पहले बताया जाता है", "যেসব পরিষেবার দাম কাজ শুরুর আগে জানানো হয়")}</h2>
@@ -68,13 +68,13 @@ export async function PricingView({ lang }: { lang: Locale }) {
       </ul>
 
       <h2>{t("Offers", "ऑफ़र", "অফার")}</h2>
-      <p>{t("Promo codes and welcome coupons reduce our service charge only, never government fees. See current ", "प्रोमो कोड और वेलकम कूपन केवल हमारे सेवा शुल्क में छूट देते हैं, सरकारी शुल्क में कभी नहीं। मौजूदा ", "প্রোমো কোড ও ওয়েলকাম কুপন শুধু আমাদের সার্ভিস চার্জে ছাড় দেয়, সরকারি ফি-তে কখনও নয়। বর্তমান ")}<Link href="/offers">{t("offers", "ऑफ़र", "অফার")}</Link>{t(".", " देखिए।", " দেখুন।")}</p>
+      <p>{t("Promo codes and welcome coupons reduce our service charge only, never government fees. See current ", "प्रोमो कोड और वेलकम कूपन केवल हमारे सेवा शुल्क में छूट देते हैं, सरकारी शुल्क में कभी नहीं। मौजूदा ", "প্রোমো কোড ও ওয়েলকাম কুপন শুধু আমাদের সার্ভিস চার্জে ছাড় দেয়, সরকারি ফি-তে কখনও নয়। বর্তমান ")}<Link prefetch={false} href="/offers">{t("offers", "ऑफ़र", "অফার")}</Link>{t(".", " देखिए।", " দেখুন।")}</p>
 
       <h2>{t("Payment", "भुगतान", "পেমেন্ট")}</h2>
       <p>{t("You can pay at the desk in cash or UPI, or on your request's payment page: UPI QR is free (we confirm it manually, so it takes a little time), and instant card, net-banking or UPI payment adds a small payment-processing fee that is shown before you pay.", "आप डेस्क पर नकद या UPI से भुगतान कर सकते हैं, या अपने अनुरोध के भुगतान पेज पर: UPI QR मुफ़्त है (हम उसे हाथ से पक्का करते हैं, इसलिए थोड़ा समय लगता है), और तुरंत कार्ड, नेट-बैंकिंग या UPI भुगतान पर एक छोटा प्रोसेसिंग शुल्क जुड़ता है जो भुगतान से पहले दिखाया जाता है।", "আপনি ডেস্কে নগদ বা UPI-তে, অথবা আপনার অনুরোধের পেমেন্ট পেজে পেমেন্ট করতে পারেন: UPI QR বিনামূল্যে (আমরা হাতে নিশ্চিত করি, তাই একটু সময় লাগে), আর তাৎক্ষণিক কার্ড, নেট-ব্যাংকিং বা UPI পেমেন্টে একটি ছোট প্রসেসিং ফি যোগ হয় যা পেমেন্টের আগে দেখানো হয়।")}</p>
 
       <h2>{t("Cancellations and refunds", "रद्दीकरण और रिफ़ंड", "বাতিলকরণ ও রিফান্ড")}</h2>
-      <p>{t("See the ", "देखिए ", "দেখুন ")}<Link href={lp(lang, "/refund-policy")}>{t("refund & cancellation policy", "रिफ़ंड और रद्दीकरण नीति", "রিফান্ড ও বাতিলকরণ নীতি")}</Link>{t(".", "।", "।")}</p>
+      <p>{t("See the ", "देखिए ", "দেখুন ")}<Link prefetch={false} href={lp(lang, "/refund-policy")}>{t("refund & cancellation policy", "रिफ़ंड और रद्दीकरण नीति", "রিফান্ড ও বাতিলকরণ নীতি")}</Link>{t(".", "।", "।")}</p>
 
       <p>{t("Need an exact figure? ", "सही रकम चाहिए? ", "সঠিক অঙ্ক দরকার? ")}<a href={whatsappLink(t("Hello NISE COMPORT, please tell me the charge for: ", "नमस्ते NISE COMPORT, कृपया इसका शुल्क बताइए: ", "নমস্কার NISE COMPORT, অনুগ্রহ করে এর চার্জ জানান: "))} target="_blank" rel="noopener noreferrer">{t("WhatsApp us", "हमें WhatsApp कीजिए", "আমাদের WhatsApp করুন")}</a>{t(" or call ", " या कॉल कीजिए ", " বা কল করুন ")}{site.phones.primary.display}.</p>
     </section>

@@ -50,7 +50,7 @@ export default function ReviewForm({ reference }: { reference: string }) {
     return <div className="pan-card">
       <h3>{snapshot.serviceName}</h3>
       <p>{snapshot.reference} is currently “{snapshot.statusLabel}”. We&apos;ll ask you to rate it once it&apos;s marked complete.</p>
-      <Link className="btn btn--ghost btn--sm" href="/profile#requests">Back to my requests</Link>
+      <Link prefetch={false} className="btn btn--ghost btn--sm" href="/profile#requests">Back to my requests</Link>
     </div>;
   }
 
@@ -84,7 +84,7 @@ export default function ReviewForm({ reference }: { reference: string }) {
         </p>
       </div>}
       {!showGoogleNudge && <p className="muted">We&apos;ve passed your note to the team — thank you for taking the time.</p>}
-      <Link className="profile-text-button" href="/profile#requests" style={{ marginTop: 12, display: "inline-block" }}>Back to my requests</Link>
+      <Link prefetch={false} className="profile-text-button" href="/profile#requests" style={{ marginTop: 12, display: "inline-block" }}>Back to my requests</Link>
     </>}
   </div>;
 }

@@ -22,7 +22,14 @@ export function cleanName(value: string) {
     const code = character.codePointAt(0) ?? 0;
     return code < 32 || code === 127 ? " " : character;
   }).join("");
-  return printable.replace(/\s+/g, " ").trim();
+  const normalized = printable.replace(/\s+/g, " ").trim();
+  // Present people consistently in Title Case ("SHUBHAM RAJ" -> "Shubham Raj").
+  // Preserve intentional mixed-case spelling such as McDonald or DeSouza.
+  return normalized.replace(/[\p{L}][\p{L}\p{M}'’\-]*/gu, (part) => {
+    const letters = part.replace(/[^\p{L}]/gu, "");
+    if (!letters || (letters !== letters.toLocaleUpperCase() && letters !== letters.toLocaleLowerCase())) return part;
+    return part.charAt(0).toLocaleUpperCase() + part.slice(1).toLocaleLowerCase();
+  });
 }
 
 /**

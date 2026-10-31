@@ -72,7 +72,7 @@ export default function ServiceCallbackButton({serviceSlug,serviceName,size="sm"
       <div className="service-callback-dialog" ref={dialog} role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <header className="service-callback-dialog__header">
           <span className="service-callback-dialog__mark"><PhoneCall size={22}/></span>
-          <div><span className="service-callback-dialog__eyebrow">NISE COMPORT · Personal assistance</span><h2 id={titleId}>{sent?"Callback requested":"Request a callback"}</h2></div>
+          <div><span className="service-callback-dialog__eyebrow">NiSE COMPORT · Personal assistance</span><h2 id={titleId}>{sent?"Callback requested":"Request a callback"}</h2></div>
           <button type="button" className="service-callback-dialog__close" ref={closer} onClick={()=>setOpen(false)} aria-label="Close callback form"><X size={20}/></button>
         </header>
         {sent?<div className="service-callback-success" role="status">
@@ -85,8 +85,8 @@ export default function ServiceCallbackButton({serviceSlug,serviceName,size="sm"
               <p>{accountEmailStatus==="sent"
                 ? "If eligible for a new account, check your email for a temporary 6-digit verification code. Confirm it to finish creating your account; then you can sign in or log out whenever you like."
                 : "Your callback is saved. Email verification is not yet available; you can request a fresh code from the sign-up page."}</p>
-              <Link href="/signup?callback=1" onClick={()=>setOpen(false)}>Finish account setup</Link>
-              <p>Already registered? <Link href="/login" onClick={()=>setOpen(false)}>Sign in to your account</Link></p>
+              <Link prefetch={false} href="/signup?callback=1" onClick={()=>setOpen(false)}>Finish account setup</Link>
+              <p>Already registered? <Link prefetch={false} href="/login" onClick={()=>setOpen(false)}>Sign in to your account</Link></p>
             </div>
           </div>
           <button type="button" className="btn btn--primary" onClick={()=>setOpen(false)}>Done</button>
@@ -98,7 +98,7 @@ export default function ServiceCallbackButton({serviceSlug,serviceName,size="sm"
           <label>Mobile number <span>*</span><input type="tel" autoComplete="tel" inputMode="tel" value={phone} onChange={e=>setPhone(e.target.value)} maxLength={25} minLength={10} required placeholder="10-digit mobile number"/></label>
           <label>Email address <span>*</span><input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} maxLength={200} required placeholder="name@example.com"/></label>
           <label className="service-callback-consent"><input type="checkbox" checked={accountOptIn} onChange={e=>setAccountOptIn(e.target.checked)}/><span>Also send me an account verification code to create a NISE account and claim eligible welcome discounts.</span></label>
-          <label className="service-callback-consent"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)} required/><span>I agree to be contacted by NISE COMPORT about this service request. This does not subscribe me to promotions.</span></label>
+          <label className="service-callback-consent"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)} required/><span>I agree to be contacted by NiSE COMPORT about this service request. This does not subscribe me to promotions.</span></label>
           {error&&<p className="alert alert--error" role="alert">{error}</p>}
           <button type="submit" className="btn btn--primary btn--block" disabled={busy}>{busy?"Submitting…":"Request my callback"}</button>
           <p className="service-callback-privacy"><ShieldCheck size={14}/> No account or payment required for this enquiry.</p>

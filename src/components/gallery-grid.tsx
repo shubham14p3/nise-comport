@@ -94,7 +94,7 @@ export default function GalleryGrid({ items }: { items: GalleryEntry[] }) {
       <figcaption>
         <b>{item.title}</b>
         {item.tag === "google" ? <small>Photo: {item.authorUri ? <a href={item.authorUri} target="_blank" rel="noopener noreferrer nofollow">{item.author}</a> : item.author} · Google Maps</small>
-          : item.href ? <Link href={item.href}>Learn more <ArrowRight size={14}/></Link> : null}
+          : item.href ? <Link prefetch={false} href={item.href}>Learn more <ArrowRight size={14}/></Link> : null}
       </figcaption>
     </figure>)}</div>
     <div ref={sentinel} className="gallery-sentinel" aria-live="polite">

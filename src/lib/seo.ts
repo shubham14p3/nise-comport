@@ -19,7 +19,7 @@ type PageMetaOptions = {
 
 /**
  * Builds consistent metadata: title, description, canonical URL, hreflang, Open Graph and Twitter.
- * Every title starts with the brand, e.g. "NISE COMPORT - Pragya Kendra - PAN Card Help in Jamshedpur".
+ * Every title starts with the brand, e.g. "NiSE COMPORT - Pragya Kendra - PAN Card Help in Jamshedpur".
  */
 export function pageMetadata(title: string, description: string, path: string, options: PageMetaOptions = {}): Metadata {
   const brandedTitle = brandTitle(title);
@@ -49,18 +49,18 @@ export function pageMetadata(title: string, description: string, path: string, o
   };
 }
 
-export const TITLE_PREFIX = "NISE COMPORT - Pragya Kendra";
+export const TITLE_PREFIX = "NiSE COMPORT - Pragya Kendra";
 
-/** "PAN Card Help | NISE COMPORT" → "NISE COMPORT - Pragya Kendra - PAN Card Help". */
+/** "PAN Card Help | NiSE COMPORT" → "NiSE COMPORT - Pragya Kendra - PAN Card Help". */
 export function brandTitle(title: string) {
   const rest = title
-    .replace(/\s*[|–-]\s*NISE COMPORT\s*$/i, "")
-    .replace(/^\s*NISE COMPORT\s*(?:[|–-]\s*(?:Pragya Kendra\s*[|–-]\s*)?)?/i, "")
+    .replace(/\s*[|–-]\s*NiSE COMPORT\s*$/i, "")
+    .replace(/^\s*NiSE COMPORT\s*(?:[|–-]\s*(?:Pragya Kendra\s*[|–-]\s*)?)?/i, "")
     .trim();
   return rest ? `${TITLE_PREFIX} - ${rest}` : TITLE_PREFIX;
 }
 
 /** Metadata for private pages (sign-in, profile, admin): never indexed, never followed. */
-export function privateMetadata(title: string, description = "Private NISE COMPORT account page."): Metadata {
+export function privateMetadata(title: string, description = "Private NiSE COMPORT account page."): Metadata {
   return { title, description, robots: { index: false, follow: false, googleBot: { index: false, follow: false } } };
 }
