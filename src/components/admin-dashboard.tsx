@@ -39,6 +39,7 @@ const RequestFlow = dynamic(() => import("@/components/request-flow"), { ssr: fa
 const PanSavedDetails = dynamic(() => import("@/components/pan-saved-details"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
 const RequestExtras = dynamic(() => import("@/components/request-extras"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
 const CounterDesk = dynamic(() => import("@/components/counter-desk"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const UniversalJobsAdmin = dynamic(() => import("@/components/universal-jobs-admin"), { ssr: false, loading: () => <p className="admin-loading">Loading jobs…</p> });
 const FindCustomerPanel = dynamic(() => import("@/components/find-customer-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
 
 const SystemConnectionsPanel = dynamic(() => import("@/components/system-connections-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
@@ -314,11 +315,12 @@ function RequestQueue({ canCharge }: { canCharge: boolean }) {
   </>;
 }
 
-type Tab = "counter" | "findcustomer" | "customers" | "integrations" | "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "hardware" | "couponuse" | "qrscans" | "legal" | "loyalty" | "chats" | "mail" | "outreach";
+type Tab = "jobs" | "counter" | "findcustomer" | "customers" | "integrations" | "inbox" | "requests" | "records" | "promotions" | "content" | "gallery" | "testimonials" | "campaigns" | "contacts" | "team" | "pan" | "wallet" | "payments" | "prices" | "hardware" | "couponuse" | "qrscans" | "legal" | "loyalty" | "chats" | "mail" | "outreach";
 const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permission | Permission[] | "admin" | "staff" }[] = [
   { id: "inbox", label: "Inbox", icon: Bell, needs: "staff" },
   { id: "mail", label: "Messages", icon: Mail, needs: "mail" },
   { id: "requests", label: "Requests", icon: ClipboardList, needs: "requests" },
+  { id: "jobs", label: "Job IDs", icon: ClipboardList, needs: "admin" },
   { id: "records", label: "Records", icon: FolderLock, needs: "records" },
   { id: "promotions", label: "Promotions", icon: TicketPercent, needs: "promotions" },
   { id: "couponuse", label: "Coupon use", icon: TicketPercent, needs: "promotions" },
@@ -346,7 +348,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
 ];
 
 const NAV_SECTIONS = [
-  { id: "work", title: "Work & messages", tabs: ["inbox", "mail", "requests", "chats", "payments"] },
+  { id: "work", title: "Work & messages", tabs: ["inbox", "mail", "requests", "jobs", "chats", "payments"] },
   { id: "people", title: "Customers & records", tabs: ["counter", "findcustomer", "customers", "records", "pan", "contacts", "wallet", "loyalty", "team"] },
   { id: "marketing", title: "Offers & campaigns", tabs: ["promotions", "couponuse", "campaigns", "outreach", "qrscans"] },
   { id: "website", title: "Website & setup", tabs: ["content", "gallery", "testimonials", "prices", "hardware", "legal", "integrations"] },
@@ -451,6 +453,7 @@ export default function AdminDashboard({ me, viewAsStaff = false, services }: { 
         {active === "records" && <RecordsPanel/>}
         {active === "counter" && <CounterDesk services={services} isOwner={isOwner}/>}
         {active === "findcustomer" && <FindCustomerPanel/>}
+        {active === "jobs" && isOwner && <UniversalJobsAdmin/>}
         {active === "customers" && isOwner && <CustomerManagementPanel/>}
         {active === "promotions" && <PromotionsPanel canEdit/>}
         {active === "content" && <SiteContentPanel/>}

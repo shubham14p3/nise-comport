@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, ilike, or } from "drizzle-orm";
 import { z } from "zod";
 import { jobs, jobEvents } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
@@ -25,7 +25,20 @@ export async function GET(request: NextRequest) {
   try {
     await requireAdmin();
     const code = validJobCode(request.nextUrl.searchParams.get("code") ?? "");
-    if (!code) throw new PublicError("Enter a valid Job ID.", 400);
+    if (!code) {
+      const search = (request.nextUrl.searchParams.get("query") ?? "").trim().slice(0, 80);
+      const requestedPage = Number(request.nextUrl.searchParams.get("page") ?? 0);
+      const page = Number.isSafeInteger(requestedPage) ? Math.max(0, Math.min(10000, requestedPage)) : 0;
+      const like = `%${search.replace(/[\\%_]/g, "\\    if (!code) throw new PublicError("Enter a valid Job ID.", 400);
+    const [job]")}%`;
+      const where = search ? or(ilike(jobs.code, like), ilike(jobs.serviceName, like), ilike(jobs.sourceReference, like)) : undefined;
+      const rows = await db.select({
+        code: jobs.code, serviceName: jobs.serviceName, sourceKind: jobs.sourceKind,
+        sourceReference: jobs.sourceReference, status: jobs.status, missingDocuments: jobs.missingDocuments,
+        createdAt: jobs.createdAt,
+      }).from(jobs).where(where).orderBy(desc(jobs.createdAt), desc(jobs.id)).limit(20).offset(page * 20);
+      return NextResponse.json({ jobs: rows, page, pageSize: 20 });
+    }
     const [job] = await db.select().from(jobs).where(eq(jobs.code, code)).limit(1);
     if (!job) throw new PublicError("Job not found.", 404);
     const events = await db.select().from(jobEvents).where(eq(jobEvents.jobId, job.id)).orderBy(desc(jobEvents.createdAt)).limit(50);
@@ -36,6 +49,8 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const actor = await requireAdmin();
+    const origin = request.headers.get("origin");
+    if (!origin || new URL(origin).host !== request.nextUrl.host) throw new PublicError("Invalid request origin.", 403);
     const input = patchSchema.parse(await readJson(request));
     const code = validJobCode(input.code);
     if (!code) throw new PublicError("Invalid Job ID.", 400);
