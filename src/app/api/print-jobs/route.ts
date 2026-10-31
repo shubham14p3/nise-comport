@@ -5,6 +5,7 @@ import { FEATURES } from "@/lib/features";
 import { addresses, printJobs, storedFiles } from "@/db/schema";
 import { getCurrentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { jobCodeForSource } from "@/lib/jobs";
 import { apiError, readJson } from "@/lib/http";
 import { PublicError } from "@/lib/errors";
 import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     const jobFields = { id: printJobs.id, reference: printJobs.reference, status: printJobs.status, subtotal: printJobs.subtotal, discount: printJobs.discount, total: printJobs.total };
     if (data.idempotencyKey) {
       const [existing] = await db.select(jobFields).from(printJobs).where(and(eq(printJobs.userId, user.id), eq(printJobs.idempotencyKey, data.idempotencyKey))).limit(1);
-      if (existing) return NextResponse.json({ ok: true, job: existing, duplicate: true });
+      if (existing) return NextResponse.json({ ok: true, job: existing, jobId: await jobCodeForSource("print", existing.id), duplicate: true });
     }
     await enforceRate(RATE_RULES.printJobsPerUserHour, identity("user", user.id), "You’ve sent several print requests in the last hour. Please call or WhatsApp us.");
     const [file] = await db.select().from(storedFiles).where(and(eq(storedFiles.id, data.fileId), eq(storedFiles.userId, user.id))).limit(1);
@@ -92,13 +93,13 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       if (data.idempotencyKey && isIdempotencyConflict(error)) {
         const [existing] = await db.select(jobFields).from(printJobs).where(and(eq(printJobs.userId, user.id), eq(printJobs.idempotencyKey, data.idempotencyKey))).limit(1);
-        if (existing) return NextResponse.json({ ok: true, job: existing, duplicate: true });
+        if (existing) return NextResponse.json({ ok: true, job: existing, jobId: await jobCodeForSource("print", existing.id), duplicate: true });
       }
       throw error;
     }
     if (couponId) await recordRedemption(couponId, user.id, "print", job.id, discount);
     await recordEvent("print", job.id, user.id, null, "submitted", "Created online");
     await notifyNewRequest(user, job.reference, "print order", [`File: ${file.originalName}`, `Pages: ${printedPageCount} (${colorPages} colour)`, `Fulfilment: ${data.fulfillment}`, `Estimate: ₹${total.toFixed(2)}`, ...(couponCode ? [`Coupon: ${couponCode} (−₹${discount.toFixed(2)})`] : [])]);
-    return NextResponse.json({ ok: true, job }, { status: 201 });
+    return NextResponse.json({ ok: true, job, jobId: await jobCodeForSource("print", job.id) }, { status: 201 });
   } catch (error) { return apiError(error); }
 }
