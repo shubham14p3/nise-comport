@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
       - name: Encrypted API transport security and recovery script syntax
-        run: npm run security:check && node --check scripts/job-ids-doctor.mjs && node --check scripts/job-ids-repair.mjs
+        run: npm run security:check && node --check scripts/job-ids-doctor.mjs && node --check scripts/job-ids-repair.mjs && node --check scripts/counter-comments-repair.mjs && node --check scripts/migrations-doctor.mjs
       - name: Unit and integration-style tests
         run: npm test
       - name: ESLint
