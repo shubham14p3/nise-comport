@@ -2,7 +2,7 @@ import { and, asc, count, desc, eq, gte, ilike, inArray, isNull, lte, or, sql, t
 import { campaignMessages, campaigns, contacts, jobs, printJobs, serviceRequests } from "@/db/schema";
 import { db } from "@/lib/db";
 import { extractJobCode } from "@/lib/job-id";
-import { findOwnedJobByCode, verifiedWhatsAppUserId } from "@/lib/jobs";
+import { findOwnedJobByCode, latestPublicJobUpdate, verifiedWhatsAppUserId } from "@/lib/jobs";
 import { PublicError } from "@/lib/errors";
 import { clampPacing, istDayStartOf, planRound, type Pacing } from "@/lib/campaign-pacing";
 import { CAMPAIGN_SERVICES, classifyReply, consentAllows, DEFAULT_MESSAGES, isLang, renderMessage, whatsappLink, type CampaignKind, type Lang, type Text3 } from "@/lib/campaign-text";
@@ -386,7 +386,8 @@ export async function handleStatusQuery(phone: string, text: string): Promise<bo
       return true;
     }
     const missing = (job.missingDocuments ?? []).slice(0, 5).join(", ");
-    await sendStatusReply(phone, `${job.code} (${job.serviceName}): ${statusLabel(job.status)}.${missing ? ` Missing documents: ${missing}.` : ""} Sign in to nisecomport.com for details.`);
+    const latest = await latestPublicJobUpdate(jobCode, accountId);
+    await sendStatusReply(phone, `${job.code} (${job.serviceName}): ${statusLabel(job.status)}.${missing ? ` Missing documents: ${missing}.` : ""}${latest ? ` Latest update: ${latest}.` : ""} Sign in to nisecomport.com for details.`);
     return true;
   }
   const reference = text.match(REFERENCE_PATTERN)?.[1]?.toUpperCase();

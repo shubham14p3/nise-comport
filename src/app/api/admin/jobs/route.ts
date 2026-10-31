@@ -12,6 +12,7 @@ const patchSchema = z.object({
   code: z.string().max(40),
   missingDocuments: z.array(z.string().trim().min(2).max(100)).max(20).optional(),
   internalNote: z.string().trim().max(2000).optional(),
+  customerUpdate: z.string().trim().min(2).max(500).optional(),
 });
 
 async function requireAdmin() {
@@ -54,7 +55,7 @@ export async function PATCH(request: NextRequest) {
     const input = patchSchema.parse(await readJson(request));
     const code = validJobCode(input.code);
     if (!code) throw new PublicError("Invalid Job ID.", 400);
-    if (input.missingDocuments === undefined && input.internalNote === undefined) throw new PublicError("Nothing to update.", 400);
+    if (input.missingDocuments === undefined && input.internalNote === undefined && input.customerUpdate === undefined) throw new PublicError("Nothing to update.", 400);
     const updated = await db.transaction(async (tx) => {
       const [before] = await tx.select().from(jobs).where(eq(jobs.code, code)).limit(1);
       if (!before) throw new PublicError("Job not found.", 404);
@@ -63,11 +64,19 @@ export async function PATCH(request: NextRequest) {
         ...(input.internalNote !== undefined ? { internalNote: input.internalNote } : {}),
         updatedAt: new Date(),
       }).where(eq(jobs.id, before.id)).returning();
-      await tx.insert(jobEvents).values({
-        jobId: job.id, actorId: actor.id, kind: "staff_note",
-        note: input.missingDocuments !== undefined ? "Missing-document checklist updated" : "Internal note updated",
-        publicVisible: false,
-      });
+      if (input.missingDocuments !== undefined || input.internalNote !== undefined) {
+        await tx.insert(jobEvents).values({
+          jobId: job.id, actorId: actor.id, kind: "staff_note",
+          note: input.missingDocuments !== undefined ? "Missing-document checklist updated" : "Internal note updated",
+          publicVisible: false,
+        });
+      }
+      if (input.customerUpdate) {
+        await tx.insert(jobEvents).values({
+          jobId: job.id, actorId: actor.id, kind: "customer_update",
+          note: input.customerUpdate, publicVisible: true,
+        });
+      }
       return job;
     });
     return NextResponse.json({ ok: true, job: updated });

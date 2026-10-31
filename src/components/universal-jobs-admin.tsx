@@ -12,6 +12,7 @@ export default function UniversalJobsAdmin() {
   const [events, setEvents] = useState<JobEvent[]>([]);
   const [documents, setDocuments] = useState("");
   const [note, setNote] = useState("");
+  const [customerUpdate, setCustomerUpdate] = useState("");
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -59,13 +60,15 @@ export default function UniversalJobsAdmin() {
     try {
       const response = await fetch("/api/admin/jobs", {
         method: "PATCH", credentials: "same-origin", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ code: selected.code, missingDocuments: documents.split(/\r?\n/).map(s => s.trim()).filter(Boolean), internalNote: note.trim() }),
+        body: JSON.stringify({ code: selected.code, missingDocuments: documents.split(/\r?\n/).map(s => s.trim()).filter(Boolean), internalNote: note.trim(), ...(customerUpdate.trim() ? { customerUpdate: customerUpdate.trim() } : {}) }),
       });
       const data = await response.json() as { error?: string; job?: DetailedJob };
       if (!response.ok || !data.job) throw new Error(data.error ?? "Could not save job notes.");
-      setSelected(data.job); setNotice("Job notes saved. New missing-document labels are visible in verified customer tracking.");
+      setSelected(data.job);
       await load(page);
       await open(data.job.code);
+      setCustomerUpdate("");
+      setNotice("Saved. Customer-visible updates can be viewed by the verified owner.");
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save job notes."); }
     finally { setBusy(""); }
   }
@@ -96,6 +99,7 @@ export default function UniversalJobsAdmin() {
       <p>Status: {selected.status} · {selected.sourceKind}</p>
       <label className="field"><span>Missing documents (one label per line)</span><textarea rows={4} maxLength={2200} value={documents} onChange={event => setDocuments(event.target.value)}/></label>
       <label className="field"><span>Internal staff note (not shown to customers)</span><textarea rows={4} maxLength={2000} value={note} onChange={event => setNote(event.target.value)}/></label>
+      <label className="field"><span>Progress update for the customer (optional; visible on WhatsApp and in their account)</span><textarea rows={3} maxLength={500} value={customerUpdate} onChange={event => setCustomerUpdate(event.target.value)} placeholder="We reviewed the file and are waiting for the issuing office."/></label>
       <button className="btn btn--primary btn--sm" disabled={Boolean(busy)} type="submit">{busy === "save" ? "Saving…" : "Save job details"}</button>
       <h4>Recent history</h4>
       {events.length > 0 ? <ul>{events.map(e => <li key={e.id}>{e.kind} · {e.toStatus ?? ""} · {new Date(e.createdAt).toLocaleString("en-IN")}</li>)}</ul> : <p className="muted">No event history recorded yet.</p>}

@@ -1,5 +1,5 @@
-import { and, eq, isNotNull, isNull } from "drizzle-orm";
-import { jobs, users } from "@/db/schema";
+import { and, desc, eq, isNotNull, isNull } from "drizzle-orm";
+import { jobEvents, jobs, users } from "@/db/schema";
 import { db } from "@/lib/db";
 import { validJobCode } from "@/lib/job-id";
 
@@ -30,4 +30,13 @@ export async function findOwnedJobByCode(code: string, userId: string) {
     createdAt: jobs.createdAt, updatedAt: jobs.updatedAt,
   }).from(jobs).where(and(eq(jobs.code, normalized), eq(jobs.userId, userId))).limit(1);
   return job ?? null;
+}
+
+/** Explicitly published staff updates, never internal notes, for a verified job owner. */
+export async function latestPublicJobUpdate(code: string, userId: string): Promise<string | null> {
+  const [item] = await db.select({ note: jobEvents.note })
+    .from(jobEvents).innerJoin(jobs, eq(jobEvents.jobId, jobs.id))
+    .where(and(eq(jobs.code, code), eq(jobs.userId, userId), eq(jobEvents.publicVisible, true), eq(jobEvents.kind, "customer_update")))
+    .orderBy(desc(jobEvents.createdAt), desc(jobEvents.id)).limit(1);
+  return item?.note ?? null;
 }
