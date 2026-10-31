@@ -27,7 +27,17 @@ export default function UniversalJobsAdmin() {
     finally { setBusy(""); }
   }
 
-  useEffect(() => { void load(0, ""); /* owner-only lazy mount */ }, []);
+  useEffect(() => {
+    let active = true;
+    void fetch("/api/admin/jobs?page=0", { credentials: "same-origin", cache: "no-store" })
+      .then(async response => {
+        if (!response.ok) throw new Error("Could not load jobs.");
+        return response.json() as Promise<{ jobs: JobRow[] }>;
+      })
+      .then(result => { if (active) setJobs(result.jobs); })
+      .catch(reason => { if (active) setError(reason instanceof Error ? reason.message : "Could not load jobs."); });
+    return () => { active = false; };
+  }, []);
 
   async function open(code: string) {
     setBusy("detail"); setError(""); setNotice("");
