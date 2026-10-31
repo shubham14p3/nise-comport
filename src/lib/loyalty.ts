@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, like } from "drizzle-orm";
+import { and, eq, inArray, isNull, like, sql } from "drizzle-orm";
 import { revalidateTag, unstable_cache } from "next/cache";
 import { loyaltySettings, printJobs, serviceRequests, users, walletEntries } from "@/db/schema";
 import { db } from "@/lib/db";
@@ -27,7 +27,7 @@ type Order = { kind: "service" | "print"; userId: string; reference: string; tex
 
 async function completedOrders(): Promise<Order[]> {
   const services = await db.select({ userId: serviceRequests.userId, reference: serviceRequests.reference, slug: serviceRequests.serviceSlug, name: serviceRequests.serviceName, fee: serviceRequests.serviceFee, who: users.name })
-    .from(serviceRequests).innerJoin(users, eq(users.id, serviceRequests.userId)).where(and(eq(serviceRequests.status, "completed"), isNull(users.deletedAt)));
+    .from(serviceRequests).innerJoin(users, eq(users.id, serviceRequests.userId)).where(and(eq(serviceRequests.status, "completed"), sql`coalesce(${serviceRequests.details}->>'source', '') <> 'counter'`, isNull(users.deletedAt)));
   const prints = await db.select({ userId: printJobs.userId, reference: printJobs.reference, file: printJobs.fileName, total: printJobs.total, who: users.name })
     .from(printJobs).innerJoin(users, eq(users.id, printJobs.userId)).where(and(eq(printJobs.status, "completed"), isNull(users.deletedAt)));
   return [
@@ -51,7 +51,7 @@ export async function awardLoyalty(kind: "service" | "print", id: string) {
   if (!settings.enabled) return null;
   const order: Order | undefined = kind === "print"
     ? (await db.select({ userId: printJobs.userId, reference: printJobs.reference, file: printJobs.fileName, total: printJobs.total }).from(printJobs).where(eq(printJobs.id, id)).limit(1)).map((row): Order => ({ kind, userId: row.userId, reference: row.reference, text: `print ${row.file}`, total: Number(row.total), who: "" }))[0]
-    : (await db.select({ userId: serviceRequests.userId, reference: serviceRequests.reference, slug: serviceRequests.serviceSlug, name: serviceRequests.serviceName, fee: serviceRequests.serviceFee }).from(serviceRequests).where(eq(serviceRequests.id, id)).limit(1)).map((row): Order => ({ kind, userId: row.userId, reference: row.reference, text: `${row.slug} ${row.name}`, total: Number(row.fee), who: "" }))[0];
+    : (await db.select({ userId: serviceRequests.userId, reference: serviceRequests.reference, slug: serviceRequests.serviceSlug, name: serviceRequests.serviceName, fee: serviceRequests.serviceFee }).from(serviceRequests).where(and(eq(serviceRequests.id, id), sql`coalesce(${serviceRequests.details}->>'source', '') <> 'counter'`)).limit(1)).map((row): Order => ({ kind, userId: row.userId, reference: row.reference, text: `${row.slug} ${row.name}`, total: Number(row.fee), who: "" }))[0];
   if (!order) return null;
   const reward = loyaltyReward(settings, order.text, order.total);
   if (!reward) return null;

@@ -6,3 +6,14 @@
 .inbox__dates input[type="date"]{min-width:0;width:auto;max-width:100%;padding:8px 10px;border:1px solid #c9d5e5;border-radius:8px;background:#fff;color:#24344d}
 .inbox__dates small{color:#53667e}
 @media(max-width:520px){.inbox__dates .btn{white-space:normal;text-align:left}.inbox__dates label{width:100%;justify-content:space-between}}
+
+.inbox__dates>div[role="group"]{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-inline:contain;padding-bottom:5px}
+.inbox__dates>div[role="group"] .btn{flex:0 0 auto;white-space:nowrap;padding:8px 12px;font-size:.8rem}
+.inbox>[role="tablist"]{padding:6px;background:#edf2fa;border-radius:14px;width:fit-content;max-width:100%}
+.inbox>[role="tablist"] [role="tab"]{border-radius:10px;border:1px solid transparent;font-weight:700}
+.inbox>[role="tablist"] [role="tab"]:nth-child(1){color:#1557a5;background:#e0edff}
+.inbox>[role="tablist"] [role="tab"]:nth-child(2){color:#80510c;background:#fff0cf}
+.inbox>[role="tablist"] [role="tab"]:nth-child(3){color:#6542a0;background:#eee5ff}
+.inbox>[role="tablist"] [aria-selected="true"]{border-color:currentColor;box-shadow:0 2px 6px #20335520}
+.counter-history-card{display:grid;gap:8px;padding:18px;margin:12px 0;border:1px solid #d4dfee;border-left:4px solid #3479ce;border-radius:14px;background:#f8fbff;overflow-wrap:anywhere}
+.counter-history-card header{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}.counter-history-card time,.counter-history-card small{color:#526882;font-size:.8rem}.counter-history-card p{margin:0}.counter-history-card .btn{justify-self:start}

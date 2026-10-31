@@ -1,7 +1,7 @@
 import { randomInt, randomUUID } from "node:crypto";
 import { mkdir, readFile, rm, statfs, writeFile } from "node:fs/promises";
 import { dirname, extname } from "node:path";
-import { and, desc, eq, inArray, isNull, lt, lte, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, lt, lte, or, sql, ne, type SQL } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { mailAttachments, mailMessages, mailTickets, mailSync, printJobs, serviceRequests, storedFiles, users } from "@/db/schema";
 import type { User } from "@/lib/auth";
@@ -11,7 +11,7 @@ import { enforceRate, identity, RATE_RULES } from "@/lib/rate-limit";
 import { privateStoragePath, privateStorageRoot } from "@/lib/storage";
 import { sendMail, sendTicketMail } from "@/lib/email";
 import { resolveIntegration } from "@/lib/integration-vault";
-import { chooseImapConnection, type ImapConnection } from "@/lib/mail-config";
+import { mailboxSyncKey, chooseImapConnection, type ImapConnection } from "@/lib/mail-config";
 import { absoluteUrl, site } from "@/lib/site";
 import { MAIL_PATH } from "@/lib/mail-route";
 import {
@@ -25,17 +25,19 @@ export function actorFor(user: User): MailActor { return { user, staff: hasPermi
 
 /* ---------------------------------------------------------------- settings from the environment */
 
-export function supportAddress() { return (process.env.MAIL_SUPPORT_ADDRESS || process.env.MAIL_IMAP_USER || process.env.SMTP_USER || site.email).trim(); }
+export function supportAddress() { return (process.env.MAIL_SUPPORT_ADDRESS || site.email).trim(); }
 function supportFrom() { return process.env.MAIL_SUPPORT_FROM?.trim() || `"${site.name} Support" <${supportAddress()}>`; }
 
 /** Environment variables win; a complete encrypted vault IMAP profile is the fallback.
  * SMTP keys alone do not connect an inbox. */
 export async function imapConnection(): Promise<ImapConnection | null> {
   const fromEnvironment = chooseImapConnection(process.env);
-  if (fromEnvironment) return fromEnvironment;
+  const expected = supportAddress().toLowerCase();
+  const checked = (config: ImapConnection | null) => { if (config && config.user.toLowerCase() !== expected) throw new PublicError(`Incoming mailbox is ${config.user}, but this site expects ${expected}. Update MAIL_IMAP_* or the saved Email integration; SMTP settings do not select the incoming mailbox.`, 409); return config; };
+  if (fromEnvironment) return checked(fromEnvironment);
   if (!/^[a-f0-9]{64}$/i.test(process.env.INTEGRATIONS_ENCRYPTION_KEY || "")) return null;
   const vault = await resolveIntegration("email").catch(() => ({}));
-  return chooseImapConnection(process.env, vault);
+  return checked(chooseImapConnection(process.env, vault));
 }
 
 function mailLimitBytes() { const mb = Number(process.env.MAIL_STORAGE_LIMIT_MB); return (Number.isFinite(mb) && mb > 0 ? mb : 2048) * 1024 * 1024; }
@@ -52,7 +54,7 @@ const ticketLink = (number: number) => absoluteUrl(`${MAIL_PATH}?t=${number}`);
 async function ticketForActor(actor: MailActor, id: string) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) throw new PublicError("This message could not be found.", 404, { code: "not_found" });
   const [ticket] = await db.select().from(mailTickets).where(actor.staff ? eq(mailTickets.id, id) : and(eq(mailTickets.id, id), eq(mailTickets.userId, actor.user.id))).limit(1);
-  if (!ticket) throw new PublicError("This message could not be found.", 404, { code: "not_found" });
+  if (!ticket || ticket.status === "deleted") throw new PublicError("This message could not be found.", 404, { code: "not_found" });
   return ticket;
 }
 
@@ -105,7 +107,7 @@ function summaryFrom(row: { id: string; number: number; subject: string; status:
 }
 
 export async function listTickets(actor: MailActor, options: { box?: string; q?: string; before?: string }) {
-  const conditions: SQL[] = [];
+  const conditions: SQL[] = [ne(mailTickets.status, "deleted")];
   if (!actor.staff) conditions.push(eq(mailTickets.userId, actor.user.id));
   switch (options.box as MailBox | undefined) {
     case "active": conditions.push(inArray(mailTickets.status, ["open", "awaiting_customer", "get_back_soon"])); break;
@@ -163,7 +165,7 @@ export async function ticketDetail(actor: MailActor, id: string): Promise<MailTi
 }
 
 export async function mailMeta(actor: MailActor): Promise<MailMeta> {
-  const scope = actor.staff ? undefined : eq(mailTickets.userId, actor.user.id);
+  const scope = and(ne(mailTickets.status, "deleted"), actor.staff ? undefined : eq(mailTickets.userId, actor.user.id));
   const unreadColumn = actor.staff ? mailTickets.staffUnread : mailTickets.customerUnread;
   const grouped = await db.select({ status: mailTickets.status, total: sql<number>`count(*)::int`, unread: sql<number>`(count(*) filter (where ${unreadColumn}))::int` }).from(mailTickets).where(scope).groupBy(mailTickets.status);
   const counts: Record<string, number> = { all: 0, active: 0 };
@@ -173,11 +175,12 @@ export async function mailMeta(actor: MailActor): Promise<MailMeta> {
     if (["open", "awaiting_customer", "get_back_soon"].includes(row.status)) counts.active += row.total;
   }
   counts.unread = unread;
-  const inbox = await imapConnection();
-  const meta: MailMeta = { staff: actor.staff, counts, unread, supportAddress: process.env.MAIL_SUPPORT_ADDRESS?.trim() || inbox?.user || supportAddress(), mailboxConnected: Boolean(inbox) };
+  let inbox: ImapConnection | null = null; let mailboxError: string | undefined;
+  try { inbox = await imapConnection(); } catch (error) { mailboxError = error instanceof Error ? error.message : "Mailbox configuration needs attention."; }
+  const meta: MailMeta = { staff: actor.staff, counts, unread, supportAddress: process.env.MAIL_SUPPORT_ADDRESS?.trim() || inbox?.user || supportAddress(), mailboxConnected: Boolean(inbox), canDelete: actor.user.role === "admin", ...(actor.staff ? { mailboxError, mailboxSource: inbox?.source } : {}) };
   if (actor.staff) {
     // Every staff member with the Messages permission can check the mailbox; only the owner sees disk and storage figures.
-    const [sync] = await db.select().from(mailSync).where(eq(mailSync.id, "main")).limit(1);
+    const [sync] = await db.select().from(mailSync).where(eq(mailSync.id, inbox ? mailboxSyncKey(inbox) : "unconfigured")).limit(1);
     meta.sync = { lastRunAt: iso(sync?.lastRunAt ?? null), lastError: sync?.lastError ?? null, lastImported: sync?.lastImported ?? 0 };
   }
   if (actor.user.role === "admin") meta.storage = await storageTotals();

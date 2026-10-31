@@ -1,3 +1,5 @@
+import { counterHistory, chargeCounterVisit } from "@/lib/counter-history";
+import { getCounterPolicy, saveCounterPolicy } from "@/lib/counter-settings";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
@@ -13,6 +15,10 @@ const phone = z.string().trim().min(10, "Enter a valid 10-digit mobile number.")
 const amount = z.number().positive("Enter an amount.").max(1_000_000);
 
 const schema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("history"), page: z.number().int().min(0).max(100000).default(0) }),
+  z.object({ action: z.literal("raise-payment"), id: z.uuid() }),
+  z.object({ action: z.literal("wallet-policy") }),
+  z.object({ action: z.literal("save-wallet-policy"), deductionPercent: z.number().min(0).max(100), accumulationPercent: z.number().min(0).max(100) }),
   z.object({ action: z.literal("lookup"), phone, page: z.number().int().min(0).max(10_000).optional() }),
   z.object({ action: z.literal("lookup-email"), email: z.string().trim().max(120), page: z.number().int().min(0).max(10_000).optional() }),
   z.object({ action: z.literal("lookup-account"), userId: z.uuid(), phone, page: z.number().int().min(0).max(10_000).optional() }),
@@ -21,7 +27,7 @@ const schema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("code-send"), userId: z.string().uuid() }),
   z.object({ action: z.literal("code-check"), userId: z.string().uuid(), code: z.string().trim().length(6) }),
   z.object({ action: z.literal("verify-request"), userId: z.string().uuid(), channel: z.enum(["email", "phone"]) }),
-  z.object({ action: z.literal("visit"), phone, userId: z.uuid().optional(), name: z.string().trim().max(100).optional(), email: z.string().trim().max(200).optional(), serviceSlug: z.string().min(2).max(80), amount }),
+  z.object({ action: z.literal("visit"), phone, userId: z.uuid().optional(), name: z.string().trim().max(100).optional(), email: z.string().trim().max(200).optional(), serviceSlug: z.string().min(2).max(80), amount, walletMode: z.enum(["deduct", "accumulate"]).default("deduct") }),
   z.object({ action: z.literal("topup"), phone, userId: z.uuid().optional(), name: z.string().trim().max(100).optional(), email: z.string().trim().max(200).optional(), amount, reason: z.string().max(180).default("") }),
 ]);
 
@@ -41,6 +47,12 @@ export async function POST(request: NextRequest) {
     if (!actor || !hasPermission(actor, "counter")) throw new PublicError("You don’t have access to the counter desk. Ask the owner to add it to your account.", 403, { code: "forbidden" });
     const input = schema.parse(await readJson(request));
 
+    if (input.action === "history") return NextResponse.json(await counterHistory(actor, input.page));
+    if (input.action === "raise-payment") return NextResponse.json(await chargeCounterVisit(input.id, actor));
+    if (input.action === "wallet-policy") return NextResponse.json({ policy: await getCounterPolicy() });
+    if (input.action === "save-wallet-policy") {
+      return NextResponse.json({ policy: await saveCounterPolicy(input, actor) });
+    }
     if (input.action === "lookup") return NextResponse.json(await lookupCustomer(input.phone, input.page ?? 0));
     if (input.action === "lookup-email") return NextResponse.json(await lookupCustomerByEmail(input.email, input.page ?? 0));
     if (input.action === "lookup-account") return NextResponse.json(await lookupCounterAccount(input.userId, input.phone, input.page ?? 0));
@@ -57,7 +69,7 @@ export async function POST(request: NextRequest) {
       if (!service) throw new PublicError("Choose a service from the list.", 400, { fields: { serviceSlug: "Choose a service from the list." } });
       const result = await recordVisit({
         staffId: actor.id, phone: normalised(input.phone), userId: input.userId, name: input.name, email: input.email,
-        serviceSlug: service.slug, serviceName: service.title, billRupees: input.amount,
+        serviceSlug: service.slug, serviceName: service.title, billRupees: input.amount, walletMode: input.walletMode,
       });
       return NextResponse.json({ ok: true, ...result }, { status: 201 });
     }

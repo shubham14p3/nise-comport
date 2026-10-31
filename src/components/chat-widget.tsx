@@ -19,6 +19,7 @@ import { expandFullForms, searchAliases, searchScore } from "@/lib/search-terms"
 import { isKnownRecord, loadSearchRecords, type SearchRecords } from "@/lib/search-records";
 
 export type ChatService = { slug: string; title: string; category: string; keywords: string[] };
+const assistantNumber = process.env.NEXT_PUBLIC_WHATSAPP_ASSISTANT?.replace(/\D/g, "") || "17111494523";
 type TopicId = keyof Dictionary["chat"]["topics"];
 type Action = { label: string; href: string; kind: "link" | "wa" | "tel" | "external" };
 type Message = { id: number; from: "bot" | "user"; text: string; actions?: Action[]; chips?: boolean; services?: ChatService[]; visit?: boolean; guide?: { id: string; variant: string }; guideList?: boolean; callback?: boolean };
@@ -280,6 +281,7 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
       <button type="button" className="icon-btn" onClick={restart} aria-label={t.restart} title={t.restart}><RotateCcw size={18}/></button>
       <button type="button" className="icon-btn" onClick={onClose} aria-label={t.close}><X size={20}/></button>
     </header>
+    <a className="chat__wa" href={waLink(assistantNumber, "Hi! I opened the website chat and need help with a service.")} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/>WhatsApp assistant · +{assistantNumber}</a>
     <div className="chat__body" ref={scroller} aria-live="polite">
       {messages.map((message) => <div key={message.id} className={`chat__msg chat__msg--${message.from}`}>
         <p>{message.text}</p>
@@ -303,7 +305,7 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
       <input value={input} onChange={(event) => setInput(event.target.value)} placeholder={t.placeholder} maxLength={400} aria-label={t.placeholder}/>
       <button type="submit" className="icon-btn icon-btn--primary" aria-label={t.send} disabled={!input.trim()}><Send size={18}/></button>
     </form>
-    <a className="chat__wa" href={waLink(whatsapp, context ? `${t.waPrefix} ${context}` : `${t.waPrefix} …`)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/>{t.continueWa}</a>
+    <a className="chat__wa" href={waLink(whatsapp, context ? `${t.waPrefix} ${context}` : `${t.waPrefix} …`)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/>Talk to the shop on WhatsApp</a>
   </section>;
 }
 
