@@ -82,7 +82,7 @@ function MobileRow({ phone, smsEnabled, whatsappEnabled, reward, onVerified }: {
   const [unavailable, setUnavailable] = useState<("sms" | "whatsapp")[]>([]);
   const activeSms = smsEnabled && !unavailable.includes("sms");
   const activeWhatsapp = whatsappEnabled && !unavailable.includes("whatsapp");
-  if (!activeSms && !activeWhatsapp) return <p className="fine"><Smartphone size={14}/> Mobile code verification is coming soon. We will ask again then (₹{reward}).</p>;
+  if (!activeSms && !activeWhatsapp) return <p className="fine"><Smartphone size={14}/> Mobile code verification is unavailable right now. Please contact the shop for help.</p>;
   async function send(channel: "sms" | "whatsapp") {
     setBusy(true); setError("");
     const { ok, status, result } = await secureResult<{ error?: string }>("M8b5C1qJ7yL2", { action: "send", phone: value, channel });

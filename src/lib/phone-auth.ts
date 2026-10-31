@@ -100,7 +100,7 @@ async function verifiedOwner(phone: string) {
 
 /** Sign-in by SMS. The reply is the same whether or not the number is registered. */
 export async function requestSignInSms(phoneInput: string, ip: string, channel?: string | null) {
-  if (!otpChannels().length) throw new PublicError("SMS sign-in is coming soon.", 503, { code: "sms_not_configured" });
+  if (!otpChannels().length) throw new PublicError("SMS/WhatsApp code delivery is not configured on this server.", 503, { code: "sms_not_configured" });
   const phone = indianPhoneOrThrow(phoneInput);
   const owner = await verifiedOwner(phone);
   if (!owner) {

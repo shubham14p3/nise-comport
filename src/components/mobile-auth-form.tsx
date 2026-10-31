@@ -3,7 +3,7 @@
 import { ArrowRight, Check, Copy, Eye, EyeOff, LockKeyhole, ShieldCheck, UserRound } from "lucide-react";
 import { FormEvent, useRef, useState } from "react";
 import { checkMobile, pinProblem, typedMobile } from "@/lib/mobile-login-core";
-import { passwordProblem, PASSWORD_MIN } from "@/lib/validation";
+import { looksLikeEmail, passwordProblem, PASSWORD_MIN } from "@/lib/validation";
 import Link from "next/link";
 import { secureResult } from "@/lib/secure-api-client";
 import { whatsappHref } from "@/lib/public-contact";
@@ -35,7 +35,7 @@ export default function MobileAuthForm({ mode, onDone, recoveryEnabled = false }
     const byEmailPin = mode === "signin" && credential === "pin" && pinIdentity === "email";
     const mobile = byEmailPin ? null : checkMobile(phone);
     if (byEmailPin) {
-      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(emailPin.trim())) problems.email = "Enter your account email address.";
+      if (!looksLikeEmail(emailPin.trim())) problems.email = "Enter your account email address.";
     } else if (mobile && !mobile.ok) problems.phone = mobile.error;
     if (mode === "signin") {
       if (credential === "pin") { const bad = pinProblem(pin); if (bad) problems.pin = bad; }

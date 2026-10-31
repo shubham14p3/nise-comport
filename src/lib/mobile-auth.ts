@@ -23,7 +23,7 @@ function mobileOrThrow(input: string) {
   return result;
 }
 
-const SAME_ANSWER = "Mobile number or PIN is incorrect.";
+const SAME_ANSWER = "Email/mobile or PIN is incorrect. If the mobile is shared, choose Email + PIN and use your own account email.";
 const publicUser = (user: Pick<User, "id" | "name" | "email">) => ({ id: user.id, name: user.name, email: user.email });
 
 /**

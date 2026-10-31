@@ -268,7 +268,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
     })}</div>
     {filteredMembers.length === 0 && members && <p className="admin-empty">No team accounts match this search. You can add a new member below.</p>}
     {filteredMembers.length > paging.pageSize && <AdminPager {...paging} label="team members"/>}
-    <details className="admin-accordion"><summary><UserPlus size={15}/> Add a person</summary>
+    <details className="admin-accordion"><summary><UserPlus size={15}/> Add a new person or existing customer</summary>
     <form className="team-add" onSubmit={add}>
       <h3><UserPlus size={17}/> Add a person</h3>
       <div className="form-grid">
@@ -282,7 +282,7 @@ export default function TeamPanel({ meRole, meId }: { meRole: string; meId?: str
       {role === "staff" ? <><span className="field__label">What may they do?</span><PermissionBoxes value={permissions} onChange={setPermissions}/></>
         : <p className="field__hint">Owners can open every area and manage the team. Only add people you fully trust.</p>}
       <button className="btn btn--primary" disabled={busy === "add" || (role === "staff" && !permissions.length)}>{busy === "add" ? <LoaderCircle size={16} className="api-activity__spin"/> : <UserPlus size={16}/>}{busy === "add" ? "Adding…" : role === "admin" ? "Add owner" : "Add to team"}</button>
-      <p className="field__hint">New team accounts with a mobile number get a temporary PIN and password by email. Existing customers keep their account history and password; an explicitly entered PIN is set for that account.</p>
+      <p className="field__hint">New team accounts with a mobile number get a temporary PIN and password by email. To add an existing customer, enter their exact account email. Their customer profile, requests, wallet, password and existing PIN are kept; an explicitly entered PIN replaces that account’s PIN. Matching a mobile number alone never links accounts.</p>
     </form></details>
   </section>;
 }
