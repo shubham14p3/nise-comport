@@ -78,7 +78,7 @@ export default function CounterDesk({ services, isOwner = false }: { services: S
 
   const [showHistory, setShowHistory] = useState(false);
   const [historyPage, setHistoryPage] = useState(0);
-  const [history, setHistory] = useState<{ rows: { id: string; customer: string; phone: string | null; service: string; reference: string; createdAt: string; billPaise: number; discountPaise: number; earnedPaise: number; collectPaise: number; paymentStatus: string | null }[]; total: number; page: number; canCharge: boolean } | null>(null);
+  const [history, setHistory] = useState<{ rows: { id: string; customer: string; phone: string | null; service: string; reference: string; jobId?: string | null; createdAt: string; billPaise: number; discountPaise: number; earnedPaise: number; collectPaise: number; paymentStatus: string | null }[]; total: number; page: number; canCharge: boolean } | null>(null);
   async function loadHistory(page = 0) {
     const result = await run(() => secureApi<NonNullable<typeof history>>(COUNTER_OP, { action: "history", page }));
     if (result) { setHistory(result); setHistoryPage(page); setShowHistory(true); }
@@ -263,7 +263,7 @@ export default function CounterDesk({ services, isOwner = false }: { services: S
     {notice && <p role="status" className="alert alert--info" style={{ overflowWrap: "anywhere" }}>{notice}</p>}
     <div className="counter-desk__modes" role="group" aria-label="Counter view"><button type="button" className={!showHistory ? 'is-active' : undefined} onClick={() => setShowHistory(false)}>Counter desk</button><button type="button" disabled={busy} className={showHistory ? 'is-active' : undefined} onClick={() => void loadHistory(0)}>History</button></div>
     {showHistory && <section aria-label="Counter history"><h3>Counter visit history · {history?.total ?? 0}</h3>
-      {history?.rows.map(row => <article key={row.id} className="counter-history-card"><header><strong>{row.customer}</strong><time>{new Date(row.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</time></header><b>{row.service}</b><small>{row.reference}</small><p>Bill {rupees(row.billPaise)} · wallet used {rupees(row.discountPaise)} · earned {rupees(row.earnedPaise)} · collect {rupees(row.collectPaise)}</p>
+      {history?.rows.map(row => <article key={row.id} className="counter-history-card"><header><strong>{row.customer}</strong><time>{new Date(row.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</time></header><b>{row.service}</b><small>{row.reference}{row.jobId ? ` · Job ID ${row.jobId}` : ""}</small><p>Bill {rupees(row.billPaise)} · wallet used {rupees(row.discountPaise)} · earned {rupees(row.earnedPaise)} · collect {rupees(row.collectPaise)}</p>
         {row.paymentStatus ? <p>Payment: {row.paymentStatus} · <Link href="/desk#payments">Open Payments</Link></p> : <><p className="fine">No online payment ticket. Check cash/UPI collection before raising one.</p>{history.canCharge && row.collectPaise >= 100 && <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={async () => {
           if (!window.confirm(`Raise a payment request for ${rupees(row.collectPaise)} against ${row.reference}? Confirm this amount has NOT already been collected in cash or UPI.`)) return;
           const result = await run(() => secureApi<{ reference: string; path: string }>(COUNTER_OP, { action: 'raise-payment', id: row.id }));

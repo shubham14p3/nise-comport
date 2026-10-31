@@ -1,5 +1,5 @@
-import { count, desc, eq, sql } from 'drizzle-orm';
-import { activityLog, counterVisits, payments, serviceRequests, users, walletEntries } from '@/db/schema';
+import { and, count, desc, eq, sql } from 'drizzle-orm';
+import { activityLog, counterVisits, jobs, payments, serviceRequests, users, walletEntries } from '@/db/schema';
 import { db } from '@/lib/db';
 import { PublicError } from '@/lib/errors';
 import { hasPermission, type StaffLike } from '@/lib/permissions';
@@ -10,8 +10,9 @@ export async function counterHistory(actor: StaffLike & { id: string }, page: nu
  const rows = await db.select({ id: counterVisits.id, customer: users.name, phone: users.phone, service: counterVisits.serviceName, createdAt: counterVisits.createdAt,
   billPaise: counterVisits.billPaise, discountPaise: counterVisits.discountPaise, collectPaise: counterVisits.collectPaise,
   earnedPaise: sql<number>`coalesce((select sum(amount)*100 from ${walletEntries} where reference = 'CV-EARN-' || ${counterVisits.id}::text), 0)::int`,
-  paymentStatus: payments.status,
+  paymentStatus: payments.status, jobId: jobs.code,
  }).from(counterVisits).innerJoin(users, eq(users.id, counterVisits.userId))
+ .leftJoin(jobs, and(eq(jobs.sourceKind, 'counter'), eq(jobs.sourceId, counterVisits.id)))
  .leftJoin(serviceRequests, sql`${serviceRequests.reference} = 'CV-' || upper(${counterVisits.id}::text)`)
  .leftJoin(payments, sql`${payments.id} = (select p.id from payments p where p.reference = ${serviceRequests.reference} order by p.created_at desc, p.id desc limit 1)`)
  .where(scope).orderBy(desc(counterVisits.createdAt), desc(counterVisits.id)).limit(10).offset(page * 10);

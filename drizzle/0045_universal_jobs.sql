@@ -43,14 +43,16 @@ CREATE INDEX IF NOT EXISTS "job_events_job_created_idx" ON "job_events"("job_id"
 -- Backfill is idempotent by (source_kind, source_id); no original rows are modified.
 INSERT INTO "jobs" ("source_kind", "source_id", "user_id", "service_slug", "service_name", "source_reference", "status", "created_at", "updated_at")
 SELECT 'service', r."id", r."user_id", r."service_slug", r."service_name", r."reference", r."status", r."created_at", r."updated_at"
-FROM "service_requests" r WHERE true ON CONFLICT ("source_kind", "source_id") DO NOTHING;
+FROM "service_requests" r
+WHERE NOT (r."details"->>'source' = 'counter' AND r."details" ? 'counterVisitId')
+ON CONFLICT ("source_kind", "source_id") DO NOTHING;
 --> statement-breakpoint
 INSERT INTO "jobs" ("source_kind", "source_id", "user_id", "service_slug", "service_name", "source_reference", "status", "created_at", "updated_at")
 SELECT 'print', p."id", p."user_id", 'printing', 'Print: ' || p."file_name", p."reference", p."status", p."created_at", p."updated_at"
 FROM "print_jobs" p WHERE true ON CONFLICT ("source_kind", "source_id") DO NOTHING;
 --> statement-breakpoint
 INSERT INTO "jobs" ("source_kind", "source_id", "user_id", "service_slug", "service_name", "source_reference", "status", "created_at", "updated_at")
-SELECT 'counter', v."id", v."user_id", v."service_slug", v."service_name", NULL, 'recorded', v."created_at", v."created_at"
+SELECT 'counter', v."id", v."user_id", v."service_slug", v."service_name", 'CV-' || upper(v."id"::text), 'recorded', v."created_at", v."created_at"
 FROM "counter_visits" v WHERE true ON CONFLICT ("source_kind", "source_id") DO NOTHING;
 --> statement-breakpoint
 -- A legacy row is a historical record, not necessarily an open customer request.
@@ -76,6 +78,11 @@ DECLARE
  old_value text;
 BEGIN
  IF k = 'service' THEN
+   -- A payment-only request created from an existing counter visit is NOT another job.
+   -- Its CV-reference and details.counterVisitId link it to the original counter job.
+   IF NEW.details->>'source' = 'counter' AND NEW.details ? 'counterVisitId' THEN
+     RETURN NEW;
+   END IF;
    name_value := NEW.service_name; slug_value := NEW.service_slug;
    ref_value := NEW.reference; status_value := NEW.status; owner_value := NEW.user_id;
    born := NEW.created_at; modified := NEW.updated_at;
@@ -85,7 +92,7 @@ BEGIN
    born := NEW.created_at; modified := NEW.updated_at;
  ELSIF k = 'counter' THEN
    name_value := NEW.service_name; slug_value := NEW.service_slug;
-   ref_value := NULL; status_value := 'recorded'; owner_value := NEW.user_id;
+   ref_value := 'CV-' || upper(NEW.id::text); status_value := 'recorded'; owner_value := NEW.user_id;
    born := NEW.created_at; modified := NEW.created_at;
  ELSIF k = 'historical' THEN
    name_value := NEW.service; slug_value := NEW.service;

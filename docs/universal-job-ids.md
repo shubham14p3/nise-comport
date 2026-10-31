@@ -41,3 +41,6 @@ SELECT source_kind, source_id, count(*) FROM jobs GROUP BY 1, 2 HAVING count(*) 
 - Online request creation and Counter visit creation now include a `jobId` in their JSON responses. The existing `reference` remains valid.
 - WhatsApp `STATUS <Job ID>`, bare Job ID, or `status` uses the verified phone-owner and refuses unverified/shared matches.
 - This phase adds backend support. Existing customer/Admin screen components still need a dedicated Job ID view; this is not a completed frontend rollout.
+
+### Counter billing deduplication
+A Counter charge can create a separate payment-only `service_requests` row with `details.source='counter'` and `details.counterVisitId`. **This does not become a second universal job.** The Counter visit's one Job ID remains the source of truth and its source reference is `CV-<visit-uuid>`, also used by the payment ticket. Backfill and trigger both skip these payment-only rows.
