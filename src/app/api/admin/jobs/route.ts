@@ -30,8 +30,7 @@ export async function GET(request: NextRequest) {
       const search = (request.nextUrl.searchParams.get("query") ?? "").trim().slice(0, 80);
       const requestedPage = Number(request.nextUrl.searchParams.get("page") ?? 0);
       const page = Number.isSafeInteger(requestedPage) ? Math.max(0, Math.min(10000, requestedPage)) : 0;
-      const like = `%${search.replace(/[\\%_]/g, "\\    if (!code) throw new PublicError("Enter a valid Job ID.", 400);
-    const [job]")}%`;
+      const like = `%${search.replace(/[\\%_]/g, "\\$&")}%`;
       const where = search ? or(ilike(jobs.code, like), ilike(jobs.serviceName, like), ilike(jobs.sourceReference, like)) : undefined;
       const rows = await db.select({
         code: jobs.code, serviceName: jobs.serviceName, sourceKind: jobs.sourceKind,
