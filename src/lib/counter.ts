@@ -1,12 +1,15 @@
 import { randomBytes } from "node:crypto";
-import { and, count, desc, eq, isNull, like, not, notInArray, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, isNull, like, not, or, sql } from "drizzle-orm";
 import { hash } from "@node-rs/argon2";
-import { contacts, counterVisits, users, walletEntries } from "@/db/schema";
+import { activityLog, contacts, counterVisits, sessions, users, walletEntries } from "@/db/schema";
+import { sendEmailChangedNotice } from "@/lib/email";
 import { db } from "@/lib/db";
 import { isPlaceholderEmail } from "@/lib/mobile-login-core";
 import { PublicError } from "@/lib/errors";
-import { COUNTER_DISCOUNT_PERCENT } from "@/lib/counter-rules";
+import { getCounterPolicy } from "@/lib/counter-settings";
+import { counterAmounts } from "@/lib/counter-rules";
 import { cleanName, looksLikeEmail, normalizeEmail, normalizePhone } from "@/lib/validation";
+import { profileChanges, formatAuditChange } from "@/lib/customer-audit";
 
 /** Recent visits shown per page on the counter. */
 export const VISITS_PAGE_SIZE = 5;
@@ -15,7 +18,7 @@ import { cleanReason, createCreditRequest, toPaise, type Tx } from "@/lib/wallet
 export { COUNTER_DISCOUNT_PERCENT } from "@/lib/counter-rules";
 
 /** Wallet balance in paise: credits minus debits. */
-export async function walletPaise(executor: Tx, userId: string) {
+export async function walletPaise(executor: Pick<Tx, "select">, userId: string) {
   const [row] = await executor.select({
     balance: sql<string>`coalesce(sum(case when ${walletEntries.kind} = 'debit' then -${walletEntries.amount} else ${walletEntries.amount} end), 0)`,
   }).from(walletEntries).where(eq(walletEntries.userId, userId));
@@ -23,21 +26,45 @@ export async function walletPaise(executor: Tx, userId: string) {
 }
 
 function duplicateNumberError() {
-  return new PublicError("More than one account uses this mobile number. Check with the owner before recording anything.", 409, { code: "duplicate_phone" });
+  return new PublicError("Several accounts share this number. Choose the correct account before recording a visit.", 409, { code: "duplicate_phone" });
 }
 
 /**
- * Accounts that count as this customer's number. Staff and admin accounts are not customers, and
- * placeholder profiles from imported lists (".invalid" emails) are ignored. Profiles the counter
- * creates (prefix "counter-") and mobile sign-ups (@mobile.nisecomport.invalid) are real customers and still count.
+ * Active accounts with a matching contact number, including staff and owners, may use the shop as customers.
+ * Imported unrelated placeholder profiles are ignored; a shared phone requires explicit account selection.
  */
 function customerAccountsFor(phone: string) {
   return and(
     eq(users.phone, phone),
     isNull(users.deletedAt),
-    notInArray(users.role, ["admin", "staff"]),
     or(not(like(users.email, "%.invalid")), like(users.email, "counter-%"), like(users.email, "%@mobile.nisecomport.invalid")),
   );
+}
+
+const counterCustomerColumns = {
+  id: users.id, name: users.name, email: users.email, phone: users.phone,
+  emailVerifiedAt: users.emailVerifiedAt, phoneVerifiedAt: users.phoneVerifiedAt,
+};
+type CounterCustomer = Pick<typeof users.$inferSelect, keyof typeof counterCustomerColumns>;
+function counterContact(row: Pick<CounterCustomer, "email" | "phone" | "emailVerifiedAt" | "phoneVerifiedAt">) {
+  return { email: !isPlaceholderEmail(row.email) ? row.email : null, emailVerified: Boolean(row.emailVerifiedAt),
+    phone: row.phone, phoneVerified: Boolean(row.phoneVerifiedAt) };
+}
+
+/** Independent read queries; financial writes still use the locked transaction below. */
+async function counterDetails(customer: CounterCustomer, phone: string, page: number) {
+  const [balancePaise, visits, [totals]] = await Promise.all([
+    walletPaise(db, customer.id),
+    db.select({
+      id: counterVisits.id, serviceName: counterVisits.serviceName, billPaise: counterVisits.billPaise,
+      discountPaise: counterVisits.discountPaise, walletPaise: counterVisits.walletPaise, collectPaise: counterVisits.collectPaise,
+      createdAt: counterVisits.createdAt,
+    }).from(counterVisits).where(eq(counterVisits.userId, customer.id))
+      .orderBy(desc(counterVisits.createdAt), desc(counterVisits.id)).limit(VISITS_PAGE_SIZE).offset(page * VISITS_PAGE_SIZE),
+    db.select({ total: count() }).from(counterVisits).where(eq(counterVisits.userId, customer.id)),
+  ]);
+  return { phone, customer: { id: customer.id, name: customer.name }, knownName: null, contact: counterContact(customer),
+    balancePaise, visits, visitsTotal: totals?.total ?? 0, page, pageSize: VISITS_PAGE_SIZE };
 }
 
 /** Looks up the customer for this number. Returns no profile for a new number. */
@@ -45,30 +72,86 @@ export async function lookupCustomer(phoneInput: string, pageInput = 0) {
   const page = Math.max(0, Math.floor(pageInput));
   const phone = normalizePhone(phoneInput);
   if (!phone) throw new PublicError("Enter a valid 10-digit mobile number.", 400, { fields: { phone: "Check the number." } });
-  const rows = await db.select({ id: users.id, name: users.name }).from(users)
-    .where(customerAccountsFor(phone)).limit(2);
-  if (rows.length > 1) throw duplicateNumberError();
+  const rows = await db.select({ ...counterCustomerColumns, role: users.role }).from(users)
+    .where(customerAccountsFor(phone)).limit(20);
+  if (rows.length > 1) return {
+    phone, ambiguous: true, candidates: rows.map((row) => ({ id: row.id, name: row.name, role: row.role, email: isPlaceholderEmail(row.email) ? null : row.email })),
+    customer: null, knownName: null, contact: null, balancePaise: 0, visits: [], visitsTotal: 0, page: 0, pageSize: VISITS_PAGE_SIZE,
+  };
   const customer = rows[0];
   if (!customer) {
     // No account yet: a name from the contact list (imported records, forms) still helps the counter.
     const [known] = await db.select({ name: contacts.name }).from(contacts).where(eq(contacts.phone, phone)).limit(1);
     return { phone, customer: null, knownName: known?.name ?? null, contact: null, balancePaise: 0, visits: [], visitsTotal: 0, page: 0, pageSize: VISITS_PAGE_SIZE };
   }
-  const balancePaise = await db.transaction((tx) => walletPaise(tx, customer.id));
-  const visits = await db.select({
-    id: counterVisits.id, serviceName: counterVisits.serviceName, billPaise: counterVisits.billPaise,
-    discountPaise: counterVisits.discountPaise, walletPaise: counterVisits.walletPaise, collectPaise: counterVisits.collectPaise,
-    createdAt: counterVisits.createdAt,
-  }).from(counterVisits).where(eq(counterVisits.userId, customer.id)).orderBy(desc(counterVisits.createdAt)).limit(VISITS_PAGE_SIZE).offset(page * VISITS_PAGE_SIZE);
-  const [totals] = await db.select({ total: count() }).from(counterVisits).where(eq(counterVisits.userId, customer.id));
-  return { phone, customer: { id: customer.id, name: customer.name }, knownName: null, contact: await customerContact(customer.id), balancePaise, visits, visitsTotal: totals?.total ?? 0, page, pageSize: VISITS_PAGE_SIZE };
+  return counterDetails(customer, phone, page);
+}
+
+/** Load a selected account for a shared phone. No fallback to first match. */
+export async function lookupCounterAccount(id: string, phoneInput: string, pageInput = 0) {
+  const phone = normalizePhone(phoneInput);
+  if (!phone) throw new PublicError("Enter a valid phone number.", 400);
+  const [account] = await db.select(counterCustomerColumns).from(users)
+    .where(and(customerAccountsFor(phone), eq(users.id, id))).limit(1);
+  if (!account) throw new PublicError("This account is not linked to that number. Look it up again.", 404);
+  const page = Math.max(0, Math.floor(pageInput));
+  return counterDetails(account, phone, page);
+}
+
+/** Correct the selected account's name/email without creating another account or moving records.
+ * A shop visit alone never updates credentials or changes email ownership.
+ */
+export async function updateCounterCustomer(id: string, nameInput: string, emailInput: string | undefined, actor: { id: string; name: string }) {
+  const name = cleanName(nameInput);
+  if (name.length < 2 || name.length > 100) throw new PublicError("Enter a valid customer name.", 400);
+  if (emailInput?.trim() && !looksLikeEmail(normalizeEmail(emailInput))) throw new PublicError("Enter a valid customer email address.", 400);
+  const result = await db.transaction(async (tx) => {
+    const [account] = await tx.select().from(users).where(and(eq(users.id, id), isNull(users.deletedAt))).limit(1);
+    if (!account) throw new PublicError("Customer account not found.", 404);
+    const email = emailInput?.trim() ? normalizeEmail(emailInput) : account.email;
+    if (account.role === "admin" || account.role === "staff") {
+      throw new PublicError("Team account details must be edited in Team management, not the customer counter.", 403);
+    }
+    if (email !== account.email) {
+      const [taken] = await tx.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+      if (taken && taken.id !== id) throw new PublicError("That email belongs to another account. Use their existing account instead.", 409);
+    }
+    const [saved] = await tx.update(users).set({
+      name, email, emailVerifiedAt: email === account.email ? account.emailVerifiedAt : null, updatedAt: new Date(),
+    }).where(and(eq(users.id, id), eq(users.updatedAt, account.updatedAt))).returning();
+    if (!saved) throw new PublicError("The customer was edited elsewhere. Refresh and retry.", 409);
+    const changes = profileChanges(account, saved);
+    if (changes.length) await tx.insert(activityLog).values(changes.map((change) => ({
+      kind: "staff" as const, permission: "counter", category: "customer-profile",
+      title: `${actor.name} updated ${change.label} at the counter`.slice(0, 200),
+      detail: formatAuditChange(change), refType: "customer-profile", refId: id, actorId: actor.id,
+    })));
+    return { id: saved.id, name: saved.name, email: saved.email, changed: changes.length > 0, previousEmail: account.email };
+  });
+  if (result.email !== result.previousEmail) {
+    // Changing an account identifier invalidates existing sessions; do not silently
+    // keep logged-in browsers using the old email.
+    await db.delete(sessions).where(eq(sessions.userId, result.id));
+    if (!isPlaceholderEmail(result.previousEmail)) {
+      await sendEmailChangedNotice(result.previousEmail, result.name, result.email).catch((error) =>
+        console.error("[counter] email change notice failed", error instanceof Error ? error.message : "unknown"));
+    }
+  }
+  return { id: result.id, name: result.name, email: result.email, changed: result.changed };
 }
 
 /**
  * The customer for this number, creating a profile for a new number. A new profile needs a name.
  * The email is a placeholder (signupMethod "mobile"), as for other mobile-only profiles.
  */
-export async function customerForCounter(tx: Tx, phone: string, name: string | undefined, emailInput?: string) {
+export async function customerForCounter(tx: Tx, phone: string, name: string | undefined, emailInput?: string, selectedUserId?: string) {
+  if (selectedUserId) {
+    const [chosen] = await tx.select({ id: users.id }).from(users).where(and(
+      customerAccountsFor(phone), eq(users.id, selectedUserId),
+    )).limit(1);
+    if (!chosen) throw new PublicError("The chosen account is not associated with this number. Look it up again.", 409);
+    return chosen.id;
+  }
   const rows = await tx.select({ id: users.id }).from(users).where(customerAccountsFor(phone)).limit(2);
   if (rows.length > 1) throw duplicateNumberError();
   if (rows[0]) return rows[0].id;
@@ -90,18 +173,18 @@ export async function customerForCounter(tx: Tx, phone: string, name: string | u
 }
 
 /**
- * Records one counter visit. The 10% discount comes out of the wallet, up to the balance.
+ * Records one counter visit. Apply the owner’s deduction or accumulation policy.
  * The customer pays the rest (collectPaise). The customer row is locked so two quick
  * entries can't spend the same balance twice.
  */
-export async function recordVisit(input: { staffId: string; phone: string; name?: string; email?: string; serviceSlug: string; serviceName: string; billRupees: number }) {
+export async function recordVisit(input: { staffId: string; phone: string; userId?: string; name?: string; email?: string; serviceSlug: string; serviceName: string; billRupees: number; walletMode?: "deduct" | "accumulate" }) {
   const billPaise = toPaise(input.billRupees);
+  const policy = await getCounterPolicy();
   return db.transaction(async (tx) => {
-    const userId = await customerForCounter(tx, input.phone, input.name, input.email);
+    const userId = await customerForCounter(tx, input.phone, input.name, input.email, input.userId);
     await tx.execute(sql`select id from users where id = ${userId} for update`);
     const balance = await walletPaise(tx, userId);
-    const discountPaise = Math.min(Math.floor((billPaise * COUNTER_DISCOUNT_PERCENT) / 100), balance);
-    const collectPaise = billPaise - discountPaise;
+    const { discountPaise, earnedPaise, collectPaise, balanceAfterPaise } = counterAmounts(billPaise, balance, input.walletMode ?? "deduct", policy);
     const [visit] = await tx.insert(counterVisits).values({
       userId, staffId: input.staffId, serviceSlug: input.serviceSlug, serviceName: input.serviceName,
       billPaise, discountPaise, walletPaise: discountPaise, collectPaise,
@@ -110,10 +193,11 @@ export async function recordVisit(input: { staffId: string; phone: string; name?
     if (discountPaise > 0) {
       await tx.insert(walletEntries).values({
         userId, amount: (discountPaise / 100).toFixed(2), kind: "debit",
-        description: `Counter: ${input.serviceName} (${COUNTER_DISCOUNT_PERCENT}% discount)`, reference: `CV-${visit.id}`,
+        description: `Counter: ${input.serviceName} (${policy.deductionPercent}% discount)`, reference: `CV-${visit.id}`,
       });
     }
-    return { visitId: visit.id, createdAt: visit.createdAt, billPaise, discountPaise, collectPaise, balanceAfterPaise: balance - discountPaise };
+    if (earnedPaise > 0) await tx.insert(walletEntries).values({ userId, amount: (earnedPaise / 100).toFixed(2), kind: "credit", description: `Counter: ${input.serviceName} (${policy.accumulationPercent}% accumulated)`, reference: `CV-EARN-${visit.id}` });
+    return { reference: `CV-${visit.id.toUpperCase()}`, visitId: visit.id, createdAt: visit.createdAt, billPaise, discountPaise, earnedPaise, collectPaise, balanceAfterPaise };
   });
 }
 
@@ -121,11 +205,11 @@ export async function recordVisit(input: { staffId: string; phone: string; name?
  * A top-up at the counter is a wallet credit, so it waits for a second admin's approval.
  * Nothing is added to the wallet here.
  */
-export async function requestTopUp(input: { staffId: string; phone: string; name?: string; email?: string; rupees: number; reason: string }) {
+export async function requestTopUp(input: { staffId: string; phone: string; userId?: string; name?: string; email?: string; rupees: number; reason: string }) {
   const paise = toPaise(input.rupees);
   const reason = cleanReason(input.reason);
   return db.transaction(async (tx) => {
-    const userId = await customerForCounter(tx, input.phone, input.name, input.email);
+    const userId = await customerForCounter(tx, input.phone, input.name, input.email, input.userId);
     return createCreditRequest(tx, { userId, requestedById: input.staffId, paise, reason });
   });
 }
@@ -147,16 +231,8 @@ export async function lookupCustomerByEmail(emailInput: string, pageInput = 0) {
   const email = normalizeEmail(emailInput);
   if (!looksLikeEmail(email)) throw new PublicError("Enter a valid email address.", 400, { fields: { email: "Check the email." } });
   const page = Math.max(0, Math.floor(pageInput));
-  const [customer] = await db.select({ id: users.id, name: users.name }).from(users)
-    .where(and(eq(users.email, email), isNull(users.deletedAt), notInArray(users.role, ["admin", "staff"]))).limit(1);
+  const [customer] = await db.select(counterCustomerColumns).from(users)
+    .where(and(eq(users.email, email), isNull(users.deletedAt))).limit(1);
   if (!customer) return { phone: "", customer: null, knownName: null, contact: null, balancePaise: 0, visits: [], visitsTotal: 0, page: 0, pageSize: VISITS_PAGE_SIZE };
-  const contact = await customerContact(customer.id);
-  const balancePaise = await db.transaction((tx) => walletPaise(tx, customer.id));
-  const visits = await db.select({
-    id: counterVisits.id, serviceName: counterVisits.serviceName, billPaise: counterVisits.billPaise,
-    discountPaise: counterVisits.discountPaise, walletPaise: counterVisits.walletPaise, collectPaise: counterVisits.collectPaise,
-    createdAt: counterVisits.createdAt,
-  }).from(counterVisits).where(eq(counterVisits.userId, customer.id)).orderBy(desc(counterVisits.createdAt)).limit(VISITS_PAGE_SIZE).offset(page * VISITS_PAGE_SIZE);
-  const [totals] = await db.select({ total: count() }).from(counterVisits).where(eq(counterVisits.userId, customer.id));
-  return { phone: contact.phone ?? "", customer: { id: customer.id, name: customer.name }, knownName: null, contact, balancePaise, visits, visitsTotal: totals?.total ?? 0, page, pageSize: VISITS_PAGE_SIZE };
+  return counterDetails(customer, customer.phone ?? "", page);
 }

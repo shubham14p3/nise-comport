@@ -15,12 +15,12 @@ NEXT_PUBLIC_SITE_URL=https://nisecomport.com
 CANONICAL_HOST_REDIRECT=true
 ```
 
-For development on Windows use a separate `.env.local`:
+For development on Windows use a separate `.env.local` (both dev and production listen on port 3020, but they must use different databases):
 
 ```dotenv
 APP_ENV=local
-INTERNAL_API_PORT=3000
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+INTERNAL_API_PORT=3020
+NEXT_PUBLIC_SITE_URL=http://localhost:3020
 CANONICAL_HOST_REDIRECT=false
 ```
 
@@ -110,6 +110,14 @@ curl -i --max-time 15 http://127.0.0.1:3020/api/health
 3. Test one non-destructive authenticated dashboard query. Verify session cookies persist after page reload.
 4. Inspect the encrypted `/api/x7q9m2` response. Outer HTTP 200 is **not** proof of success: application status is sealed inside the response.
 5. Verify ordinary cross-site browser requests to private APIs are still denied; never disable the proxy or expose `INTERNAL_API_TOKEN` to the browser.
+
+**Troubleshooting unstyled first loads and encrypted login:**
+
+- If a page initially renders without styling, inspect `/_next/static/...` CSS/JS requests in the browser Network tab. A 404 means the deployed CSS or JavaScript bundle may be missing or from a different build. `node scripts/check-build.mjs` now validates static asset references found in Next.js build manifests.
+- `/api/health` returning `ok: true` shows that the database is reachable; it does **not** prove login credentials or the encrypted API are valid.
+- `/api/x7q9m2` returning outer HTTP 200 is expected even for rejected credentials. Its application status is sealed. The exact UI text `Email, mobile number or password is incorrect.` comes from the server's credential check; do not replace password hashes or bypass authentication to handle it.
+- Browser fetch failures while online should be reported as an unavailable connection, not as proof that the user is offline. If login is rejected with invalid credentials, check that the correct login method (mobile PIN vs password vs email) and account are being used.
+- Never replace production `.env.local` while redeploying; it may contain data-encryption keys. Back it up securely and remove tracked secrets from Git separately with a planned credential rotation.
 
 **Logs:**
 

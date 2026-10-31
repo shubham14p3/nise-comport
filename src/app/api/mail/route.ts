@@ -1,3 +1,4 @@
+import { trashMail } from "@/lib/mail-trash";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
@@ -26,6 +27,7 @@ export async function GET(request: NextRequest) {
 
 const attachmentIds = z.array(z.string()).max(10).optional();
 const body = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("delete-selected"), ids: z.array(z.uuid()).min(1).max(100) }),
   z.object({ action: z.literal("create"), subject: z.string().max(300), body: z.string().max(40000), attachmentIds, to: z.string().max(200).optional(), status: z.string().max(30).optional() }),
   z.object({ action: z.literal("reply"), id: z.string().max(60), body: z.string().max(40000), attachmentIds, status: z.string().max(30).optional() }),
   z.object({ action: z.literal("status"), id: z.string().max(60), status: z.string().max(30) }),
@@ -38,6 +40,7 @@ export async function POST(request: NextRequest) {
     const actor = actorFor(await requireUser());
     const input = body.parse(await readJson(request, 128 * 1024));
     switch (input.action) {
+      case "delete-selected": return NextResponse.json({ ok: true, ...(await trashMail(actor, input.ids)) }, { headers: NO_STORE });
       case "create": return NextResponse.json({ ok: true, ...(await createTicket(actor, input)) }, { status: 201, headers: NO_STORE });
       case "reply": return NextResponse.json(await replyToTicket(actor, input), { headers: NO_STORE });
       case "status": return NextResponse.json(await changeStatus(actor, input.id, input.status), { headers: NO_STORE });

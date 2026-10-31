@@ -33,14 +33,14 @@ export default function VoucherBoard({ vouchers }: { vouchers: CustomerVoucher[]
         <b className="big-ticket__code">{voucher.code}</b>
         {voucher.used ? <span className="big-ticket__used"><Check size={15}/>{t.used}</span> : <div className="big-ticket__actions">
           <CopyCode text={voucher.code} locale={locale} className="copy-btn copy-btn--light"/>
-          <Link className="btn btn--light btn--sm" href={`/request?coupon=${encodeURIComponent(voucher.code)}`}>{t.useNow}<ArrowRight size={15}/></Link>
-          <Link className="btn btn--glass btn--sm" href="/print"><Printer size={15}/>{t.useOnPrint}</Link>
+          <Link prefetch={false} className="btn btn--light btn--sm" href={`/request?coupon=${encodeURIComponent(voucher.code)}`}>{t.useNow}<ArrowRight size={15}/></Link>
+          <Link prefetch={false} className="btn btn--glass btn--sm" href="/print"><Printer size={15}/>{t.useOnPrint}</Link>
         </div>}
       </div>
       <i className="big-ticket__notch big-ticket__notch--t" aria-hidden="true"/><i className="big-ticket__notch big-ticket__notch--b" aria-hidden="true"/>
     </article>)}</div>}
 
-    <div className="voucher-board__head"><h3>{t.liveCodes}</h3><Link className="text-link" href="/offers#calendar"><CalendarDays size={15}/>{t.seeCalendar}<ArrowRight size={15}/></Link></div>
+    <div className="voucher-board__head"><h3>{t.liveCodes}</h3><Link prefetch={false} className="text-link" href="/offers#calendar"><CalendarDays size={15}/>{t.seeCalendar}<ArrowRight size={15}/></Link></div>
     {live.length ? <div className="promo-grid promo-grid--compact">{live.map((voucher) => <div key={voucher.code} className={voucher.used ? "is-used-wrap" : undefined}>
       <PromoCard view={voucher} locale={locale} today={today} siteUrl={SITE_URL} variant="compact"/>
       {voucher.used && <span className="used-flag"><Check size={14}/>{t.used}</span>}

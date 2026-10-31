@@ -8,6 +8,8 @@ import JsonLd from "@/components/json-ld";
 import MobileDock from "@/components/mobile-dock";
 import OffersProvider from "@/components/offers-provider";
 import SiteFooter from "@/components/site-footer";
+import { getLoaderSettings } from "@/lib/site-branding";
+import ApiActivityIndicator from "@/components/api-activity-indicator";
 import { getLivePromos } from "@/lib/promotions";
 import { liveBanners } from "@/lib/site-content";
 import { site } from "@/lib/site";
@@ -24,7 +26,7 @@ const hindSiliguri = Hind_Siliguri({ subsets: ["bengali"], weight: ["400", "500"
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
-  title: { default: "NISE COMPORT - Pragya Kendra - CSC & Digital Services in Telco, Jamshedpur", template: "NISE COMPORT - Pragya Kendra - %s" },
+  title: { default: "NiSE COMPORT - Pragya Kendra - CSC & Digital Services in Telco, Jamshedpur", template: "NiSE COMPORT - Pragya Kendra - %s" },
   description: "Independent CSC and Pragya Kendra in Kharangajhar, Telco, Jamshedpur: PAN, Aadhaar guidance, Jharkhand certificates, banking, insurance, forms, bill payments and printing.",
   applicationName: site.name,
   authors: [{ name: site.name, url: site.url }],
@@ -32,7 +34,7 @@ export const metadata: Metadata = {
   publisher: site.name,
   category: "Government & citizen services",
   formatDetection: { telephone: true, address: true, email: true },
-  openGraph: { type: "website", locale: "en_IN", siteName: site.name, images: [{ url: site.defaultOgImage, width: 1200, height: 630, alt: "NISE COMPORT – CSC & Pragya Kendra, Kharangajhar, Telco, Jamshedpur" }] },
+  openGraph: { type: "website", locale: "en_IN", siteName: site.name, images: [{ url: site.defaultOgImage, width: 1200, height: 630, alt: "NiSE COMPORT – CSC & Pragya Kendra, Kharangajhar, Telco, Jamshedpur" }] },
   twitter: { card: "summary_large_image", images: [site.defaultOgImage] },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 } },
   verification: {
@@ -40,7 +42,7 @@ export const metadata: Metadata = {
     ...(site.verification.yandex ? { yandex: site.verification.yandex } : {}),
     ...(site.verification.bing ? { other: { "msvalidate.01": site.verification.bing } } : {}),
   },
-  alternates: { types: { "application/rss+xml": [{ url: "/blog/feed.xml", title: "NISE COMPORT local guides" }] } },
+  alternates: { types: { "application/rss+xml": [{ url: "/blog/feed.xml", title: "NiSE COMPORT local guides" }] } },
   other: {
     "geo.region": "IN-JH",
     "geo.placename": "Jamshedpur",
@@ -61,13 +63,14 @@ const siteGraph = graph(
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   // Live festival / sports codes for the ticker, offer rails and chat (cached; falls back to the checked dates).
-  const [promos, services, tickerBanners] = await Promise.all([getLivePromos(), allServices(), liveBanners("ticker").catch(() => [])]);
+  const [promos, services, tickerBanners, loader] = await Promise.all([getLivePromos(), allServices(), liveBanners("ticker").catch(() => []), getLoaderSettings()]);
   const teaserBanner = tickerBanners[0];
   const teaser = teaserBanner ? { title: teaserBanner.title, cta: teaserBanner.cta, href: teaserBanner.href } : null;
   const chatServices = services.map((service) => ({ slug: service.slug, title: service.title, category: service.categorySlug, keywords: service.keywords }));
   return <html lang="en-IN">
     <body className={`${poppins.variable} ${hindSiliguri.variable}`}>
       <OffersProvider promos={promos} teaser={teaser}>
+        <ApiActivityIndicator loaderSrc={loader.src}/>
         <a className="skip-link" href="#main-content">Skip to content</a>
         <SiteBanners placement="strip"/>
         <ScrollToTop/>

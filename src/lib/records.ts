@@ -145,7 +145,7 @@ export async function listPeople(options: { q?: string; service?: string; sort?:
     : sql`count(*) desc, max(${customerRecords.recordDate}) desc nulls last`;
   // Repeat counts are over everything known about the person, not only the filtered rows.
   const keys = db.select({ key: personKey.as("key") }).from(customerRecords).where(where).groupBy(personKey);
-  const rows = await db.select({
+  const rowsQuery = db.select({
     key: personKey, name: sql<string>`(array_agg(${customerRecords.name} order by ${customerRecords.recordDate} desc nulls last))[1]`,
     mobileEnc: sql<string | null>`max(${customerRecords.mobileEnc})`,
     contacts: sql<string[] | null>`(array_agg(${customerRecords.contactEnc}) filter (where ${customerRecords.contactEnc} is not null))[1:5]`, total: sql<number>`count(*)::int`,
@@ -153,9 +153,10 @@ export async function listPeople(options: { q?: string; service?: string; sort?:
     lastDate: sql<string | null>`max(${customerRecords.recordDate})::text`,
     nextRenewal: sql<string | null>`(min(${customerRecords.renewalOn}) filter (where ${customerRecords.renewalOn} >= current_date))::text`,
   }).from(customerRecords).where(inArray(personKey, keys)).groupBy(personKey).orderBy(order).limit(pageSize).offset(page * pageSize);
-  const [totals] = await db.select({ people: sql<number>`count(distinct ${personKey})::int`, records: sql<number>`count(*)::int`,
+  const totalsQuery = db.select({ people: sql<number>`count(distinct ${personKey})::int`, records: sql<number>`count(*)::int`,
     repeat: sql<number>`(select count(*)::int from (select 1 from ${customerRecords} group by coalesce(mobile_hash, pan_hash, id::text) having count(*) > 1) as r)` }).from(customerRecords).where(where);
-  const byService = await db.select({ service: customerRecords.service, total: sql<number>`count(*)::int` }).from(customerRecords).groupBy(customerRecords.service);
+  const byServiceQuery = db.select({ service: customerRecords.service, total: sql<number>`count(*)::int` }).from(customerRecords).groupBy(customerRecords.service);
+  const [rows, [totals], byService] = await Promise.all([rowsQuery, totalsQuery, byServiceQuery]);
   return {
     people: rows.map((row) => ({ key: row.key, name: row.name, mobile: row.mobileEnc ? open<string>(row.mobileEnc) : null, ...mergeContacts(row.contacts), total: row.total, services: row.services, lastDate: row.lastDate, nextRenewal: row.nextRenewal })),
     totals, byService, services: RECORD_SERVICES,

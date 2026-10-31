@@ -1,3 +1,4 @@
+import { inboxDateRange } from "@/lib/inbox-dates";
 import { NextRequest, NextResponse } from "next/server";
 import { audiences, inbox, inboxSummary, markInboxSeen } from "@/lib/activity";
 import { getCurrentUser } from "@/lib/auth";
@@ -21,15 +22,20 @@ export async function GET(request: NextRequest) {
     const user = await staff();
     if (request.nextUrl.searchParams.get("count")) return NextResponse.json(await inboxSummary(user));
     const params = request.nextUrl.searchParams;
-    const base = await inbox(user, { category: params.get("category") || undefined });
+    let dates;
+    try { dates = inboxDateRange(params.get("from") ?? "", params.get("to") ?? ""); } catch { throw new PublicError("Invalid date range. Use dates from 2000 through today.", 400); }
+    const feedPage = Math.max(0, Math.min(100000, Number.parseInt(params.get("feedPage") ?? "0", 10) || 0));
     // Callbacks need the requests permission; they are paged by tab, so the page never depends on a fixed cap.
     const requested = params.get("leadTab") ?? "";
     const tab: CallbackTab = (Object.keys(CALLBACK_TABS) as CallbackTab[]).includes(requested as CallbackTab) ? (requested as CallbackTab) : "open";
     const pageNumber = Number.parseInt(params.get("leadPage") ?? "0", 10);
-    const callbacks = audiences(user).includes("requests")
-      ? await listCallbackPage({ tab, mine: params.get("leadScope") === "mine", viewerId: user.id, page: Number.isFinite(pageNumber) ? pageNumber : 0 })
-      : null;
-    return NextResponse.json({ ...base, callbacks });
+    const [base, callbacks] = await Promise.all([
+      inbox(user, { category: params.get("category") || undefined, ...dates, page: feedPage }),
+      audiences(user).includes("requests")
+      ? listCallbackPage({ ...dates, tab, mine: params.get("leadScope") === "mine", viewerId: user.id, page: Number.isFinite(pageNumber) ? pageNumber : 0 })
+      : Promise.resolve(null),
+    ]);
+    return NextResponse.json({ ...base, callbacks }, { headers: { "cache-control": "private, no-store" } });
   } catch (error) { return apiError(error); }
 }
 

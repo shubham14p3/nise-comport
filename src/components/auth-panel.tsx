@@ -1,4 +1,5 @@
 "use client";
+import "./auth-compact.css";
 import SiteHeader from "@/components/site-header";
 import LanguageMenu from "@/components/language-menu";
 import CopyCode from "@/components/copy-code";
@@ -7,7 +8,7 @@ import { useLiveCodes } from "@/components/offers-provider";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, BellRing, Check, Eye, EyeOff, Gift, Languages, LockKeyhole, Mail, MapPin, PartyPopper, ShieldCheck, Smartphone, Terminal, UserRound } from "lucide-react";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import MobileAuthForm from "@/components/mobile-auth-form";
 import { secureResult } from "@/lib/secure-api-client";
 import { dict, fill } from "@/lib/i18n";
@@ -48,6 +49,19 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
   const [name, setName] = useState(""); const [email, setEmail] = useState(""); const [phone, setPhone] = useState(""); const [password, setPassword] = useState(""); const [otp, setOtp] = useState("");
   const [website, setWebsite] = useState("");
   const [showPassword, setShowPassword] = useState(false); const [busy, setBusy] = useState(false);
+  // A ref locks synchronously (before React re-renders the disabled button).
+  const submitting = useRef(false);
+  const navigating = useRef(false);
+  function startSubmit() {
+    if (submitting.current || navigating.current) return false;
+    submitting.current = true;
+    setBusy(true);
+    return true;
+  }
+  function finishSubmit() {
+    submitting.current = false;
+    if (!navigating.current) setBusy(false);
+  }
   const [error, setError] = useState(""); const [success, setSuccess] = useState(""); const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [resendIn, setResendIn] = useState(0);
   const [viaSms, setViaSms] = useState(false);
@@ -97,6 +111,8 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
 
   // Staff with no saved page to return to go straight to the staff desk.
   async function done() {
+    navigating.current = true;
+    setBusy(true);
     // Clear the anonymous session cache after successful authentication, and
     // signal persistent layout providers (offers) to load signed-in state.
     invalidateSessionCache();
@@ -112,7 +128,9 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
   }
 
   async function submitDetails(event: FormEvent) {
-    event.preventDefault(); setBusy(true); setError(""); setSuccess(""); setFieldErrors({});
+    event.preventDefault();
+    if (!startSubmit()) return;
+    setError(""); setSuccess(""); setFieldErrors({});
     try {
       if (mode === "signin") {
         const { ok, result } = await post("Q7m4kP2vL9sD", { email, password });
@@ -123,21 +141,23 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
       const { ok, result } = await post("N5c8R1xT6bW3", { email, purpose: "signup", website });
       if (!ok) { showFailure(result, t.failSend); return; }
       setStage("otp"); setResendIn(result.resendAfter ?? 60); setSuccess(result.message ?? t.otpSpam);
-    } finally { setBusy(false); }
+    } finally { finishSubmit(); }
   }
 
   async function requestSignInCode() {
     if (!email.includes("@")) { setFieldErrors({ email: x.codeFirst }); return; }
-    setBusy(true); setError(""); setSuccess(""); setFieldErrors({});
+    if (!startSubmit()) return;
+    setError(""); setSuccess(""); setFieldErrors({});
     try {
       const { ok, result } = await post("N5c8R1xT6bW3", { email, purpose: "signin", website });
       if (!ok) { showFailure(result, t.failSend); return; }
       setStage("otp"); setResendIn(result.resendAfter ?? 60); setSuccess(result.message ?? t.otpSpam);
-    } finally { setBusy(false); }
+    } finally { finishSubmit(); }
   }
 
   async function requestSmsCode(channel?: "sms" | "whatsapp") {
-    setBusy(true); setError(""); setSuccess(""); setFieldErrors({});
+    if (!startSubmit()) return;
+     setError(""); setSuccess(""); setFieldErrors({});
     try {
       const { ok, status, result } = await post("P3s7K1mW8xQ4", { action: "send", phone: email, website, ...(channel ? { channel } : {}) });
       if (!ok) {
@@ -146,29 +166,33 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
         return;
       }
       setViaSms(true); setStage("otp"); setResendIn(result.resendAfter ?? 60); setSuccess(result.message ?? "");
-    } finally { setBusy(false); }
+    } finally { finishSubmit(); }
   }
 
   async function resend() {
+    if (submitting.current || navigating.current) return;
     if (viaSms) { await requestSmsCode(); setOtp(""); return; }
-    setBusy(true); setError(""); setSuccess("");
+    if (!startSubmit()) return;
+    setError(""); setSuccess("");
     try {
       const { ok, result } = await post("N5c8R1xT6bW3", { email, purpose: mode, website });
       if (!ok) { showFailure(result, t.failResend); return; }
       setResendIn(result.resendAfter ?? 60); setOtp(""); setSuccess(t.newCodeSent);
-    } finally { setBusy(false); }
+    } finally { finishSubmit(); }
   }
 
   async function verify(event: FormEvent) {
-    event.preventDefault(); setError(""); setFieldErrors({});
+    event.preventDefault();
+    if (submitting.current || navigating.current) return;
+    setError(""); setFieldErrors({});
     // Sign-up: the code is checked together with the account details on the next step.
     if (viaSms) {
-      setBusy(true);
+      if (!startSubmit()) return;
       try {
         const { ok, result } = await post("P3s7K1mW8xQ4", { action: "verify", phone: email, code: otp.trim() });
         if (!ok) { showFailure(result, t.failVerify); return; }
         await done();
-      } finally { setBusy(false); }
+      } finally { finishSubmit(); }
       return;
     }
     if (mode === "signup" && stage === "otp") { setStage("profile"); return; }
@@ -176,7 +200,7 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
   }
 
   async function createOrVerify() {
-    setBusy(true);
+    if (!startSubmit()) return;
     try {
       const { ok, result } = await post("H9d2M7qK4zF8", { email, code: otp.trim(), purpose: mode, ...(mode === "signup" ? { name, password, phone } : {}) });
       if (!ok) {
@@ -187,11 +211,13 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
       }
       if (result.welcomeCoupon) { setWelcome(result.welcomeCoupon); setStage("welcome"); setSuccess(""); return; }
       done();
-    } finally { setBusy(false); }
+    } finally { finishSubmit(); }
   }
 
   async function submitProfile(event: FormEvent) {
-    event.preventDefault(); setError(""); setFieldErrors({});
+    event.preventDefault();
+    if (submitting.current || navigating.current) return;
+    setError(""); setFieldErrors({});
     const problem = passwordProblem(password, { email, name });
     if (problem) { setFieldErrors({ password: problem }); setError(problem); return; }
     await createOrVerify();
@@ -205,7 +231,7 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
   const heading = stage === "welcome" ? p.welcomeDone : stage === "otp" ? t.otpTitle : stage === "profile" ? x.finishTitle : mode === "signup" ? x.signupTitle : x.signinTitle;
   const benefitIcons = [BellRing, MapPin, Smartphone];
 
-  return <main className="auth"><SiteHeader/>
+  return <main className="auth auth--compact"><SiteHeader/>
     <div className="auth__bg" aria-hidden="true"><span className="blob blob--1"/><span className="blob blob--2"/><span className="blob blob--3"/></div>
     <div className="container auth__wrap">
       <section className="auth__visual">
@@ -223,7 +249,7 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
       <section className="auth__card" aria-labelledby="auth-heading">
         <div className="auth__lang"><span><Languages size={17}/>{t.language}</span><LanguageMenu locale={locale} label={t.language} inline/></div>
         <h1 id="auth-heading">{heading}</h1>
-        {stage !== "welcome" && <p className="auth__sub">{stage === "otp" ? <>{viaSms ? "We sent a 6-digit code to" : t.otpSub} <b>{email}</b>.{viaSms ? "" : ` ${t.otpSpam}`}</> : stage === "profile" ? x.finishSub : method === "mobile" ? (mode === "signup" ? "Start with your mobile number. We make you a 6-digit PIN." : "Enter your mobile number and 6-digit PIN.") : mode === "signup" ? x.signupSub : x.signinSub}</p>}
+        {stage !== "welcome" && <p className="auth__sub">{stage === "otp" ? <>{viaSms ? "We sent a 6-digit code to" : t.otpSub} <b>{email}</b>.{viaSms ? "" : ` ${t.otpSpam}`}</> : stage === "profile" ? x.finishSub : method === "mobile" ? (mode === "signup" ? "Start with your mobile number. We make you a 6-digit PIN." : "Choose your account and sign-in method below.") : mode === "signup" ? x.signupSub : x.signinSub}</p>}
         {mode === "signup" && (stage === "details" || stage === "profile") && <p className="gift-strip"><Gift size={18}/><span>{p.signupGift}</span><b>₹50</b></p>}
 
         {mode === "signin" && demoEnabled && stage === "details" && <div className="demo-card"><strong>Local preview login</strong><span>Email: <code>demo@nisecomport.test</code></span><span>Password: <code>LocalDemo#2026</code></span><button type="button" className="btn btn--ghost btn--sm" onClick={() => { setEmail("demo@nisecomport.test"); setPassword("LocalDemo#2026"); }}>Fill demo details</button><small>Preview only: this account is temporary and does not use the database or email.</small></div>}
@@ -237,7 +263,7 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
             <div className="big-ticket__right"><span className="promo-card__code-label">{p.code}</span><b className="big-ticket__code">{welcome.code}</b><CopyCode text={welcome.code} locale={locale} className="copy-btn copy-btn--light"/></div>
           </div>
           <button type="button" className="btn btn--primary btn--lg btn--block" onClick={done}>{p.continue}<ArrowRight size={18}/></button>
-        </div> : stage === "profile" ? <form onSubmit={submitProfile} className="auth__form" noValidate>
+        </div> : stage === "profile" ? <form onSubmit={submitProfile} className="auth__form" aria-busy={busy} noValidate>
           <label className="field"><span className="field__label">{t.name}</span><span className="input-wrap"><UserRound size={18}/><input autoComplete="name" required minLength={2} maxLength={100} value={name} onChange={e => setName(e.target.value)} placeholder={t.namePh} aria-invalid={Boolean(fieldErrors.name)} autoFocus/></span>{fieldError("name")}</label>
           <label className="field"><span className="field__label">{t.password}</span><span className="input-wrap"><LockKeyhole size={18}/><input type={showPassword ? "text" : "password"} autoComplete="new-password" required minLength={PASSWORD_MIN} maxLength={128} value={password} onChange={e => setPassword(e.target.value)} placeholder={fill(t.newPasswordPh, { n: PASSWORD_MIN })} aria-invalid={Boolean(fieldErrors.password)} aria-describedby="password-hint"/><button type="button" className="icon-btn" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? t.hide : t.show}>{showPassword ? <EyeOff size={18}/> : <Eye size={18}/>}</button></span>
             <span id="password-hint" className={passwordHint ? "field__hint field__hint--warn" : "field__hint"}>{passwordHint || fill(t.passwordHint, { n: PASSWORD_MIN })}</span>
@@ -254,7 +280,7 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
           <div className="hp-field" aria-hidden="true"><label>Website<input tabIndex={-1} autoComplete="off" value={website} onChange={e => setWebsite(e.target.value)}/></label></div>
           {error && <div className="alert alert--error" role="alert">{error}</div>}{success && <div className="alert alert--success" role="status">{success}</div>}
           <button className="btn btn--primary btn--lg btn--block" disabled={busy}>{busy ? t.wait : mode === "signup" ? x.sendCode : t.signin}<ArrowRight size={18}/></button>
-          {mode === "signin" && <div className="auth__links">{isMobileInput && (availableSms || availableWhatsapp) ? <>{availableSms && <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSmsCode("sms")}>{x.smsCode}</button>}{availableWhatsapp && <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSmsCode("whatsapp")}>Code on WhatsApp</button>}</> : email.includes("@") ? <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSignInCode()}>{t.codeSignin}</button> : null}<Link className="link-btn" href="/forgot-password" onClick={rememberEmailForReset}>{t.forgot}</Link></div>}
+          {mode === "signin" && <div className="auth__links">{isMobileInput && (availableSms || availableWhatsapp) ? <>{availableSms && <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSmsCode("sms")}>{x.smsCode}</button>}{availableWhatsapp && <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSmsCode("whatsapp")}>Code on WhatsApp</button>}</> : email.includes("@") ? <button type="button" className="link-btn" disabled={busy} onClick={() => void requestSignInCode()}>{t.codeSignin}</button> : null}<Link prefetch={false} className="link-btn" href="/forgot-password" onClick={rememberEmailForReset}>{t.forgot}</Link></div>}
         </form> : <form onSubmit={verify} className="auth__form" noValidate>
           <label className="field"><span className="field__label">{t.codeLabel}</span><input inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6}" maxLength={6} value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="••••••" className="otp-input" aria-invalid={Boolean(fieldErrors.code)} autoFocus/></label>
           {DEV && <p className="alert alert--dev"><Terminal size={18}/>{t.devHint}</p>}
@@ -266,9 +292,9 @@ export default function AuthPanel({ mode, demoEnabled = false, smsEnabled = fals
           </div>
           <p className="auth__legal">{t.codeRules}</p>
         </form>}
-        {stage === "details" && <button type="button" className="link-btn auth__method" onClick={() => { setMethod(method === "mobile" ? "email" : "mobile"); setError(""); setFieldErrors({}); }}>{method === "mobile" ? (mode === "signup" ? "Use email instead" : "Sign in with email instead") : "Use my mobile number instead"}</button>}
-        {stage === "details" && <div className="auth__switch"><span>{mode === "signup" ? x.haveAccount : x.noAccount}</span><Link className="btn btn--ghost btn--block" href={mode === "signup" ? "/login" : "/signup"}>{mode === "signup" ? x.signInCta : x.signUpCta}</Link></div>}
-        <p className="auth__legal">{t.agree} <Link href="/terms">{t.terms}</Link> {t.and} <Link href="/privacy">{t.privacy}</Link>.</p>
+        {stage === "details" && <button type="button" className="link-btn auth__method" disabled={busy} onClick={() => { setMethod(method === "mobile" ? "email" : "mobile"); setError(""); setFieldErrors({}); }}>{method === "mobile" ? (mode === "signup" ? "Use email instead" : "Sign in with email instead") : "Use my mobile number instead"}</button>}
+        {stage === "details" && <div className="auth__switch"><span>{mode === "signup" ? x.haveAccount : x.noAccount}</span><Link prefetch={false} className="btn btn--ghost btn--block" href={mode === "signup" ? "/login" : "/signup"}>{mode === "signup" ? x.signInCta : x.signUpCta}</Link></div>}
+        <p className="auth__legal">{t.agree} <Link prefetch={false} href="/terms">{t.terms}</Link> {t.and} <Link prefetch={false} href="/privacy">{t.privacy}</Link>.</p>
       </section>
     </div>
   </main>;

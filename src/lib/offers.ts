@@ -63,8 +63,8 @@ export const offers: Offer[] = [
     ticker: { en: "First insurance: service charge waived up to ₹50 (bike) or ₹100 (car)", hi: "पहले बीमा पर हमारे सेवा शुल्क में ₹100 की छूट", bn: "প্রথম বিমায় আমাদের সার্ভিস চার্জে ₹100 ছাড়" },
     detail: {
       en: "Bike insurance: our service charge is waived, up to ₹50. Car insurance: waived, up to ₹100. For your first insurance request with us.",
-      hi: "बाइक, कार, हेल्थ या लाइफ: पहले बीमा अनुरोध पर NISE COMPORT के सेवा शुल्क में ₹100 की छूट।",
-      bn: "বাইক, গাড়ি, হেলথ বা লাইফ: প্রথম বিমা অনুরোধে NISE COMPORT-এর সার্ভিস চার্জে ₹100 ছাড়।",
+      hi: "बाइक, कार, हेल्थ या लाइफ: पहले बीमा अनुरोध पर NiSE COMPORT के सेवा शुल्क में ₹100 की छूट।",
+      bn: "বাইক, গাড়ি, হেলথ বা লাইফ: প্রথম বিমা অনুরোধে NiSE COMPORT-এর সার্ভিস চার্জে ₹100 ছাড়।",
     },
     terms: {
       en: "One per customer, on the first insurance request from your account. The waiver covers our service charge only, up to ₹50 for bike and ₹100 for car, and never the insurer’s premium or any payment-gateway fee.",

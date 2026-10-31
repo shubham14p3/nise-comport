@@ -9,6 +9,7 @@ import { publicPrices } from "@/lib/service-prices";
 import { publishedServiceDetails } from "@/lib/services";
 import { qrWelcomeMessages, site } from "@/lib/site";
 import { normalizePhone } from "@/lib/validation";
+import { whatsappFaqReply, shopWhatsAppLink } from "@/lib/whatsapp-faq";
 import { sendText } from "@/lib/whatsapp";
 import {
   ATTACHMENT_REPLY, detectIntent, documentsReply, HUMAN_REPLY, hoursReply, matchService, MENU, payReply, priceReply, UNKNOWN_REPLY, type BotIntent,
@@ -18,6 +19,11 @@ async function log(entry: { phone: string; direction: "in" | "out"; body: string
   try {
     await db.insert(whatsappMessages).values({ phone: entry.phone, direction: entry.direction, body: entry.body.slice(0, 4000), sender: entry.sender, name: entry.name?.slice(0, 100) || null, userId: entry.userId ?? null, needsHuman: entry.needsHuman ?? false });
   } catch (error) { console.error("[whatsapp-bot] could not save message (run npm run db:migrate)", error); }
+}
+
+/** Log an already-handled inbound status/consent message without triggering another bot reply. */
+export async function logInboundOnly(phone: string, text: string, name?: string) {
+  await log({ phone, direction: "in", body: text || "(empty message)", sender: "customer", name });
 }
 
 /** Sends a reply and keeps a copy in the chat log. */
@@ -56,13 +62,14 @@ export async function handleBotMessage(event: { from: string; text: string; name
 
   if (intent === "track") {
     await handleStatusQuery(phone, /^\s*(status|track)/i.test(text) ? text : `status ${text}`);
-    await log({ phone, direction: "out", body: "(status reply sent)", sender: "bot", userId });
+    // handleStatusQuery already logs the real outgoing text.
     return;
   }
 
   let reply: string;
   switch (intent) {
     case "menu": reply = MENU; break;
+    case "faq": reply = whatsappFaqReply(text, site.url) ?? UNKNOWN_REPLY; break;
     case "price": {
       service = service ?? matchService(text, catalogue);
       if (!service) { reply = "Which service? For example “PAN card price”, “voter ID charge” or “bike insurance fee”."; break; }
@@ -86,6 +93,7 @@ export async function handleBotMessage(event: { from: string; text: string; name
     case "attachment": reply = ATTACHMENT_REPLY; break;
     default: reply = UNKNOWN_REPLY;
   }
+  if (intent === "human" || intent === "unknown") reply += `\n\n📱 दुकान के WhatsApp पर बात करें (प्रश्न भर जाएगा; Send आप दबाएँ):\n${shopWhatsAppLink(site.whatsapp.primary, text)}`;
   if (needsHuman && intent !== "attachment") await logActivity({ kind: "lead", permission: "requests", title: "WhatsApp message needs a reply", detail: `${event.name ?? phone}: ${text.slice(0, 120)}`, refType: "whatsapp", refId: phone });
   await replyAndLog(phone, reply, "bot", userId);
 }

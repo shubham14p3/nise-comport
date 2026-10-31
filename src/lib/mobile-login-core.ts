@@ -113,3 +113,8 @@ export function ownRecordView(row: OwnRecord) {
 export function claimMessage(name: string, code: string) {
   return `Hello ${firstName(name) || "there"}, your NISE COMPORT code is ${code}. Enter it on the website (Profile → My records) to see your records. Do not share it with anyone.`;
 }
+
+/** Owner-requested local signup trial; never available in a production/test runtime. */
+export function localSignupTrial(phone: string, runtime: string | undefined) {
+  return runtime === "development" && phone === "+918092766575";
+}

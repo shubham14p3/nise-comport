@@ -1,4 +1,4 @@
-import { and, count, desc, eq, gt, inArray, notInArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, gte, lt, inArray, notInArray, sql } from "drizzle-orm";
 import { activityLog, leads, printJobs, serviceRequests, users } from "@/db/schema";
 import { CLOSED_STATUSES } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -33,22 +33,30 @@ export function audiences(user: StaffLike) {
 type Inboxer = StaffLike & { id: string; inboxSeenAt?: Date | null };
 
 /** The inbox: recent activity the person may see, what is waiting per service, and new leads. */
-export async function inbox(user: Inboxer, options: { category?: string; limit?: number } = {}) {
+export async function inbox(user: Inboxer, options: { category?: string; limit?: number; from?: Date; until?: Date; page?: number } = {}) {
   const visible = audiences(user);
-  const [me] = await db.select({ seen: users.inboxSeenAt }).from(users).where(eq(users.id, user.id)).limit(1);
-  const seenAt = me?.seen ?? new Date(0);
+  const seenAt = user.inboxSeenAt ?? new Date(0);
   const filters = [inArray(activityLog.permission, visible)];
   if (options.category) filters.push(eq(activityLog.category, options.category));
-  const rows = await db.select({
-    id: activityLog.id, kind: activityLog.kind, category: activityLog.category, title: activityLog.title, detail: activityLog.detail,
-    refType: activityLog.refType, refId: activityLog.refId, createdAt: activityLog.createdAt, actor: users.name,
-  }).from(activityLog).leftJoin(users, eq(users.id, activityLog.actorId)).where(and(...filters)).orderBy(desc(activityLog.createdAt)).limit(Math.min(options.limit ?? 60, 200));
-  const [unread] = await db.select({ total: count() }).from(activityLog).where(and(inArray(activityLog.permission, visible), gt(activityLog.createdAt, seenAt)));
+  if (options.from) filters.push(gte(activityLog.createdAt, options.from));
+  if (options.until) filters.push(lt(activityLog.createdAt, options.until));
+  const canRequests = visible.includes("requests");
+  const [rows, [unread], open, prints, calls, claims, [activityCount]] = await Promise.all([
+    db.select({
+      id: activityLog.id, kind: activityLog.kind, category: activityLog.category, title: activityLog.title, detail: activityLog.detail,
+      refType: activityLog.refType, refId: activityLog.refId, createdAt: activityLog.createdAt, actor: users.name,
+    }).from(activityLog).leftJoin(users, eq(users.id, activityLog.actorId)).where(and(...filters)).orderBy(desc(activityLog.createdAt)).limit(Math.min(options.limit ?? 15, 200)).offset((options.page ?? 0) * 15),
+    db.select({ total: count() }).from(activityLog).where(and(inArray(activityLog.permission, visible), gt(activityLog.createdAt, seenAt))),
+    canRequests ? db.select({ slug: serviceRequests.serviceSlug, name: serviceRequests.serviceName, total: count() }).from(serviceRequests)
+      .where(and(notInArray(serviceRequests.status, [...CLOSED_STATUSES]), options.from ? gte(serviceRequests.createdAt, options.from) : undefined, options.until ? lt(serviceRequests.createdAt, options.until) : undefined)).groupBy(serviceRequests.serviceSlug, serviceRequests.serviceName) : Promise.resolve([]),
+    canRequests ? db.select({ total: count() }).from(printJobs).where(and(notInArray(printJobs.status, [...CLOSED_STATUSES]), options.from ? gte(printJobs.createdAt, options.from) : undefined, options.until ? lt(printJobs.createdAt, options.until) : undefined)) : Promise.resolve([]),
+    canRequests ? db.select({ total: count() }).from(leads).where(eq(leads.status, "new")) : Promise.resolve([]),
+    visible.includes("records") ? pendingClaimCount().catch(() => 0) : Promise.resolve(0),
+    db.select({ total: count() }).from(activityLog).where(and(...filters)),
+  ]);
 
   let pending: { category: string; label: string; total: number }[] = [];
-  if (visible.includes("requests")) {
-    const open = await db.select({ slug: serviceRequests.serviceSlug, name: serviceRequests.serviceName, total: count() }).from(serviceRequests)
-      .where(notInArray(serviceRequests.status, [...CLOSED_STATUSES])).groupBy(serviceRequests.serviceSlug, serviceRequests.serviceName);
+  if (canRequests) {
     const byCategory = new Map<string, { label: string; total: number }>();
     for (const row of open) {
       const service = findService(row.slug);
@@ -58,12 +66,13 @@ export async function inbox(user: Inboxer, options: { category?: string; limit?:
       const entry = byCategory.get(key) ?? { label, total: 0 };
       entry.total += row.total; byCategory.set(key, entry);
     }
-    const [prints] = await db.select({ total: count() }).from(printJobs).where(notInArray(printJobs.status, [...CLOSED_STATUSES]));
-    if (prints.total) byCategory.set("print", { label: "Print orders", total: prints.total });
+    if (prints[0]?.total) byCategory.set("print", { label: "Print orders", total: prints[0].total });
     pending = [...byCategory.entries()].map(([category, value]) => ({ category, ...value })).sort((a, b) => b.total - a.total);
   }
   // Callbacks are loaded separately (listCallbackPage in leads.ts), one paged tab at a time.
-  return { items: rows, unread: unread.total, seenAt, pending };
+  return { activityTotal: activityCount.total, items: rows, unread: unread.total, seenAt, pending,
+    summary: { unread: unread.total + claims, waiting: open.reduce((total, item) => total + item.total, 0) + (prints[0]?.total ?? 0), callbacks: calls[0]?.total ?? 0, claims },
+  };
 }
 
 /** Numbers for the dashboard cards: unread activity, open requests and people waiting for a call. */

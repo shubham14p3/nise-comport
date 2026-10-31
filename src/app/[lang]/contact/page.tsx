@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   if (!lang) return {};
   return localizedMetadata(lang, "/contact",
     { hi: "संपर्क और रास्ता: खरंगाझार, टेल्को", bn: "যোগাযোগ ও দিকনির্দেশ: খরংগাঝাড়, টেলকো" },
-    { hi: `${site.phones.primary.display} पर कॉल कीजिए, WhatsApp कीजिए या NISE COMPORT आइए: ${site.address.hindi}। समय और रास्ता।`, bn: `${site.phones.primary.display}-এ কল করুন, WhatsApp করুন বা NISE COMPORT-এ আসুন: ${site.address.bengali}। সময় ও দিকনির্দেশ।` });
+    { hi: `${site.phones.primary.display} पर कॉल कीजिए, WhatsApp कीजिए या NiSE COMPORT आइए: ${site.address.hindi}। समय और रास्ता।`, bn: `${site.phones.primary.display}-এ কল করুন, WhatsApp করুন বা NiSE COMPORT-এ আসুন: ${site.address.bengali}। সময় ও দিকনির্দেশ।` });
 }
 
 export default async function LocalizedContactPage({ params }: { params: Promise<{ lang: string }> }) {

@@ -70,6 +70,7 @@ export const RATE_RULES = {
   mailSendPerUserHour: { name: "mail-send", limit: 30, windowSeconds: 3600 },
   mailNewTicketPerUserDay: { name: "mail-new", limit: 15, windowSeconds: 86400 },
   mailAttachPerUserHour: { name: "mail-attach", limit: 80, windowSeconds: 3600 },
+  counterCommentPerUserMinute: { name: "counter-comment", limit: 12, windowSeconds: 60 },
   mailSyncPerUserMinute: { name: "mail-sync", limit: 3, windowSeconds: 60 },
   recordImportsPerUserHour: { name: "record-import", limit: 20, windowSeconds: 3600 },
 } as const satisfies Record<string, RateRule>;

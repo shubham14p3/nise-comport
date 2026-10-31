@@ -41,14 +41,14 @@ const whatsappSecondary = (env("NEXT_PUBLIC_WHATSAPP_SECONDARY") ?? "91983555275
 
 const street = "Ground Floor, Singh Building, Shop No-3, Hanuman Mandir Road";
 const locality = "Kharangajhar, Telco Colony";
-const mapsQuery = "NISE COMPORT, Ground Floor, Singh Building, Shop No-3, Hanuman Mandir Road, Kharangajhar, Telco Colony, Jamshedpur, Jharkhand 831004, India";
+const mapsQuery = "NiSE COMPORT, Ground Floor, Singh Building, Shop No-3, Hanuman Mandir Road, Kharangajhar, Telco Colony, Jamshedpur, Jharkhand 831004, India";
 
 export const site = {
-  name: "NISE COMPORT",
-  alternateNames: ["NISE-COMPORT", "Nise Comport", "NiseComport", "NISE COMPORT Pragya Kendra", "Pragya Kendra Kharangajhar"],
+  name: "NiSE COMPORT",
+  alternateNames: ["NISE-COMPORT", "Nise Comport", "NiseComport", "NiSE COMPORT Pragya Kendra", "Pragya Kendra Kharangajhar"],
   tagline: "A Move Towards Digital India e-Gov Services",
   shortDescription: "Independent CSC and Pragya Kendra service centre in Kharangajhar, Telco Colony, Jamshedpur.",
-  description: "NISE COMPORT is an independent CSC / Pragya Kendra service centre in Kharangajhar, Telco Colony, Jamshedpur, Jharkhand. We help with PAN, Aadhaar guidance, Jharkhand certificates, voter services, banking (BC/AEPS), insurance, online forms, bill payments, printing and scanning.",
+  description: "NiSE COMPORT is an independent CSC / Pragya Kendra service centre in Kharangajhar, Telco Colony, Jamshedpur, Jharkhand. We help with PAN, Aadhaar guidance, Jharkhand certificates, voter services, banking (BC/AEPS), insurance, online forms, bill payments, printing and scanning.",
   url,
   locale: "en_IN",
   email: env("NEXT_PUBLIC_CONTACT_EMAIL") ?? "info@nisecomport.com",
@@ -160,7 +160,7 @@ export function qrWelcomeMessage() {
 }
 
 export function whatsappLink(message?: string, number: string = site.whatsapp.primary) {
-  const branded = message ? (message.startsWith("*NISE COMPORT*") ? message : `*NISE COMPORT* · Kharangajhar, Telco, Jamshedpur\n${message}`) : undefined;
+  const branded = message ? (message.startsWith("*NiSE COMPORT*") ? message : `*NiSE COMPORT* · Kharangajhar, Telco, Jamshedpur\n${message}`) : undefined;
   return `https://wa.me/${number}${branded ? `?text=${encodeURIComponent(branded)}` : ""}`;
 }
 

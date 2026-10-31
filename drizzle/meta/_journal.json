@@ -239,6 +239,27 @@
       "when": 1794045600000,
       "tag": "0033_qr_scans",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1794045600001,
+      "tag": "0042_site_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1794045600002,
+      "tag": "0043_counter_history_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1794045600003,
+      "tag": "0044_counter_comments_mobile_whatsapp",
+      "breakpoints": true
     }
   ]
 }

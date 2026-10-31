@@ -1,5 +1,6 @@
 "use client";
 
+import { whatsappFaqReply, shopWhatsAppLink } from "@/lib/whatsapp-faq";
 import { FEATURES } from "@/lib/features";
 import Link from "next/link";
 import { FormEvent, useEffect, useRef, useState } from "react";
@@ -18,6 +19,7 @@ import { expandFullForms, searchAliases, searchScore } from "@/lib/search-terms"
 import { isKnownRecord, loadSearchRecords, type SearchRecords } from "@/lib/search-records";
 
 export type ChatService = { slug: string; title: string; category: string; keywords: string[] };
+const assistantNumber = process.env.NEXT_PUBLIC_WHATSAPP_ASSISTANT?.replace(/\D/g, "") || "17111494523";
 type TopicId = keyof Dictionary["chat"]["topics"];
 type Action = { label: string; href: string; kind: "link" | "wa" | "tel" | "external" };
 type Message = { id: number; from: "bot" | "user"; text: string; actions?: Action[]; chips?: boolean; services?: ChatService[]; visit?: boolean; guide?: { id: string; variant: string }; guideList?: boolean; callback?: boolean };
@@ -247,6 +249,13 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
       void sendLead({ phone: number, message: text });
       return;
     }
+    const faq = whatsappFaqReply(text, window.location.origin);
+    if (faq) {
+      setMessages((list) => [...list, { id: newId(), from: "user", text }]);
+      setContext(text);
+      botSay({ text: faq.replace(/\*/g, ""), actions: [{ label: "दुकान से बात करें · Shop WhatsApp", href: shopWhatsAppLink(whatsapp, text), kind: "wa" }] });
+      return;
+    }
     const guide = findGuide(text);
     if (guide) { showGuide(guide, findVariant(guide, text).id, text); return; }
     const topic = matchTopic(text);
@@ -256,7 +265,7 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
     void loadSearchRecords().then((records) => {
       const found = matchServices(text, services, records);
       if (found.length) botSay({ text: t.matches, services: found, actions: [{ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${text}`), kind: "wa" }] });
-      else botSay({ text: t.noMatch, callback: true, actions: [{ label: t.continueWa, href: waLink(whatsapp, `${t.waPrefix} ${text}`), kind: "wa" }, { label: t.callUs, href: `tel:${phone}`, kind: "tel" }] });
+      else botSay({ text: `${t.noMatch}\nटीम से मदद के लिए नीचे Shop WhatsApp खोलें। आपका सवाल पहले से भरा होगा; Send आप दबाएँ।`, callback: true, actions: [{ label: "दुकान से बात करें · Shop WhatsApp", href: shopWhatsAppLink(whatsapp, text), kind: "wa" }, { label: t.callUs, href: `tel:${phone}`, kind: "tel" }] });
     });
   }
 
@@ -272,11 +281,12 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
       <button type="button" className="icon-btn" onClick={restart} aria-label={t.restart} title={t.restart}><RotateCcw size={18}/></button>
       <button type="button" className="icon-btn" onClick={onClose} aria-label={t.close}><X size={20}/></button>
     </header>
+    <a className="chat__wa" href={waLink(assistantNumber, "Hi! I opened the website chat and need help with a service.")} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/>WhatsApp assistant · +{assistantNumber}</a>
     <div className="chat__body" ref={scroller} aria-live="polite">
       {messages.map((message) => <div key={message.id} className={`chat__msg chat__msg--${message.from}`}>
         <p>{message.text}</p>
         {message.visit && <div className="chat__visit"><MapPin size={15}/><OpenStatus rules={hours} language={locale}/></div>}
-        {message.services && <div className="chat__services">{message.services.map((service) => <Link key={service.slug} href={`/services/${service.slug}`} onClick={onClose}><span>{service.title}</span><ArrowRight size={15}/></Link>)}</div>}
+        {message.services && <div className="chat__services">{message.services.map((service) => <Link prefetch={false} key={service.slug} href={`/services/${service.slug}`} onClick={onClose}><span>{service.title}</span><ArrowRight size={15}/></Link>)}</div>}
         {message.chips && <div className="chat__chips">
           <button type="button" className="chat__chip--main" onClick={askDocs}><FileText size={14}/>{t.docsLabel}</button>
           <button type="button" className="chat__chip--main" onClick={askCallback}><PhoneCall size={14}/>{t.callbackLabel}</button>
@@ -286,7 +296,7 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
         {message.guide && <GuideCard guideId={message.guide.id} variantId={message.guide.variant} locale={locale} t={t} onVariant={(guide, variant) => showGuide(guide, variant)}/>}
         {message.callback && <CallbackForm t={t} onSend={sendLead}/>}
         {message.actions && <div className="chat__actions">{message.actions.map((action) => action.kind === "link"
-          ? <Link key={action.label} href={action.href} className="chat__action" onClick={onClose}>{action.label}<ArrowRight size={14}/></Link>
+          ? <Link prefetch={false} key={action.label} href={action.href} className="chat__action" onClick={onClose}>{action.label}<ArrowRight size={14}/></Link>
           : <a key={action.label} href={action.href} className={action.kind === "wa" ? "chat__action chat__action--wa" : "chat__action"} {...(action.kind === "tel" ? {} : { target: "_blank", rel: "noopener noreferrer" })}>{action.kind === "wa" ? <WhatsAppIcon size={15}/> : action.kind === "tel" ? <Phone size={14}/> : <MapPin size={14}/>}{action.label}</a>)}</div>}
       </div>)}
       {typing && <div className="chat__msg chat__msg--bot chat__typing" aria-label="…"><i/><i/><i/></div>}
@@ -295,7 +305,7 @@ function ChatPanel({ locale, whatsapp, phone, mapsUrl, hours, services, onClose 
       <input value={input} onChange={(event) => setInput(event.target.value)} placeholder={t.placeholder} maxLength={400} aria-label={t.placeholder}/>
       <button type="submit" className="icon-btn icon-btn--primary" aria-label={t.send} disabled={!input.trim()}><Send size={18}/></button>
     </form>
-    <a className="chat__wa" href={waLink(whatsapp, context ? `${t.waPrefix} ${context}` : `${t.waPrefix} …`)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/>{t.continueWa}</a>
+    <a className="chat__wa" href={waLink(whatsapp, context ? `${t.waPrefix} ${context}` : `${t.waPrefix} …`)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/>Talk to the shop on WhatsApp</a>
   </section>;
 }
 

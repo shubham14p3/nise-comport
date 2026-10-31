@@ -2,7 +2,6 @@
 
 import { AdminPager } from "@/components/admin-pager";
 import { FormEvent, useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import RequestFlow from "@/components/request-flow";
 import dynamic from "next/dynamic";
 import SiteHeader from "@/components/site-header";
 import Portal from "@/components/portal";
@@ -10,11 +9,8 @@ import Portal from "@/components/portal";
 import { WhatsAppIcon } from "@/components/icons";
 
 
-import PanSavedDetails from "@/components/pan-saved-details";
-import RequestExtras from "@/components/request-extras";
-import CounterDesk from "@/components/counter-desk";
-import FindCustomerPanel from "@/components/find-customer-panel";
 import { ArrowRight, Bell, Cake, ClipboardList, Contact, UserRound, Database, FolderLock, LayoutTemplate, PhoneCall, Phone, Mail, FileText, Megaphone, RefreshCw, Search, ShieldCheck, Star, TicketPercent, UsersRound, WalletCards, Images, PanelLeftClose, PanelLeftOpen, Store, X } from "lucide-react";
+import { createLatestRequest } from "@/lib/latest-request";
 import { secureApi, secureFile } from "@/lib/secure-api-client";
 
 
@@ -38,6 +34,12 @@ import { secureApi, secureFile } from "@/lib/secure-api-client";
 
 import { STAFF_PERMISSIONS, type Permission } from "@/lib/permissions";
 import Link from "next/link";
+
+const RequestFlow = dynamic(() => import("@/components/request-flow"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const PanSavedDetails = dynamic(() => import("@/components/pan-saved-details"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const RequestExtras = dynamic(() => import("@/components/request-extras"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const CounterDesk = dynamic(() => import("@/components/counter-desk"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
+const FindCustomerPanel = dynamic(() => import("@/components/find-customer-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
 
 const SystemConnectionsPanel = dynamic(() => import("@/components/system-connections-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
 const PanImportPanel = dynamic(() => import("@/components/pan-import-panel"), { ssr: false, loading: () => <p className="admin-loading">Loading section…</p> });
@@ -81,6 +83,7 @@ const label = (value: string) => { const text = value.replaceAll("_", " "); retu
 const when = (value: string) => new Date(value).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Kolkata" });
 
 function RequestQueue({ canCharge }: { canCharge: boolean }) {
+  const listRequest = useRef(createLatestRequest());
   const [jobs, setJobs] = useState<Job[]>([]);
   const [requests, setRequests] = useState<RequestRow[]>([]);
   const [status, setStatus] = useState("");
@@ -100,12 +103,15 @@ function RequestQueue({ canCharge }: { canCharge: boolean }) {
   const [counts, setCounts] = useState({ jobs: 0, requests: 0 });
 
   async function load(nextStatus = status, nextQ = q, jp = jobPage, rp = requestPage, size = pageSize) {
+    const current = listRequest.current.begin();
     setError("");
     try {
       const result = await secureApi<Snapshot>("J2w7L5pD9nV4", { status: nextStatus, q: nextQ, jobPage: jp, requestPage: rp, pageSize: size });
+      if (!current()) return;
       setJobs(result.jobs); setRequests(result.requests); setCounts(result.counts);
       setStatus(result.filters.status); setQ(result.filters.q); setLoaded(true);
     } catch (reason) {
+      if (!current()) return;
       setError(reason instanceof Error ? reason.message : "Could not load the staff queue.");
       setLoaded(true);
     }
@@ -122,18 +128,19 @@ function RequestQueue({ canCharge }: { canCharge: boolean }) {
   }, [detail]);
 
   useEffect(() => {
-    let active = true;
+    const gate = listRequest.current;
+    const current = gate.begin();
     secureApi<Snapshot>("J2w7L5pD9nV4", { status: "", q: "", jobPage: 0, requestPage: 0, pageSize: 20 })
       .then((result) => {
-        if (!active) return;
+        if (!current()) return;
         setJobs(result.jobs); setRequests(result.requests); setCounts(result.counts);
         setStatus(result.filters.status); setQ(result.filters.q); setLoaded(true);
       })
       .catch((reason) => {
-        if (!active) return;
+        if (!current()) return;
         setError(reason instanceof Error ? reason.message : "Could not load the staff queue."); setLoaded(true);
       });
-    return () => { active = false; };
+    return () => gate.invalidate();
   }, []);
 
   async function filter(event: FormEvent<HTMLFormElement>) {
@@ -320,7 +327,7 @@ const TABS: { id: Tab; label: string; icon: typeof ClipboardList; needs: Permiss
   { id: "gallery", label: "Gallery photos", icon: Images, needs: "content" },
   { id: "testimonials", label: `Testimonials`, icon: Star, needs: "content" },
   { id: "campaigns", label: "WhatsApp", icon: Megaphone, needs: "campaigns" },
-  { id: "chats", label: "WhatsApp chats", icon: Megaphone, needs: "whatsapp" },
+  { id: "chats", label: "WhatsApp chats", icon: Megaphone, needs: ["whatsapp", "campaigns"] },
   { id: "contacts", label: "Contacts", icon: Contact, needs: "campaigns" },
   { id: "outreach", label: "Birthdays & renewals", icon: Cake, needs: "staff" },
   { id: "integrations", label: "System & connections", icon: ShieldCheck, needs: "admin" },
@@ -345,6 +352,22 @@ const NAV_SECTIONS = [
   { id: "website", title: "Website & setup", tabs: ["content", "gallery", "testimonials", "prices", "hardware", "legal", "integrations"] },
 ] as const;
 
+/** Load each form on first open, then preserve it while its accordion is closed. */
+function TeamWorkspace({ meRole, meId }: { meRole: string; meId?: string }) {
+  const [staffMounted, setStaffMounted] = useState(false);
+  const [siteTeamMounted, setSiteTeamMounted] = useState(false);
+  return <div className="admin-team-groups">
+    <details className="admin-accordion" onToggle={(event) => { if (event.currentTarget.open) setStaffMounted(true); }}>
+      <summary><UsersRound size={17}/> Staff & owner login accounts</summary>
+      {staffMounted && <TeamPanel meRole={meRole} meId={meId}/>}
+    </details>
+    <details className="admin-accordion" onToggle={(event) => { if (event.currentTarget.open) setSiteTeamMounted(true); }}>
+      <summary><UsersRound size={17}/> Website team profiles & missing staff logins</summary>
+      {siteTeamMounted && <SiteTeamPanel/>}
+    </details>
+  </div>;
+}
+
 const readHash = () => window.location.hash.slice(1);
 const subscribeHash = (callback: () => void) => { window.addEventListener("hashchange", callback); return () => window.removeEventListener("hashchange", callback); };
 
@@ -352,56 +375,29 @@ const subscribeHash = (callback: () => void) => { window.addEventListener("hashc
  * Staff workspace. Each tab needs a permission (see src/lib/permissions.ts); the owner sees all
  * of them plus Team, where staff are added and their access is set.
  */
-export default function AdminDashboard({ me, viewAsStaff = false, services }: { me: { id?: string; name: string; role: string; permissions: Permission[] }; viewAsStaff?: boolean; services: { slug: string; title: string }[] }) {
+export default function AdminDashboard({ me, viewAsStaff = false, services }: { me: { id?: string; name: string; role: string; permissions: Permission[]; sidebar?: string[] }; viewAsStaff?: boolean; services: { slug: string; title: string }[] }) {
   // The owner can preview the desk as a staff member would see it (hides the owner-only Team
   // tab) via "Staff view" in the account menu, without actually losing any access — they can
   // always switch back to "Admin view". Only meaningful when me.role is "admin"; for a real
   // staff account viewAsStaff is always false and changes nothing.
   const isOwner = me.role === "admin" && !viewAsStaff;
   const effectivePermissions = viewAsStaff ? [...STAFF_PERMISSIONS] : me.permissions;
-  const tabs = TABS.filter((tab) => tab.needs === "staff" ? true : tab.needs === "admin" ? isOwner : isOwner || (Array.isArray(tab.needs) ? tab.needs.some((permission) => effectivePermissions.includes(permission)) : effectivePermissions.includes(tab.needs)));
+  const tabs = TABS.filter((tab) => (isOwner || viewAsStaff || !(me.sidebar?.length) || me.sidebar.includes(tab.id)) && (tab.needs === "staff" ? true : tab.needs === "admin" ? isOwner : isOwner || (Array.isArray(tab.needs) ? tab.needs.some((permission) => effectivePermissions.includes(permission)) : effectivePermissions.includes(tab.needs))));
   const hash = useSyncExternalStore(subscribeHash, readHash, () => "");
   const [picked, setPicked] = useState<Tab | null>(null);
   const fromHash = tabs.find((tab) => tab.id === hash)?.id;
   const active = picked ?? fromHash ?? tabs[0]?.id;
   const [summary, setSummary] = useState<{ unread: number; waiting: number; callbacks: number } | null>(null);
   const unread = summary?.unread ?? 0;
-  useEffect(() => {
-    if (active !== "inbox") return;
-    let alive = true;
-    const check = () => secureApi<{ unread: number; waiting: number; callbacks: number }>("I5x2N8kQ3wT6", { count: true }).then((result) => { if (alive) setSummary(result); }).catch(() => undefined);
-    void check();
-    const poll = () => { if (document.visibilityState === "visible") void check(); };
-    const timer = window.setInterval(poll, 60_000);
-    document.addEventListener("visibilitychange", poll);
-    return () => {
-      alive = false;
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", poll);
-    };
-  }, [active]);
-  const canMail = isOwner || effectivePermissions.includes("mail");
   const [mailUnread, setMailUnread] = useState(0);
-  useEffect(() => {
-    if (!canMail || active !== "mail") return;
-    let alive = true;
-    const check = () => secureApi<{ unread: number }>("Q3x8M5wT2kB7", { view: "meta" }).then((result) => { if (alive) setMailUnread(result.unread); }).catch(() => undefined);
-    void check();
-    const poll = () => { if (document.visibilityState === "visible") void check(); };
-    const timer = window.setInterval(poll, 60_000);
-    document.addEventListener("visibilitychange", poll);
-    return () => {
-      alive = false;
-      window.clearInterval(timer);
-      document.removeEventListener("visibilitychange", poll);
-    };
-  }, [canMail, active]);
-  const clearUnread = useCallback(() => setSummary((value) => value ? { ...value, unread: 0 } : value), []);
+  const clearUnread = useCallback(() => setSummary((value) => value ? { ...value, unread: 0 } : value), [setSummary]);
   const [railOpen, setRailOpen] = useState(true);
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null);
+  const activeGroup = expandedGroup ?? NAV_SECTIONS.find((section) => (section.tabs as readonly string[]).includes(active))?.id ?? "work";
   useEffect(() => { try { if (window.localStorage.getItem("nc-desk-rail") === "0") queueMicrotask(() => setRailOpen(false)); } catch { /* ignore */ } }, []);
   function toggleRail() { setRailOpen((open) => { try { window.localStorage.setItem("nc-desk-rail", open ? "0" : "1"); } catch { /* ignore */ } return !open; }); }
   function choose(tab: Tab) {
-    setPicked(tab); window.history.replaceState(null, "", `#${tab}`); window.scrollTo({ top: 0, left: 0, behavior: "instant" }); }
+    setPicked(tab); setExpandedGroup(NAV_SECTIONS.find((section) => (section.tabs as readonly string[]).includes(tab))?.id ?? null); window.history.replaceState(null, "", `#${tab}`); window.scrollTo({ top: 0, left: 0, behavior: "instant" }); }
   const first = me.name.split(/\s+/)[0] || "there";
   const current = tabs.find((tab) => tab.id === active);
   const can = (permission: Permission) => isOwner || effectivePermissions.includes(permission);
@@ -415,18 +411,20 @@ export default function AdminDashboard({ me, viewAsStaff = false, services }: { 
           <h1>Hi {first}, <span className="grad-text grad-text--warm">here’s the desk.</span></h1>
           <p>Private data travels over the encrypted staff channel. You see only the areas the owner has given you.</p>
         </div>
-        {me.role === "admin" && <div className="profile__hero-switch">
+        <div className="profile__hero-switch">
+          <Link prefetch={false} className="btn btn--ghost btn--sm" href="/profile"><UserRound size={15}/> My customer profile</Link>
+          {me.role === "admin" && <>
           {viewAsStaff
-            ? <><span className="chip chip--soft">Viewing as staff</span><Link className="btn btn--ghost btn--sm" href="/desk">Switch to admin view</Link></>
-            : <Link className="btn btn--ghost btn--sm" href="/desk?view=staff">Preview staff view</Link>}
-        </div>}
+            ? <><span className="chip chip--soft">Viewing as staff</span><Link prefetch={false} className="btn btn--ghost btn--sm" href="/desk">Switch to admin view</Link></>
+            : <Link prefetch={false} className="btn btn--ghost btn--sm" href="/desk?view=staff">Preview staff view</Link>}</>}
+        </div>
       </div>
     </section>
     <div className={railOpen ? "container profile__layout" : "container profile__layout profile__layout--rail"}>
       <aside className="profile__nav" aria-label="Admin sections">
         <button type="button" className="profile__nav-toggle" onClick={toggleRail} aria-expanded={railOpen} title={railOpen ? "Hide the menu" : "Show the menu"}>{railOpen ? <PanelLeftClose size={19}/> : <PanelLeftOpen size={19}/>}<span>Hide menu</span></button>
-        {railOpen ? <nav className="admin-nav-groups">{NAV_SECTIONS.map((section) => { const visible = tabs.filter((tab) => (section.tabs as readonly string[]).includes(tab.id)); return visible.length > 0 && <details key={section.id} className="admin-nav-group" open={(section.tabs as readonly string[]).includes(active)}>
-          <summary>{section.title}<span>{visible.length}</span></summary>
+        {railOpen ? <nav className="admin-nav-groups">{NAV_SECTIONS.map((section) => { const visible = tabs.filter((tab) => (section.tabs as readonly string[]).includes(tab.id)); return visible.length > 0 && <details key={section.id} className="admin-nav-group" open={activeGroup === section.id}>
+          <summary onClick={(event) => { event.preventDefault(); setExpandedGroup(section.id === activeGroup ? "" : section.id); }}>{section.title}<span>{visible.length}</span></summary>
           <div>{visible.map(({ id, label, icon: Icon }) => <button key={id} type="button" className={active === id ? "is-active" : undefined} aria-current={active === id ? "page" : undefined} onClick={() => choose(id)} title={label}>
             <Icon size={18}/><span>{label}</span>{id === "inbox" && unread > 0 && <small aria-label={`${unread} new`}>{unread > 99 ? "99+" : unread}</small>}{id === "mail" && mailUnread > 0 && <small aria-label={`${mailUnread} unread`}>{mailUnread > 99 ? "99+" : mailUnread}</small>}
           </button>)}</div>
@@ -447,7 +445,7 @@ export default function AdminDashboard({ me, viewAsStaff = false, services }: { 
           <AdminMetric tone="violet" icon={<Bell size={22}/>} number={summary.unread} label="New in the inbox" onClick={() => document.querySelector(".inbox__feed")?.scrollIntoView({ behavior: "smooth" })}/>
           {can("records") && <AdminMetric tone="green" icon={<FolderLock size={22}/>} number="Search" label="Customer records" onClick={() => choose("records")}/>}
         </div>}
-        {active === "inbox" && <InboxPanel onSeen={clearUnread} viewer={{id:me.id,role:me.role}}/>}
+        {active === "inbox" && <InboxPanel onSummary={setSummary} onSeen={clearUnread} viewer={{id:me.id,role:me.role}}/>}
         {active === "mail" && <MailClient mode="staff" onUnread={setMailUnread}/>}
         {active === "requests" && <RequestQueue canCharge={isOwner || effectivePermissions.includes("charge")}/>}
         {active === "records" && <RecordsPanel/>}
@@ -470,10 +468,7 @@ export default function AdminDashboard({ me, viewAsStaff = false, services }: { 
         {active === "loyalty" && <LoyaltyPanel/>}
         {active === "payments" && <PaymentsPanel canCharge={isOwner || effectivePermissions.includes("charge")}/>}
         {active === "integrations" && <SystemConnectionsPanel/>}
-        {active === "team" && <div className="admin-team-groups">
-          <details className="admin-accordion"><summary><UsersRound size={17}/> Staff & owner login accounts</summary><TeamPanel meRole={me.role} meId={me.id}/></details>
-          <details className="admin-accordion"><summary><UsersRound size={17}/> Website team profiles & missing staff logins</summary><SiteTeamPanel/></details>
-        </div>}
+        {active === "team" && <TeamWorkspace meRole={me.role} meId={me.id}/>}
         {active === "pan" && <PanImportPanel/>}
         {active === "wallet" && <WalletCreditForm canCorrect={isOwner}/>}
       </section>

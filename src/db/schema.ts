@@ -26,7 +26,7 @@ export const users = pgTable("users", {
   loginPinHash: text("login_pin_hash"),
   /** "mobile" when the account was created with a mobile number (its email is a placeholder until one is added). */
   signupMethod: text("signup_method").notNull().default("email"),
-}, (table) => [uniqueIndex("users_email_unique").on(table.email)]);
+}, (table) => [uniqueIndex("users_email_unique").on(table.email), index("users_phone_idx").on(table.phone), index("users_created_id_idx").on(table.createdAt.desc(), table.id.desc())]);
 
 export const emailOtps = pgTable("email_otps", {
   id: uuid("id").defaultRandom().primaryKey(), email: text("email").notNull(), codeHash: text("code_hash").notNull(),
@@ -75,7 +75,7 @@ export const storedFiles = pgTable("stored_files", {
   requestId: uuid("request_id").references(() => serviceRequests.id, { onDelete: "cascade" }), objectKey: text("object_key").notNull(),
   originalName: text("original_name").notNull(), mimeType: text("mime_type").notNull(), sizeBytes: integer("size_bytes").notNull(),
   retainUntil: timestamp("retain_until", { withTimezone: true }).notNull(), pageCount: integer("page_count"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [index("stored_files_request_created_idx").on(table.requestId, table.createdAt.desc())]);
 
 export const printJobs = pgTable("print_jobs", {
   id: uuid("id").defaultRandom().primaryKey(), reference: text("reference").notNull().unique(), userId: uuid("user_id").notNull().references(() => users.id),
@@ -187,7 +187,7 @@ export const couponBlocks = pgTable("coupon_blocks", {
 export const walletEntries = pgTable("wallet_entries", {
   id: uuid("id").defaultRandom().primaryKey(), userId: uuid("user_id").notNull().references(() => users.id), amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   kind: text("kind").notNull(), description: text("description").notNull(), reference: text("reference"), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [index("wallet_entries_user_created_idx").on(table.userId, table.createdAt)]);
+}, (table) => [index("wallet_entries_user_created_idx").on(table.userId, table.createdAt), index("wallet_entries_reference_idx").on(table.reference)]);
 
 /** Walk-in visits recorded at the counter. Money is stored in whole paise. */
 export const counterVisits = pgTable("counter_visits", {
@@ -198,7 +198,7 @@ export const counterVisits = pgTable("counter_visits", {
   billPaise: integer("bill_paise").notNull(), discountPaise: integer("discount_paise").notNull(),
   walletPaise: integer("wallet_paise").notNull(), collectPaise: integer("collect_paise").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [index("counter_visits_user_created_idx").on(table.userId, table.createdAt)]);
+}, (table) => [index("counter_visits_user_created_idx").on(table.userId, table.createdAt), index("counter_visits_created_idx").on(table.createdAt, table.id), index("counter_visits_staff_created_idx").on(table.staffId, table.createdAt, table.id)]);
 
 /**
  * Wallet credits need a second admin's approval. Nothing reaches the customer's wallet until
@@ -429,7 +429,7 @@ export const activityLog = pgTable("activity_log", {
   refType: text("ref_type"), refId: text("ref_id"),
   actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [index("activity_log_created_idx").on(table.createdAt), index("activity_log_permission_created_idx").on(table.permission, table.createdAt)]);
+}, (table) => [index("activity_log_created_idx").on(table.createdAt), index("activity_log_permission_created_idx").on(table.permission, table.createdAt), index("activity_log_ref_created_idx").on(table.refType, table.refId, table.createdAt.desc())]);
 
 /** Separate from the 9,890 legacy register-based approvals in record_claims.
  * Modern mobile-record claims are never automatically approved by an imported
@@ -814,3 +814,20 @@ export const purchaseBillItems = pgTable("purchase_bill_items", {
   lineTotalPaise: integer("line_total_paise").notNull(),
   gstPaise: integer("gst_paise").notNull().default(0),
 }, (table) => [index("purchase_bill_items_bill_idx").on(table.billId)]);
+
+/** Public website branding settings; account and integration secrets never belong here. */
+export const siteSettings = pgTable("site_settings", {
+  key: text("key").primaryKey(), value: jsonb("value").notNull(),
+  updatedBy: uuid("updated_by").references(() => users.id, { onDelete: "set null" }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Small, paged conversations attached only to in-person counter visits. */
+export const counterComments = pgTable('counter_comments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  visitId: uuid('visit_id').notNull().references(() => counterVisits.id, { onDelete: 'cascade' }),
+  authorId: uuid('author_id').notNull().references(() => users.id),
+  body: text('body').notNull(),
+  clientKey: uuid('client_key').notNull().unique(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, table => [index('counter_comments_visit_created_idx').on(table.visitId, table.createdAt, table.id)]);

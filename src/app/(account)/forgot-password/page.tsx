@@ -2,7 +2,7 @@ import ForgotPasswordPanel from "@/components/forgot-password-panel";
 import { otpChannels } from "@/lib/sms";
 import { privateMetadata } from "@/lib/seo";
 
-export const metadata = privateMetadata("Reset your password", "Reset your NISE COMPORT account password with a code sent to your email.");
+export const metadata = privateMetadata("Reset your password", "Reset your NiSE COMPORT account password with a code sent to your email.");
 
 export const dynamic = "force-dynamic";
 

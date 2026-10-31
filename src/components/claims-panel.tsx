@@ -1,8 +1,9 @@
 "use client";
 
 import { Check, Copy, KeyRound, MessageCircle, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
-import { secureApi } from "@/lib/secure-api-client";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createLatestRequest } from "@/lib/latest-request";
+import { secureApi, SecureApiError } from "@/lib/secure-api-client";
 import { checkMobile, typedMobile } from "@/lib/mobile-login-core";
 import type { StaffClaim, StaffFlag } from "@/lib/claims";
 
@@ -11,16 +12,19 @@ type Code = { id: string; code: string; message: string; whatsappUrl: string };
 const when = (value: string) => new Date(value).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: "Asia/Kolkata" });
 
 /** Admin inbox: customers waiting to see their records, "this isn't me" reports, and PIN resets. */
-export default function ClaimsPanel({ onChange }: { onChange?: () => void }) {
+export default function ClaimsPanel({ onChange, from = "", to = "" }: { onChange?: () => void; from?: string; to?: string }) {
+  const requests = useRef(createLatestRequest());
   const [data, setData] = useState<Data | null>(null); const [error, setError] = useState(""); const [busy, setBusy] = useState("");
   const [code, setCode] = useState<Code | null>(null); const [copied, setCopied] = useState(false);
   const [hidden, setHidden] = useState(false);
   const [resetPhone, setResetPhone] = useState(""); const [resetResult, setResetResult] = useState("");
 
   const load = useCallback(async () => {
-    try { setData(await secureApi<Data>("Z2n5G8yL6bK3")); setError(""); } catch { setHidden(true); }
-  }, []);
-  useEffect(() => { void Promise.resolve().then(load); }, [load]);
+    const current = requests.current.begin();
+    try { const result = await secureApi<Data>("Z2n5G8yL6bK3", { from, to }); if (current()) { setData(result); setError(""); setHidden(false); } }
+    catch (reason) { if (current()) { if (reason instanceof SecureApiError && reason.status === 403) setHidden(true); else setError(reason instanceof Error ? reason.message : "Could not load record requests."); } }
+  }, [from, to]);
+  useEffect(() => { const gate = requests.current; void Promise.resolve().then(load); return () => gate.invalidate(); }, [load]);
 
   async function act(action: "approve" | "reject" | "code" | "resolve", id: string) {
     setBusy(id + action); setError("");
@@ -44,7 +48,8 @@ export default function ClaimsPanel({ onChange }: { onChange?: () => void }) {
   async function copy(text: string) { try { await navigator.clipboard.writeText(text); setCopied(true); window.setTimeout(() => setCopied(false), 1800); } catch { /* select and copy by hand */ } }
 
   // Staff without the Records permission simply do not see this block.
-  if (hidden || !data) return null;
+  if (hidden) return null;
+  if (!data) return error ? <p className="form-error" role="alert">{error}</p> : <p className="admin-loading">Loading record requests…</p>;
   return <section className="claims" aria-label="Record requests">
     <h3 className="inbox__feed-title">Waiting to see their records{data.claims.length ? ` · ${data.claims.length}` : ""}</h3>
     {error && <p role="alert" className="form-error">{error}</p>}

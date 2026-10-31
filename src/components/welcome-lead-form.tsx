@@ -24,12 +24,12 @@ export default function WelcomeLeadForm({ source = "qr" }: { source?: string }) 
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not send."); setState("idle"); }
   }
 
-  if (state === "done") return <p className="welcome__thanks" role="status">Thank you! Welcome to NISE COMPORT. Our team will call or message you soon.</p>;
+  if (state === "done") return <p className="welcome__thanks" role="status">Thank you! Welcome to NiSE COMPORT. Our team will call or message you soon.</p>;
   return <form className="welcome__form" onSubmit={submit}>
     <h2>Prefer a call back?</h2>
     <label className="field"><span className="field__label">Your name</span><input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" maxLength={120}/></label>
     <label className="field"><span className="field__label">Mobile / WhatsApp number</span><input value={phone} onChange={(event) => setPhone(event.target.value)} inputMode="tel" autoComplete="tel" required minLength={6} maxLength={30}/></label>
-    <label className="welcome__agree"><input type="checkbox" checked={agree} onChange={(event) => setAgree(event.target.checked)}/> <span>I agree that NISE COMPORT may save my name and number to contact me about my enquiry and note that I came from the QR code. See the <Link href="/privacy">privacy policy</Link>.</span></label>
+    <label className="welcome__agree"><input type="checkbox" checked={agree} onChange={(event) => setAgree(event.target.checked)}/> <span>I agree that NiSE COMPORT may save my name and number to contact me about my enquiry and note that I came from the QR code. See the <Link prefetch={false} href="/privacy">privacy policy</Link>.</span></label>
     {error && <p className="form-error" role="alert">{error}</p>}
     <button className="btn btn--primary" type="submit" disabled={!agree || !phone.trim() || state === "busy"}>{state === "busy" ? "Sending…" : "Call me back"}</button>
   </form>;

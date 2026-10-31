@@ -9,3 +9,15 @@
 .customer-admin-detail .inbox__feed p{white-space:pre-wrap;overflow-wrap:anywhere}
 .admin-queue .admin-table-wrap{max-width:100%;overflow-x:auto}
 @media(max-width:620px){.customer-admin-detail{padding:11px}.customer-admin-actions>.btn{width:100%}}
+
+.admin-desk .customer-accounts .customer-search{grid-template-columns:minmax(240px,1fr) auto auto;align-items:end}
+.customer-search .field{min-width:0}
+.customer-search .btn{width:auto;justify-self:start;padding-inline:22px}
+.customer-search .check{align-self:center;white-space:nowrap}
+.customer-accounts .admin-table{width:100%;border-collapse:collapse}
+.customer-accounts .admin-table th,.customer-accounts .admin-table td{vertical-align:middle;text-align:left;padding:14px 12px}
+.customer-accounts .admin-table td:nth-child(2){overflow-wrap:anywhere}
+.customer-accounts .admin-table td:nth-child(3),.customer-accounts .admin-table td:nth-child(4){white-space:nowrap}
+.customer-accounts .admin-table .customer-admin-actions{flex-wrap:nowrap;align-items:center}
+.customer-accounts .admin-table .btn{white-space:nowrap}
+@media(max-width:700px){.admin-desk .customer-accounts .customer-search{grid-template-columns:minmax(0,1fr) auto}.customer-search .check{grid-column:1/-1}.customer-accounts .admin-table{min-width:850px}}

@@ -1,0 +1,6 @@
+.counter-conversation{display:grid;gap:10px;max-width:640px;width:100%;padding:14px;margin-top:10px;border:1px solid #d5e0ee;border-radius:12px;background:#f7faff;box-sizing:border-box;overflow-wrap:anywhere}
+.counter-conversation header{display:flex;justify-content:space-between;align-items:center;gap:8px}.counter-conversation small,.counter-conversation time{font-size:.75rem;color:#546984}
+.counter-conversation__messages{display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto;overscroll-behavior:contain;padding:2px}
+.counter-conversation__messages article{padding:10px 12px;background:white;border:1px solid #dbe4ee;border-radius:10px;max-width:95%;align-self:flex-start}.counter-conversation__messages article.is-mine{background:#e5efff;align-self:flex-end}
+.counter-conversation__messages p{white-space:pre-wrap;margin:5px 0;font-size:.875rem;line-height:1.5}.counter-conversation__messages b{font-size:.8rem}
+.counter-conversation form,.counter-conversation label{display:grid;gap:6px}.counter-conversation label>span{font-size:.8rem;font-weight:600}.counter-conversation textarea{width:100%;min-height:64px;max-height:130px;resize:vertical;box-sizing:border-box}.counter-conversation form>.btn{justify-self:end}

@@ -18,6 +18,7 @@ import { newIdempotencyKey } from "@/lib/client-id";
 import type { OpeningHoursRule } from "@/lib/hours";
 import { dict, type Locale } from "@/lib/i18n";
 import { findOffer, isOfferLive, offerAppliesTo, offersFor } from "@/lib/offers";
+import { getSessionUser } from "@/lib/session-client";
 import { secureApi, secureUpload, SecureApiError } from "@/lib/secure-api-client";
 import { useLocale } from "@/lib/use-locale";
 import { whatsappHref } from "@/lib/public-contact";
@@ -201,7 +202,8 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
 
   useEffect(() => {
     let active = true;
-    secureApi<{ user: SessionUser }>("C4w7G2hN6kP9").then(async (session) => {
+    getSessionUser().then(async (user) => {
+      const session = { user };
       if (!active) return;
       setUser(session.user);
       if (!session.user || session.user.role === "demo") return;
@@ -241,7 +243,6 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
       if (draft.name.trim().length < 2) return t.errName;
       if (user === null && !draft.phone.trim() && !guest.email.trim()) return "Give a mobile number or an email address so we can reach you.";
       if (draft.phone.trim() ? !validPhone(draft.phone) : user !== null) return t.errPhone;
-      if (user === null && guest.whatsapp.trim() && !validPhone(guest.whatsapp)) return "Check the WhatsApp number.";
       if (user === null && guest.email.trim() && !/^\S+@\S+\.\S+$/.test(guest.email.trim())) return "Enter a valid email address.";
       if (activeIntake && Object.keys(intakeErrors).length) return Object.values(intakeErrors)[0];
       if (file && file.size > MAX_FILE_BYTES) return t.errFile;
@@ -296,7 +297,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
   // Guests can only pick a way to reach them that they have actually given: mobile, WhatsApp number or email.
   const guestEmailOk = /^\S+@\S+\.\S+$/.test(guest.email.trim());
   const mobileOk = validPhone(draft.phone);
-  const whatsappOk = guest.whatsapp.trim() ? validPhone(guest.whatsapp) : mobileOk;
+  const whatsappOk = mobileOk;
   function contactOptionAvailable(option: Contact) {
     if (user !== null) return true;
     return option === "email" ? guestEmailOk : option === "phone" ? mobileOk : whatsappOk;
@@ -317,7 +318,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         name: draft.name.trim(),
         phone: draft.phone.trim() || undefined,
         email: guest.email.trim() || undefined,
-        whatsapp: guest.whatsapp.trim() || undefined,
+        whatsapp: draft.phone.trim() || undefined,
         preferredContact: contactChoice,
         consentTerms: true,
         consentContact: true,
@@ -405,7 +406,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         {done.offerNote && <p className="alert alert--info">{t.offerNotApplied} {done.offerNote}</p>}
         {done.couponNote && <p className={done.couponOk ? "alert alert--success" : "alert alert--info"}>{done.couponNote}</p>}
         <div className="success-card__actions">
-          <Link className="btn btn--primary btn--lg" href="/profile#requests">{t.track}<ArrowRight size={18}/></Link>
+          <Link prefetch={false} className="btn btn--primary btn--lg" href="/profile#requests">{t.track}<ArrowRight size={18}/></Link>
           <a className="btn btn--wa btn--lg" href={whatsappHref(share)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/>{t.shareWa}</a>
           <button type="button" className="btn btn--ghost" onClick={() => { setDone(null); idempotencyKey.current = null; setFile(null); setDraft(initialDraft(services, {})); }}>{t.another}</button>
         </div>
@@ -476,8 +477,8 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
             <span className="choice__icon"><FileText size={20}/></span><span className="choice__text"><b>{t.somethingElse}</b><small>{t.somethingElseSub}</small></span><span className="choice__check" aria-hidden="true">{draft.serviceSlug === "other" && <Check size={16}/>}</span>
           </button>
         </div>
-        {draft.serviceSlug === "pan-card" && <div className="callout"><b>PAN has a dedicated guided form.</b><span>It collects exactly what the PAN process needs.</span><Link className="btn btn--sm btn--primary" href="/pan/request">Open PAN form <ArrowRight size={16}/></Link></div>}
-        {draft.serviceSlug === "printing-scanning" && FEATURES.printUploads && <div className="callout"><b>Printing has its own flow.</b><span>Upload your file, pick pages and see the estimate.</span><Link className="btn btn--sm btn--primary" href="/print">Open print flow <ArrowRight size={16}/></Link></div>}
+        {draft.serviceSlug === "pan-card" && <div className="callout"><b>PAN has a dedicated guided form.</b><span>It collects exactly what the PAN process needs.</span><Link prefetch={false} className="btn btn--sm btn--primary" href="/pan/request">Open PAN form <ArrowRight size={16}/></Link></div>}
+        {draft.serviceSlug === "printing-scanning" && FEATURES.printUploads && <div className="callout"><b>Printing has its own flow.</b><span>Upload your file, pick pages and see the estimate.</span><Link prefetch={false} className="btn btn--sm btn--primary" href="/print">Open print flow <ArrowRight size={16}/></Link></div>}
       </section>}
 
       {draft.step === 1 && <section>
@@ -487,7 +488,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
           <label className="field"><span className="field__label">{t.name}</span><input value={draft.name} onChange={(event) => update({ name: event.target.value.replace(/[^\p{L}\p{M}\s.'-]/gu, "") })} onBlur={captureLead} autoComplete="name" maxLength={100} required aria-invalid={nameBad}/>{nameBad && <span className="field__error">{t.errName}</span>}</label>
           <label className="field"><span className="field__label">{t.phone}</span><span className="input-wrap"><span className="input-prefix">+91</span><input value={draft.phone} onChange={(event) => update({ phone: event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16) })} inputMode="tel" autoComplete="tel-national" placeholder="98765 43210" onBlur={captureLead} aria-invalid={phoneBad}/></span>{phoneBad ? <span className="field__error">{t.errPhone}</span> : <span className="field__hint">{t.phoneHint}</span>}</label>
           <label className="field"><span className="field__label">Email (optional)</span><input type="email" inputMode="email" autoComplete="email" value={user === null ? guest.email : draft.email} onChange={(event) => { const value = event.target.value.trim(); if (user === null) setGuest((current) => ({ ...current, email: value })); else update({ email: value }); }} placeholder="name@example.com" aria-invalid={emailBad}/>{emailBad && <span className="field__error">Enter a valid email address.</span>}</label>
-          {user === null && <label className="field"><span className="field__label">WhatsApp number (optional)</span><span className="input-wrap"><span className="input-prefix">+91</span><input value={guest.whatsapp} onChange={(event) => setGuest((current) => ({ ...current, whatsapp: event.target.value.replace(/[^\d\s+-]/g, "").slice(0, 16) }))} inputMode="tel" autoComplete="off" placeholder="Same as mobile"/></span><span className="field__hint">Leave blank to use your mobile number.</span></label>}
+          {user === null && <label className="field"><span className="field__label">WhatsApp number</span><input type="tel" value={draft.phone} readOnly/><span className="field__hint">Same as your mobile number.</span></label>}
         </div>
         <fieldset className="field"><legend className="field__label">{t.contactVia}</legend><div className="seg">
           {(["whatsapp", "phone", "email"] as Contact[]).map((option) => <button key={option} type="button" className={contactChoice === option ? "is-active" : undefined} aria-pressed={contactChoice === option} disabled={!contactOptionAvailable(option)} onClick={() => update({ contact: option })}>{option === "whatsapp" ? <WhatsAppIcon size={16}/> : null}{option === "whatsapp" ? t.viaWhatsapp : option === "phone" ? t.viaPhone : t.viaEmail}</button>)}
@@ -497,7 +498,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
           errors={showErrors?intakeErrors:{}} photo={photo} onPhotoChange={user && user.role!=="demo"?setPhoto:undefined}/>}
         <div className="quick-picks"><span>{t.quickPicks}</span>{picks.map((pick) => <button key={pick} type="button" className="chip-btn chip-btn--sm" onClick={() => update({ description: draft.description.includes(pick) ? draft.description : `${draft.description ? `${draft.description.trim()} ` : ""}${pick}.`.slice(0, 1500) })}>+ {pick}</button>)}</div>
         {user === null && <div className="guest-intake">
-          <label className="check"><input type="checkbox" checked={guest.terms} onChange={(event) => setGuest((current) => ({ ...current, terms: event.target.checked }))}/><span>I agree to the <Link href="/terms" target="_blank">terms</Link> and <Link href="/privacy" target="_blank">privacy policy</Link>.</span></label>
+          <label className="check"><input type="checkbox" checked={guest.terms} onChange={(event) => setGuest((current) => ({ ...current, terms: event.target.checked }))}/><span>I agree to the <Link prefetch={false} href="/terms" target="_blank">terms</Link> and <Link prefetch={false} href="/privacy" target="_blank">privacy policy</Link>.</span></label>
           <label className="check"><input type="checkbox" checked={guest.contact} onChange={(event) => setGuest((current) => ({ ...current, contact: event.target.checked }))}/><span>NISE COMPORT may contact me about this request on WhatsApp, phone or email.</span></label>
         </div>}
       </section>}
@@ -545,7 +546,7 @@ function Wizard({ services, initial, hours, locale }: { services: WizardService[
         {activeIntake && <DetailedIntakePreview intake={activeIntake}/>}
         {offer && <div className={`applied-offer tone-${offer.tone}`}><span className="badge badge--live"><i/>{dict(locale).ticker.live}</span><div><b>{offer.highlight[locale]} · {offer.title[locale]}</b><small>{t.offerApplied}. {offer.firstTimeOnly ? t.offerCheck : ""}</small></div></div>}
         <p className="field__hint">Have an offer or coupon? Apply it after our team reviews your application and sends the quotation. The final discount is shown before you pay.</p>
-        <label className="check check--agree"><input type="checkbox" checked={draft.consent} onChange={(event) => update({ consent: event.target.checked })}/><span>{t.consent} <Link href="/terms" target="_blank">{WX.terms[locale]}</Link> · <Link href="/privacy" target="_blank">{WX.privacy[locale]}</Link></span></label>
+        <label className="check check--agree"><input type="checkbox" checked={draft.consent} onChange={(event) => update({ consent: event.target.checked })}/><span>{t.consent} <Link prefetch={false} href="/terms" target="_blank">{WX.terms[locale]}</Link> · <Link prefetch={false} href="/privacy" target="_blank">{WX.privacy[locale]}</Link></span></label>
         {user === null && <p className="alert alert--info">{t.signInNote}</p>}
       </section>}
 

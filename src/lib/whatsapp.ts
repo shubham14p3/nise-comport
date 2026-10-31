@@ -66,7 +66,7 @@ export function parseWebhook(payload: unknown): InboundEvent[] {
   return events;
 }
 
-export type TemplateMessage = { to: string; template: string; lang: "en" | "hi" | "bn"; bodyParams: string[]; imageUrl?: string | null };
+export type TemplateMessage = { to: string; template: string; lang: string; bodyParams: string[]; imageUrl?: string | null };
 
 /** The JSON body for a template message (header image optional). */
 export function templatePayload(message: TemplateMessage) {

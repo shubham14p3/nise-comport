@@ -1,18 +1,24 @@
 "use client";
 
-import ClaimsPanel from "@/components/claims-panel";
+import "./inbox-panel.css";
+
+import { inboxToday, inboxDay, inboxDateRange } from "@/lib/inbox-dates";
+import dynamic from "next/dynamic";
+const ClaimsPanel = dynamic(() => import("@/components/claims-panel"), { loading: () => <p className="admin-loading">Loading claims…</p> });
 import { useEffect, useRef, useState } from "react";
 import { Bell, Check, Eye, Phone, RefreshCw, UserRound, X } from "lucide-react";
 import { WhatsAppIcon } from "@/components/icons";
+import { createLatestRequest } from "@/lib/latest-request";
 import { secureApi } from "@/lib/secure-api-client";
 
 type Item = { id: string; kind: string; category: string | null; title: string; detail: string | null; createdAt: string; actor: string | null };
 type Lead = { id: string; name: string; phone: string; topic: string; message: string | null; status: string; handledBy: string | null; ownerName?: string | null; source: string; details: { email?: string; serviceSlug?: string } | null; page: string | null; createdAt: string };
 type CallbackTab = "open" | "called" | "closed" | "spam";
 type Callbacks = { rows: Lead[]; total: number; tabCounts: Record<CallbackTab, number>; tab: CallbackTab; mine: boolean; page: number; pageSize: number };
-type Inbox = { items: Item[]; unread: number; seenAt: string; pending: { category: string; label: string; total: number }[]; callbacks: Callbacks | null };
+type Summary = { unread: number; waiting: number; callbacks: number };
+type Inbox = { activityTotal: number; summary: Summary; items: Item[]; unread: number; seenAt: string; pending: { category: string; label: string; total: number }[]; callbacks: Callbacks | null };
 /** What the callbacks list and the activity filter are showing. Every change reloads the inbox from the server. */
-type View = { category: string; tab: CallbackTab; scope: "all" | "mine"; page: number };
+type View = { category: string; tab: CallbackTab; scope: "all" | "mine"; page: number; feedPage: number; from: string; to: string };
 
 const TABS: { id: CallbackTab; label: string }[] = [
   { id: "open", label: "Open" },
@@ -44,34 +50,46 @@ function Pager({ page, total, pageSize, onPage, label }: { page: number; total: 
 const pretty = (phone: string) => phone.replace(/^\+91(\d{5})(\d{5})$/, "+91 $1 $2");
 
 async function loadInbox(view: View) {
-  return secureApi<Inbox>("I5x2N8kQ3wT6", { category: view.category, leadTab: view.tab, leadScope: view.scope, leadPage: String(view.page) });
+  return secureApi<Inbox>("I5x2N8kQ3wT6", { category: view.category, leadTab: view.tab, leadScope: view.scope, leadPage: String(view.page), feedPage: String(view.feedPage), from: view.from, to: view.to });
 }
 
 /**
  * Admin → Inbox: callbacks split into Open / Called / Closed / Spam tabs (paged on the server),
  * what's waiting per service, and a feed of what happened.
  */
-export default function InboxPanel({ onSeen, viewer }: { onSeen?: () => void; viewer?: {id?:string;role:string} }) {
+export default function InboxPanel({ onSeen, onSummary, viewer }: { onSeen?: () => void; onSummary?: (summary: Summary) => void; viewer?: {id?:string;role:string} }) {
+  const listRequest = useRef(createLatestRequest());
   const [data, setData] = useState<Inbox | null>(null);
-  const [view, setView] = useState<View>({ category: "", tab: "open", scope: "all", page: 0 });
+  const [view, setView] = useState<View>({ category: "", tab: "open", scope: "all", page: 0, feedPage: 0, from: "", to: "" });
   const viewRef = useRef(view);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
-  const [feedPage, setFeedPage] = useState(0);
+  const [section, setSection] = useState<"waiting" | "callbacks" | "activity">("waiting");
+  const [dateMode, setDateMode] = useState("all");
+  const [dateFrom, setDateFrom] = useState(inboxToday);
+  const [dateTo, setDateTo] = useState(inboxToday);
+  const today = inboxToday();
+  function filterDates(from: string, to: string) {
+    try { inboxDateRange(from, to); setError(""); changeView({ from, to, page: 0, feedPage: 0 }); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Invalid date."); }
+  }
 
   async function fetchInbox(next: View = viewRef.current) {
+    const current = listRequest.current.begin();
     try {
       let result = await loadInbox(next);
+      if (!current()) return;
       // If the current page emptied (for example the last callback moved to another tab), step back to the last page that has rows.
       const cb = result.callbacks;
       if (cb && cb.rows.length === 0 && cb.total > 0 && next.page > 0) {
         next = { ...next, page: Math.ceil(cb.total / cb.pageSize) - 1 };
         viewRef.current = next; setView(next);
         result = await loadInbox(next);
+        if (!current()) return;
       }
-      setData(result); setError("");
+      setData(result); if (!viewRef.current.from && !viewRef.current.category) onSummary?.(result.summary); setError("");
     }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load the inbox."); }
+    catch (reason) { if (current()) setError(reason instanceof Error ? reason.message : "Could not load the inbox."); }
   }
 
   /** Changes what is shown (tab, scope, service filter or page) and loads it. */
@@ -82,10 +100,13 @@ export default function InboxPanel({ onSeen, viewer }: { onSeen?: () => void; vi
   }
 
   useEffect(() => {
-    let active = true;
-    const refresh = () => loadInbox(viewRef.current)
-      .then((result) => { if (active) setData(result); })
-      .catch((reason) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load the inbox."); });
+    const gate = listRequest.current;
+    const refresh = () => {
+      const current = gate.begin();
+      return loadInbox(viewRef.current)
+        .then((result) => { if (current()) { setData(result); if (!viewRef.current.from && !viewRef.current.category) onSummary?.(result.summary); setError(""); } })
+        .catch((reason) => { if (current()) setError(reason instanceof Error ? reason.message : "Could not load the inbox."); });
+    };
     void refresh();
     // Opening the inbox marks what's here as seen (after a moment, so the highlights are visible).
     const seen = window.setTimeout(() => { void secureApi("O9c4V7mB2pL5").then(() => onSeen?.()).catch(() => undefined); }, 4000);
@@ -93,12 +114,12 @@ export default function InboxPanel({ onSeen, viewer }: { onSeen?: () => void; vi
     const timer = window.setInterval(poll, 60_000);
     document.addEventListener("visibilitychange", poll);
     return () => {
-      active = false;
+      gate.invalidate();
       window.clearTimeout(seen);
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", poll);
     };
-  }, [onSeen]);
+  }, [onSeen, onSummary]);
 
   async function takeCase(row:Lead){
     setBusy(row.id);setError("");
@@ -118,20 +139,37 @@ export default function InboxPanel({ onSeen, viewer }: { onSeen?: () => void; vi
   const items = data?.items ?? [];
   const cb = data?.callbacks ?? null;
   const actionable = view.tab === "open" || view.tab === "called";
-  const feedAt = Math.min(feedPage, Math.max(0, Math.ceil(items.length / FEED_PAGE_SIZE) - 1));
+  const feedAt = view.feedPage;
   return <section className="admin-queue inbox">
     <h2><Bell size={17}/> Inbox {data?.unread ? <span className="inbox__unread">{data.unread} new</span> : null}
       <button type="button" className="btn btn--ghost btn--sm inbox__refresh" onClick={() => void fetchInbox()}><RefreshCw size={14}/>Refresh</button></h2>
     {error && <div className="alert alert--error" role="alert">{error}</div>}
-    <ClaimsPanel onChange={onSeen}/>
+    <div className="inbox__callback-tabs" role="tablist" aria-label="Inbox sections">
+      {([['waiting', 'Waiting / records'], ['callbacks', 'Callbacks'], ['activity', 'Activity']] as const).map(([id, label]) => <button type="button" key={id} className="btn btn--ghost btn--sm" role="tab" aria-selected={section === id} aria-controls={`inbox-${id}`} id={`inbox-tab-${id}`} onClick={() => setSection(id)}>{label}</button>)}
+    </div>
+    <div className="inbox__dates">
+      <div className="inbox__callback-tabs" role="group" aria-label="Date filter">
+        <button type="button" className="btn btn--ghost btn--sm" aria-pressed={dateMode === 'all'} onClick={() => { setDateMode('all'); filterDates('', ''); }}>All dates</button>
+        {[0, -1, -2].map((offset) => { const day = inboxDay(offset); return <button type="button" className="btn btn--ghost btn--sm" key={day} aria-pressed={dateMode === day} onClick={() => { setDateMode(day); filterDates(day, day); }}>{offset === 0 ? 'Today' : offset === -1 ? 'Yesterday' : 'Day before yesterday'} · {new Date(`${day}T12:00:00+05:30`).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric' })}</button>; })}
+        <button type="button" className="btn btn--ghost btn--sm" aria-pressed={dateMode === 'date'} onClick={() => setDateMode('date')}>Choose date</button>
+        <button type="button" className="btn btn--ghost btn--sm" aria-pressed={dateMode === 'range'} onClick={() => setDateMode('range')}>Date range</button>
+      </div>
+      {(dateMode === 'date' || dateMode === 'range') && <form className="inbox__callback-tabs" onSubmit={(event) => { event.preventDefault(); filterDates(dateFrom, dateMode === 'date' ? dateFrom : dateTo); }}>
+        <label>{dateMode === 'range' ? 'From' : 'Date'} <input type="date" min="2000-01-01" max={today} required value={dateFrom} onChange={(event) => setDateFrom(event.target.value)}/></label>
+        {dateMode === 'range' && <label>To <input type="date" min={dateFrom || '2000-01-01'} max={today} required value={dateTo} onChange={(event) => setDateTo(event.target.value)}/></label>}
+        <button type="submit" className="btn btn--primary btn--sm">Apply</button>
+      </form>}
+      <small>India time · {view.from ? `${view.from} to ${view.to}` : 'All dates'}</small>
+    </div>
+    {section === 'waiting' && <div role="tabpanel" id="inbox-waiting" aria-labelledby="inbox-tab-waiting"><ClaimsPanel onChange={onSeen} from={view.from} to={view.to}/></div>}
 
-    {data && data.pending.length > 0 && <div className="inbox__pending">
-      {data.pending.map((item) => <button key={item.category} type="button" className={view.category === item.category ? "is-active" : undefined} onClick={() => { const next = view.category === item.category ? "" : item.category; setFeedPage(0); changeView({ category: next, page: 0 }); }}>
+    {section === "waiting" && data && data.pending.length > 0 && <div className="inbox__pending">
+      {data.pending.map((item) => <button key={item.category} type="button" className={view.category === item.category ? "is-active" : undefined} onClick={() => { const next = view.category === item.category ? "" : item.category; changeView({ category: next, page: 0, feedPage: 0 }); }}>
         <b>{item.total}</b><span>{item.label}</span><small>waiting</small>
       </button>)}
     </div>}
 
-    {cb && <div className="inbox__leads">
+    {section === "callbacks" && cb && <div className="inbox__leads" role="tabpanel" id="inbox-callbacks" aria-labelledby="inbox-tab-callbacks">
       <h3><Phone size={16}/> Callbacks <span>{cb.total}</span></h3>
       <div className="inbox__callback-tabs" role="tablist" aria-label="Callback status">
         {TABS.map((tab) => <button key={tab.id} className="btn btn--ghost btn--sm" type="button" role="tab" aria-selected={view.tab === tab.id} onClick={() => changeView({ tab: tab.id, page: 0 })}>
@@ -164,13 +202,13 @@ export default function InboxPanel({ onSeen, viewer }: { onSeen?: () => void; vi
       <Pager page={cb.page} total={cb.total} pageSize={cb.pageSize} onPage={(next) => changeView({ page: next })} label="Callback pages"/>
     </div>}
 
-    <h3 className="inbox__feed-title">Activity{view.category ? ` · ${data?.pending.find((item) => item.category === view.category)?.label ?? view.category}` : ""}</h3>
-    <ol className="inbox__feed">{items.slice(feedAt * FEED_PAGE_SIZE, (feedAt + 1) * FEED_PAGE_SIZE).map((item) => <li key={item.id} className={new Date(item.createdAt).getTime() > seenAt ? "is-new" : undefined}>
+    {section === "activity" && <div role="tabpanel" id="inbox-activity" aria-labelledby="inbox-tab-activity"><h3 className="inbox__feed-title">Activity{view.category ? ` · ${data?.pending.find((item) => item.category === view.category)?.label ?? view.category}` : ""}</h3>
+    <ol className="inbox__feed">{items.map((item) => <li key={item.id} className={new Date(item.createdAt).getTime() > seenAt ? "is-new" : undefined}>
       <span className="inbox__icon" aria-hidden="true">{ICON[item.kind] ?? "•"}</span>
       <div><b>{item.title}</b>{item.detail && <small>{item.detail}</small>}</div>
       <time dateTime={item.createdAt}>{item.kind === "record_view" ? <Eye size={12}/> : item.actor ? <UserRound size={12}/> : null} {ago(item.createdAt)}</time>
     </li>)}</ol>
-    <Pager page={feedAt} total={items.length} pageSize={FEED_PAGE_SIZE} onPage={setFeedPage} label="Activity pages"/>
-    {data && !data.items.length && <p className="admin-empty">Nothing yet. New requests, call-back requests and staff actions appear here.</p>}
+    <Pager page={feedAt} total={data?.activityTotal ?? 0} pageSize={FEED_PAGE_SIZE} onPage={(feedPage) => changeView({ feedPage })} label="Activity pages"/>
+    {data && !data.items.length && <p className="admin-empty">Nothing yet. New requests, call-back requests and staff actions appear here.</p>}</div>}
   </section>;
 }

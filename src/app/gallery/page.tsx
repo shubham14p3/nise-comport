@@ -15,13 +15,13 @@ import { absoluteUrl, site } from "@/lib/site";
 
 export const revalidate = 43200;
 
-export const metadata: Metadata = pageMetadata("Gallery – Our Desk & Services in Telco, Jamshedpur", "Photos of the NISE COMPORT CSC / Pragya Kendra desk in Kharangajhar, Telco, Jamshedpur from Google, plus illustrated guides to our services.", "/gallery");
+export const metadata: Metadata = pageMetadata("Gallery – Our Desk & Services in Telco, Jamshedpur", "Photos of the NiSE COMPORT CSC / Pragya Kendra desk in Kharangajhar, Telco, Jamshedpur from Google, plus illustrated guides to our services.", "/gallery");
 
 export default async function GalleryPage() {
   const place = await getPlaceSummary();
   const googleItems: GalleryEntry[] = (place?.photos ?? []).map((photo) => ({
     key: `google-${photo.index}`, src: `/api/gallery/photo/${photo.index}`, width: photo.width, height: photo.height,
-    title: "NISE COMPORT, Kharangajhar", alt: `Photo of NISE COMPORT, Telco, Jamshedpur by ${photo.author}`, tag: "google", author: photo.author, authorUri: photo.authorUri,
+    title: "NiSE COMPORT, Kharangajhar", alt: `Photo of NiSE COMPORT, Telco, Jamshedpur by ${photo.author}`, tag: "google", author: photo.author, authorUri: photo.authorUri,
   }));
   const ownPhotos = await livePhotos();
   const mine: GalleryEntry[] = ownPhotos.map((photo) => {
@@ -36,7 +36,7 @@ export default async function GalleryPage() {
   const imageLd = [...ownPhotos.map((photo) => ({ "@type": "ImageObject", contentUrl: absoluteUrl(photo.src), name: photo.title, description: photo.alt, width: photo.width, height: photo.height, creator: { "@type": "Organization", name: site.name }, copyrightHolder: { "@type": "Organization", name: site.name } })), ...localGallery.map((item) => ({ "@type": "ImageObject", contentUrl: absoluteUrl(item.src), name: item.title, description: item.alt, creator: { "@type": "Organization", name: site.name } }))];
 
   return <main className="page"><SiteHeader/>
-    <JsonLd data={{ "@context": "https://schema.org", "@type": "ImageGallery", name: "NISE COMPORT gallery", url: absoluteUrl("/gallery"), image: imageLd }}/>
+    <JsonLd data={{ "@context": "https://schema.org", "@type": "ImageGallery", name: "NiSE COMPORT gallery", url: absoluteUrl("/gallery"), image: imageLd }}/>
     <section className="page-hero page-hero--compact">
       <div className="page-hero__bg" aria-hidden="true"><span className="blob blob--1"/><span className="blob blob--2"/></div>
       <div className="container">
@@ -53,7 +53,7 @@ export default async function GalleryPage() {
       <div className="container">
         <GalleryGrid items={items}/>
         {!googleItems.length && !mine.length && <p className="note-card"><MapPin size={20}/><span>Shop photos from our Google Business Profile appear here automatically once Google Maps is connected. Meanwhile, <a href={site.mapsUrl} target="_blank" rel="noopener noreferrer">see us on Google Maps</a>.</span></p>}
-        <div className="section-foot"><Link className="btn btn--primary" href="/request">Start a request <ArrowRight size={18}/></Link></div>
+        <div className="section-foot"><Link prefetch={false} className="btn btn--primary" href="/request">Start a request <ArrowRight size={18}/></Link></div>
       </div>
     </section>
   </main>;

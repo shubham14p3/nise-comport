@@ -35,7 +35,7 @@ export default function RequestExtras({ details, fallback }: { details: Record<s
       })}
       {intake.photoFileId && <p>Photograph uploaded (available through authorized request file access).</p>}
       {intake.documents?.length ? <details className="detailed-intake__section" open><summary>Supporting documents available</summary><ul>{intake.documents.map(item=> <li key={item}>{item}</li>)}</ul></details> : null}
-      <p className="field__hint">Collected for NISE COMPORT staff review only. Official portal submission and acknowledgement are separate.</p>
+      <p className="field__hint">Collected for NiSE COMPORT staff review only. Official portal submission and acknowledgement are separate.</p>
     </section>}
   </>;
 }

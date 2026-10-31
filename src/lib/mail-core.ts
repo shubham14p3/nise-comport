@@ -263,7 +263,7 @@ export type MailTicketDetail = {
 };
 export type MailBox = "all" | "active" | "open" | "awaiting_customer" | "get_back_soon" | "resolved" | "closed" | "unread";
 export type MailMeta = {
-  staff: boolean; counts: Record<string, number>; unread: number; supportAddress: string; mailboxConnected: boolean;
+  canDelete?: boolean; mailboxError?: string; mailboxSource?: string; staff: boolean; counts: Record<string, number>; unread: number; supportAddress: string; mailboxConnected: boolean;
   storage?: { mailBytes: number; mailFiles: number; documentsBytes: number; limitBytes: number; diskFreeBytes: number | null; diskTotalBytes: number | null };
   sync?: { lastRunAt: string | null; lastError: string | null; lastImported: number };
 };

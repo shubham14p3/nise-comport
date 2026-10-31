@@ -44,7 +44,7 @@ export async function AboutView({ lang }: { lang: Locale }) {
         <h1>{t("Your neighbourhood", "आपका अपना मोहल्ले का", "আপনার পাড়ার")}<br/><em>{t("digital seva kendra.", "डिजिटल सेवा केंद्र।", "ডিজিটাল সেবা কেন্দ্র।")}</em></h1>
         <p>{t("NISE COMPORT is an independent CSC / Pragya Kendra service centre in Jamshedpur. We help you reach government, banking, insurance and digital services without the running around: clear steps, careful attention and a friendly face.", "NISE COMPORT जमशेदपुर का एक स्वतंत्र CSC / प्रज्ञा केंद्र सेवा केंद्र है। हम आपको भागदौड़ के बिना सरकारी, बैंकिंग, बीमा और डिजिटल सेवाओं तक पहुँचने में मदद करते हैं: साफ़ चरण, ध्यान से किया गया काम और एक अपनापन भरा चेहरा।", "NISE COMPORT জামশেদপুরের একটি স্বাধীন CSC / প্রজ্ঞা কেন্দ্র পরিষেবা কেন্দ্র। আমরা ছোটাছুটি ছাড়াই সরকারি, ব্যাংকিং, বিমা ও ডিজিটাল পরিষেবায় পৌঁছাতে আপনাকে সাহায্য করি: স্পষ্ট ধাপ, যত্নশীল মনোযোগ আর একটি আন্তরিক মুখ।")}</p>
         <div className="about-hero__actions">
-          <Link className="btn btn--primary" href="/request">{t("Start a request", "अनुरोध शुरू करें", "অনুরোধ শুরু করুন")} <ArrowRight size={16}/></Link>
+          <Link prefetch={false} className="btn btn--primary" href="/request">{t("Start a request", "अनुरोध शुरू करें", "অনুরোধ শুরু করুন")} <ArrowRight size={16}/></Link>
           <a className="btn btn--ghost" href={whatsappLink(t("Hello NISE COMPORT, I need help with a service.", "नमस्ते NISE COMPORT, मुझे एक सेवा में मदद चाहिए।", "নমস্কার NISE COMPORT, একটি পরিষেবায় আমার সাহায্য দরকার।"))} target="_blank" rel="noopener noreferrer">{t("WhatsApp us", "हमें WhatsApp करें", "আমাদের WhatsApp করুন")}</a>
         </div>
       </div>
@@ -80,7 +80,7 @@ export async function AboutView({ lang }: { lang: Locale }) {
 
     <section className="section section--tint"><div className="container">
       <div className="section-head"><span className="eyebrow">{t("WHAT WE DO", "हम क्या करते हैं", "আমরা কী করি")}</span><h2>{t("Everything in one visit", "एक ही बार में सब कुछ", "একবারেই সব")}</h2><p>{t("From government work to your laptop, these are the services our desk handles every day.", "सरकारी काम से लेकर आपके लैपटॉप तक, ये वे सेवाएँ हैं जो हमारा डेस्क हर दिन सँभालता है।", "সরকারি কাজ থেকে আপনার ল্যাপটপ পর্যন্ত, এই পরিষেবাগুলি আমাদের ডেস্ক প্রতিদিন সামলায়।")}</p></div>
-      <div className="about-services">{categoryMeta.map((category) => <Link key={category.slug} href={lp(lang, `/services/${category.slug}`)} className={`about-service tone-${category.tone}`}>
+      <div className="about-services">{categoryMeta.map((category) => <Link prefetch={false} key={category.slug} href={lp(lang, `/services/${category.slug}`)} className={`about-service tone-${category.tone}`}>
         <span className="about-service__icon"><CategoryIcon icon={category.icon} size={22}/></span>
         <b>{category.short[lang]}</b><small>{category.line[lang]}</small>
       </Link>)}</div>
@@ -102,13 +102,13 @@ export async function AboutView({ lang }: { lang: Locale }) {
     <section className="container team-section">
       <div className="section-head"><span className="eyebrow">{t("THE PEOPLE", "हमारे लोग", "আমাদের মানুষ")}</span><h2>{t("Meet the team", "टीम से मिलिए", "টিমের সঙ্গে পরিচিত হন")}</h2><p>{t("The faces you will see when you visit, and the voices you will hear when you call.", "वे चेहरे जो आप आने पर देखेंगे, और वे आवाज़ें जो कॉल करने पर सुनेंगे।", "আপনি এলে যে মুখগুলি দেখবেন, আর কল করলে যে কণ্ঠস্বর শুনবেন।")}</p></div>
       <TeamGrid people={team.slice(0, 8)} lang={lang}/>
-      {team.length > 8 && <p className="center"><Link className="arrow-link" href={lp(lang, "/team")}>{t("See the whole team", "पूरी टीम देखें", "পুরো টিম দেখুন")} <ArrowRight size={14}/></Link></p>}
+      {team.length > 8 && <p className="center"><Link prefetch={false} className="arrow-link" href={lp(lang, "/team")}>{t("See the whole team", "पूरी टीम देखें", "পুরো টিম দেখুন")} <ArrowRight size={14}/></Link></p>}
     </section>
 
     <section className="container about-visit">
       <MapPin size={24} aria-hidden="true"/>
-      <div><h2>{t("Visit us in Kharangajhar, Telco", "खरंगाझार, टेल्को में हमसे मिलिए", "খরংগাঝাড়, টেলকোয় আমাদের কাছে আসুন")}</h2><p>{address}. {t("We serve ", "हम सेवा देते हैं: ", "আমরা পরিষেবা দিই: ")}{areas.slice(0, 6).map((area) => areaText(area, lang).name).join(", ")}{t(" and the wider Jamshedpur area. ", " और पूरे जमशेदपुर क्षेत्र में। ", " এবং পুরো জামশেদপুর অঞ্চলে। ")}<Link href={lp(lang, "/areas-we-serve")}>{t("See all areas", "सभी इलाके देखें", "সব এলাকা দেখুন")}</Link>.</p></div>
-      <Link className="btn btn--primary" href={lp(lang, "/contact")}>{t("Get directions", "रास्ता देखें", "দিকনির্দেশ পান")} <ArrowRight size={16}/></Link>
+      <div><h2>{t("Visit us in Kharangajhar, Telco", "खरंगाझार, टेल्को में हमसे मिलिए", "খরংগাঝাড়, টেলকোয় আমাদের কাছে আসুন")}</h2><p>{address}. {t("We serve ", "हम सेवा देते हैं: ", "আমরা পরিষেবা দিই: ")}{areas.slice(0, 6).map((area) => areaText(area, lang).name).join(", ")}{t(" and the wider Jamshedpur area. ", " और पूरे जमशेदपुर क्षेत्र में। ", " এবং পুরো জামশেদপুর অঞ্চলে। ")}<Link prefetch={false} href={lp(lang, "/areas-we-serve")}>{t("See all areas", "सभी इलाके देखें", "সব এলাকা দেখুন")}</Link>.</p></div>
+      <Link prefetch={false} className="btn btn--primary" href={lp(lang, "/contact")}>{t("Get directions", "रास्ता देखें", "দিকনির্দেশ পান")} <ArrowRight size={16}/></Link>
     </section>
     <section className="container about-qr" aria-labelledby="about-qr-title">
       <h2 id="about-qr-title">{t("Scan to sign in or chat with us", "साइन इन या चैट के लिए स्कैन करें", "সাইন ইন বা চ্যাটের জন্য স্ক্যান করুন")}</h2>
@@ -119,6 +119,6 @@ export async function AboutView({ lang }: { lang: Locale }) {
         { title: "WhatsApp", hint: t("Starts a chat with our desk.", "हमारे डेस्क से चैट शुरू होती है।", "আমাদের ডেস্কের সাথে চ্যাট শুরু হয়।"), url: `https://wa.me/${WHATSAPP_NUMBER}`, file: "nise-comport-whatsapp-qr.svg" },
       ]}/>
     </section>
-    <section className="container provider-note"><p>{t("We are not a government department and do not decide on applications. Our service charge is separate from any government or third-party fee. See ", "हम सरकारी विभाग नहीं हैं और आवेदनों पर फ़ैसला नहीं करते। हमारा सेवा शुल्क किसी भी सरकारी या तीसरे पक्ष के शुल्क से अलग है। देखें ", "আমরা সরকারি দপ্তর নই এবং আবেদনের সিদ্ধান্ত নিই না। আমাদের সার্ভিস চার্জ যেকোনো সরকারি বা তৃতীয় পক্ষের ফি থেকে আলাদা। দেখুন ")}<Link href={lp(lang, "/pricing")}>{t("pricing", "मूल्य", "মূল্য")}</Link>{t(" and our ", " और हमारी ", " এবং আমাদের ")}<Link href={lp(lang, "/refund-policy")}>{t("refund policy", "रिफ़ंड नीति", "রিফান্ড নীতি")}</Link>.</p></section>
+    <section className="container provider-note"><p>{t("We are not a government department and do not decide on applications. Our service charge is separate from any government or third-party fee. See ", "हम सरकारी विभाग नहीं हैं और आवेदनों पर फ़ैसला नहीं करते। हमारा सेवा शुल्क किसी भी सरकारी या तीसरे पक्ष के शुल्क से अलग है। देखें ", "আমরা সরকারি দপ্তর নই এবং আবেদনের সিদ্ধান্ত নিই না। আমাদের সার্ভিস চার্জ যেকোনো সরকারি বা তৃতীয় পক্ষের ফি থেকে আলাদা। দেখুন ")}<Link prefetch={false} href={lp(lang, "/pricing")}>{t("pricing", "मूल्य", "মূল্য")}</Link>{t(" and our ", " और हमारी ", " এবং আমাদের ")}<Link prefetch={false} href={lp(lang, "/refund-policy")}>{t("refund policy", "रिफ़ंड नीति", "রিফান্ড নীতি")}</Link>.</p></section>
   </main>;
 }

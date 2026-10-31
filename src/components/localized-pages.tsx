@@ -31,8 +31,8 @@ const L = {
     kicker: "स्थानीय मदद · खरंगाझार, टेल्को, जमशेदपुर", help: "हम कैसे मदद करते हैं", docs: "साथ लाने वाले दस्तावेज़",
     docsNote: "ज़रूरी दस्तावेज़ आवेदक और सेवा के अनुसार बदल सकते हैं। आधिकारिक वेबसाइट पर नवीनतम सूची ज़रूर देखें।",
     next: "आगे क्या होगा", faq: "सवाल-जवाब", faqLong: "अक्सर पूछे जाने वाले सवाल", start: "4 आसान चरणों में शुरू करें", ask: "व्हाट्सऐप पर पूछें", call: "कॉल करें", read: "जानकारी देखें",
-    disclaimer: "NISE COMPORT एक स्वतंत्र CSC / प्रज्ञा केंद्र है, सरकारी कार्यालय नहीं। आवेदन पर अंतिम निर्णय संबंधित विभाग या संस्था का होता है। सरकारी शुल्क और हमारा सेवा शुल्क अलग-अलग हैं।",
-    wa: (title: string) => `नमस्ते NISE COMPORT, मुझे "${title}" के बारे में मदद चाहिए।`, waHome: "नमस्ते NISE COMPORT, मुझे एक सेवा के बारे में जानकारी चाहिए।",
+    disclaimer: "NiSE COMPORT एक स्वतंत्र CSC / प्रज्ञा केंद्र है, सरकारी कार्यालय नहीं। आवेदन पर अंतिम निर्णय संबंधित विभाग या संस्था का होता है। सरकारी शुल्क और हमारा सेवा शुल्क अलग-अलग हैं।",
+    wa: (title: string) => `नमस्ते NiSE COMPORT, मुझे "${title}" के बारे में मदद चाहिए।`, waHome: "नमस्ते NiSE COMPORT, मुझे एक सेवा के बारे में जानकारी चाहिए।",
     ready: "तैयार हैं?", steps: ["सेवा चुनें", "जानकारी दें", "समय चुनें", "भेजें"],
   },
   bn: {
@@ -44,8 +44,8 @@ const L = {
     kicker: "স্থানীয় সাহায্য · খরংগাঝাড়, টেলকো, জামশেদপুর", help: "আমরা কীভাবে সাহায্য করি", docs: "যে কাগজপত্র আনবেন",
     docsNote: "প্রয়োজনীয় কাগজপত্র আবেদনকারী ও পরিষেবা অনুযায়ী বদলাতে পারে। সরকারি ওয়েবসাইটে সর্বশেষ তালিকা দেখে নিন।",
     next: "এরপর কী হবে", faq: "প্রশ্নোত্তর", faqLong: "প্রায়ই জিজ্ঞাসিত প্রশ্ন", start: "4টি সহজ ধাপে শুরু করুন", ask: "হোয়াটসঅ্যাপে জিজ্ঞেস করুন", call: "কল করুন", read: "বিস্তারিত দেখুন",
-    disclaimer: "NISE COMPORT একটি স্বাধীন CSC / প্রজ্ঞা কেন্দ্র, সরকারি অফিস নয়। আবেদনের চূড়ান্ত সিদ্ধান্ত সংশ্লিষ্ট দপ্তর বা সংস্থার। সরকারি ফি ও আমাদের সার্ভিস চার্জ আলাদা।",
-    wa: (title: string) => `নমস্কার NISE COMPORT, "${title}" নিয়ে আমার সাহায্য দরকার।`, waHome: "নমস্কার NISE COMPORT, একটি পরিষেবা নিয়ে আমার তথ্য দরকার।",
+    disclaimer: "NiSE COMPORT একটি স্বাধীন CSC / প্রজ্ঞা কেন্দ্র, সরকারি অফিস নয়। আবেদনের চূড়ান্ত সিদ্ধান্ত সংশ্লিষ্ট দপ্তর বা সংস্থার। সরকারি ফি ও আমাদের সার্ভিস চার্জ আলাদা।",
+    wa: (title: string) => `নমস্কার NiSE COMPORT, "${title}" নিয়ে আমার সাহায্য দরকার।`, waHome: "নমস্কার NiSE COMPORT, একটি পরিষেবা নিয়ে আমার তথ্য দরকার।",
     ready: "তৈরি?", steps: ["পরিষেবা বাছুন", "তথ্য দিন", "সময় বাছুন", "পাঠান"],
   },
 } as const;
@@ -67,12 +67,12 @@ export async function LocalizedHome({ lang, home, services }: { lang: Lang; home
           <h1 className="hero__title"><span className="hero__kicker">{home.h1}</span><span className="grad-text">{l.tagline}</span></h1>
           <p className="hero__lead">{home.lead}</p>
           <div className="hero__ctas">
-            <Link href="/request" className="btn btn--primary btn--lg">{t.nav.startRequest}<ArrowRight size={20}/></Link>
+            <Link prefetch={false} href="/request" className="btn btn--primary btn--lg">{t.nav.startRequest}<ArrowRight size={20}/></Link>
             <a href={whatsappLink(l.waHome)} className="btn btn--glass btn--lg" target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={20}/>{t.nav.whatsapp}</a>
             <a href={`tel:${site.phones.primary.e164}`} className="btn btn--glass btn--lg"><Phone size={18}/>{l.call}</a>
           </div>
           <ul className="hero__trust">{home.trust.map((item) => <li key={item}><CircleCheck size={18}/>{item}</li>)}</ul>
-          <p className="hero__lang"><Link href="/" hrefLang="en-IN" lang="en">{l.english}</Link></p>
+          <p className="hero__lang"><Link prefetch={false} href="/" hrefLang="en-IN" lang="en">{l.english}</Link></p>
         </div>
       </div>
     </section>
@@ -87,9 +87,9 @@ export async function LocalizedHome({ lang, home, services }: { lang: Lang; home
         <div className="section-head"><h2>{l.translated}</h2><p>{l.translatedSub}</p></div>
         <div className="svc-grid">{services.filter((service) => findService(service.slug)).map((service) => {
           return <article key={service.slug} className="svc-card tone-blue">
-            <h3><Link href={`/${lang}/services/${service.slug}`}>{service.title}</Link></h3>
+            <h3><Link prefetch={false} href={`/${lang}/services/${service.slug}`}>{service.title}</Link></h3>
             <p>{service.description}</p>
-            <div className="svc-card__actions"><Link className="btn btn--primary btn--sm" href={requestHrefFor(service.slug)}>{t.nav.startRequest}<ArrowRight size={16}/></Link><Link className="btn btn--ghost btn--sm" href={`/${lang}/services/${service.slug}`}>{l.read}</Link></div>
+            <div className="svc-card__actions"><Link prefetch={false} className="btn btn--primary btn--sm" href={requestHrefFor(service.slug)}>{t.nav.startRequest}<ArrowRight size={16}/></Link><Link prefetch={false} className="btn btn--ghost btn--sm" href={`/${lang}/services/${service.slug}`}>{l.read}</Link></div>
           </article>;
         })}</div>
       </div>
@@ -145,11 +145,11 @@ export async function LocalizedService({ lang, service }: { lang: Lang; service:
           <h1>{service.title}</h1>
           <p className="page-hero__lead">{service.description}</p>
           <div className="page-hero__ctas">
-            <Link className="btn btn--primary btn--lg" href={requestHrefFor(service.slug)}>{l.start}<ArrowRight size={18}/></Link>
+            <Link prefetch={false} className="btn btn--primary btn--lg" href={requestHrefFor(service.slug)}>{l.start}<ArrowRight size={18}/></Link>
             <a className="btn btn--wa btn--lg" href={enquiry} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/>{l.ask}</a>
             <a className="btn btn--glass btn--lg" href={`tel:${site.phones.primary.e164}`}><Phone size={18}/>{l.call}</a>
           </div>
-          <p className="page-hero__meta"><MapPin size={16}/> {l.address} · <Link href={`/services/${service.slug}`} hrefLang="en-IN" lang="en">{l.english}</Link></p>
+          <p className="page-hero__meta"><MapPin size={16}/> {l.address} · <Link prefetch={false} href={`/services/${service.slug}`} hrefLang="en-IN" lang="en">{l.english}</Link></p>
         </div>
         <div className="page-hero__art"><Image src={posterFor(service.slug, category)} alt="" width={1200} height={900} priority sizes="(max-width: 900px) 100vw, 44vw"/></div>
       </div>
@@ -164,7 +164,7 @@ export async function LocalizedService({ lang, service }: { lang: Lang; service:
         <div className="start-card">
           <h3>{l.ready}</h3>
           <ol className="mini-steps">{l.steps.map((step) => <li key={step}>{step}</li>)}</ol>
-          <Link className="btn btn--primary btn--block" href={requestHrefFor(service.slug)}>{l.start}<ArrowRight size={18}/></Link>
+          <Link prefetch={false} className="btn btn--primary btn--block" href={requestHrefFor(service.slug)}>{l.start}<ArrowRight size={18}/></Link>
           <a className="btn btn--wa btn--block" href={enquiry} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={18}/>{l.ask}</a>
         </div>
         {offers.map((offer) => <OfferCard key={offer.id} offer={offer} locale={lang} variant="rail"/>)}

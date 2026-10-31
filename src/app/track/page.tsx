@@ -12,8 +12,8 @@ import { panSources } from "@/lib/pan-content";
 import { breadcrumbLd } from "@/lib/structured-data";
 
 export const metadata: Metadata = pageMetadata(
-  "Track a Request – NISE COMPORT, PAN, Certificates, Voter ID",
-  "One place to track your NISE COMPORT request, PAN application, Jharkhand certificate or voter ID: which reference number you need and where to check status.",
+  "Track a Request – NiSE COMPORT, PAN, Certificates, Voter ID",
+  "One place to track your NiSE COMPORT request, PAN application, Jharkhand certificate or voter ID: which reference number you need and where to check status.",
   "/track",
 );
 
@@ -21,11 +21,11 @@ const trackers = [
   {
     key: "nise-comport",
     icon: Landmark,
-    title: "Your NISE COMPORT Service Request",
-    portal: "Your NISE COMPORT customer profile",
+    title: "Your NiSE COMPORT Service Request",
+    portal: "Your NiSE COMPORT customer profile",
     reference: "The request reference we gave you when you submitted a request through this site or at our desk.",
     steps: [
-      "Sign in to your NISE COMPORT profile.",
+      "Sign in to your NiSE COMPORT profile.",
       "Open “My requests” to see the current stage of every request you've sent us.",
       "We also update you by email/WhatsApp when a request's status changes.",
     ],
@@ -79,7 +79,7 @@ const trackers = [
 ];
 
 export default function TrackPage() {
-  const whatsapp = whatsappLink("Hi NISE COMPORT, I need help tracking my application. My reference number is: ");
+  const whatsapp = whatsappLink("Hi NiSE COMPORT, I need help tracking my application. My reference number is: ");
   return <main className="page"><SiteHeader/>
     <JsonLd data={breadcrumbLd([{ name: "Home", path: "/" }, { name: "Track your application", path: "/track" }])}/>
     <section className="page-hero page-hero--service tone-blue">
@@ -87,8 +87,8 @@ export default function TrackPage() {
       <div className="container">
         <Breadcrumbs items={[{ name: "Home", path: "/" }, { name: "Track your application", path: "/track" }]}/>
         <h1>Track a request</h1>
-        <p className="page-hero__lead">Everything in one place. Your NISE COMPORT requests are tracked in your profile. PAN, certificates and Voter ID are tracked on the <b>official portal</b>, which holds that data. Pick what you applied for below.</p>
-        <nav className="chip-row" aria-label="Jump to tracker">{trackers.map((item) => <a key={item.key} className="chip" href={`#${item.key}`}>{item.title.split(" – ")[0].replace("Your NISE COMPORT Service Request", "My NISE COMPORT request")}</a>)}</nav>
+        <p className="page-hero__lead">Everything in one place. Your NiSE COMPORT requests are tracked in your profile. PAN, certificates and Voter ID are tracked on the <b>official portal</b>, which holds that data. Pick what you applied for below.</p>
+        <nav className="chip-row" aria-label="Jump to tracker">{trackers.map((item) => <a key={item.key} className="chip" href={`#${item.key}`}>{item.title.split(" – ")[0].replace("Your NiSE COMPORT Service Request", "My NiSE COMPORT request")}</a>)}</nav>
       </div>
     </section>
 
@@ -105,7 +105,7 @@ export default function TrackPage() {
           <div className="svc-card__actions">
             {external
               ? <a className="btn btn--primary btn--sm" href={item.href} target="_blank" rel="noopener noreferrer">{item.hrefLabel} <ArrowUpRight size={16}/></a>
-              : <Link className="btn btn--primary btn--sm" href={item.href}>{item.hrefLabel} <ArrowUpRight size={16}/></Link>}
+              : <Link prefetch={false} className="btn btn--primary btn--sm" href={item.href}>{item.hrefLabel} <ArrowUpRight size={16}/></Link>}
             {"href2" in item && item.href2 ? <a className="btn btn--ghost btn--sm" href={item.href2} target="_blank" rel="noopener noreferrer">{item.hrefLabel2} <ArrowUpRight size={16}/></a> : null}
           </div>
         </article>;

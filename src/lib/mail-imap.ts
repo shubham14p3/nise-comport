@@ -1,3 +1,4 @@
+import { mailboxSyncKey } from "@/lib/mail-config";
 import { randomInt } from "node:crypto";
 import { and, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
@@ -121,7 +122,7 @@ export async function pollSupportMailbox(): Promise<{ ok: boolean; imported: num
     const lock = await client.getMailboxLock(settings.folder);
     try {
       const validity = client.mailbox ? String(client.mailbox.uidValidity ?? "") : "";
-      const [state] = await db.select().from(mailSync).where(eq(mailSync.id, "main")).limit(1);
+      const [state] = await db.select().from(mailSync).where(eq(mailSync.id, mailboxSyncKey(settings))).limit(1);
       const fresh = !state || state.uidValidity !== validity;
       // First run (or a rebuilt mailbox): only the last 3 days, so old mail never floods the desk.
       const found = fresh ? await client.search({ since: new Date(Date.now() - 3 * 24 * 3600_000) }, { uid: true }) : await client.search({ uid: `${state.lastUid + 1}:*` }, { uid: true });
@@ -152,7 +153,7 @@ export async function pollSupportMailbox(): Promise<{ ok: boolean; imported: num
           break; // try this one again next time rather than skipping past it
         }
       }
-      await db.insert(mailSync).values({ id: "main", uidValidity: validity, lastUid, lastRunAt: new Date(), lastError: null, lastImported: imported })
+      await db.insert(mailSync).values({ id: mailboxSyncKey(settings), uidValidity: validity, lastUid, lastRunAt: new Date(), lastError: null, lastImported: imported })
         .onConflictDoUpdate({ target: mailSync.id, set: { uidValidity: validity, lastUid, lastRunAt: new Date(), lastError: null, lastImported: imported } });
     } finally { lock.release(); }
     await client.logout();
@@ -161,7 +162,7 @@ export async function pollSupportMailbox(): Promise<{ ok: boolean; imported: num
     const message = error instanceof Error ? error.message : "Mailbox error";
     console.error("[mail] mailbox check failed", message);
     try { client?.close(); } catch { /* already closed */ }
-    await db.insert(mailSync).values({ id: "main", lastRunAt: new Date(), lastError: message.slice(0, 300) }).onConflictDoUpdate({ target: mailSync.id, set: { lastRunAt: new Date(), lastError: message.slice(0, 300) } }).catch(() => undefined);
+    await db.insert(mailSync).values({ id: mailboxSyncKey(settings), lastRunAt: new Date(), lastError: message.slice(0, 300) }).onConflictDoUpdate({ target: mailSync.id, set: { lastRunAt: new Date(), lastError: message.slice(0, 300) } }).catch(() => undefined);
     return { ok: false, imported, skipped, error: message };
   }
 }

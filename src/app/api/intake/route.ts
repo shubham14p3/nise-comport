@@ -27,10 +27,9 @@ export async function POST(request: NextRequest) {
     const input = schema.parse(await readJson(request));
     // A mobile number or an email is enough; the WhatsApp number is optional and defaults to the mobile.
     const phone = input.phone ? normalizePhone(input.phone) : null;
-    const whatsapp = input.whatsapp ? normalizePhone(input.whatsapp) : null;
+    const whatsapp = phone;
     const email = input.email ? normalizeEmail(input.email) : "";
     if (input.phone && !phone) throw new PublicError("Enter a valid 10-digit mobile number.", 400, { fields: { phone: "Check the number." } });
-    if (input.whatsapp && !whatsapp) throw new PublicError("Enter a valid WhatsApp number.", 400, { fields: { whatsapp: "Check the number." } });
     if (email && !looksLikeEmail(email)) throw new PublicError("Enter a valid email address.", 400, { fields: { email: "Enter a valid email address." } });
     if (!phone && !email) throw new PublicError("Give a mobile number or an email address so we can reach you.", 400, { fields: { phone: "Give a mobile number or an email.", email: "Or give an email address." } });
     const service = input.serviceSlug === "other" ? null : await resolveService(input.serviceSlug);

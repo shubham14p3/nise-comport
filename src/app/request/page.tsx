@@ -6,7 +6,7 @@ import { allServices } from "@/lib/site-content";
 import { currentServiceSlug } from "@/lib/slug-renames";
 import { site } from "@/lib/site";
 
-export const metadata = privateMetadata("Start a request", "Send a service request to NISE COMPORT in four quick steps.");
+export const metadata = privateMetadata("Start a request", "Send a service request to NiSE COMPORT in four quick steps.");
 
 type Search = Promise<Record<string, string | string[] | undefined>>;
 const one = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value)?.slice(0, 300);

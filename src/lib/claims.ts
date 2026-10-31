@@ -67,16 +67,16 @@ export type StaffClaim = { id: string; name: string; email: string | null; mobil
 export type StaffFlag = { id: string; name: string; mobile: string | null; note: string | null; service: string | null; createdAt: string };
 
 /** Pending claims and "this isn't me" flags for the admin inbox. */
-export async function staffClaims() {
+export async function staffClaims(dates: { from?: Date; until?: Date } = {}) {
   const now = new Date();
   await db.update(recordClaims).set({ status: "expired", pinEnc: null }).where(and(eq(recordClaims.status, "pending"), lt(recordClaims.expiresAt, now)));
-  const rows = await db.select({ claim: recordClaims, name: users.name, email: users.email }).from(recordClaims).innerJoin(users, eq(users.id, recordClaims.userId)).where(eq(recordClaims.status, "pending")).orderBy(desc(recordClaims.createdAt)).limit(100);
+  const rows = await db.select({ claim: recordClaims, name: users.name, email: users.email }).from(recordClaims).innerJoin(users, eq(users.id, recordClaims.userId)).where(and(eq(recordClaims.status, "pending"), dates.from ? sql`${recordClaims.createdAt} >= ${dates.from}` : undefined, dates.until ? lt(recordClaims.createdAt, dates.until) : undefined)).orderBy(desc(recordClaims.createdAt)).limit(100);
   const claims: StaffClaim[] = rows.map(({ claim, name, email }) => {
     let pin: string | null = null;
     try { pin = claim.pinEnc ? open<string>(claim.pinEnc) : null; } catch { pin = null; }
     return { id: claim.id, name, email: isPlaceholderEmail(email) ? null : email, mobile: claim.phone, pin, matched: claim.matchedCount, createdAt: claim.createdAt.toISOString(), expiresAt: claim.expiresAt.toISOString(), codeSent: Boolean(claim.codeHash && claim.codeExpiresAt && claim.codeExpiresAt > now), waiting: claimReminderDue(claim, now) ? "overdue" : "" };
   });
-  const flagRows = await db.select({ flag: recordFlags, name: users.name, phone: users.phone, service: customerRecords.service }).from(recordFlags).innerJoin(users, eq(users.id, recordFlags.userId)).leftJoin(customerRecords, eq(customerRecords.id, recordFlags.recordId)).where(isNull(recordFlags.resolvedAt)).orderBy(desc(recordFlags.createdAt)).limit(50);
+  const flagRows = await db.select({ flag: recordFlags, name: users.name, phone: users.phone, service: customerRecords.service }).from(recordFlags).innerJoin(users, eq(users.id, recordFlags.userId)).leftJoin(customerRecords, eq(customerRecords.id, recordFlags.recordId)).where(and(isNull(recordFlags.resolvedAt), dates.from ? sql`${recordFlags.createdAt} >= ${dates.from}` : undefined, dates.until ? lt(recordFlags.createdAt, dates.until) : undefined)).orderBy(desc(recordFlags.createdAt)).limit(50);
   const flags: StaffFlag[] = flagRows.map(({ flag, name, phone, service }) => ({ id: flag.id, name, mobile: phone, note: flag.note, service, createdAt: flag.createdAt.toISOString() }));
   return { claims, flags };
 }

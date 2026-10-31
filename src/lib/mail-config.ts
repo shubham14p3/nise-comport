@@ -26,6 +26,7 @@ export function chooseImapConnection(
       source: "environment",
     };
   }
+  if (host || user || password) return null; // Partial overrides must never fall back to another saved mailbox.
   if (vault.imapHost?.trim() && vault.imapUser?.trim() && vault.imapPassword?.trim()) {
     const port = asPort(vault.imapPort);
     if (port === null) return null;
@@ -36,4 +37,9 @@ export function chooseImapConnection(
     };
   }
   return null;
+}
+
+/** A mailbox change must not reuse another account's IMAP cursor. Password rotation does not reset it. */
+export function mailboxSyncKey(config: Pick<ImapConnection, 'host' | 'port' | 'user' | 'folder'>) {
+  return `imap:${JSON.stringify([config.host.toLowerCase(), config.port, config.user.toLowerCase(), config.folder])}`;
 }

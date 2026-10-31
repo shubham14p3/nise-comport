@@ -11,7 +11,7 @@ export const revalidate = 600;
 
 export const metadata: Metadata = pageMetadata(
   "Festival Offers & Promo Codes in Jamshedpur",
-  "₹50 promo codes for Diwali, Durga Puja, Chhath, Eid, Christmas, Sarhul, Karma and every big Team India match, plus a ₹50 welcome coupon. NISE COMPORT, Kharangajhar, Telco, Jamshedpur.",
+  "₹50 promo codes for Diwali, Durga Puja, Chhath, Eid, Christmas, Sarhul, Karma and every big Team India match, plus a ₹50 welcome coupon. NiSE COMPORT, Kharangajhar, Telco, Jamshedpur.",
   "/offers",
 );
 

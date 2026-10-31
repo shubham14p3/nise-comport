@@ -17,6 +17,9 @@ export default function QrScansPanel() {
   const [error, setError] = useState("");
   const [source, setSource] = useState("");
   const [device, setDevice] = useState("");
+  const [assistantNumber, setAssistantNumber] = useState(process.env.NEXT_PUBLIC_WHATSAPP_ASSISTANT ?? "17111494523");
+  const assistantDigits = assistantNumber.replace(/\D/g, "");
+  const validAssistant = /^[1-9]\d{7,14}$/.test(assistantDigits);
   const [placement, setPlacement] = useState("poster");
   const [openDetails, setOpenDetails] = useState(false);
   async function refresh() {
@@ -35,7 +38,7 @@ export default function QrScansPanel() {
   const cards = [
     { title: "Welcome QR", hint: "WhatsApp, email, sign in and callback on one page.", url: `${site.url}/welcome?src=${placement}`, file: `nise-welcome-${placement}.svg` },
     { title: "Sign-in QR", hint: "Customers can sign in with mobile number or email.", url: `${site.url}/login`, file: "nise-login.svg" },
-    { title: "WhatsApp QR", hint: "Open WhatsApp with a QR-scan greeting; the business auto-reply requires an active Cloud API.", url: `https://wa.me/${site.whatsapp.primary}?text=${encodeURIComponent("Hi NISE COMPORT, I scanned your QR code.")}`, file: "nise-whatsapp.svg" },
+
   ];
   return <section className="admin-card admin-qr">
     <div className="admin-qr__header">
@@ -50,7 +53,19 @@ export default function QrScansPanel() {
       </label>
       <p className="muted">Each printed location gets a different QR source so you can compare its performance.</p>
       <SiteQrCards cards={cards} download="Download SVG"/>
-      <Link className="btn btn--ghost btn--sm" href="/welcome" target="_blank">Preview welcome page</Link>
+      <div className="admin-qr__assistant">
+        <div><span className="admin-eyebrow">🙏 नमस्ते · NiSE COMPORT</span><h3>WhatsApp QR — Online Assistant</h3>
+          <p>सेवा की जानकारी और ऑनलाइन सहायता · Service enquiries and online assistance</p>
+          <label className="field"><span className="field__label">Assistant WhatsApp number, including country code</span>
+            <input type="tel" inputMode="tel" maxLength={24} value={assistantNumber} onChange={event => setAssistantNumber(event.target.value)} aria-describedby="assistant-qr-help"/></label>
+          <p id="assistant-qr-help" className="field__hint">Use the actual API phone number, not its Meta Phone Number ID. This changes this QR only; it does not change your shop contact number or API credentials. Set NEXT_PUBLIC_WHATSAPP_ASSISTANT before building to change the initial value.</p>
+          <p>Scan → open WhatsApp → tap Send. Scanning alone does not send a message.</p>
+          <p><b>Documents / दस्तावेज़:</b> upload through your service request on our website. WhatsApp attachments are not saved in the website inbox yet.</p>
+          <p className="field__hint">Direct WhatsApp QR scans are not included in the welcome-page scan counts. Reprint the QR after changing its destination.</p>
+        </div>
+        {validAssistant ? <SiteQrCards cards={[{ title: "ऑनलाइन सहायता", hint: "Scan करें और WhatsApp पर Send दबाएँ", url: `https://wa.me/${assistantDigits}?text=${encodeURIComponent("Hi NiSE COMPORT, I scanned your QR code. Namaste! Online seva ki jankari chahiye.")}`, file: "nise-whatsapp-online-assistant.svg", badge: "WhatsApp · Online Assistant", number: `+${assistantDigits}` }]} download="Download WhatsApp QR"/> : <p role="alert" className="form-error">Enter a valid international WhatsApp number to generate the QR.</p>}
+      </div>
+      <Link prefetch={false} className="btn btn--ghost btn--sm" href="/welcome" target="_blank">Preview welcome page</Link>
     </div>
     <div className="admin-qr__metrics">
       <div><QrCode size={18}/><b>{scans.toLocaleString("en-IN")}</b><small>Scans (last {data?.days ?? 30} days)</small></div>
