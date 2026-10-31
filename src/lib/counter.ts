@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { and, count, desc, eq, isNull, like, not, or, sql } from "drizzle-orm";
 import { hash } from "@node-rs/argon2";
-import { activityLog, contacts, counterVisits, sessions, users, walletEntries } from "@/db/schema";
+import { jobs, activityLog, contacts, counterVisits, sessions, users, walletEntries } from "@/db/schema";
 import { sendEmailChangedNotice } from "@/lib/email";
 import { db } from "@/lib/db";
 import { isPlaceholderEmail } from "@/lib/mobile-login-core";
@@ -197,7 +197,9 @@ export async function recordVisit(input: { staffId: string; phone: string; userI
       });
     }
     if (earnedPaise > 0) await tx.insert(walletEntries).values({ userId, amount: (earnedPaise / 100).toFixed(2), kind: "credit", description: `Counter: ${input.serviceName} (${policy.accumulationPercent}% accumulated)`, reference: `CV-EARN-${visit.id}` });
-    return { reference: `CV-${visit.id.toUpperCase()}`, visitId: visit.id, createdAt: visit.createdAt, billPaise, discountPaise, earnedPaise, collectPaise, balanceAfterPaise };
+    // The AFTER INSERT trigger has already created a universal job atomically.
+    const [job] = await tx.select({ code: jobs.code }).from(jobs).where(and(eq(jobs.sourceKind, "counter"), eq(jobs.sourceId, visit.id))).limit(1);
+    return { reference: `CV-${visit.id.toUpperCase()}`, jobId: job?.code ?? null, visitId: visit.id, createdAt: visit.createdAt, billPaise, discountPaise, earnedPaise, collectPaise, balanceAfterPaise };
   });
 }
 

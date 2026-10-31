@@ -1,8 +1,9 @@
-import { and, desc, eq, inArray, or } from "drizzle-orm";
-import { payments, users, whatsappMessages } from "@/db/schema";
+import { and, desc, eq, inArray } from "drizzle-orm";
+import { payments, whatsappMessages } from "@/db/schema";
 import { logActivity } from "@/lib/activity";
 import { handleStatusQuery } from "@/lib/campaigns";
 import { db } from "@/lib/db";
+import { verifiedWhatsAppUserId } from "@/lib/jobs";
 import { summarizeHours } from "@/lib/hours";
 import { hitRate, identity } from "@/lib/rate-limit";
 import { publicPrices } from "@/lib/service-prices";
@@ -43,8 +44,7 @@ export async function handleBotMessage(event: { from: string; text: string; name
   if (!phone) return;
   const limit = await hitRate({ name: "wa-bot", limit: 40, windowSeconds: 3600 }, identity("wa", phone)).catch(() => ({ allowed: true }));
   if (!limit.allowed) return;
-  const [account] = await db.select({ id: users.id }).from(users).where(or(eq(users.phone, phone), eq(users.whatsapp, phone))).limit(1);
-  const userId = account?.id ?? null;
+  const userId = await verifiedWhatsAppUserId(phone);
   const text = event.text.slice(0, 500);
   let intent: BotIntent = detectIntent(text);
   const fromWelcomeQr = /\bscanned\b.*\bqr\b|\bqr\b.*\bscanned\b/i.test(text);

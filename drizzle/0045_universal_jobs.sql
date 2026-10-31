@@ -43,22 +43,22 @@ CREATE INDEX IF NOT EXISTS "job_events_job_created_idx" ON "job_events"("job_id"
 -- Backfill is idempotent by (source_kind, source_id); no original rows are modified.
 INSERT INTO "jobs" ("source_kind", "source_id", "user_id", "service_slug", "service_name", "source_reference", "status", "created_at", "updated_at")
 SELECT 'service', r."id", r."user_id", r."service_slug", r."service_name", r."reference", r."status", r."created_at", r."updated_at"
-FROM "service_requests" r ON CONFLICT ("source_kind", "source_id") DO NOTHING;
+FROM "service_requests" r WHERE true ON CONFLICT ("source_kind", "source_id") DO NOTHING;
 --> statement-breakpoint
 INSERT INTO "jobs" ("source_kind", "source_id", "user_id", "service_slug", "service_name", "source_reference", "status", "created_at", "updated_at")
 SELECT 'print', p."id", p."user_id", 'printing', 'Print: ' || p."file_name", p."reference", p."status", p."created_at", p."updated_at"
-FROM "print_jobs" p ON CONFLICT ("source_kind", "source_id") DO NOTHING;
+FROM "print_jobs" p WHERE true ON CONFLICT ("source_kind", "source_id") DO NOTHING;
 --> statement-breakpoint
 INSERT INTO "jobs" ("source_kind", "source_id", "user_id", "service_slug", "service_name", "source_reference", "status", "created_at", "updated_at")
 SELECT 'counter', v."id", v."user_id", v."service_slug", v."service_name", NULL, 'recorded', v."created_at", v."created_at"
-FROM "counter_visits" v ON CONFLICT ("source_kind", "source_id") DO NOTHING;
+FROM "counter_visits" v WHERE true ON CONFLICT ("source_kind", "source_id") DO NOTHING;
 --> statement-breakpoint
 -- A legacy row is a historical record, not necessarily an open customer request.
 -- Never guess its user_id from a phone hash, and do not decrypt the import.
 INSERT INTO "jobs" ("source_kind", "source_id", "service_slug", "service_name", "source_reference", "status", "created_at", "updated_at")
 SELECT 'historical', r."id", r."service", r."service", NULL, 'historical',
  COALESCE(r."record_date"::timestamptz, r."created_at"), r."created_at"
-FROM "customer_records" r ON CONFLICT ("source_kind", "source_id") DO NOTHING;
+FROM "customer_records" r WHERE true ON CONFLICT ("source_kind", "source_id") DO NOTHING;
 --> statement-breakpoint
 -- Database trigger keeps every new source insert covered without altering dozens of app writers.
 -- Status changes in existing service/print workflows also synchronize into the registry.

@@ -1,6 +1,9 @@
 import { and, asc, count, desc, eq, gte, ilike, inArray, isNull, lte, or, sql, type SQL } from "drizzle-orm";
 import { campaignMessages, campaigns, contacts, printJobs, serviceRequests, users } from "@/db/schema";
 import { db } from "@/lib/db";
+import { jobs } from "@/db/schema";
+import { extractJobCode } from "@/lib/job-id";
+import { findOwnedJobByCode, verifiedWhatsAppUserId } from "@/lib/jobs";
 import { PublicError } from "@/lib/errors";
 import { clampPacing, istDayStartOf, planRound, type Pacing } from "@/lib/campaign-pacing";
 import { CAMPAIGN_SERVICES, classifyReply, consentAllows, DEFAULT_MESSAGES, isLang, renderMessage, whatsappLink, type CampaignKind, type Lang, type Text3 } from "@/lib/campaign-text";
@@ -367,28 +370,41 @@ async function sendStatusReply(phone: string, message: string) {
 }
 
 export async function handleStatusQuery(phone: string, text: string): Promise<boolean> {
-  if (!cloudApiConfigured() || !/^\s*(status|stat|track|track\s*my\s*(order|request))\b/i.test(text)) return false;
-  const [account] = await db.select({ id: users.id }).from(users).where(or(eq(users.phone, phone), eq(users.whatsapp, phone))).limit(1);
-  if (!account) {
-    await sendStatusReply(phone, "We couldn't find a NISE COMPORT account for this WhatsApp number. Reply with your reference number (e.g. NC-261018-AB12CD), or call the desk and we'll check for you.");
+  const isStatus = /^\s*(status|stat|track|track\s*my\s*(order|request))\b/i.test(text);
+  const jobCode = extractJobCode(text);
+  if (!cloudApiConfigured() || (!isStatus && !jobCode)) return false;
+  // Phone must be OTP-verified for exactly one account. No 'first matching user'
+  // resolution: a shared family number or an unverified WhatsApp alias proves nothing.
+  const accountId = await verifiedWhatsAppUserId(phone);
+  if (!accountId) {
+    await sendStatusReply(phone, "For your privacy, please sign in to nisecomport.com and verify this mobile number, or contact our desk. A Job ID alone does not give access to private details.");
+    return true;
+  }
+  if (jobCode) {
+    const job = await findOwnedJobByCode(jobCode, accountId);
+    if (!job) {
+      await sendStatusReply(phone, "That Job ID is not linked to your verified account. Please check the ID or contact our desk; older counter records may need ownership verification.");
+      return true;
+    }
+    const missing = (job.missingDocuments ?? []).slice(0, 5).join(", ");
+    await sendStatusReply(phone, `${job.code} (${job.serviceName}): ${statusLabel(job.status)}.${missing ? ` Missing documents: ${missing}.` : ""} Sign in to nisecomport.com for details.`);
     return true;
   }
   const reference = text.match(REFERENCE_PATTERN)?.[1]?.toUpperCase();
   if (reference) {
-    const [service] = await db.select({ reference: serviceRequests.reference, name: serviceRequests.serviceName, status: serviceRequests.status, officialReference: serviceRequests.officialReference, officialReferenceLabel: serviceRequests.officialReferenceLabel }).from(serviceRequests).where(and(eq(serviceRequests.reference, reference), eq(serviceRequests.userId, account.id))).limit(1);
-    const [print] = service ? [] : await db.select({ reference: printJobs.reference, name: printJobs.fileName, status: printJobs.status }).from(printJobs).where(and(eq(printJobs.reference, reference), eq(printJobs.userId, account.id))).limit(1);
+    const [service] = await db.select({ reference: serviceRequests.reference, name: serviceRequests.serviceName, status: serviceRequests.status, officialReference: serviceRequests.officialReference, officialReferenceLabel: serviceRequests.officialReferenceLabel }).from(serviceRequests).where(and(eq(serviceRequests.reference, reference), eq(serviceRequests.userId, accountId))).limit(1);
+    const [print] = service ? [] : await db.select({ reference: printJobs.reference, name: printJobs.fileName, status: printJobs.status }).from(printJobs).where(and(eq(printJobs.reference, reference), eq(printJobs.userId, accountId))).limit(1);
     const found = service ?? print;
     const officialLine = found && "officialReference" in found && found.officialReference ? ` · ${found.officialReferenceLabel || "Official ref"}: ${found.officialReference}` : "";
     await sendStatusReply(phone, found ? `${found.reference} (${found.name}): ${statusLabel(found.status)}${officialLine}.` : `We couldn't find ${reference} on your account. Check the reference number, or call the desk.`);
     return true;
   }
-  const recent = [
-    ...(await db.select({ reference: serviceRequests.reference, name: serviceRequests.serviceName, status: serviceRequests.status, updatedAt: serviceRequests.updatedAt, officialReference: serviceRequests.officialReference, officialReferenceLabel: serviceRequests.officialReferenceLabel }).from(serviceRequests).where(eq(serviceRequests.userId, account.id)).orderBy(desc(serviceRequests.updatedAt)).limit(5)),
-    ...(await db.select({ reference: printJobs.reference, name: printJobs.fileName, status: printJobs.status, updatedAt: printJobs.updatedAt, officialReference: sql<string | null>`null`, officialReferenceLabel: sql<string | null>`null` }).from(printJobs).where(eq(printJobs.userId, account.id)).orderBy(desc(printJobs.updatedAt)).limit(5)),
-  ].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()).slice(0, 3);
+  const recent = await db.select({
+    code: jobs.code, name: jobs.serviceName, status: jobs.status, updatedAt: jobs.updatedAt,
+  }).from(jobs).where(eq(jobs.userId, accountId)).orderBy(desc(jobs.updatedAt)).limit(3);
   await sendStatusReply(phone, recent.length
-    ? `Your latest requests:\n${recent.map((item) => `${item.reference} (${item.name}): ${statusLabel(item.status)}${item.officialReference ? ` · ${item.officialReferenceLabel || "Official ref"}: ${item.officialReference}` : ""}`).join("\n")}`
-    : "We don't see any requests on your account yet. Start one at nisecomport.com or visit the desk.");
+    ? `Your latest jobs:\n${recent.map((item) => `${item.code} (${item.name}): ${statusLabel(item.status)}`).join("\n")}`
+    : "We don't see any jobs on your verified account yet. Start one at nisecomport.com or visit the desk.");
   return true;
 }
 
@@ -400,7 +416,7 @@ export async function handleInbound(events: InboundEvent[]) {
       continue;
     }
     const statusPhone = normalizePhone(event.from);
-    if (statusPhone && cloudApiConfigured() && /^\s*(status|stat|track|track\s*my\s*(order|request))\b/i.test(event.text)) {
+    if (statusPhone && cloudApiConfigured() && (/^\s*(status|stat|track|track\s*my\s*(order|request))\b/i.test(event.text) || Boolean(extractJobCode(event.text)))) {
       // Preserve actual conversation order: the question is saved before the reply.
       try { await (await import("@/lib/whatsapp-bot")).logInboundOnly(statusPhone, event.text, event.name); }
       catch (error) { console.error("[whatsapp] could not log status question", error); }

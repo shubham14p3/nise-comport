@@ -4,6 +4,7 @@ import { and, eq, inArray, isNull, ne } from "drizzle-orm";
 import { z } from "zod";
 import { addresses, serviceRequests, storedFiles } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
+import { jobCodeForSource } from "@/lib/jobs";
 import { db } from "@/lib/db";
 import { isUnavailable, PublicError } from "@/lib/errors";
 import { apiError, readJson } from "@/lib/http";
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
 
     if (input.idempotencyKey) {
       const [existing] = await db.select(selectFields).from(serviceRequests).where(and(eq(serviceRequests.userId, user.id), eq(serviceRequests.idempotencyKey, input.idempotencyKey))).limit(1);
-      if (existing) return NextResponse.json({ ok: true, request: existing, duplicate: true });
+      if (existing) return NextResponse.json({ ok: true, request: existing, jobId: await jobCodeForSource("service", existing.id), duplicate: true });
     }
     const userKey = identity("user", user.id);
     await enforceRate(RATE_RULES.requestsPerUserHour, userKey, "You’ve sent several requests in the last hour. If it’s urgent, call or WhatsApp us.");
@@ -191,8 +192,9 @@ export async function POST(request: NextRequest) {
       await closeWizardLeads(replyTo).catch(() => undefined);
       await completeInvitedServiceCallback(replyTo,user.email,service.slug).catch(() => undefined);
     }
+    const jobId = await jobCodeForSource("service", created.id);
     return NextResponse.json({
-      ok: true, request: created, whatsappSent: whatsappAlertsEnabled(),
+      ok: true, request: created, jobId, whatsappSent: whatsappAlertsEnabled(),
       ...(input.offerId ? { offer: { applied: offer.applied, ...(offer.reason ? { reason: offer.reason } : {}) } } : {}),
       ...(input.couponCode ? { coupon: { applied: coupon.applied, ...(coupon.applied ? { code: coupon.code } : { reason: coupon.reason }) } } : {}),
     }, { status: 201 });

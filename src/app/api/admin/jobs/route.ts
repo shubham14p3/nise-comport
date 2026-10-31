@@ -1,0 +1,60 @@
+import { NextRequest, NextResponse } from "next/server";
+import { and, desc, eq } from "drizzle-orm";
+import { z } from "zod";
+import { jobs, jobEvents } from "@/db/schema";
+import { getCurrentUser } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { PublicError } from "@/lib/errors";
+import { apiError, readJson } from "@/lib/http";
+import { validJobCode } from "@/lib/job-id";
+
+const patchSchema = z.object({
+  code: z.string().max(40),
+  missingDocuments: z.array(z.string().trim().min(2).max(100)).max(20).optional(),
+  internalNote: z.string().trim().max(2000).optional(),
+});
+
+async function requireAdmin() {
+  const actor = await getCurrentUser();
+  // Narrow to admins until source-kind and category-scoped staff permissions are audited.
+  if (!actor || actor.role !== "admin") throw new PublicError("Admin access required.", 403);
+  return actor;
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    await requireAdmin();
+    const code = validJobCode(request.nextUrl.searchParams.get("code") ?? "");
+    if (!code) throw new PublicError("Enter a valid Job ID.", 400);
+    const [job] = await db.select().from(jobs).where(eq(jobs.code, code)).limit(1);
+    if (!job) throw new PublicError("Job not found.", 404);
+    const events = await db.select().from(jobEvents).where(eq(jobEvents.jobId, job.id)).orderBy(desc(jobEvents.createdAt)).limit(50);
+    return NextResponse.json({ job, events });
+  } catch (error) { return apiError(error); }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const actor = await requireAdmin();
+    const input = patchSchema.parse(await readJson(request));
+    const code = validJobCode(input.code);
+    if (!code) throw new PublicError("Invalid Job ID.", 400);
+    if (input.missingDocuments === undefined && input.internalNote === undefined) throw new PublicError("Nothing to update.", 400);
+    const updated = await db.transaction(async (tx) => {
+      const [before] = await tx.select().from(jobs).where(eq(jobs.code, code)).limit(1);
+      if (!before) throw new PublicError("Job not found.", 404);
+      const [job] = await tx.update(jobs).set({
+        ...(input.missingDocuments !== undefined ? { missingDocuments: [...new Set(input.missingDocuments)] } : {}),
+        ...(input.internalNote !== undefined ? { internalNote: input.internalNote } : {}),
+        updatedAt: new Date(),
+      }).where(eq(jobs.id, before.id)).returning();
+      await tx.insert(jobEvents).values({
+        jobId: job.id, actorId: actor.id, kind: "staff_note",
+        note: input.missingDocuments !== undefined ? "Missing-document checklist updated" : "Internal note updated",
+        publicVisible: false,
+      });
+      return job;
+    });
+    return NextResponse.json({ ok: true, job: updated });
+  } catch (error) { return apiError(error); }
+}

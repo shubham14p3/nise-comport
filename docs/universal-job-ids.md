@@ -32,3 +32,12 @@ SELECT source_kind, source_id, count(*) FROM jobs GROUP BY 1, 2 HAVING count(*) 
 - Staff must verify historical ownership before linking a `jobs.user_id` to an actual customer.
 - Message templates initiated outside the 24-hour WhatsApp customer-service window must be approved in Meta.
 - Counter receipts retain their existing payment/ticket references. The Job ID is an additional identifier, not a replacement.
+
+## API surfaces
+- `GET /api/jobs`: authenticated customer's latest 50 jobs.
+- `GET /api/jobs?code=NCJ-26-XXXXXXXXXXXX`: authenticated customer job details and visible history.
+- `GET /api/admin/jobs?code=...`: admin-only lookup including internal notes.
+- `PATCH /api/admin/jobs`: admin-only `{code, missingDocuments?, internalNote?}`; records audit event.
+- Online request creation and Counter visit creation now include a `jobId` in their JSON responses. The existing `reference` remains valid.
+- WhatsApp `STATUS <Job ID>`, bare Job ID, or `status` uses the verified phone-owner and refuses unverified/shared matches.
+- This phase adds backend support. Existing customer/Admin screen components still need a dedicated Job ID view; this is not a completed frontend rollout.
