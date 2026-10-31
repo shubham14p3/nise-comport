@@ -1,5 +1,9 @@
 "use client";
 import { FormEvent, useEffect, useState } from "react";
+import { secureApi } from "@/lib/secure-api-client";
+
+const ADMIN_JOBS_READ_OP = "A5j8T2mQ7nR4";
+const ADMIN_JOBS_UPDATE_OP = "V9k3L6pD2tF7";
 type JobRow = { code: string; serviceName: string; status: string; sourceKind: string; sourceReference: string | null; createdAt: string; missingDocuments: string[] };
 type DetailedJob = JobRow & { internalNote: string | null };
 type JobEvent = { id: string; kind: string; note: string | null; fromStatus: string | null; toStatus: string | null; createdAt: string };
@@ -20,9 +24,7 @@ export default function UniversalJobsAdmin() {
   async function load(nextPage: number, search = query) {
     setBusy("list"); setError("");
     try {
-      const response = await fetch(`/api/admin/jobs?page=${nextPage}&query=${encodeURIComponent(search)}`, { cache: "no-store", credentials: "same-origin" });
-      if (!response.ok) throw new Error("Could not load jobs.");
-      const data = await response.json() as { jobs: JobRow[] };
+      const data = await secureApi<{ jobs: JobRow[] }>(ADMIN_JOBS_READ_OP, { page: nextPage, query: search });
       setJobs(data.jobs); setPage(nextPage);
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load jobs."); }
     finally { setBusy(""); }
@@ -30,11 +32,7 @@ export default function UniversalJobsAdmin() {
 
   useEffect(() => {
     let active = true;
-    void fetch("/api/admin/jobs?page=0", { credentials: "same-origin", cache: "no-store" })
-      .then(async response => {
-        if (!response.ok) throw new Error("Could not load jobs.");
-        return response.json() as Promise<{ jobs: JobRow[] }>;
-      })
+    void secureApi<{ jobs: JobRow[] }>(ADMIN_JOBS_READ_OP, { page: 0 })
       .then(result => { if (active) setJobs(result.jobs); })
       .catch(reason => { if (active) setError(reason instanceof Error ? reason.message : "Could not load jobs."); });
     return () => { active = false; };
@@ -43,9 +41,7 @@ export default function UniversalJobsAdmin() {
   async function open(code: string) {
     setBusy("detail"); setError(""); setNotice("");
     try {
-      const response = await fetch(`/api/admin/jobs?code=${encodeURIComponent(code)}`, { cache: "no-store", credentials: "same-origin" });
-      if (!response.ok) throw new Error("Could not open job.");
-      const data = await response.json() as { job: DetailedJob; events: JobEvent[] };
+      const data = await secureApi<{ job: DetailedJob; events: JobEvent[] }>(ADMIN_JOBS_READ_OP, { code });
       setSelected(data.job); setEvents(data.events);
       setDocuments(data.job.missingDocuments.join("\n"));
       setNote(data.job.internalNote ?? "");
@@ -58,12 +54,11 @@ export default function UniversalJobsAdmin() {
     if (!selected) return;
     setBusy("save"); setError(""); setNotice("");
     try {
-      const response = await fetch("/api/admin/jobs", {
-        method: "PATCH", credentials: "same-origin", headers: { "content-type": "application/json" },
-        body: JSON.stringify({ code: selected.code, missingDocuments: documents.split(/\r?\n/).map(s => s.trim()).filter(Boolean), internalNote: note.trim(), ...(customerUpdate.trim() ? { customerUpdate: customerUpdate.trim() } : {}) }),
+      const data = await secureApi<{ ok: boolean; job: DetailedJob }>(ADMIN_JOBS_UPDATE_OP, {
+        code: selected.code, missingDocuments: documents.split(/\r?\n/).map(s => s.trim()).filter(Boolean),
+        internalNote: note.trim(), ...(customerUpdate.trim() ? { customerUpdate: customerUpdate.trim() } : {}),
       });
-      const data = await response.json() as { error?: string; job?: DetailedJob };
-      if (!response.ok || !data.job) throw new Error(data.error ?? "Could not save job notes.");
+      if (!data.job) throw new Error("Could not save job notes.");
       setSelected(data.job);
       await load(page);
       await open(data.job.code);

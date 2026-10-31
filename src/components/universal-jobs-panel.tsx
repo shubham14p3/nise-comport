@@ -1,5 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
+import { secureApi } from "@/lib/secure-api-client";
+
+const CUSTOMER_JOBS_READ_OP = "K4n8P1xR7vC3";
 
 type Job = { code: string; serviceName: string; status: string; missingDocuments: string[]; createdAt: string; updatedAt: string };
 type JobDetail = { job: Job & { sourceReference?: string | null }; events: { kind: string; toStatus: string | null; note: string | null; createdAt: string }[] };
@@ -14,8 +17,7 @@ export default function UniversalJobsPanel() {
 
   useEffect(() => {
     let active = true;
-    void fetch("/api/jobs", { credentials: "same-origin", cache: "no-store" })
-      .then(async (response) => { if (!response.ok) throw new Error("Could not load your jobs."); return response.json() as Promise<{ jobs: Job[] }>; })
+    void secureApi<{ jobs: Job[] }>(CUSTOMER_JOBS_READ_OP)
       .then((data) => { if (active) setJobs(data.jobs); })
       .catch((reason: unknown) => { if (active) setError(reason instanceof Error ? reason.message : "Could not load jobs."); })
       .finally(() => { if (active) setBusy(false); });
@@ -28,9 +30,7 @@ export default function UniversalJobsPanel() {
     setDetail(null);
     setError("");
     try {
-      const response = await fetch(`/api/jobs?code=${encodeURIComponent(code)}`, { credentials: "same-origin", cache: "no-store" });
-      if (!response.ok) throw new Error("Could not open job details.");
-      const result = await response.json() as JobDetail;
+      const result = await secureApi<JobDetail>(CUSTOMER_JOBS_READ_OP, { code });
       setDetail(result);
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not open the job."); }
   }
